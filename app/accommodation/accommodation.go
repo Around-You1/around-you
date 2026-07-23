@@ -1,0 +1,260 @@
+// Package accommodation implements CRUD, CSV template/export/import for
+// accommodations. Handler signatures and Encore annotations are unchanged
+// from the original in-memory version — only the storage internals changed,
+// first to inline SQL, and now to the dedicated store.Store (Phase 5).
+package accommodation
+
+import (
+	"context"
+	"encoding/csv"
+	"errors"
+	"strconv"
+	"strings"
+
+	"backend_encore/internal/appdb"
+	"backend_encore/internal/errs"
+	"backend_encore/store"
+)
+
+var accommodations = store.NewStore()
+
+//encore:api auth method=GET path=/accommodation
+func List(ctx context.Context, req *ListRequest) (*ListResponse, error) {
+	items, err := accommodations.List(ctx, req.SortBy, req.SortOrder)
+	if err != nil {
+		return nil, err
+	}
+	return &ListResponse{Accommodations: items}, nil
+}
+
+//encore:api auth method=GET path=/accommodation/get
+func Get(ctx context.Context, req *GetRequest) (*appdb.Accommodation, error) {
+	a, err := accommodations.Get(ctx, req.ID)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return nil, &errs.Error{Code: errs.NotFound, Message: "accommodation not found"}
+		}
+		return nil, err
+	}
+	return a, nil
+}
+
+//encore:api auth method=POST path=/accommodation
+func Create(ctx context.Context, req *CreateRequest) (*appdb.Accommodation, error) {
+	if strings.TrimSpace(req.Name) == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "name is required"}
+	}
+	if req.Province == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "province is required"}
+	}
+
+	in := &appdb.Accommodation{
+		Name:                  req.Name,
+		Address:               req.Address,
+		Latitude:              req.Latitude,
+		Longitude:             req.Longitude,
+		Country:               req.Country,
+		Province:              req.Province,
+		Area:                  req.Area,
+		PostalCode:            req.PostalCode,
+		WheelchairAccess:      req.WheelchairAccess,
+		ParkingAvailability:   req.ParkingAvailability,
+		Facilities:            req.Facilities,
+		WifiName:              req.WifiName,
+		WifiPassword:          req.WifiPassword,
+		CheckInInstructions:   req.CheckInInstructions,
+		CheckOutInstructions:  req.CheckOutInstructions,
+		Amenities:             req.Amenities,
+		Guidelines:            req.Guidelines,
+		PrimaryContact:        req.PrimaryContact,
+		PoliceContact:         req.PoliceContact,
+		DoctorContact:         req.DoctorContact,
+		AmbulanceContact:      req.AmbulanceContact,
+		HospitalContact:       req.HospitalContact,
+		FireDepartmentContact: req.FireDepartmentContact,
+		ImageUrl:              req.ImageUrl,
+		ImageUrls:             req.ImageUrls,
+		IsActive:              req.IsActive,
+		OfficialUse: appdb.OfficialUse{
+			OfficialHoldingCompany: req.OfficialHoldingCompany,
+			OfficialContactName:    req.OfficialContactName,
+			OfficialContactNumber:  req.OfficialContactNumber,
+			OfficialEmail:          req.OfficialEmail,
+			OfficialRepCode:        req.OfficialRepCode,
+		},
+	}
+
+	return accommodations.Create(ctx, in)
+}
+
+//encore:api auth method=PUT path=/accommodation
+func Update(ctx context.Context, req *UpdateRequest) (*appdb.Accommodation, error) {
+	patch := store.Patch{
+		Name:                  req.Name,
+		Address:               req.Address,
+		Latitude:              req.Latitude,
+		Longitude:             req.Longitude,
+		Country:               req.Country,
+		Province:              req.Province,
+		Area:                  req.Area,
+		PostalCode:            req.PostalCode,
+		WifiName:              req.WifiName,
+		WifiPassword:          req.WifiPassword,
+		ImageUrl:              req.ImageUrl,
+		ImageUrls:             req.ImageUrls,
+		CheckInInstructions:   req.CheckInInstructions,
+		Amenities:             req.Amenities,
+		Guidelines:            req.Guidelines,
+		CheckOutInstructions:  req.CheckOutInstructions,
+		WheelchairAccess:      req.WheelchairAccess,
+		ParkingAvailability:   req.ParkingAvailability,
+		PrimaryContact:        req.PrimaryContact,
+		PoliceContact:         req.PoliceContact,
+		DoctorContact:         req.DoctorContact,
+		AmbulanceContact:      req.AmbulanceContact,
+		HospitalContact:       req.HospitalContact,
+		FireDepartmentContact: req.FireDepartmentContact,
+		Facilities:            req.Facilities,
+		IsActive:              req.IsActive,
+		OfficialHoldingCompany: req.OfficialHoldingCompany,
+		OfficialContactName:    req.OfficialContactName,
+		OfficialContactNumber:  req.OfficialContactNumber,
+		OfficialEmail:          req.OfficialEmail,
+		OfficialRepCode:        req.OfficialRepCode,
+	}
+
+	a, err := accommodations.Update(ctx, req.ID, patch)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return nil, &errs.Error{Code: errs.NotFound, Message: "accommodation not found"}
+		}
+		return nil, err
+	}
+	return a, nil
+}
+
+//encore:api auth method=DELETE path=/accommodation
+func DeleteAccommodation(ctx context.Context, req *DeleteRequest) (*DeleteAccommodationResponse, error) {
+	if err := accommodations.Delete(ctx, req.ID); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return nil, &errs.Error{Code: errs.NotFound, Message: "accommodation not found"}
+		}
+		return nil, err
+	}
+	return &DeleteAccommodationResponse{Success: true}, nil
+}
+
+var csvHeaders = []string{
+	"name", "address", "latitude", "longitude", "country", "province", "area", "postalCode",
+	"wifiName", "wifiPassword", "imageUrl", "checkInInstructions", "amenities", "guidelines",
+	"checkOutInstructions", "primaryContact", "policeContact", "doctorContact", "ambulanceContact",
+	"hospitalContact", "fireDepartmentContact", "wheelchairAccess", "parkingAvailability", "isActive",
+}
+
+//encore:api auth method=GET path=/accommodation/template
+func Template(ctx context.Context) (*CSVResponse, error) {
+	var sb strings.Builder
+	w := csv.NewWriter(&sb)
+	_ = w.Write(csvHeaders)
+	_ = w.Write([]string{
+		"Sample Lodge", "1 Main Rd", "-33.9", "18.4", "South Africa", "Western Cape", "Cape Town", "8001",
+		"GuestWifi", "password123", "https://example.com/image.jpg", "Check in after 2pm", "Pool, braai area",
+		"No smoking indoors", "Check out by 10am", "+27 21 000 0000", "10111", "+27 21 000 0001", "10177",
+		"+27 21 000 0002", "10177", "true", "true", "true",
+	})
+	w.Flush()
+	return &CSVResponse{CSV: sb.String()}, nil
+}
+
+//encore:api auth method=GET path=/accommodation/export
+func ExportAccommodations(ctx context.Context) (*CSVResponse, error) {
+	items, err := accommodations.List(ctx, "", "")
+	if err != nil {
+		return nil, err
+	}
+
+	var sb strings.Builder
+	w := csv.NewWriter(&sb)
+	_ = w.Write(csvHeaders)
+	for _, a := range items {
+		_ = w.Write([]string{
+			a.Name, a.Address, floatStr(a.Latitude), floatStr(a.Longitude), a.Country, a.Province, a.Area, a.PostalCode,
+			a.WifiName, a.WifiPassword, a.ImageUrl, a.CheckInInstructions, a.Amenities, a.Guidelines,
+			a.CheckOutInstructions, a.PrimaryContact, a.PoliceContact, a.DoctorContact, a.AmbulanceContact,
+			a.HospitalContact, a.FireDepartmentContact, strconv.FormatBool(a.WheelchairAccess),
+			strconv.FormatBool(a.ParkingAvailability), strconv.FormatBool(a.IsActive),
+		})
+	}
+	w.Flush()
+	return &CSVResponse{CSV: sb.String()}, nil
+}
+
+func floatStr(f *float64) string {
+	if f == nil {
+		return ""
+	}
+	return strconv.FormatFloat(*f, 'f', -1, 64)
+}
+
+//encore:api auth method=POST path=/accommodation/import
+func ImportAccommodations(ctx context.Context, req *ImportRequest) (*ImportResponse, error) {
+	resp := &ImportResponse{Errors: []string{}}
+
+	for i, row := range req.Rows {
+		if strings.TrimSpace(row.Name) == "" {
+			resp.Failed++
+			resp.Errors = append(resp.Errors, rowError(i, row.Name, "name is required"))
+			continue
+		}
+
+		lat, lng := row.Latitude, row.Longitude
+		in := &appdb.Accommodation{
+			Name:                  row.Name,
+			Address:               row.Address,
+			Latitude:              &lat,
+			Longitude:             &lng,
+			Country:               row.Country,
+			Province:              row.Province,
+			Area:                  row.Area,
+			PostalCode:            row.PostalCode,
+			WifiName:              row.WifiName,
+			WifiPassword:          row.WifiPassword,
+			ImageUrl:              row.ImageUrl,
+			CheckInInstructions:   row.CheckInInstructions,
+			Amenities:             row.Amenities,
+			Guidelines:            row.Guidelines,
+			CheckOutInstructions:  row.CheckOutInstructions,
+			PrimaryContact:        row.PrimaryContact,
+			PoliceContact:         row.PoliceContact,
+			DoctorContact:         row.DoctorContact,
+			AmbulanceContact:      row.AmbulanceContact,
+			HospitalContact:       row.HospitalContact,
+			FireDepartmentContact: row.FireDepartmentContact,
+			WheelchairAccess:      parseBool(row.WheelchairAccess),
+			ParkingAvailability:   parseBool(row.ParkingAvailability),
+			IsActive:              parseBool(row.IsActive),
+		}
+
+		if _, err := accommodations.Create(ctx, in); err != nil {
+			resp.Failed++
+			resp.Errors = append(resp.Errors, rowError(i, row.Name, err.Error()))
+			continue
+		}
+		resp.Imported++
+	}
+
+	resp.Success = resp.Failed == 0
+	return resp, nil
+}
+
+func parseBool(s string) bool {
+	v, _ := strconv.ParseBool(strings.TrimSpace(s))
+	return v
+}
+
+func rowError(index int, name, msg string) string {
+	if name == "" {
+		name = "unnamed"
+	}
+	return "Row " + strconv.Itoa(index+2) + " (" + name + "): " + msg
+}
