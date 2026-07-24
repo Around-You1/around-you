@@ -2,10 +2,11 @@
 // Validate, which resolves the Bearer token that the HTTP middleware
 // (cmd/server/main.go) requires on every authenticated endpoint.
 //
-// Sessions are process-local: a successful login mints a random token stored
-// in appdb.DB.Sessions, and Validate looks tokens back up there. This is the
-// same model as before — only the transport changed from Encore's auth handler
-// to standard net/http middleware.
+// Sessions and users are persisted in Postgres (see
+// migrations/000002_create_users_sessions.sql) — a successful login mints a
+// random token, inserts a row into sessions, and Validate resolves it back
+// via a join. This used to be a plain in-memory map, which meant every
+// server restart silently invalidated every session; that's fixed now.
 package auth
 
 import (
@@ -37,26 +38,40 @@ type Data struct {
 // Validate resolves a bearer token to the signed-in user, or returns an
 // *errs.Error with code Unauthenticated. The HTTP middleware (see
 // cmd/server/main.go) calls this for every route that previously carried the
-// Encore `auth` tag; the token/session model is otherwise unchanged.
-func Validate(authorization string) (*Data, error) {
+// Encore `auth` tag.
+//
+// Every text/nullable-bigint column below is COALESCE'd — the exact bug class
+// already hit once for accommodations (a NULL column crashing row.Scan) would
+// otherwise resurface here immediately, since profile_type/entity_type/area/
+// municipality/accommodation_id/entity_id are all nullable and unset for most
+// logins (e.g. a LocalGuest row has no accommodation_id or entity_id at all).
+func Validate(ctx context.Context, authorization string) (*Data, error) {
 	token := strings.TrimPrefix(authorization, "Bearer ")
 	if token == "" {
 		return nil, &errs.Error{Code: errs.Unauthenticated, Message: "missing bearer token"}
 	}
 
-	appdb.DB.Lock()
-	userID, ok := appdb.DB.Sessions[token]
-	var user *appdb.User
-	if ok {
-		user = appdb.DB.Users[userID]
+	var u appdb.User
+	err := appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT u.id, u.email, u.role,
+		       COALESCE(u.profile_type, '') as profile_type,
+		       COALESCE(u.accommodation_id, 0) as accommodation_id,
+		       COALESCE(u.entity_type, '') as entity_type,
+		       COALESCE(u.entity_id, 0) as entity_id,
+		       COALESCE(u.area, '') as area,
+		       COALESCE(u.municipality, '') as municipality
+		FROM sessions s
+		JOIN users u ON u.id = s.user_id
+		WHERE s.token = $1`, token,
+	).Scan(&u.ID, &u.Email, &u.Role, &u.ProfileType, &u.AccommodationID, &u.EntityType, &u.EntityID, &u.Area, &u.Municipality)
+	if err != nil {
+		if isNoRows(err) {
+			return nil, &errs.Error{Code: errs.Unauthenticated, Message: "invalid or expired token"}
+		}
+		return nil, err
 	}
-	appdb.DB.Unlock()
 
-	if !ok || user == nil {
-		return nil, &errs.Error{Code: errs.Unauthenticated, Message: "invalid or expired token"}
-	}
-
-	return &Data{UserID: userID, User: user}, nil
+	return &Data{UserID: u.ID, User: &u}, nil
 }
 
 // ---- Login endpoints --------------------------------------------------------
@@ -88,7 +103,7 @@ func AccessCodeLogin(ctx context.Context, req *AccessCodeLoginRequest) (*LoginRe
 	if match == nil {
 		return nil, &errs.Error{Code: errs.NotFound, Message: "invalid or expired access code"}
 	}
-	return issueSession(match)
+	return issueSession(ctx, match)
 }
 
 // findByAccessCode searches every entity type for a matching profile
@@ -156,7 +171,7 @@ func SecondaryLogin(ctx context.Context, req *SecondaryLoginRequest) (*LoginResp
 	if match == nil {
 		return nil, &errs.Error{Code: errs.NotFound, Message: "no matching partner or accommodation found"}
 	}
-	return issueSession(match)
+	return issueSession(ctx, match)
 }
 
 func findByNameAddressProvince(ctx context.Context, name, address, province string) (*appdb.User, error) {
@@ -218,40 +233,70 @@ func LocalGuestLogin(ctx context.Context, req *LocalGuestLoginRequest) (*LoginRe
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "email, province, and area are required"}
 	}
 
-	existing := findLocalGuestByEmail(email)
+	existing, err := findLocalGuestByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
 	if existing != nil {
 		existing.Area = req.Area
-		return issueSession(existing)
+		return issueSession(ctx, existing)
 	}
 
-	return issueSession(&appdb.User{Email: email, Role: "LocalGuest", Area: req.Area})
+	return issueSession(ctx, &appdb.User{Email: email, Role: "LocalGuest", Area: req.Area})
 }
 
-func findLocalGuestByEmail(email string) *appdb.User {
-	appdb.DB.Lock()
-	defer appdb.DB.Unlock()
-	for _, u := range appdb.DB.Users {
-		if u.Role == "LocalGuest" && strings.EqualFold(u.Email, email) {
-			return u
+func findLocalGuestByEmail(ctx context.Context, email string) (*appdb.User, error) {
+	var u appdb.User
+	err := appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT id, email, role,
+		       COALESCE(profile_type, '') as profile_type,
+		       COALESCE(accommodation_id, 0) as accommodation_id,
+		       COALESCE(entity_type, '') as entity_type,
+		       COALESCE(entity_id, 0) as entity_id,
+		       COALESCE(area, '') as area,
+		       COALESCE(municipality, '') as municipality
+		FROM users WHERE role = 'LocalGuest' AND lower(email) = lower($1)`, email,
+	).Scan(&u.ID, &u.Email, &u.Role, &u.ProfileType, &u.AccommodationID, &u.EntityType, &u.EntityID, &u.Area, &u.Municipality)
+	if err != nil {
+		if isNoRows(err) {
+			return nil, nil
 		}
+		return nil, err
 	}
-	return nil
+	return &u, nil
 }
 
-// issueSession assigns the user an ID (if new), stores it, mints a session
-// token, and returns the login response. Locks the store itself — callers
-// must NOT already hold the lock when calling this.
-func issueSession(u *appdb.User) (*LoginResponse, error) {
-	appdb.DB.Lock()
-	defer appdb.DB.Unlock()
-
+// issueSession assigns the user an ID (if new), persists it, mints a session
+// token, and returns the login response. Both users and sessions now live in
+// Postgres (see 000002_create_users_sessions.sql) instead of the in-memory
+// maps that were wiped on every restart.
+func issueSession(ctx context.Context, u *appdb.User) (*LoginResponse, error) {
 	if u.ID == 0 {
-		u.ID = appdb.DB.NextIDLocked()
-		appdb.DB.Users[u.ID] = u
+		var accID, entID sql.NullInt64
+		if u.AccommodationID != 0 {
+			accID = sql.NullInt64{Int64: u.AccommodationID, Valid: true}
+		}
+		if u.EntityID != 0 {
+			entID = sql.NullInt64{Int64: u.EntityID, Valid: true}
+		}
+
+		err := appdb.SQLDB.QueryRowContext(ctx, `
+			INSERT INTO users (email, role, profile_type, accommodation_id, entity_type, entity_id, area, municipality)
+			VALUES ($1, $2, NULLIF($3, ''), $4, NULLIF($5, ''), $6, NULLIF($7, ''), NULLIF($8, ''))
+			RETURNING id`,
+			u.Email, u.Role, u.ProfileType, accID, u.EntityType, entID, u.Area, u.Municipality,
+		).Scan(&u.ID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	token := appdb.RandomCode(32)
-	appdb.DB.Sessions[token] = u.ID
+	if _, err := appdb.SQLDB.ExecContext(ctx,
+		`INSERT INTO sessions (token, user_id) VALUES ($1, $2)`, token, u.ID,
+	); err != nil {
+		return nil, err
+	}
 
 	return &LoginResponse{Token: token, User: u}, nil
 }

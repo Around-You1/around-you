@@ -38,14 +38,34 @@ func NewStore() *Store {
 // accommodationColumns lists every column in one fixed order, shared by every
 // SELECT below, so scanAccommodation always matches whatever query ran.
 const accommodationColumns = `
-	id, name, address, latitude, longitude, country, province, area, postal_code,
-	profile_reference_code, is_duplicate, duplicate_reason, wheelchair_access,
-	parking_availability, facilities, wifi_name, wifi_password, wifi_credentials,
-	check_in_instructions, check_out_instructions, amenities, guidelines,
-	primary_contact, police_contact, doctor_contact, ambulance_contact,
-	hospital_contact, fire_department_contact, emergency_contacts, image_url,
-	image_urls, is_active, official_holding_company, official_contact_name,
-	official_contact_number, official_email, official_rep_code, created_at, updated_at
+	id, name, address, latitude, longitude, country, province,
+	COALESCE(area, '') as area, postal_code,
+	COALESCE(profile_reference_code, '') as profile_reference_code,
+	is_duplicate,
+	COALESCE(duplicate_reason, '') as duplicate_reason,
+	wheelchair_access, parking_availability, facilities,
+	COALESCE(wifi_name, '') as wifi_name,
+	COALESCE(wifi_password, '') as wifi_password,
+	COALESCE(wifi_credentials, '') as wifi_credentials,
+	COALESCE(check_in_instructions, '') as check_in_instructions,
+	COALESCE(check_out_instructions, '') as check_out_instructions,
+	COALESCE(amenities, '') as amenities,
+	COALESCE(guidelines, '') as guidelines,
+	COALESCE(primary_contact, '') as primary_contact,
+	COALESCE(police_contact, '') as police_contact,
+	COALESCE(doctor_contact, '') as doctor_contact,
+	COALESCE(ambulance_contact, '') as ambulance_contact,
+	COALESCE(hospital_contact, '') as hospital_contact,
+	COALESCE(fire_department_contact, '') as fire_department_contact,
+	emergency_contacts,
+	COALESCE(image_url, '') as image_url,
+	image_urls, is_active,
+	COALESCE(official_holding_company, '') as official_holding_company,
+	COALESCE(official_contact_name, '') as official_contact_name,
+	COALESCE(official_contact_number, '') as official_contact_number,
+	COALESCE(official_email, '') as official_email,
+	COALESCE(official_rep_code, '') as official_rep_code,
+	created_at, updated_at
 `
 
 // scanner is satisfied by both *sql.Row (QueryRow) and *sql.Rows (Query),
@@ -358,3 +378,4 @@ func (s *Store) Delete(ctx context.Context, id int64) error {
 	}
 	return nil
 }
+

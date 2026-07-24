@@ -284,8 +284,8 @@ type CategoryStats struct {
 
 // Store is a single in-memory, mutex-guarded store shared by every service
 // still awaiting its Postgres migration (Phase 5 moves these over one at a
-// time, the same way Accommodation just moved to appdb.SQLDB — see db.go and
-// app/accommodation/accommodation.go).
+// time — Accommodation, then Users/Sessions, have already moved to
+// appdb.SQLDB; restaurant/service/attraction are still here).
 type Store struct {
 	mu sync.Mutex
 
@@ -294,8 +294,6 @@ type Store struct {
 	Restaurants map[int64]*Restaurant
 	Services    map[int64]*ServiceData
 	Attractions map[int64]*AttractionData
-	Users       map[int64]*User
-	Sessions    map[string]int64 // token -> user ID
 
 	// ProfileSettings and LogoURL are single, platform-wide records —
 	// confirmed by both call sites (RestaurantTab.tsx admin editing and
@@ -313,8 +311,6 @@ var DB = &Store{
 	Restaurants: map[int64]*Restaurant{},
 	Services:    map[int64]*ServiceData{},
 	Attractions: map[int64]*AttractionData{},
-	Users:       map[int64]*User{},
-	Sessions:    map[string]int64{},
 }
 
 // NextID returns a fresh, process-wide unique ID.

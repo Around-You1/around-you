@@ -36,9 +36,14 @@ func Init(ctx context.Context) error {
 		return fmt.Errorf("open database: %w", err)
 	}
 
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(25)
+	// Sized for Supabase's shared Session Pooler (Supavisor) on the free tier,
+	// which caps concurrent connections — keep the client pool small. Use the
+	// Session pooler host/port (aws-0-<region>.pooler.supabase.com:5432), NOT
+	// the Transaction pooler (:6543), which breaks lib/pq prepared statements.
+	db.SetMaxOpenConns(8)
+	db.SetMaxIdleConns(4)
 	db.SetConnMaxLifetime(5 * time.Minute)
+	db.SetConnMaxIdleTime(1 * time.Minute)
 
 	pingCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

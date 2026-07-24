@@ -119,6 +119,15 @@ func main() {
 	// ---- Stats (auth) ------------------------------------------------------
 	r.auth("GET /stats", httpx.Empty(stats.Get))
 
+	// ---- Not found -----------------------------------------------------------
+	// Go's default 404 for an unmatched pattern is plain text, not the
+	// {"code","message"} JSON shape every other endpoint returns. Registering
+	// "/" as a catch-all doesn't shadow the specific routes above — Go 1.22's
+	// ServeMux always prefers the most specific matching pattern.
+	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		writeErr(w, &errs.Error{Code: errs.NotFound, Message: "no such route: " + req.Method + " " + req.URL.Path})
+	})
+
 	addr := ":" + port()
 	handler := withCORS(mux)
 
@@ -151,7 +160,7 @@ func (r router) auth(pattern string, h http.HandlerFunc) {
 // gate Encore's `auth` tag used to apply.
 func requireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		if _, err := auth.Validate(req.Header.Get("Authorization")); err != nil {
+		if _, err := auth.Validate(req.Context(), req.Header.Get("Authorization")); err != nil {
 			writeErr(w, err)
 			return
 		}
