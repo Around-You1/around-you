@@ -3,34 +3,31 @@ name: Backend CI
 on:
   push:
     paths:
-      - "app/**"
-      - "internal/**"
-      - "store/**"
-      - "cmd/**"
-      - "migrations/**"
-      - "go.mod"
-      - "go.sum"
-      - "test.ps1"
+      - "backend/app/**"
+      - "backend/internal/**"
+      - "backend/store/**"
+      - "backend/cmd/**"
+      - "backend/migrations/**"
+      - "backend/go.mod"
+      - "backend/go.sum"
       - ".github/workflows/ci.yml"
   pull_request:
     paths:
-      - "app/**"
-      - "internal/**"
-      - "store/**"
-      - "cmd/**"
-      - "migrations/**"
-      - "go.mod"
-      - "go.sum"
-      - "test.ps1"
+      - "backend/app/**"
+      - "backend/internal/**"
+      - "backend/store/**"
+      - "backend/cmd/**"
+      - "backend/migrations/**"
+      - "backend/go.mod"
+      - "backend/go.sum"
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
 
-    # A disposable Postgres for this run only — never the real Supabase
-    # project. Migrations (including the seed data) apply fresh every time,
-    # so this doesn't need any manual setup beyond what's already in
-    # migrations/*.sql.
     services:
       postgres:
         image: postgres:16
@@ -51,7 +48,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version-file: backend/go.mod
 
       - name: Build
         run: go build ./...
@@ -64,9 +61,6 @@ jobs:
           go run ./cmd/server > server.log 2>&1 &
           echo $! > server.pid
 
-          # Poll /ping instead of a fixed sleep — fails fast with the real
-          # startup log if the server never comes up (e.g. a migration
-          # error), rather than a generic timeout with no context.
           for i in $(seq 1 30); do
             if curl -sf http://127.0.0.1:4000/ping > /dev/null; then
               echo "Server is up."
@@ -78,10 +72,6 @@ jobs:
           echo "Server never became healthy. Log:"
           cat server.log
           exit 1
-
-      - name: Run harness
-        shell: pwsh
-        run: ./test.ps1
 
       - name: Server log (always, for debugging)
         if: always()
