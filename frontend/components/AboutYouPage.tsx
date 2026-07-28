@@ -82,7 +82,7 @@ export default function AboutYouPage() {
   }, [accessCode, navigate]);
 
   const handleLogin = () => {
-    navigate("/login");
+    navigate("/portal");
   };
 
   const handleToggle = (id: string) => {
