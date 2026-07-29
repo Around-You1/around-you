@@ -19,7 +19,7 @@ interface OfficialUseSectionProps {
 }
 
 const GUEST_TYPE_OPTIONS = ["Guest Only", "Local", "Both"] as const;
-const ACCESS_LEVEL_OPTIONS = ["Explorer", "Experience", "All Access"] as const;
+const ACCESS_LEVEL_OPTIONS = ["Tier 1", "Tier 2", "Tier 3", "Tier 4"] as const;
 
 function RadioGroup({
   label,
