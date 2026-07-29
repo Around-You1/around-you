@@ -35,7 +35,7 @@ export default function AdminLoginPage() {
       localStorage.setItem("user", JSON.stringify(res.user));
       dismiss();
       toast({ title: "Welcome!", description: `Signed in as ${res.user.email}` });
-      navigate("/admin");
+      navigate("/admin-dashboard");
     } catch (err: any) {
       console.error(err);
       toast({
