@@ -259,6 +259,7 @@ type User struct {
 	EntityID        int64  `json:"entityId,omitempty"`
 	Area            string `json:"area,omitempty"`
 	Municipality    string `json:"municipality,omitempty"`
+	PostalCode      string `json:"postalCode,omitempty"` // LocalGuest sign-in field
 }
 
 // ProfileSettings matches BookingsSocialsDropdowns.tsx / RestaurantTab.tsx's

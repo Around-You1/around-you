@@ -7,6 +7,8 @@ import { useToast } from "@/components/ui/use-toast";
 import backend from "~backend/client";
 import { SA_PROVINCES } from "../lib/saRegions";
 import AppLogo from "../components/AppLogo";
+import { signInWithOtp } from "../lib/auth";
+import { supabase } from "../lib/supabase";
 
 const VALID_CODE_RE = /^[A-Za-z0-9]*$/;
 const STRIP_RE = /[^A-Za-z0-9]/g;
@@ -277,7 +279,7 @@ export default function LoginPage() {
 
   const [localEmail, setLocalEmail] = useState("");
   const [localProvince, setLocalProvince] = useState("");
-  const [localArea, setLocalArea] = useState("");
+  const [localPostalCode, setLocalPostalCode] = useState("");
 
   const [partnerCode, setPartnerCode] = useState("");
   const [partnerCodeError, setPartnerCodeError] = useState(false);
@@ -385,16 +387,72 @@ export default function LoginPage() {
     if (!localEmail.trim()) { toast({ title: "Validation Error", description: "Email address is required", variant: "destructive" }); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(localEmail.trim())) { toast({ title: "Validation Error", description: "Please enter a valid email address", variant: "destructive" }); return; }
     if (!localProvince) { toast({ title: "Validation Error", description: "Province is required", variant: "destructive" }); return; }
-    if (!localArea.trim()) { toast({ title: "Validation Error", description: "Area is required", variant: "destructive" }); return; }
+    if (!localPostalCode.trim()) { toast({ title: "Validation Error", description: "Postal code is required", variant: "destructive" }); return; }
     setLoading(true);
     try {
-      const res = await backend.auth.localGuestLogin({ email: localEmail.trim(), province: localProvince, area: localArea.trim() });
-      storeAndNavigate(res.token, res.user, "/guest-dashboard", `${localArea} (local)`);
+      const email = localEmail.trim().toLowerCase();
+
+      // Returning guest: if this browser already has a verified Supabase
+      // session for this exact email, skip the code step entirely.
+      const { data: { session } } = await supabase.auth.getSession();
+      const alreadyVerified = !!session && session.user?.email?.toLowerCase() === email;
+
+      if (alreadyVerified) {
+        const res = await backend.auth.localGuestLogin({ email, province: localProvince, postalCode: localPostalCode.trim() });
+        storeAndNavigate(res.token, res.user, "/guest-dashboard", `${localPostalCode.trim()} (local)`);
+        return;
+      }
+
+      // First time (or an expired/different session): send a one-time code
+      // and finish signing in once they've verified it. The province/postal
+      // code they already typed are carried through inside the `next` URL's
+      // own query string — /verify does `router.replace(next)` literally, it
+      // does not merge in any other query params, so they have to travel
+      // as part of next's value itself or they'd be lost after redirecting.
+      await signInWithOtp(email);
+      toast({ title: "Check your email", description: `We sent a code to ${email}` });
+      const nextParams = new URLSearchParams({
+        pendingRole: "local",
+        pendingProvince: localProvince,
+        pendingPostalCode: localPostalCode.trim(),
+      });
+      const params = new URLSearchParams({
+        email,
+        next: `/portal?${nextParams.toString()}`,
+      });
+      router.push(`/verify?${params.toString()}`);
     } catch (err: any) {
       console.error(err);
       toast({ title: "Login Failed", description: err?.message || "Unable to sign in. Please try again.", variant: "destructive" });
     } finally { setLoading(false); }
   }
+
+  // After returning from /verify having just confirmed a one-time code,
+  // finish the Local Guest sign-in automatically using the province/postal
+  // code carried through in the URL — the person shouldn't have to type
+  // those in twice.
+  useEffect(() => {
+    const pendingRole = searchParams.get("pendingRole");
+    if (pendingRole !== "local") return;
+
+    const province = searchParams.get("pendingProvince") || "";
+    const postalCode = searchParams.get("pendingPostalCode") || "";
+
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const email = session?.user?.email;
+      if (!email) return; // shouldn't happen — /verify already confirmed the session
+
+      setLoading(true);
+      try {
+        const res = await backend.auth.localGuestLogin({ email, province, postalCode });
+        storeAndNavigate(res.token, res.user, "/guest-dashboard", `${postalCode} (local)`);
+      } catch (err: any) {
+        toast({ title: "Login Failed", description: err?.message || "Unable to sign in. Please try again.", variant: "destructive" });
+      } finally { setLoading(false); }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handlePartnerLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -512,12 +570,13 @@ export default function LoginPage() {
                 </ThemedSelect>
               </div>
               <div className="space-y-1.5">
-                <ThemedLabel>Area</ThemedLabel>
+                <ThemedLabel>Postal Code</ThemedLabel>
                 <ThemedInput
                   type="text"
-                  value={localArea}
-                  onChange={(e) => setLocalArea(e.target.value)}
-                  placeholder="e.g. Cape Town, Stellenbosch"
+                  value={localPostalCode}
+                  onChange={(e) => setLocalPostalCode(e.target.value)}
+                  placeholder="e.g. 7395"
+                  inputMode="numeric"
                   enterKeyHint="next"
                 />
               </div>

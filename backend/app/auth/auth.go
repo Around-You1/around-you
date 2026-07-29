@@ -59,11 +59,12 @@ func Validate(ctx context.Context, authorization string) (*Data, error) {
 		       COALESCE(u.entity_type, '') as entity_type,
 		       COALESCE(u.entity_id, 0) as entity_id,
 		       COALESCE(u.area, '') as area,
-		       COALESCE(u.municipality, '') as municipality
+		       COALESCE(u.municipality, '') as municipality,
+		       COALESCE(u.postal_code, '') as postal_code
 		FROM sessions s
 		JOIN users u ON u.id = s.user_id
 		WHERE s.token = $1`, token,
-	).Scan(&u.ID, &u.Email, &u.Role, &u.ProfileType, &u.AccommodationID, &u.EntityType, &u.EntityID, &u.Area, &u.Municipality)
+	).Scan(&u.ID, &u.Email, &u.Role, &u.ProfileType, &u.AccommodationID, &u.EntityType, &u.EntityID, &u.Area, &u.Municipality, &u.PostalCode)
 	if err != nil {
 		if isNoRows(err) {
 			return nil, &errs.Error{Code: errs.Unauthenticated, Message: "invalid or expired token"}
@@ -217,20 +218,21 @@ func findByNameAddressProvince(ctx context.Context, name, address, province stri
 }
 
 type LocalGuestLoginRequest struct {
-	Email    string `json:"email"`
-	Province string `json:"province"`
-	Area     string `json:"area"`
+	Email      string `json:"email"`
+	Province   string `json:"province"`
+	Area       string `json:"area,omitempty"`
+	PostalCode string `json:"postalCode"`
 }
 
-// LocalGuestLogin signs in a local (non-touring) guest by email + area, used
-// by the "I live here" panel on LoginPage.tsx. Reuses the existing user
-// record if this email has signed in before.
+// LocalGuestLogin signs in a local (non-touring) guest by email + postal
+// code, used by the "I live here" panel on LoginPage.tsx. Reuses the
+// existing user record if this email has signed in before.
 //
 //encore:api public method=POST path=/auth/local-guest-login
 func LocalGuestLogin(ctx context.Context, req *LocalGuestLoginRequest) (*LoginResponse, error) {
 	email := strings.ToLower(strings.TrimSpace(req.Email))
-	if email == "" || req.Province == "" || strings.TrimSpace(req.Area) == "" {
-		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "email, province, and area are required"}
+	if email == "" || req.Province == "" || strings.TrimSpace(req.PostalCode) == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "email, province, and postal code are required"}
 	}
 
 	existing, err := findLocalGuestByEmail(ctx, email)
@@ -238,11 +240,11 @@ func LocalGuestLogin(ctx context.Context, req *LocalGuestLoginRequest) (*LoginRe
 		return nil, err
 	}
 	if existing != nil {
-		existing.Area = req.Area
+		existing.PostalCode = req.PostalCode
 		return issueSession(ctx, existing)
 	}
 
-	return issueSession(ctx, &appdb.User{Email: email, Role: "LocalGuest", Area: req.Area})
+	return issueSession(ctx, &appdb.User{Email: email, Role: "LocalGuest", Area: req.Area, PostalCode: req.PostalCode})
 }
 
 func findLocalGuestByEmail(ctx context.Context, email string) (*appdb.User, error) {
@@ -254,9 +256,10 @@ func findLocalGuestByEmail(ctx context.Context, email string) (*appdb.User, erro
 		       COALESCE(entity_type, '') as entity_type,
 		       COALESCE(entity_id, 0) as entity_id,
 		       COALESCE(area, '') as area,
-		       COALESCE(municipality, '') as municipality
+		       COALESCE(municipality, '') as municipality,
+		       COALESCE(postal_code, '') as postal_code
 		FROM users WHERE role = 'LocalGuest' AND lower(email) = lower($1)`, email,
-	).Scan(&u.ID, &u.Email, &u.Role, &u.ProfileType, &u.AccommodationID, &u.EntityType, &u.EntityID, &u.Area, &u.Municipality)
+	).Scan(&u.ID, &u.Email, &u.Role, &u.ProfileType, &u.AccommodationID, &u.EntityType, &u.EntityID, &u.Area, &u.Municipality, &u.PostalCode)
 	if err != nil {
 		if isNoRows(err) {
 			return nil, nil
@@ -281,10 +284,10 @@ func issueSession(ctx context.Context, u *appdb.User) (*LoginResponse, error) {
 		}
 
 		err := appdb.SQLDB.QueryRowContext(ctx, `
-			INSERT INTO users (email, role, profile_type, accommodation_id, entity_type, entity_id, area, municipality)
-			VALUES ($1, $2, NULLIF($3, ''), $4, NULLIF($5, ''), $6, NULLIF($7, ''), NULLIF($8, ''))
+			INSERT INTO users (email, role, profile_type, accommodation_id, entity_type, entity_id, area, municipality, postal_code)
+			VALUES ($1, $2, NULLIF($3, ''), $4, NULLIF($5, ''), $6, NULLIF($7, ''), NULLIF($8, ''), NULLIF($9, ''))
 			RETURNING id`,
-			u.Email, u.Role, u.ProfileType, accID, u.EntityType, entID, u.Area, u.Municipality,
+			u.Email, u.Role, u.ProfileType, accID, u.EntityType, entID, u.Area, u.Municipality, u.PostalCode,
 		).Scan(&u.ID)
 		if err != nil {
 			return nil, err
