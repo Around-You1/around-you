@@ -35,6 +35,9 @@ type CreateRequest struct {
 	Area       string `json:"area,omitempty"`
 	PostalCode string `json:"postalCode"`
 
+	Contact     string `json:"contact,omitempty"`
+	Description string `json:"description,omitempty"`
+
 	WifiName     string   `json:"wifiName,omitempty"`
 	WifiPassword string   `json:"wifiPassword,omitempty"`
 	ImageUrl     string   `json:"imageUrl,omitempty"`
@@ -82,6 +85,9 @@ type UpdateRequest struct {
 	Province   *string `json:"province,omitempty"`
 	Area       *string `json:"area,omitempty"`
 	PostalCode *string `json:"postalCode,omitempty"`
+
+	Contact     *string `json:"contact,omitempty"`
+	Description *string `json:"description,omitempty"`
 
 	WifiName     *string  `json:"wifiName,omitempty"`
 	WifiPassword *string  `json:"wifiPassword,omitempty"`
