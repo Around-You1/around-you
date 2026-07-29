@@ -260,6 +260,8 @@ type User struct {
 	Area            string `json:"area,omitempty"`
 	Municipality    string `json:"municipality,omitempty"`
 	PostalCode      string `json:"postalCode,omitempty"` // LocalGuest sign-in field
+	FullName        string `json:"fullName,omitempty"`   // Rep sign-in field
+	RepCode         string `json:"repCode,omitempty"`    // Rep sign-in field, e.g. "Rep00000001"
 	// PasswordHash is a bcrypt hash, SuperAdmin accounts only. json:"-" means
 	// this can never be serialized into an API response, even by a future
 	// mistake elsewhere in the code — it simply isn't an option.

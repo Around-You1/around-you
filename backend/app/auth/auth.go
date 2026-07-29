@@ -13,6 +13,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"strconv"
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
@@ -35,6 +37,25 @@ func isNoRows(err error) bool {
 type Data struct {
 	UserID int64
 	User   *appdb.User
+}
+
+// dataContextKey is unexported so only this package can set/read it —
+// callers outside app/auth get access only through WithData/FromContext.
+type dataContextKey struct{}
+
+// WithData stores the authenticated user's Data on the context. Called by
+// cmd/server/main.go's requireAuth middleware right after a successful
+// Validate, so downstream handlers (like CreateRep, which needs to confirm
+// the caller is actually a SuperAdmin) can retrieve it.
+func WithData(ctx context.Context, d *Data) context.Context {
+	return context.WithValue(ctx, dataContextKey{}, d)
+}
+
+// FromContext retrieves the Data stored by WithData, or nil if none is
+// present (e.g. called from a public, non-authenticated endpoint).
+func FromContext(ctx context.Context) *Data {
+	d, _ := ctx.Value(dataContextKey{}).(*Data)
+	return d
 }
 
 // Validate resolves a bearer token to the signed-in user, or returns an
@@ -355,4 +376,155 @@ func Login(ctx context.Context, req *LoginRequest) (*LoginResponse, error) {
 	}
 
 	return issueSession(ctx, &u)
+}
+
+// RepLoginRequest matches the Rep sign-in panel: full name + a rep code
+// (e.g. "Rep00000001") instead of a password. Rep accounts are created only
+// by a SuperAdmin via CreateRep below — there is no self-service signup.
+type RepLoginRequest struct {
+	FullName string `json:"fullName"`
+	RepCode  string `json:"repCode"`
+}
+
+//encore:api public method=POST path=/auth/rep-login
+func RepLogin(ctx context.Context, req *RepLoginRequest) (*LoginResponse, error) {
+	fullName := strings.TrimSpace(req.FullName)
+	repCode := strings.TrimSpace(req.RepCode)
+	if fullName == "" || repCode == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "full name and rep code are required"}
+	}
+
+	var u appdb.User
+	err := appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT id, email, role, full_name, rep_code
+		FROM users
+		WHERE role = 'Rep' AND lower(full_name) = lower($1) AND lower(rep_code) = lower($2)`,
+		fullName, repCode,
+	).Scan(&u.ID, &u.Email, &u.Role, &u.FullName, &u.RepCode)
+	if err != nil {
+		if isNoRows(err) {
+			// Same generic message either way — don't reveal which part
+			// (name vs. code) was wrong.
+			return nil, &errs.Error{Code: errs.Unauthenticated, Message: "invalid full name or rep code"}
+		}
+		return nil, err
+	}
+
+	return issueSession(ctx, &u)
+}
+
+type CreateRepRequest struct {
+	FullName string `json:"fullName"`
+}
+
+type CreateRepResponse struct {
+	FullName string `json:"fullName"`
+	RepCode  string `json:"repCode"`
+}
+
+// CreateRep is SuperAdmin-only — checked via FromContext, not just "is this
+// caller authenticated at all" (which is all the router's generic auth
+// middleware confirms on its own). Generates the next sequential rep code
+// (Rep00000001, Rep00000002, ...).
+//
+//encore:api auth method=POST path=/auth/create-rep
+func CreateRep(ctx context.Context, req *CreateRepRequest) (*CreateRepResponse, error) {
+	data := FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can create rep accounts"}
+	}
+
+	fullName := strings.TrimSpace(req.FullName)
+	if fullName == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "full name is required"}
+	}
+
+	repCode, err := nextRepCode(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Reps don't have a real email (the sign-in form never asks for one) —
+	// this synthetic address only exists to satisfy the users table's
+	// existing NOT NULL constraint on email, the same pattern already used
+	// for Guest/Partner rows created via access-code login.
+	email := strings.ToLower(repCode) + "@reps.aroundyou.internal"
+
+	if _, err := appdb.SQLDB.ExecContext(ctx, `
+		INSERT INTO users (email, role, full_name, rep_code)
+		VALUES ($1, 'Rep', $2, $3)`,
+		email, fullName, repCode,
+	); err != nil {
+		return nil, err
+	}
+
+	return &CreateRepResponse{FullName: fullName, RepCode: repCode}, nil
+}
+
+// nextRepCode finds the highest existing rep code and returns the next one,
+// zero-padded to 8 digits (Rep00000001, Rep00000002, ...). Fixed-width
+// padding means ORDER BY rep_code DESC sorts correctly as plain text, since
+// every code is always the same length.
+func nextRepCode(ctx context.Context) (string, error) {
+	var lastCode sql.NullString
+	err := appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT rep_code FROM users
+		WHERE role = 'Rep' AND rep_code IS NOT NULL
+		ORDER BY rep_code DESC LIMIT 1`,
+	).Scan(&lastCode)
+	if err != nil && !isNoRows(err) {
+		return "", err
+	}
+
+	n := 0
+	if lastCode.Valid {
+		if parsed, convErr := strconv.Atoi(strings.TrimPrefix(lastCode.String, "Rep")); convErr == nil {
+			n = parsed
+		}
+	}
+	n++
+	return "Rep" + fmt.Sprintf("%08d", n), nil
+}
+
+type Rep struct {
+	ID       int64  `json:"id"`
+	FullName string `json:"fullName"`
+	RepCode  string `json:"repCode"`
+}
+
+type ListRepsResponse struct {
+	Reps []Rep `json:"reps"`
+}
+
+// ListReps is SuperAdmin-only, same check as CreateRep — powers a future
+// "Manage Reps" list in the Admin Dashboard.
+//
+//encore:api auth method=GET path=/auth/reps
+func ListReps(ctx context.Context) (*ListRepsResponse, error) {
+	data := FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can view reps"}
+	}
+
+	rows, err := appdb.SQLDB.QueryContext(ctx, `
+		SELECT id, COALESCE(full_name, ''), COALESCE(rep_code, '')
+		FROM users WHERE role = 'Rep' ORDER BY rep_code ASC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	reps := []Rep{}
+	for rows.Next() {
+		var r Rep
+		if err := rows.Scan(&r.ID, &r.FullName, &r.RepCode); err != nil {
+			return nil, err
+		}
+		reps = append(reps, r)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &ListRepsResponse{Reps: reps}, nil
 }

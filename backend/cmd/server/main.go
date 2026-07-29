@@ -54,6 +54,9 @@ func main() {
 	r.public("POST /auth/secondary-login", httpx.Body(auth.SecondaryLogin))
 	r.public("POST /auth/local-guest-login", httpx.Body(auth.LocalGuestLogin))
 	r.public("POST /auth/login", httpx.Body(auth.Login))
+	r.public("POST /auth/rep-login", httpx.Body(auth.RepLogin))
+	r.auth("POST /auth/create-rep", httpx.Body(auth.CreateRep))
+	r.auth("GET /auth/reps", httpx.Empty(auth.ListReps))
 
 	// ---- Accommodation (auth) ----------------------------------------------
 	r.auth("GET /accommodation", httpx.Query(accommodation.List))
@@ -161,11 +164,12 @@ func (r router) auth(pattern string, h http.HandlerFunc) {
 // gate Encore's `auth` tag used to apply.
 func requireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		if _, err := auth.Validate(req.Context(), req.Header.Get("Authorization")); err != nil {
+		data, err := auth.Validate(req.Context(), req.Header.Get("Authorization"))
+		if err != nil {
 			writeErr(w, err)
 			return
 		}
-		next(w, req)
+		next(w, req.WithContext(auth.WithData(req.Context(), data)))
 	}
 }
 
