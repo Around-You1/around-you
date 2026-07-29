@@ -11,7 +11,10 @@ interface ProfileQRCodeProps {
 export default function ProfileQRCode({ profileName, profileCode, entityType }: ProfileQRCodeProps) {
   const printRef = useRef<HTMLDivElement>(null);
 
-  const loginUrl = `https://aroundyou.co.za/login?code=${encodeURIComponent(profileCode)}`;
+  const loginUrl =
+    entityType === "accommodation"
+      ? `https://aroundyou.co.za/login?code=${encodeURIComponent(profileCode)}`
+      : `https://aroundyou.co.za/login?code=${encodeURIComponent(profileCode)}&role=partner`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(loginUrl)}&bgcolor=000000&color=39FF14&margin=10`;
 
   const description =
@@ -109,13 +112,6 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
         style={{ color: "#aaa" }}
       >
         {description}
-      </p>
-
-      <p
-        className="text-xs font-mono tracking-widest"
-        style={{ color: "rgba(57,255,20,0.6)" }}
-      >
-        {profileCode}
       </p>
 
       <div className="flex gap-2">

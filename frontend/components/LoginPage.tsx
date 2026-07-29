@@ -294,8 +294,14 @@ export default function LoginPage() {
     if (code) {
       const clean = code.replace(/[^A-Za-z0-9]/g, "").slice(0, 12);
       if (clean.length === 12) {
-        setHolidayCode(clean);
-        setActivePanel("holiday");
+        const role = searchParams.get("role");
+        if (role === "partner") {
+          setPartnerCode(clean);
+          setActivePanel("partner");
+        } else {
+          setHolidayCode(clean);
+          setActivePanel("holiday");
+        }
       }
     }
   }, [searchParams]);

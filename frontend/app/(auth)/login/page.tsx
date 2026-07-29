@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Mail } from "lucide-react";
+import AppLogo from "@/components/AppLogo";
 
 // Login is split by audience:
 //   - Guests / Partners arrive with ?code=XYZ. They NEVER see the Supabase email
@@ -40,6 +41,7 @@ function LoginInner() {
   const { toast } = useToast();
 
   const code = searchParams.get("code") ?? searchParams.get("accessCode") ?? "";
+  const role = searchParams.get("role") ?? "";
   const next = searchParams.get("next") ?? "";
 
   const [email, setEmail] = useState("");
@@ -48,9 +50,11 @@ function LoginInner() {
   // Guest/Partner flow: an access code in the URL skips Supabase entirely.
   useEffect(() => {
     if (code) {
-      router.replace(`/portal?code=${encodeURIComponent(code)}`);
+      const params = new URLSearchParams({ code });
+      if (role) params.set("role", role);
+      router.replace(`/portal?${params.toString()}`);
     }
-  }, [code, router]);
+  }, [code, role, router]);
 
   // While redirecting (or if a code is present), never render the email UI.
   if (code) {
@@ -87,6 +91,9 @@ function LoginInner() {
     <div className="min-h-screen bg-gradient-to-br from-[#AEECE4]/20 to-background flex items-center justify-center p-6">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center space-y-2">
+          <div className="flex justify-center">
+            <AppLogo />
+          </div>
           <CardTitle className="text-3xl font-bold">Around You</CardTitle>
           <p className="text-muted-foreground">Locals — sign in with your email</p>
         </CardHeader>
