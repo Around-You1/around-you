@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"backend_encore/app/accommodation"
+	"backend_encore/app/analytics"
 	"backend_encore/app/attraction"
 	"backend_encore/app/auth"
 	"backend_encore/app/health"
@@ -57,6 +58,7 @@ func main() {
 	r.public("POST /auth/rep-login", httpx.Body(auth.RepLogin))
 	r.auth("POST /auth/create-rep", httpx.Body(auth.CreateRep))
 	r.auth("GET /auth/reps", httpx.Empty(auth.ListReps))
+	r.auth("GET /analytics/rep-activity", httpx.Empty(analytics.RepActivityReport))
 
 	// ---- Accommodation (auth) ----------------------------------------------
 	r.auth("GET /accommodation", httpx.Query(accommodation.List))

@@ -149,6 +149,10 @@ export const backend = {
     listReps: () => request("GET", "/auth/reps"),
   },
 
+  analytics: {
+    repActivity: () => request("GET", "/analytics/rep-activity"),
+  },
+
   accommodation: {
     list: (req?: any) =>
       request("GET", "/accommodation", {

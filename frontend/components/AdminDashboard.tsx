@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Home, UtensilsCrossed, Scissors, Camera } from "lucide-react";
+import { Home, UtensilsCrossed, Scissors, Camera, BarChart3 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 import StatsCard from "../components/StatsCard";
@@ -14,6 +16,7 @@ import AttractionTab from "../components/AttractionTab";
 import RepsTab from "../components/RepsTab";
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [stats, setStats] = useState({
     totalAccommodations: 0,
     totalRestaurants: 0,
@@ -53,7 +56,13 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
-          <h1 className="text-4xl font-bold text-foreground">Admin Dashboard</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-4xl font-bold text-foreground">Admin Dashboard</h1>
+            <Button variant="outline" onClick={() => router.push("/admin-analytics")}>
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Analytics Dashboard
+            </Button>
+          </div>
           <LogoPlaceholder allowUpload={true} />
         </div>
 
