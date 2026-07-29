@@ -292,6 +292,13 @@ export default function RepOnboardingApp() {
   const isRestaurant = partnerType === "Restaurants";
   const isService = partnerType === "Services";
   const isAttraction = partnerType === "Attractions";
+  const nameLabel = isAccommodation
+    ? "Accommodation Name"
+    : isRestaurant
+    ? "Restaurant Name"
+    : isService
+    ? "Service Name"
+    : "Attraction Name";
 
   const reset = () => {
     setPartnerType(null); setTier(0); setVisibility([]); setCountry([]); setProvince([]);
@@ -500,7 +507,7 @@ export default function RepOnboardingApp() {
               <>
                 <SectionTitle>{isAccommodation ? "Accommodation Details" : "Tier 1"}</SectionTitle>
                 <ImageUpload images={images} setImages={setImages} />
-                <TextField label="Name" value={data.name} onChange={set("name")} />
+                <TextField label={nameLabel} value={data.name} onChange={set("name")} />
               </>
             )}
 
@@ -515,19 +522,18 @@ export default function RepOnboardingApp() {
                 <TextField label="Facilities" area value={data.facilities} onChange={set("facilities")} />
                 <TextField label="WiFi Name" value={data.wifiName} onChange={set("wifiName")} />
                 <TextField label="WiFi Password" value={data.wifiPassword} onChange={set("wifiPassword")} />
-                <TextField label="Weather" value={data.weather} onChange={set("weather")} />
-                <p style={{ fontSize: 11, marginTop: -6, marginBottom: 10 }}>
+                <label style={labelStyle}>Weather</label>
+                <p style={{ fontSize: 11, marginTop: -2, marginBottom: 10 }}>
                   <a href="https://www.yr.no/en" target="_blank" rel="noreferrer" style={{ color: colors.accent }}>https://www.yr.no/en</a>
                 </p>
-                <TextField label="Tides" value={data.tides} onChange={set("tides")} />
-                <p style={{ fontSize: 11, marginTop: -6, marginBottom: 10 }}>
+                <label style={labelStyle}>Tides</label>
+                <p style={{ fontSize: 11, marginTop: -2, marginBottom: 10 }}>
                   <a href="https://www.yr.no/en" target="_blank" rel="noreferrer" style={{ color: colors.accent }}>https://www.yr.no/en</a>
                 </p>
                 <SectionTitle>Emergency Contacts</SectionTitle>
                 {["Primary", "Police", "Doctor", "Ambulance", "Hospital", "Fire Department"].map((k) => (
                   <TextField key={k} label={k} value={emergency[k]} onChange={(v) => setEmergency((e) => ({ ...e, [k]: v }))} />
                 ))}
-                <TextField label="Directions" value={data.directions} onChange={set("directions")} />
               </>
             )}
 
@@ -570,9 +576,6 @@ export default function RepOnboardingApp() {
                     <TextField label="Wifi Name" value={data.wifiName} onChange={set("wifiName")} />
                     <TextField label="Wifi Password" value={data.wifiPassword} onChange={set("wifiPassword")} />
                   </>
-                )}
-                {(isService || isAttraction) && (
-                  <TextField label="Directions" value={data.directions} onChange={set("directions")} />
                 )}
                 <TextField label="Discount Offered" value={data.discountOffered} onChange={set("discountOffered")} />
                 <TextField label="Discount Code" value={data.discountCode} onChange={set("discountCode")} />
