@@ -627,14 +627,22 @@ export default function LoginPage() {
             .
           </p>
 
-          <div className="pt-2 text-center">
+          <div className="pt-2 flex justify-center gap-4">
             <button
               type="button"
               onClick={() => navigate("/admin-login")}
               className="text-sm transition-colors hover:underline underline-offset-4"
               style={{ color: "#444" }}
             >
-              Admin
+              SuperAdmin
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/rep-login")}
+              className="text-sm transition-colors hover:underline underline-offset-4"
+              style={{ color: "#444" }}
+            >
+              Rep
             </button>
           </div>
         </div>

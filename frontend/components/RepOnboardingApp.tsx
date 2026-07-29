@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { getAuthenticatedBackend } from "../lib/backend";
 
 const colors = {
   background: "#000000",
@@ -36,14 +38,25 @@ const CUISINE_TYPES = [
   "Vegan", "Vegetarian", "Vetkoek",
 ];
 
-// Rep's own session — comes from Rep sign-in (email + Rep Code)
-const REP_SESSION = { repName: "J. Adams", repCode: "REP-4821", repEmail: "j.adams@aroundyou.co.za" };
-
-function generateCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let out = "";
-  for (let i = 0; i < 12; i++) out += chars[Math.floor(Math.random() * chars.length)];
-  return out;
+// Rep's own session — the real signed-in rep, from Rep sign-in (full name +
+// rep code), read from the same localStorage the rest of the app already
+// uses (see app/rep-login and RepLoginPage.tsx). Read once at module load
+// via a function rather than a plain constant, since localStorage doesn't
+// exist during server-side rendering.
+function getRepSession() {
+  if (typeof window === "undefined") {
+    return { repName: "", repCode: "", repEmail: "" };
+  }
+  try {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    return {
+      repName: user.fullName || "",
+      repCode: user.repCode || "",
+      repEmail: user.email || "",
+    };
+  } catch {
+    return { repName: "", repCode: "", repEmail: "" };
+  }
 }
 
 const inputStyle = {
@@ -251,6 +264,8 @@ function TierButtons({ tier, setTier }) {
 // Main app
 // =========================================================
 export default function RepOnboardingApp() {
+  const router = useRouter();
+  const repSession = getRepSession();
   const [partnerType, setPartnerType] = useState(null); // "Accommodations" | "Restaurants" | "Services" | "Attractions"
   const [tier, setTier] = useState(0);
   const [visibility, setVisibility] = useState([]);
@@ -261,6 +276,7 @@ export default function RepOnboardingApp() {
   const [images, setImages] = useState([]);
   const [autoSaveStatus, setAutoSaveStatus] = useState("");
   const [submitted, setSubmitted] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const set = (id) => (val) => setData((d) => ({ ...d, [id]: val }));
 
@@ -282,21 +298,88 @@ export default function RepOnboardingApp() {
     setData({}); setEmergency({}); setImages([]); setSubmitted(null);
   };
 
-  const submit = () => {
+  // Maps the onboarding form's multi-checkbox "visibility" selection to the
+  // real backend's single guestType value (see OfficialUseSection.tsx's
+  // GUEST_TYPE_OPTIONS: "Guest Only" | "Local" | "Both").
+  function resolveGuestType() {
+    const hasGuest = visibility.includes("Guest") || visibility.includes("Both");
+    const hasLocal = visibility.includes("Local") || visibility.includes("Both");
+    if (hasGuest && hasLocal) return "Both";
+    if (hasLocal) return "Local";
+    return "Guest Only";
+  }
+
+  const submit = async () => {
     if (!data.companyName) {
       alert("Company Name is required.");
       return;
     }
-    const accessCode = generateCode();
-    const editCode = isAccommodation ? null : generateCode();
-    setSubmitted({
-      companyName: data.companyName,
-      partnerType,
-      tier: isAccommodation ? 4 : tier,
-      accessCode,
-      editCode,
-      imagesCount: images.length,
-    });
+
+    // Only Restaurants is wired to the real backend so far — Accommodations,
+    // Services, and Attractions still need the same field-by-field mapping
+    // done for them. Showing a fake success screen for those would be worse
+    // than saying so plainly: it would look like the client's info was
+    // saved when it actually wasn't.
+    if (!isRestaurant) {
+      alert(
+        `${partnerType} isn't connected to the Admin Dashboard yet — only Restaurants is currently wired up. ` +
+        `This submission has NOT been saved. Please let your developer know ${partnerType} still needs this connected.`
+      );
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const created = await backend.restaurant.create({
+        name: data.companyName,
+        address: data.address || "",
+        latitude: data.latitude ? Number(data.latitude) : undefined,
+        longitude: data.longitude ? Number(data.longitude) : undefined,
+        country: country[0] || "South Africa",
+        province: province[0] || "",
+        postalCode: data.postalCode || "",
+        contactNumber: data.contactNumber || "",
+        description: data.description || "",
+        cuisineTypes: data.cuisineTypes || [],
+        menuLink: data.menuLink || "",
+        serviceDineIn: true,
+        serviceTakeaway: true,
+        serviceDelivery: false,
+        littleExplorerApproved: (data.childFriendly || []).includes("Child Friendly"),
+        paymentCard: (data.paymentOptions || []).includes("Card"),
+        paymentCash: (data.paymentOptions || []).includes("Cash"),
+        paymentMobile: (data.paymentOptions || []).includes("Mobile Tap"),
+        wheelchairAccess: (data.accessibility || []).includes("Wheelchair Access"),
+        parkingAvailability: (data.accessibility || []).includes("Parking Availability"),
+        wifiNetwork: data.wifiName || "",
+        wifiPassword: data.wifiPassword || "",
+        discountOffered: data.discountOffered || "",
+        discountCode: data.discountCode || "",
+        // Image upload isn't wired up yet — the photos captured above are
+        // only local previews right now, not saved anywhere. Flagged
+        // clearly rather than silently dropped.
+        imageUrl: "",
+        isActive: false, // new rep submissions start inactive, pending admin review
+        officialContactName: repSession.repName,
+        officialRepCode: repSession.repCode,
+        guestType: resolveGuestType(),
+        accessLevel: tier >= 1 ? `Tier ${tier}` : "",
+      });
+
+      setSubmitted({
+        companyName: data.companyName,
+        partnerType,
+        tier,
+        accessCode: created.profileReferenceCode,
+        imagesCount: images.length,
+      });
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit: " + (err?.message || "please try again."));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // ---------- Confirmation screen ----------
@@ -308,25 +391,21 @@ export default function RepOnboardingApp() {
           <h2 style={{ color: colors.primary, fontSize: 18, marginBottom: 6 }}>Profile Submitted</h2>
           <p style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 16 }}>
             {submitted.companyName} was created under {submitted.partnerType}
-            {!isAccommodation ? ` — Tier ${submitted.tier}` : ""}, status: <b style={{ color: colors.error }}>Non-Active</b>.
+            {submitted.tier ? ` — Tier ${submitted.tier}` : ""}, status: <b style={{ color: colors.error }}>Non-Active</b>.
           </p>
 
           <div style={{ background: colors.surface2, borderRadius: 10, padding: 14, marginBottom: 16, textAlign: "left" }}>
             <div style={{ fontSize: 12, color: colors.textSecondary }}>Access Code</div>
             <div style={{ fontSize: 15, color: colors.accent, fontWeight: 700, marginBottom: 8 }}>{submitted.accessCode}</div>
-            {submitted.editCode && (
-              <>
-                <div style={{ fontSize: 12, color: colors.textSecondary }}>Edit Code</div>
-                <div style={{ fontSize: 15, color: colors.accent, fontWeight: 700 }}>{submitted.editCode}</div>
-              </>
-            )}
           </div>
 
           <ul style={{ textAlign: "left", color: colors.textSecondary, fontSize: 12, lineHeight: 1.8, paddingLeft: 18, marginBottom: 18 }}>
-            <li>{submitted.imagesCount} image{submitted.imagesCount === 1 ? "" : "s"} uploaded</li>
-            <li>Profile created in Admin Dashboard (Non-Active)</li>
-            <li>QR Code, Access Code{submitted.editCode ? " and Edit Code" : ""} emailed to {REP_SESSION.repEmail}</li>
-            <li>Accounting info sent to accounts@aroundyou.co.za</li>
+            <li>Saved to the Admin Dashboard just now (Non-Active, pending review)</li>
+            {submitted.imagesCount > 0 && (
+              <li style={{ color: colors.error }}>
+                {submitted.imagesCount} photo{submitted.imagesCount === 1 ? "" : "s"} captured but NOT yet uploaded — photo upload isn't connected yet
+              </li>
+            )}
           </ul>
 
           <button
@@ -352,7 +431,7 @@ export default function RepOnboardingApp() {
           )}
         </div>
         <p style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 18 }}>
-          Rep: {REP_SESSION.repName} · Code: {REP_SESSION.repCode}
+          Rep: {repSession.repName} · Code: {repSession.repCode}
         </p>
 
         {/* Step 1: Partner type — big finger-friendly buttons */}
@@ -389,8 +468,8 @@ export default function RepOnboardingApp() {
             <TextField label="Person Responsible Number" value={data.personResponsibleNumber} onChange={set("personResponsibleNumber")} />
             <TextField label="Company Registration Number" value={data.companyRegNumber} onChange={set("companyRegNumber")} />
             <TextField label="Company VAT Number" value={data.companyVatNumber} onChange={set("companyVatNumber")} />
-            <TextField label="Rep Name (auto-filled)" value={REP_SESSION.repName} onChange={() => {}} />
-            <TextField label="Rep Code (auto-filled)" value={REP_SESSION.repCode} onChange={() => {}} />
+            <TextField label="Rep Name (auto-filled)" value={repSession.repName} onChange={() => {}} />
+            <TextField label="Rep Code (auto-filled)" value={repSession.repCode} onChange={() => {}} />
             <CheckboxGroup label="Country" options={COUNTRY_OPTIONS} selected={country} onChange={setCountry} />
             {country.includes("South Africa") && (
               <CheckboxGroup label="Province" options={PROVINCE_OPTIONS} selected={province} onChange={setProvince} />
@@ -507,9 +586,10 @@ export default function RepOnboardingApp() {
 
             <button
               onClick={submit}
-              style={{ width: "100%", background: colors.primary, color: "#000", border: "none", borderRadius: 12, padding: 16, fontWeight: 800, fontSize: 16, cursor: "pointer", marginTop: 20 }}
+              disabled={submitting}
+              style={{ width: "100%", background: submitting ? colors.primaryDark : colors.primary, color: "#000", border: "none", borderRadius: 12, padding: 16, fontWeight: 800, fontSize: 16, cursor: submitting ? "not-allowed" : "pointer", opacity: submitting ? 0.6 : 1, marginTop: 20 }}
             >
-              Submit
+              {submitting ? "Submitting…" : "Submit"}
             </button>
           </>
         )}

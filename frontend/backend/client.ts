@@ -140,9 +140,13 @@ export const backend = {
       request("POST", "/auth/secondary-login", { body: req }),
     localGuestLogin: (req: any) =>
       request("POST", "/auth/local-guest-login", { body: req }),
-    // Admin login. Not implemented on the Go backend yet — see README; wire this
-    // to a Supabase role check or a dedicated /auth/login endpoint.
+    // SuperAdmin (email + password) and Rep (full name + rep code) sign-in.
     login: (req: any) => request("POST", "/auth/login", { body: req }),
+    repLogin: (req: { fullName: string; repCode: string }) =>
+      request("POST", "/auth/rep-login", { body: req }),
+    createRep: (req: { fullName: string }) =>
+      request("POST", "/auth/create-rep", { body: req }),
+    listReps: () => request("GET", "/auth/reps"),
   },
 
   accommodation: {
