@@ -1,37 +1,14 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Plus, Upload, Download, FileText } from "lucide-react";
 import { getAuthenticatedBackend } from "../lib/backend";
 import type { Restaurant } from "~backend/restaurant/types";
-import type { ProfileSettings } from "~backend/storage/get_profile_settings";
 import { useToast } from "@/components/ui/use-toast";
 import RestaurantList from "./RestaurantList";
 import RestaurantForm from "./RestaurantForm";
 import BulkImportDialog from "./BulkImportDialog";
 import SortControls, { SortField, SortOrder } from "./SortControls";
-
-function isValidEmail(value: string): boolean {
-  if (!value) return true;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
-function isValidPhone(value: string): boolean {
-  if (!value) return true;
-  return /^[+\d\s\-().]{7,20}$/.test(value);
-}
-
-function isValidUrl(value: string): boolean {
-  if (!value) return true;
-  try {
-    new URL(value);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 interface RestaurantTabProps {
   onUpdate: () => void;
@@ -47,27 +24,11 @@ export default function RestaurantTab({ onUpdate }: RestaurantTabProps) {
   const [sortBy, setSortBy] = useState<SortField>("created_at");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
-  const [profileSettings, setProfileSettings] = useState<ProfileSettings>({
-    bookingsEmail: "",
-    bookingsContactNumber: "",
-    socialsWebsite: "",
-    socialsInstagram: "",
-    socialsTwitter: "",
-    socialsYoutube: "",
-    socialsTiktok: "",
-  });
-  const [profileSettingsDirty, setProfileSettingsDirty] = useState(false);
-  const [savingSettings, setSavingSettings] = useState(false);
-
   const { toast } = useToast();
 
   useEffect(() => {
     loadRestaurants();
   }, [sortBy, sortOrder]);
-
-  useEffect(() => {
-    loadProfileSettings();
-  }, []);
 
   useEffect(() => {
     if (searchQuery.trim()) {
@@ -94,58 +55,6 @@ export default function RestaurantTab({ onUpdate }: RestaurantTabProps) {
         description: "Failed to load restaurants",
         variant: "destructive",
       });
-    }
-  };
-
-  const loadProfileSettings = async () => {
-    try {
-      const backend = getAuthenticatedBackend();
-      const data = await backend.storage.getProfileSettings();
-      setProfileSettings(data);
-    } catch (error) {
-      console.error("Failed to load profile settings:", error);
-    }
-  };
-
-  const updateSetting = (field: keyof ProfileSettings, value: string) => {
-    setProfileSettings((prev) => ({ ...prev, [field]: value }));
-    setProfileSettingsDirty(true);
-  };
-
-  const saveProfileSettings = async () => {
-    if (!isValidEmail(profileSettings.bookingsEmail)) {
-      toast({ title: "Validation Error", description: "Bookings email is not valid", variant: "destructive" });
-      return;
-    }
-    if (!isValidPhone(profileSettings.bookingsContactNumber)) {
-      toast({ title: "Validation Error", description: "Bookings contact number is not valid", variant: "destructive" });
-      return;
-    }
-    const urlFields: [keyof ProfileSettings, string][] = [
-      ["socialsWebsite", "Website"],
-      ["socialsInstagram", "Instagram"],
-      ["socialsTwitter", "X (Twitter)"],
-      ["socialsYoutube", "YouTube"],
-      ["socialsTiktok", "TikTok"],
-    ];
-    for (const [field, label] of urlFields) {
-      if (!isValidUrl(profileSettings[field])) {
-        toast({ title: "Validation Error", description: `${label} URL is not valid`, variant: "destructive" });
-        return;
-      }
-    }
-
-    setSavingSettings(true);
-    try {
-      const backend = getAuthenticatedBackend();
-      await backend.storage.setProfileSettings(profileSettings);
-      setProfileSettingsDirty(false);
-      toast({ title: "Saved", description: "Profile settings updated successfully" });
-    } catch (error) {
-      console.error("Failed to save profile settings:", error);
-      toast({ title: "Error", description: "Failed to save profile settings", variant: "destructive" });
-    } finally {
-      setSavingSettings(false);
     }
   };
 
@@ -213,82 +122,6 @@ export default function RestaurantTab({ onUpdate }: RestaurantTabProps) {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Bookings</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="bookings-email">Email Address</Label>
-              <Input
-                id="bookings-email"
-                type="email"
-                placeholder="bookings@example.com"
-                value={profileSettings.bookingsEmail}
-                onChange={(e) => updateSetting("bookingsEmail", e.target.value)}
-                className={profileSettings.bookingsEmail && !isValidEmail(profileSettings.bookingsEmail) ? "border-red-500" : ""}
-              />
-              {profileSettings.bookingsEmail && !isValidEmail(profileSettings.bookingsEmail) && (
-                <p className="text-xs text-red-500">Enter a valid email address</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bookings-contact">Contact Number</Label>
-              <Input
-                id="bookings-contact"
-                type="tel"
-                placeholder="+27 12 345 6789"
-                value={profileSettings.bookingsContactNumber}
-                onChange={(e) => updateSetting("bookingsContactNumber", e.target.value)}
-                className={profileSettings.bookingsContactNumber && !isValidPhone(profileSettings.bookingsContactNumber) ? "border-red-500" : ""}
-              />
-              {profileSettings.bookingsContactNumber && !isValidPhone(profileSettings.bookingsContactNumber) && (
-                <p className="text-xs text-red-500">Enter a valid contact number</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Socials</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {([
-              { field: "socialsWebsite" as keyof ProfileSettings, label: "Website", placeholder: "https://example.com" },
-              { field: "socialsInstagram" as keyof ProfileSettings, label: "Instagram", placeholder: "https://instagram.com/yourprofile" },
-              { field: "socialsTwitter" as keyof ProfileSettings, label: "X (Twitter)", placeholder: "https://x.com/yourhandle" },
-              { field: "socialsYoutube" as keyof ProfileSettings, label: "YouTube", placeholder: "https://youtube.com/@yourchannel" },
-              { field: "socialsTiktok" as keyof ProfileSettings, label: "TikTok", placeholder: "https://tiktok.com/@yourprofile" },
-            ]).map(({ field, label, placeholder }) => (
-              <div key={field} className="space-y-2">
-                <Label htmlFor={field}>{label}</Label>
-                <Input
-                  id={field}
-                  type="url"
-                  placeholder={placeholder}
-                  value={profileSettings[field]}
-                  onChange={(e) => updateSetting(field, e.target.value)}
-                  className={profileSettings[field] && !isValidUrl(profileSettings[field]) ? "border-red-500" : ""}
-                />
-                {profileSettings[field] && !isValidUrl(profileSettings[field]) && (
-                  <p className="text-xs text-red-500">Enter a valid URL (e.g. https://...)</p>
-                )}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      {profileSettingsDirty && (
-        <div className="flex justify-end">
-          <Button onClick={saveProfileSettings} disabled={savingSettings} className="bg-purple-600 hover:bg-purple-700 text-white">
-            {savingSettings ? "Saving..." : "Save Settings"}
-          </Button>
-        </div>
-      )}
-
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row gap-4 justify-between">
           <div className="relative flex-1">
