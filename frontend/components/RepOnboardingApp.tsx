@@ -307,7 +307,8 @@ export default function RepOnboardingApp() {
 
   // Maps the onboarding form's multi-checkbox "visibility" selection to the
   // real backend's single guestType value (see OfficialUseSection.tsx's
-  // GUEST_TYPE_OPTIONS: "Guest Only" | "Local" | "Both").
+  // GUEST_TYPE_OPTIONS: "Guest Only" | "Local" | "Both"). Accommodation has
+  // no guestType field at all, so this is only used for the other three.
   function resolveGuestType() {
     const hasGuest = visibility.includes("Guest") || visibility.includes("Both");
     const hasLocal = visibility.includes("Local") || visibility.includes("Both");
@@ -316,63 +317,148 @@ export default function RepOnboardingApp() {
     return "Guest Only";
   }
 
+  // The Facilities field is a free-text textarea in this form, but the real
+  // Accommodation record stores facilities as a list — split on commas or
+  // new lines, matching how a rep would naturally type "Pool, Braai area,
+  // Wifi" or one item per line.
+  function splitToList(text) {
+    return (text || "")
+      .split(/[,\n]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
   const submit = async () => {
     if (!data.companyName) {
       alert("Company Name is required.");
       return;
     }
 
-    // Only Restaurants is wired to the real backend so far — Accommodations,
-    // Services, and Attractions still need the same field-by-field mapping
-    // done for them. Showing a fake success screen for those would be worse
-    // than saying so plainly: it would look like the client's info was
-    // saved when it actually wasn't.
-    if (!isRestaurant) {
-      alert(
-        `${partnerType} isn't connected to the Admin Dashboard yet — only Restaurants is currently wired up. ` +
-        `This submission has NOT been saved. Please let your developer know ${partnerType} still needs this connected.`
-      );
-      return;
-    }
-
     setSubmitting(true);
     try {
       const backend = getAuthenticatedBackend();
-      const created = await backend.restaurant.create({
-        name: data.companyName,
-        address: data.address || "",
-        latitude: data.latitude ? Number(data.latitude) : undefined,
-        longitude: data.longitude ? Number(data.longitude) : undefined,
-        country: country[0] || "South Africa",
-        province: province[0] || "",
-        postalCode: data.postalCode || "",
-        contactNumber: data.contactNumber || "",
-        description: data.description || "",
-        cuisineTypes: data.cuisineTypes || [],
-        menuLink: data.menuLink || "",
-        serviceDineIn: true,
-        serviceTakeaway: true,
-        serviceDelivery: false,
-        littleExplorerApproved: (data.childFriendly || []).includes("Child Friendly"),
-        paymentCard: (data.paymentOptions || []).includes("Card"),
-        paymentCash: (data.paymentOptions || []).includes("Cash"),
-        paymentMobile: (data.paymentOptions || []).includes("Mobile Tap"),
-        wheelchairAccess: (data.accessibility || []).includes("Wheelchair Access"),
-        parkingAvailability: (data.accessibility || []).includes("Parking Availability"),
-        wifiNetwork: data.wifiName || "",
-        wifiPassword: data.wifiPassword || "",
-        discountOffered: data.discountOffered || "",
-        discountCode: data.discountCode || "",
-        // Image upload isn't wired up yet — the photos captured above are
-        // only local previews right now, not saved anywhere. Flagged
-        // clearly rather than silently dropped.
-        imageUrl: "",
-        isActive: false, // new rep submissions start inactive, pending admin review
-        officialContactName: repSession.repName,
-        officialRepCode: repSession.repCode,
-        guestType: resolveGuestType(),
-        accessLevel: tier >= 1 ? `Tier ${tier}` : "",
-      });
+      const latitude = data.latitude ? Number(data.latitude) : undefined;
+      const longitude = data.longitude ? Number(data.longitude) : undefined;
+      const resolvedCountry = country[0] || "South Africa";
+      const resolvedProvince = province[0] || "";
+      let created;
+
+      if (isAccommodation) {
+        created = await backend.accommodation.create({
+          name: data.companyName,
+          address: data.address || "",
+          latitude,
+          longitude,
+          country: resolvedCountry,
+          province: resolvedProvince,
+          postalCode: data.postalCode || "",
+          wifiName: data.wifiName || "",
+          wifiPassword: data.wifiPassword || "",
+          checkInInstructions: data.checkIn || "",
+          amenities: data.amenities || "",
+          guidelines: data.guidelines || "",
+          checkOutInstructions: data.checkOut || "",
+          facilities: splitToList(data.facilities),
+          wheelchairAccess: false, // no accessibility checkboxes in this form's Accommodation section
+          parkingAvailability: false,
+          primaryContact: emergency["Primary"] || "",
+          policeContact: emergency["Police"] || "",
+          doctorContact: emergency["Doctor"] || "",
+          ambulanceContact: emergency["Ambulance"] || "",
+          hospitalContact: emergency["Hospital"] || "",
+          fireDepartmentContact: emergency["Fire Department"] || "",
+          isActive: false,
+          officialContactName: repSession.repName,
+          officialRepCode: repSession.repCode,
+        });
+      } else if (isRestaurant) {
+        created = await backend.restaurant.create({
+          name: data.companyName,
+          address: data.address || "",
+          latitude,
+          longitude,
+          country: resolvedCountry,
+          province: resolvedProvince,
+          postalCode: data.postalCode || "",
+          contactNumber: data.contactNumber || "",
+          description: data.description || "",
+          cuisineTypes: data.cuisineTypes || [],
+          menuLink: data.menuLink || "",
+          serviceDineIn: true,
+          serviceTakeaway: true,
+          serviceDelivery: false,
+          littleExplorerApproved: (data.childFriendly || []).includes("Child Friendly"),
+          paymentCard: (data.paymentOptions || []).includes("Card"),
+          paymentCash: (data.paymentOptions || []).includes("Cash"),
+          paymentMobile: (data.paymentOptions || []).includes("Mobile Tap"),
+          wheelchairAccess: (data.accessibility || []).includes("Wheelchair Access"),
+          parkingAvailability: (data.accessibility || []).includes("Parking Availability"),
+          wifiNetwork: data.wifiName || "",
+          wifiPassword: data.wifiPassword || "",
+          discountOffered: data.discountOffered || "",
+          discountCode: data.discountCode || "",
+          imageUrl: "",
+          isActive: false,
+          officialContactName: repSession.repName,
+          officialRepCode: repSession.repCode,
+          guestType: resolveGuestType(),
+          accessLevel: tier >= 1 ? `Tier ${tier}` : "",
+        });
+      } else if (isService) {
+        created = await backend.service.create({
+          name: data.companyName,
+          address: data.address || "",
+          latitude,
+          longitude,
+          country: resolvedCountry,
+          province: resolvedProvince,
+          postalCode: data.postalCode || "",
+          contactNumber: data.contact || data.contactNumber || "",
+          description: data.description || "",
+          serviceCategories: [], // this form has no service-category checklist yet — see note below
+          littleExplorerApproved: (data.childFriendly || []).includes("Child Friendly"),
+          paymentCard: (data.paymentOptions || []).includes("Card"),
+          paymentCash: (data.paymentOptions || []).includes("Cash"),
+          paymentMobile: (data.paymentOptions || []).includes("Mobile Tap"),
+          wheelchairAccess: (data.accessibility || []).includes("Wheelchair Access"),
+          parkingAvailability: (data.accessibility || []).includes("Parking Availability"),
+          discountOffered: data.discountOffered || "",
+          discountCode: data.discountCode || "",
+          imageUrl: "",
+          isActive: false,
+          officialContactName: repSession.repName,
+          officialRepCode: repSession.repCode,
+          guestType: resolveGuestType(),
+          accessLevel: tier >= 1 ? `Tier ${tier}` : "",
+        });
+      } else {
+        created = await backend.attraction.create({
+          name: data.companyName,
+          address: data.address || "",
+          latitude,
+          longitude,
+          country: resolvedCountry,
+          province: resolvedProvince,
+          postalCode: data.postalCode || "",
+          contactNumber: data.contact || data.contactNumber || "",
+          description: data.description || "",
+          attractionType: [], // this form has no attraction-type checklist yet — see note below
+          littleExplorerApproved: (data.childFriendly || []).includes("Child Friendly"),
+          paymentCard: (data.paymentOptions || []).includes("Card"),
+          paymentCash: (data.paymentOptions || []).includes("Cash"),
+          paymentMobile: (data.paymentOptions || []).includes("Mobile Tap"),
+          wheelchairAccess: (data.accessibility || []).includes("Wheelchair Access"),
+          parkingAvailability: (data.accessibility || []).includes("Parking Availability"),
+          discountOffered: data.discountOffered || "",
+          discountCode: data.discountCode || "",
+          imageUrl: "",
+          isActive: false,
+          officialContactName: repSession.repName,
+          officialRepCode: repSession.repCode,
+          guestType: resolveGuestType(),
+          accessLevel: tier >= 1 ? `Tier ${tier}` : "",
+        });
+      }
 
       setSubmitted({
         companyName: data.companyName,
