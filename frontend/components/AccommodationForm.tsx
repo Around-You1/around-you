@@ -54,6 +54,8 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
     province: "",
     area: "",
     postalCode: "",
+    contact: "",
+    description: "",
     wifiName: "",
     wifiPassword: "",
     imageUrl: "",
@@ -97,6 +99,8 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
         province: accommodation.province,
         area: accommodation.area || "",
         postalCode: accommodation.postalCode,
+        contact: accommodation.contact || "",
+        description: accommodation.description || "",
         wifiName: accommodation.wifiName || "",
         wifiPassword: accommodation.wifiPassword || "",
         imageUrl: accommodation.imageUrl || "",
@@ -289,6 +293,29 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
                 onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
                 required
                 autoComplete="postal-code"
+                enterKeyHint="next"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="contact">Contact</Label>
+              <Input
+                id="contact"
+                value={formData.contact}
+                onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                placeholder="Contact number"
+                enterKeyHint="next"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Short description of the accommodation"
                 enterKeyHint="next"
               />
             </div>

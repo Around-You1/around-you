@@ -40,6 +40,8 @@ func NewStore() *Store {
 const accommodationColumns = `
 	id, name, address, latitude, longitude, country, province,
 	COALESCE(area, '') as area, postal_code,
+	COALESCE(contact, '') as contact,
+	COALESCE(description, '') as description,
 	COALESCE(profile_reference_code, '') as profile_reference_code,
 	is_duplicate,
 	COALESCE(duplicate_reason, '') as duplicate_reason,
@@ -80,6 +82,7 @@ func scanAccommodation(row scanner) (*appdb.Accommodation, error) {
 
 	err := row.Scan(
 		&a.ID, &a.Name, &a.Address, &a.Latitude, &a.Longitude, &a.Country, &a.Province, &a.Area, &a.PostalCode,
+		&a.Contact, &a.Description,
 		&a.ProfileReferenceCode, &a.IsDuplicate, &a.DuplicateReason, &a.WheelchairAccess,
 		&a.ParkingAvailability, pq.Array(&a.Facilities), &a.WifiName, &a.WifiPassword, &a.WifiCredentials,
 		&a.CheckInInstructions, &a.CheckOutInstructions, &a.Amenities, &a.Guidelines,
@@ -173,6 +176,7 @@ func (s *Store) Create(ctx context.Context, in *appdb.Accommodation) (*appdb.Acc
 	row := appdb.SQLDB.QueryRowContext(ctx, `
 		INSERT INTO accommodations (
 			name, address, latitude, longitude, country, province, area, postal_code,
+			contact, description,
 			profile_reference_code, wheelchair_access, parking_availability, facilities,
 			wifi_name, wifi_password, check_in_instructions, check_out_instructions,
 			amenities, guidelines, primary_contact, police_contact, doctor_contact,
@@ -181,10 +185,11 @@ func (s *Store) Create(ctx context.Context, in *appdb.Accommodation) (*appdb.Acc
 			official_contact_number, official_email, official_rep_code
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
-			$19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32
+			$19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34
 		)
 		RETURNING`+accommodationColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
+		in.Contact, in.Description,
 		profileReferenceCode, in.WheelchairAccess, in.ParkingAvailability, pq.Array(nonNilSlice(in.Facilities)),
 		in.WifiName, in.WifiPassword, in.CheckInInstructions, in.CheckOutInstructions,
 		in.Amenities, in.Guidelines, in.PrimaryContact, in.PoliceContact, in.DoctorContact,
@@ -212,6 +217,9 @@ type Patch struct {
 	Province   *string
 	Area       *string
 	PostalCode *string
+
+	Contact     *string
+	Description *string
 
 	WifiName     *string
 	WifiPassword *string
@@ -276,6 +284,12 @@ func (s *Store) Update(ctx context.Context, id int64, patch Patch) (*appdb.Accom
 	}
 	if patch.PostalCode != nil {
 		sets = append(sets, "postal_code = "+arg(*patch.PostalCode))
+	}
+	if patch.Contact != nil {
+		sets = append(sets, "contact = "+arg(*patch.Contact))
+	}
+	if patch.Description != nil {
+		sets = append(sets, "description = "+arg(*patch.Description))
 	}
 	if patch.WifiName != nil {
 		sets = append(sets, "wifi_name = "+arg(*patch.WifiName))

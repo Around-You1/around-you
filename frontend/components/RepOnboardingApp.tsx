@@ -59,6 +59,15 @@ function getRepSession() {
   }
 }
 
+function fileToDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 const inputStyle = {
   width: "100%", background: colors.surface2, border: `1px solid ${colors.border}`,
   color: colors.textPrimary, borderRadius: 10, padding: "12px 14px", fontSize: 15,
@@ -191,7 +200,7 @@ function ImageUpload({ images, setImages }) {
 
   const addFiles = (fileList) => {
     const files = Array.from(fileList).slice(0, 10 - images.length);
-    const previews = files.map((f) => ({ url: URL.createObjectURL(f), name: f.name }));
+    const previews = files.map((f) => ({ url: URL.createObjectURL(f), name: f.name, file: f }));
     setImages((prev) => [...prev, ...previews].slice(0, 10));
   };
 
@@ -343,6 +352,33 @@ export default function RepOnboardingApp() {
       const resolvedProvince = province[0] || "";
       let created;
 
+      // Upload any captured photos for real before creating the listing —
+      // this used to just leave them as local-only browser previews with
+      // nothing actually saved. One photo failing to upload doesn't stop
+      // the rest of the submission; it's just left out.
+      let uploadedImageUrls = [];
+      if (images.length > 0) {
+        setAutoSaveStatus(`Uploading ${images.length} photo${images.length === 1 ? "" : "s"}…`);
+        const results = await Promise.allSettled(
+          images.map(async (img) => {
+            const dataUrl = await fileToDataURL(img.file);
+            const res = await backend.storage.upload({ data: dataUrl });
+            return res.url;
+          })
+        );
+        uploadedImageUrls = results
+          .filter((r) => r.status === "fulfilled")
+          .map((r) => r.value);
+        const failedCount = results.length - uploadedImageUrls.length;
+        if (failedCount > 0) {
+          console.error(
+            "Some photo uploads failed:",
+            results.filter((r) => r.status === "rejected").map((r) => r.reason)
+          );
+        }
+      }
+      const primaryImageUrl = uploadedImageUrls[0] || "";
+
       if (isAccommodation) {
         created = await backend.accommodation.create({
           name: data.companyName,
@@ -352,6 +388,8 @@ export default function RepOnboardingApp() {
           country: resolvedCountry,
           province: resolvedProvince,
           postalCode: data.postalCode || "",
+          contact: data.contact || "",
+          description: data.description || "",
           wifiName: data.wifiName || "",
           wifiPassword: data.wifiPassword || "",
           checkInInstructions: data.checkIn || "",
@@ -367,6 +405,8 @@ export default function RepOnboardingApp() {
           ambulanceContact: emergency["Ambulance"] || "",
           hospitalContact: emergency["Hospital"] || "",
           fireDepartmentContact: emergency["Fire Department"] || "",
+          imageUrl: primaryImageUrl,
+          imageUrls: uploadedImageUrls,
           isActive: false,
           officialContactName: repSession.repName,
           officialRepCode: repSession.repCode,
@@ -397,7 +437,7 @@ export default function RepOnboardingApp() {
           wifiPassword: data.wifiPassword || "",
           discountOffered: data.discountOffered || "",
           discountCode: data.discountCode || "",
-          imageUrl: "",
+          imageUrl: primaryImageUrl,
           isActive: false,
           officialContactName: repSession.repName,
           officialRepCode: repSession.repCode,
@@ -424,7 +464,7 @@ export default function RepOnboardingApp() {
           parkingAvailability: (data.accessibility || []).includes("Parking Availability"),
           discountOffered: data.discountOffered || "",
           discountCode: data.discountCode || "",
-          imageUrl: "",
+          imageUrl: primaryImageUrl,
           isActive: false,
           officialContactName: repSession.repName,
           officialRepCode: repSession.repCode,
@@ -451,7 +491,7 @@ export default function RepOnboardingApp() {
           parkingAvailability: (data.accessibility || []).includes("Parking Availability"),
           discountOffered: data.discountOffered || "",
           discountCode: data.discountCode || "",
-          imageUrl: "",
+          imageUrl: primaryImageUrl,
           isActive: false,
           officialContactName: repSession.repName,
           officialRepCode: repSession.repCode,
@@ -466,6 +506,7 @@ export default function RepOnboardingApp() {
         tier,
         accessCode: created.profileReferenceCode,
         imagesCount: images.length,
+        uploadedCount: uploadedImageUrls.length,
       });
     } catch (err) {
       console.error(err);
@@ -494,9 +535,14 @@ export default function RepOnboardingApp() {
 
           <ul style={{ textAlign: "left", color: colors.textSecondary, fontSize: 12, lineHeight: 1.8, paddingLeft: 18, marginBottom: 18 }}>
             <li>Saved to the Admin Dashboard just now (Non-Active, pending review)</li>
-            {submitted.imagesCount > 0 && (
+            {submitted.imagesCount > 0 && submitted.uploadedCount === submitted.imagesCount && (
+              <li>
+                {submitted.uploadedCount} photo{submitted.uploadedCount === 1 ? "" : "s"} uploaded successfully
+              </li>
+            )}
+            {submitted.imagesCount > 0 && submitted.uploadedCount < submitted.imagesCount && (
               <li style={{ color: colors.error }}>
-                {submitted.imagesCount} photo{submitted.imagesCount === 1 ? "" : "s"} captured but NOT yet uploaded — photo upload isn't connected yet
+                {submitted.uploadedCount} of {submitted.imagesCount} photos uploaded — {submitted.imagesCount - submitted.uploadedCount} failed and were not saved
               </li>
             )}
           </ul>

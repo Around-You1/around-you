@@ -56,6 +56,9 @@ type Accommodation struct {
 	Area       string `json:"area,omitempty"`
 	PostalCode string `json:"postalCode"`
 
+	Contact     string `json:"contact,omitempty"`
+	Description string `json:"description,omitempty"`
+
 	ProfileReferenceCode string `json:"profileReferenceCode,omitempty"`
 	IsDuplicate          bool   `json:"isDuplicate,omitempty"`
 	DuplicateReason      string `json:"duplicateReason,omitempty"`
