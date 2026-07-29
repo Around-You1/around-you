@@ -53,6 +53,7 @@ func main() {
 	r.public("POST /auth/access-code-login", httpx.Body(auth.AccessCodeLogin))
 	r.public("POST /auth/secondary-login", httpx.Body(auth.SecondaryLogin))
 	r.public("POST /auth/local-guest-login", httpx.Body(auth.LocalGuestLogin))
+	r.public("POST /auth/login", httpx.Body(auth.Login))
 
 	// ---- Accommodation (auth) ----------------------------------------------
 	r.auth("GET /accommodation", httpx.Query(accommodation.List))
@@ -168,21 +169,42 @@ func requireAuth(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// allowedOrigins is the fixed list of websites permitted to call this API
+// from a browser. Add a new one here (and redeploy) whenever a new domain
+// needs access — e.g. a staging site, or a different local dev port.
+var allowedOrigins = map[string]bool{
+	"https://aroundyou.co.za":     true,
+	"https://www.aroundyou.co.za": true,
+	"http://localhost:3000":       true, // local frontend dev server
+
+	// Vercel deployment URLs. The first is the specific one shared so far —
+	// note this includes a random per-deployment ID (ply2di3o7) that Vercel
+	// generates fresh on every redeploy, so it WILL stop matching the next
+	// time the frontend is redeployed. The stable one to actually rely on is
+	// the "Production" domain shown on the Vercel project's main page
+	// (usually just <project-name>.vercel.app, without a random suffix) —
+	// add that here too once known, alongside or instead of the one below.
+	"https://around-ply2di3o7-daves-projects-79564653.vercel.app": true,
+}
+
 // withCORS allows the separately-hosted frontend to call the API from the
 // browser, including preflight OPTIONS requests. Encore applied CORS
-// automatically; here it is explicit.
+// automatically; here it is explicit. Only origins in allowedOrigins get a
+// yes — any other website's browser JS calling this API will be blocked by
+// the browser itself, since no Access-Control-Allow-Origin header is sent
+// back for it.
 func withCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		origin := req.Header.Get("Origin")
-		if origin == "" {
-			origin = "*"
-		}
 		h := w.Header()
-		h.Set("Access-Control-Allow-Origin", origin)
 		h.Set("Vary", "Origin")
-		h.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		h.Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
-		h.Set("Access-Control-Allow-Credentials", "true")
+
+		if allowedOrigins[origin] {
+			h.Set("Access-Control-Allow-Origin", origin)
+			h.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			h.Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+			h.Set("Access-Control-Allow-Credentials", "true")
+		}
 
 		if req.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)

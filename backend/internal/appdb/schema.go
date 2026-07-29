@@ -260,6 +260,10 @@ type User struct {
 	Area            string `json:"area,omitempty"`
 	Municipality    string `json:"municipality,omitempty"`
 	PostalCode      string `json:"postalCode,omitempty"` // LocalGuest sign-in field
+	// PasswordHash is a bcrypt hash, SuperAdmin accounts only. json:"-" means
+	// this can never be serialized into an API response, even by a future
+	// mistake elsewhere in the code — it simply isn't an option.
+	PasswordHash string `json:"-"`
 }
 
 // ProfileSettings matches BookingsSocialsDropdowns.tsx / RestaurantTab.tsx's

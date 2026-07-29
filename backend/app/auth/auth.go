@@ -15,6 +15,8 @@ import (
 	"errors"
 	"strings"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/errs"
 )
@@ -302,4 +304,55 @@ func issueSession(ctx context.Context, u *appdb.User) (*LoginResponse, error) {
 	}
 
 	return &LoginResponse{Token: token, User: u}, nil
+}
+
+// LoginRequest matches AdminLoginPage.tsx's `backend.auth.login({role, email,
+// password})` call. Role is accepted but not itself the security check —
+// what actually matters is whether the account found by email has
+// role == "SuperAdmin" AND the password matches its stored hash.
+type LoginRequest struct {
+	Role     string `json:"role"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+// Login is password-based sign-in for SuperAdmin accounts only — the only
+// role that uses a password at all. Every other role (Guest, LocalGuest,
+// Partner) signs in via access code or one-time email code; see
+// AccessCodeLogin, SecondaryLogin, and LocalGuestLogin above.
+//
+// There is deliberately no self-service registration for this endpoint —
+// SuperAdmin accounts are created directly via a migration (with a bcrypt
+// hash generated locally by cmd/hashpassword, never a plaintext password),
+// not through any API call.
+//
+//encore:api public method=POST path=/auth/login
+func Login(ctx context.Context, req *LoginRequest) (*LoginResponse, error) {
+	email := strings.ToLower(strings.TrimSpace(req.Email))
+	if email == "" || req.Password == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "email and password are required"}
+	}
+
+	var u appdb.User
+	err := appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT id, email, role, password_hash
+		FROM users WHERE role = 'SuperAdmin' AND lower(email) = lower($1)`, email,
+	).Scan(&u.ID, &u.Email, &u.Role, &u.PasswordHash)
+	if err != nil {
+		if isNoRows(err) {
+			// Deliberately the same generic message as a wrong password
+			// below — don't reveal whether an email exists at all.
+			return nil, &errs.Error{Code: errs.Unauthenticated, Message: "invalid email or password"}
+		}
+		return nil, err
+	}
+
+	if u.PasswordHash == "" {
+		return nil, &errs.Error{Code: errs.Unauthenticated, Message: "invalid email or password"}
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(req.Password)); err != nil {
+		return nil, &errs.Error{Code: errs.Unauthenticated, Message: "invalid email or password"}
+	}
+
+	return issueSession(ctx, &u)
 }
