@@ -347,7 +347,12 @@ export default function LoginPage() {
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(user));
     dismiss();
-    toast({ title: "Welcome!", description: `Signed in as ${welcomeName}` });
+    // welcomeName is often the backend's internal placeholder email (e.g.
+    // "guest@Test BnB" / "partner@Test Grub" — see findByAccessCode in
+    // auth.go, which has no dedicated display-name field to draw from
+    // instead) — strip that prefix so the toast shows just the real name.
+    const displayName = welcomeName.replace(/^(guest|partner)@/, "");
+    toast({ title: "Welcome!", description: `Signed in as ${displayName}` });
     navigate(path);
   }
 
