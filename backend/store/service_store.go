@@ -1,0 +1,460 @@
+// ServiceStore replaces the in-memory appdb.DB.Services map — same fix
+// Restaurant already got (see restaurant_store.go's comment for why this
+// matters: in-memory storage means every server restart silently wipes
+// everything).
+package store
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"strconv"
+	"strings"
+
+	"github.com/lib/pq"
+
+	"backend_encore/internal/appdb"
+)
+
+var ErrServiceNotFound = errors.New("service not found")
+
+type ServiceStore struct{}
+
+func NewServiceStore() *ServiceStore {
+	return &ServiceStore{}
+}
+
+const serviceColumns = `
+	id, service_id, name, address, latitude, longitude, country, province,
+	COALESCE(area, '') as area, postal_code,
+	COALESCE(contact_number, '') as contact_number,
+	COALESCE(description, '') as description,
+	COALESCE(profile_reference_code, '') as profile_reference_code,
+	is_duplicate,
+	COALESCE(duplicate_reason, '') as duplicate_reason,
+	service_categories,
+	little_explorer_approved,
+	payment_card, payment_cash, payment_mobile, payment_gaap, payment_snapscan, payment_yoco, payment_zapper,
+	wheelchair_access, parking_availability,
+	COALESCE(discount_offered, '') as discount_offered,
+	COALESCE(discount_code, '') as discount_code,
+	COALESCE(safety_info, '') as safety_info,
+	COALESCE(age_restrictions, '') as age_restrictions,
+	COALESCE(fitness_level, '') as fitness_level,
+	COALESCE(best_time_of_day, '') as best_time_of_day,
+	COALESCE(what_to_bring, '') as what_to_bring,
+	COALESCE(socials_website, '') as socials_website,
+	COALESCE(socials_facebook, '') as socials_facebook,
+	COALESCE(socials_instagram, '') as socials_instagram,
+	COALESCE(socials_tiktok, '') as socials_tiktok,
+	COALESCE(socials_twitter, '') as socials_twitter,
+	COALESCE(image_url, '') as image_url,
+	is_active,
+	COALESCE(official_holding_company, '') as official_holding_company,
+	COALESCE(official_contact_name, '') as official_contact_name,
+	COALESCE(official_contact_number, '') as official_contact_number,
+	COALESCE(official_email, '') as official_email,
+	COALESCE(official_rep_code, '') as official_rep_code,
+	COALESCE(guest_type, '') as guest_type,
+	COALESCE(access_level, '') as access_level,
+	COALESCE(partner_code, '') as partner_code,
+	partner_code_active,
+	created_at, updated_at
+`
+
+type serviceScanner interface {
+	Scan(dest ...interface{}) error
+}
+
+func scanService(row serviceScanner) (*appdb.ServiceData, error) {
+	var s appdb.ServiceData
+	err := row.Scan(
+		&s.ID, &s.ServiceID, &s.Name, &s.Address, &s.Latitude, &s.Longitude, &s.Country, &s.Province, &s.Area, &s.PostalCode,
+		&s.ContactNumber, &s.Description,
+		&s.ProfileReferenceCode, &s.IsDuplicate, &s.DuplicateReason,
+		pq.Array(&s.ServiceCategories),
+		&s.LittleExplorerApproved,
+		&s.PaymentCard, &s.PaymentCash, &s.PaymentMobile, &s.PaymentGaap, &s.PaymentSnapScan, &s.PaymentYoco, &s.PaymentZapper,
+		&s.WheelchairAccess, &s.ParkingAvailability,
+		&s.DiscountOffered, &s.DiscountCode,
+		&s.SafetyInfo, &s.AgeRestrictions, &s.FitnessLevel, &s.BestTimeOfDay, &s.WhatToBring,
+		&s.SocialsWebsite, &s.SocialsFacebook, &s.SocialsInstagram, &s.SocialsTiktok, &s.SocialsTwitter,
+		&s.ImageUrl, &s.IsActive,
+		&s.OfficialHoldingCompany, &s.OfficialContactName, &s.OfficialContactNumber, &s.OfficialEmail, &s.OfficialRepCode,
+		&s.GuestType, &s.AccessLevel,
+		&s.PartnerCode.Code, &s.PartnerCode.Active,
+		&s.CreatedAt, &s.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &s, nil
+}
+
+func (s *ServiceStore) List(ctx context.Context, sortBy, sortOrder string) ([]appdb.ServiceData, error) {
+	order := "created_at"
+	if sortBy == "name" {
+		order = "name"
+	}
+	dir := "DESC"
+	if sortOrder == "asc" {
+		dir = "ASC"
+	}
+	rows, err := appdb.SQLDB.QueryContext(ctx, "SELECT "+serviceColumns+" FROM services ORDER BY "+order+" "+dir)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := []appdb.ServiceData{}
+	for rows.Next() {
+		item, err := scanService(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *item)
+	}
+	return out, rows.Err()
+}
+
+func (s *ServiceStore) ListByMunicipality(ctx context.Context, area string) ([]appdb.ServiceData, error) {
+	rows, err := appdb.SQLDB.QueryContext(ctx,
+		"SELECT "+serviceColumns+" FROM services WHERE is_active = true AND lower(area) = lower($1)", area)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []appdb.ServiceData{}
+	for rows.Next() {
+		item, err := scanService(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *item)
+	}
+	return out, rows.Err()
+}
+
+func (s *ServiceStore) ListNearby(ctx context.Context) ([]appdb.ServiceData, error) {
+	rows, err := appdb.SQLDB.QueryContext(ctx,
+		"SELECT "+serviceColumns+" FROM services WHERE is_active = true AND latitude IS NOT NULL AND longitude IS NOT NULL")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []appdb.ServiceData{}
+	for rows.Next() {
+		item, err := scanService(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *item)
+	}
+	return out, rows.Err()
+}
+
+func (s *ServiceStore) Get(ctx context.Context, id int64) (*appdb.ServiceData, error) {
+	row := appdb.SQLDB.QueryRowContext(ctx, "SELECT "+serviceColumns+" FROM services WHERE id = $1", id)
+	item, err := scanService(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrServiceNotFound
+		}
+		return nil, err
+	}
+	return item, nil
+}
+
+func (s *ServiceStore) Create(ctx context.Context, in *appdb.ServiceData) (*appdb.ServiceData, error) {
+	row := appdb.SQLDB.QueryRowContext(ctx, `
+		INSERT INTO services (
+			name, address, latitude, longitude, country, province, area, postal_code,
+			contact_number, description, profile_reference_code,
+			service_categories, little_explorer_approved,
+			payment_card, payment_cash, payment_mobile, payment_gaap, payment_snapscan, payment_yoco, payment_zapper,
+			wheelchair_access, parking_availability,
+			discount_offered, discount_code,
+			safety_info, age_restrictions, fitness_level, best_time_of_day, what_to_bring,
+			socials_website, socials_facebook, socials_instagram, socials_tiktok, socials_twitter,
+			image_url, is_active,
+			official_holding_company, official_contact_name, official_contact_number, official_email, official_rep_code,
+			guest_type, access_level, partner_code, partner_code_active
+		) VALUES (
+			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,
+			$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45
+		)
+		RETURNING `+serviceColumns,
+		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
+		in.ContactNumber, in.Description, in.ProfileReferenceCode,
+		pq.Array(nonNilSlice(in.ServiceCategories)), in.LittleExplorerApproved,
+		in.PaymentCard, in.PaymentCash, in.PaymentMobile, in.PaymentGaap, in.PaymentSnapScan, in.PaymentYoco, in.PaymentZapper,
+		in.WheelchairAccess, in.ParkingAvailability,
+		in.DiscountOffered, in.DiscountCode,
+		in.SafetyInfo, in.AgeRestrictions, in.FitnessLevel, in.BestTimeOfDay, in.WhatToBring,
+		in.SocialsWebsite, in.SocialsFacebook, in.SocialsInstagram, in.SocialsTiktok, in.SocialsTwitter,
+		in.ImageUrl, in.IsActive,
+		in.OfficialHoldingCompany, in.OfficialContactName, in.OfficialContactNumber, in.OfficialEmail, in.OfficialRepCode,
+		in.GuestType, in.AccessLevel, in.PartnerCode.Code, in.PartnerCode.Active,
+	)
+	return scanService(row)
+}
+
+type ServicePatch struct {
+	Name       *string
+	Address    *string
+	Latitude   *float64
+	Longitude  *float64
+	Country    *string
+	Province   *string
+	Area       *string
+	PostalCode *string
+
+	ContactNumber *string
+	Description   *string
+
+	ServiceCategories      []string
+	LittleExplorerApproved *bool
+
+	PaymentCard     *bool
+	PaymentCash     *bool
+	PaymentMobile   *bool
+	PaymentGaap     *bool
+	PaymentSnapScan *bool
+	PaymentYoco     *bool
+	PaymentZapper   *bool
+
+	WheelchairAccess    *bool
+	ParkingAvailability *bool
+
+	DiscountOffered *string
+	DiscountCode    *string
+
+	SafetyInfo      *string
+	AgeRestrictions *string
+	FitnessLevel    *string
+	BestTimeOfDay   *string
+	WhatToBring     *string
+
+	SocialsWebsite   *string
+	SocialsFacebook  *string
+	SocialsInstagram *string
+	SocialsTiktok    *string
+	SocialsTwitter   *string
+
+	ImageUrl *string
+	IsActive *bool
+
+	OfficialHoldingCompany *string
+	OfficialContactName    *string
+	OfficialContactNumber  *string
+	OfficialEmail          *string
+	OfficialRepCode        *string
+	GuestType              *string
+	AccessLevel            *string
+}
+
+func (s *ServiceStore) Update(ctx context.Context, id int64, patch ServicePatch) (*appdb.ServiceData, error) {
+	sets := []string{}
+	args := []interface{}{}
+	arg := func(v interface{}) string {
+		args = append(args, v)
+		return "$" + strconv.Itoa(len(args))
+	}
+
+	if patch.Name != nil {
+		sets = append(sets, "name = "+arg(*patch.Name))
+	}
+	if patch.Address != nil {
+		sets = append(sets, "address = "+arg(*patch.Address))
+	}
+	if patch.Latitude != nil {
+		sets = append(sets, "latitude = "+arg(*patch.Latitude))
+	}
+	if patch.Longitude != nil {
+		sets = append(sets, "longitude = "+arg(*patch.Longitude))
+	}
+	if patch.Country != nil {
+		sets = append(sets, "country = "+arg(*patch.Country))
+	}
+	if patch.Province != nil {
+		sets = append(sets, "province = "+arg(*patch.Province))
+	}
+	if patch.Area != nil {
+		sets = append(sets, "area = "+arg(*patch.Area))
+	}
+	if patch.PostalCode != nil {
+		sets = append(sets, "postal_code = "+arg(*patch.PostalCode))
+	}
+	if patch.ContactNumber != nil {
+		sets = append(sets, "contact_number = "+arg(*patch.ContactNumber))
+	}
+	if patch.Description != nil {
+		sets = append(sets, "description = "+arg(*patch.Description))
+	}
+	if patch.ServiceCategories != nil {
+		sets = append(sets, "service_categories = "+arg(pq.Array(patch.ServiceCategories)))
+	}
+	if patch.LittleExplorerApproved != nil {
+		sets = append(sets, "little_explorer_approved = "+arg(*patch.LittleExplorerApproved))
+	}
+	if patch.PaymentCard != nil {
+		sets = append(sets, "payment_card = "+arg(*patch.PaymentCard))
+	}
+	if patch.PaymentCash != nil {
+		sets = append(sets, "payment_cash = "+arg(*patch.PaymentCash))
+	}
+	if patch.PaymentMobile != nil {
+		sets = append(sets, "payment_mobile = "+arg(*patch.PaymentMobile))
+	}
+	if patch.PaymentGaap != nil {
+		sets = append(sets, "payment_gaap = "+arg(*patch.PaymentGaap))
+	}
+	if patch.PaymentSnapScan != nil {
+		sets = append(sets, "payment_snapscan = "+arg(*patch.PaymentSnapScan))
+	}
+	if patch.PaymentYoco != nil {
+		sets = append(sets, "payment_yoco = "+arg(*patch.PaymentYoco))
+	}
+	if patch.PaymentZapper != nil {
+		sets = append(sets, "payment_zapper = "+arg(*patch.PaymentZapper))
+	}
+	if patch.WheelchairAccess != nil {
+		sets = append(sets, "wheelchair_access = "+arg(*patch.WheelchairAccess))
+	}
+	if patch.ParkingAvailability != nil {
+		sets = append(sets, "parking_availability = "+arg(*patch.ParkingAvailability))
+	}
+	if patch.DiscountOffered != nil {
+		sets = append(sets, "discount_offered = "+arg(*patch.DiscountOffered))
+	}
+	if patch.DiscountCode != nil {
+		sets = append(sets, "discount_code = "+arg(*patch.DiscountCode))
+	}
+	if patch.SafetyInfo != nil {
+		sets = append(sets, "safety_info = "+arg(*patch.SafetyInfo))
+	}
+	if patch.AgeRestrictions != nil {
+		sets = append(sets, "age_restrictions = "+arg(*patch.AgeRestrictions))
+	}
+	if patch.FitnessLevel != nil {
+		sets = append(sets, "fitness_level = "+arg(*patch.FitnessLevel))
+	}
+	if patch.BestTimeOfDay != nil {
+		sets = append(sets, "best_time_of_day = "+arg(*patch.BestTimeOfDay))
+	}
+	if patch.WhatToBring != nil {
+		sets = append(sets, "what_to_bring = "+arg(*patch.WhatToBring))
+	}
+	if patch.SocialsWebsite != nil {
+		sets = append(sets, "socials_website = "+arg(*patch.SocialsWebsite))
+	}
+	if patch.SocialsFacebook != nil {
+		sets = append(sets, "socials_facebook = "+arg(*patch.SocialsFacebook))
+	}
+	if patch.SocialsInstagram != nil {
+		sets = append(sets, "socials_instagram = "+arg(*patch.SocialsInstagram))
+	}
+	if patch.SocialsTiktok != nil {
+		sets = append(sets, "socials_tiktok = "+arg(*patch.SocialsTiktok))
+	}
+	if patch.SocialsTwitter != nil {
+		sets = append(sets, "socials_twitter = "+arg(*patch.SocialsTwitter))
+	}
+	if patch.ImageUrl != nil {
+		sets = append(sets, "image_url = "+arg(*patch.ImageUrl))
+	}
+	if patch.IsActive != nil {
+		sets = append(sets, "is_active = "+arg(*patch.IsActive))
+	}
+	if patch.OfficialHoldingCompany != nil {
+		sets = append(sets, "official_holding_company = "+arg(*patch.OfficialHoldingCompany))
+	}
+	if patch.OfficialContactName != nil {
+		sets = append(sets, "official_contact_name = "+arg(*patch.OfficialContactName))
+	}
+	if patch.OfficialContactNumber != nil {
+		sets = append(sets, "official_contact_number = "+arg(*patch.OfficialContactNumber))
+	}
+	if patch.OfficialEmail != nil {
+		sets = append(sets, "official_email = "+arg(*patch.OfficialEmail))
+	}
+	if patch.OfficialRepCode != nil {
+		sets = append(sets, "official_rep_code = "+arg(*patch.OfficialRepCode))
+	}
+	if patch.GuestType != nil {
+		sets = append(sets, "guest_type = "+arg(*patch.GuestType))
+	}
+	if patch.AccessLevel != nil {
+		sets = append(sets, "access_level = "+arg(*patch.AccessLevel))
+	}
+
+	if len(sets) == 0 {
+		return s.Get(ctx, id)
+	}
+
+	sets = append(sets, "updated_at = now()")
+	query := "UPDATE services SET " + strings.Join(sets, ", ") + " WHERE id = " + arg(id) + " RETURNING " + serviceColumns
+	row := appdb.SQLDB.QueryRowContext(ctx, query, args...)
+	item, err := scanService(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrServiceNotFound
+		}
+		return nil, err
+	}
+	return item, nil
+}
+
+func (s *ServiceStore) Delete(ctx context.Context, id int64) error {
+	res, err := appdb.SQLDB.ExecContext(ctx, "DELETE FROM services WHERE id = $1", id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrServiceNotFound
+	}
+	return nil
+}
+
+func (s *ServiceStore) GetPartnerCode(ctx context.Context, id int64) (code string, active bool, err error) {
+	err = appdb.SQLDB.QueryRowContext(ctx,
+		"SELECT COALESCE(partner_code, ''), partner_code_active FROM services WHERE id = $1", id,
+	).Scan(&code, &active)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", false, ErrServiceNotFound
+	}
+	return code, active, err
+}
+
+func (s *ServiceStore) RegeneratePartnerCode(ctx context.Context, id int64, newCode string) (code string, active bool, err error) {
+	err = appdb.SQLDB.QueryRowContext(ctx, `
+		UPDATE services SET partner_code = $1, partner_code_active = true, updated_at = now()
+		WHERE id = $2
+		RETURNING partner_code, partner_code_active`,
+		newCode, id,
+	).Scan(&code, &active)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", false, ErrServiceNotFound
+	}
+	return code, active, err
+}
+
+func (s *ServiceStore) TogglePartnerCode(ctx context.Context, id int64, active bool) error {
+	res, err := appdb.SQLDB.ExecContext(ctx,
+		"UPDATE services SET partner_code_active = $1, updated_at = now() WHERE id = $2", active, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrServiceNotFound
+	}
+	return nil
+}
