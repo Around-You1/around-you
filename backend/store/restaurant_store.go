@@ -1,0 +1,430 @@
+// RestaurantStore replaces the in-memory appdb.DB.Restaurants map — the fix
+// for the exact data-loss bug Accommodation already had fixed: in-memory
+// storage means every server restart (which Fly does automatically to save
+// cost when idle) silently wipes every restaurant a rep has onboarded.
+package store
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"strconv"
+	"strings"
+
+	"github.com/lib/pq"
+
+	"backend_encore/internal/appdb"
+)
+
+var ErrRestaurantNotFound = errors.New("restaurant not found")
+
+type RestaurantStore struct{}
+
+func NewRestaurantStore() *RestaurantStore {
+	return &RestaurantStore{}
+}
+
+// restaurantColumns lists every column in one fixed order, shared by every
+// SELECT below — every nullable text column is COALESCE'd to '' from the
+// very first version of this file, learning from the mistake Accommodation's
+// store made (which needed a whole separate follow-up migration after a
+// production crash to add the same protection retroactively).
+const restaurantColumns = `
+	id, name, address, latitude, longitude, country, province,
+	COALESCE(area, '') as area, postal_code,
+	COALESCE(contact_number, '') as contact_number,
+	COALESCE(description, '') as description,
+	COALESCE(profile_reference_code, '') as profile_reference_code,
+	is_duplicate,
+	COALESCE(duplicate_reason, '') as duplicate_reason,
+	cuisine_types,
+	COALESCE(menu_link, '') as menu_link,
+	service_dine_in, service_takeaway, service_delivery, little_explorer_approved,
+	payment_card, payment_cash, payment_mobile,
+	wheelchair_access, parking_availability,
+	COALESCE(wifi_network, '') as wifi_network,
+	COALESCE(wifi_password, '') as wifi_password,
+	COALESCE(wifi_credentials, '') as wifi_credentials,
+	COALESCE(discount_offered, '') as discount_offered,
+	COALESCE(discount_code, '') as discount_code,
+	COALESCE(image_url, '') as image_url,
+	is_active,
+	COALESCE(official_holding_company, '') as official_holding_company,
+	COALESCE(official_contact_name, '') as official_contact_name,
+	COALESCE(official_contact_number, '') as official_contact_number,
+	COALESCE(official_email, '') as official_email,
+	COALESCE(official_rep_code, '') as official_rep_code,
+	COALESCE(guest_type, '') as guest_type,
+	COALESCE(access_level, '') as access_level,
+	COALESCE(partner_code, '') as partner_code,
+	partner_code_active,
+	created_at, updated_at
+`
+
+type restaurantScanner interface {
+	Scan(dest ...interface{}) error
+}
+
+func scanRestaurant(row restaurantScanner) (*appdb.Restaurant, error) {
+	var r appdb.Restaurant
+	err := row.Scan(
+		&r.ID, &r.Name, &r.Address, &r.Latitude, &r.Longitude, &r.Country, &r.Province, &r.Area, &r.PostalCode,
+		&r.ContactNumber, &r.Description,
+		&r.ProfileReferenceCode, &r.IsDuplicate, &r.DuplicateReason,
+		pq.Array(&r.CuisineTypes),
+		&r.MenuLink, &r.ServiceDineIn, &r.ServiceTakeaway, &r.ServiceDelivery, &r.LittleExplorerApproved,
+		&r.PaymentCard, &r.PaymentCash, &r.PaymentMobile,
+		&r.WheelchairAccess, &r.ParkingAvailability,
+		&r.WifiNetwork, &r.WifiPassword, &r.WifiCredentials,
+		&r.DiscountOffered, &r.DiscountCode,
+		&r.ImageUrl, &r.IsActive,
+		&r.OfficialHoldingCompany, &r.OfficialContactName, &r.OfficialContactNumber, &r.OfficialEmail, &r.OfficialRepCode,
+		&r.GuestType, &r.AccessLevel,
+		&r.PartnerCode.Code, &r.PartnerCode.Active,
+		&r.CreatedAt, &r.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
+func (s *RestaurantStore) List(ctx context.Context, sortBy, sortOrder string) ([]appdb.Restaurant, error) {
+	order := "created_at"
+	if sortBy == "name" {
+		order = "name"
+	}
+	dir := "DESC"
+	if sortOrder == "asc" {
+		dir = "ASC"
+	}
+	rows, err := appdb.SQLDB.QueryContext(ctx, "SELECT "+restaurantColumns+" FROM restaurants ORDER BY "+order+" "+dir)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := []appdb.Restaurant{}
+	for rows.Next() {
+		r, err := scanRestaurant(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *r)
+	}
+	return out, rows.Err()
+}
+
+func (s *RestaurantStore) ListByMunicipality(ctx context.Context, area string) ([]appdb.Restaurant, error) {
+	rows, err := appdb.SQLDB.QueryContext(ctx,
+		"SELECT "+restaurantColumns+" FROM restaurants WHERE is_active = true AND lower(area) = lower($1)", area)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []appdb.Restaurant{}
+	for rows.Next() {
+		r, err := scanRestaurant(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *r)
+	}
+	return out, rows.Err()
+}
+
+// ListNearby returns every active restaurant with coordinates set — distance
+// filtering by radius still happens in Go (appdb.HaversineKm), matching how
+// this always worked; only the storage moved from a map to SQL.
+func (s *RestaurantStore) ListNearby(ctx context.Context) ([]appdb.Restaurant, error) {
+	rows, err := appdb.SQLDB.QueryContext(ctx,
+		"SELECT "+restaurantColumns+" FROM restaurants WHERE is_active = true AND latitude IS NOT NULL AND longitude IS NOT NULL")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []appdb.Restaurant{}
+	for rows.Next() {
+		r, err := scanRestaurant(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *r)
+	}
+	return out, rows.Err()
+}
+
+func (s *RestaurantStore) Get(ctx context.Context, id int64) (*appdb.Restaurant, error) {
+	row := appdb.SQLDB.QueryRowContext(ctx, "SELECT "+restaurantColumns+" FROM restaurants WHERE id = $1", id)
+	r, err := scanRestaurant(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrRestaurantNotFound
+		}
+		return nil, err
+	}
+	return r, nil
+}
+
+func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*appdb.Restaurant, error) {
+	row := appdb.SQLDB.QueryRowContext(ctx, `
+		INSERT INTO restaurants (
+			name, address, latitude, longitude, country, province, area, postal_code,
+			contact_number, description, profile_reference_code,
+			cuisine_types, menu_link, service_dine_in, service_takeaway, service_delivery, little_explorer_approved,
+			payment_card, payment_cash, payment_mobile,
+			wheelchair_access, parking_availability,
+			wifi_network, wifi_password, wifi_credentials,
+			discount_offered, discount_code, image_url, is_active,
+			official_holding_company, official_contact_name, official_contact_number, official_email, official_rep_code,
+			guest_type, access_level, partner_code, partner_code_active
+		) VALUES (
+			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,
+			$30,$31,$32,$33,$34,$35,$36,$37,$38
+		)
+		RETURNING `+restaurantColumns,
+		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
+		in.ContactNumber, in.Description, in.ProfileReferenceCode,
+		pq.Array(nonNilSlice(in.CuisineTypes)), in.MenuLink, in.ServiceDineIn, in.ServiceTakeaway, in.ServiceDelivery, in.LittleExplorerApproved,
+		in.PaymentCard, in.PaymentCash, in.PaymentMobile,
+		in.WheelchairAccess, in.ParkingAvailability,
+		in.WifiNetwork, in.WifiPassword, in.WifiCredentials,
+		in.DiscountOffered, in.DiscountCode, in.ImageUrl, in.IsActive,
+		in.OfficialHoldingCompany, in.OfficialContactName, in.OfficialContactNumber, in.OfficialEmail, in.OfficialRepCode,
+		in.GuestType, in.AccessLevel, in.PartnerCode.Code, in.PartnerCode.Active,
+	)
+	return scanRestaurant(row)
+}
+
+// RestaurantPatch mirrors UpdateRequest's optional fields exactly — nil
+// means "don't touch this column", matching how the old in-memory Update
+// only overwrote fields the caller actually sent.
+type RestaurantPatch struct {
+	Name       *string
+	Address    *string
+	Latitude   *float64
+	Longitude  *float64
+	Country    *string
+	Province   *string
+	Area       *string
+	PostalCode *string
+
+	ContactNumber *string
+	Description   *string
+
+	CuisineTypes           []string
+	MenuLink               *string
+	ServiceDineIn          *bool
+	ServiceTakeaway        *bool
+	ServiceDelivery        *bool
+	LittleExplorerApproved *bool
+
+	PaymentCard   *bool
+	PaymentCash   *bool
+	PaymentMobile *bool
+
+	WheelchairAccess    *bool
+	ParkingAvailability *bool
+
+	WifiNetwork  *string
+	WifiPassword *string
+
+	DiscountOffered *string
+	DiscountCode    *string
+
+	ImageUrl *string
+	IsActive *bool
+
+	OfficialHoldingCompany *string
+	OfficialContactName    *string
+	OfficialContactNumber  *string
+	OfficialEmail          *string
+	OfficialRepCode        *string
+	GuestType              *string
+	AccessLevel            *string
+}
+
+func (s *RestaurantStore) Update(ctx context.Context, id int64, patch RestaurantPatch) (*appdb.Restaurant, error) {
+	sets := []string{}
+	args := []interface{}{}
+	arg := func(v interface{}) string {
+		args = append(args, v)
+		return "$" + strconv.Itoa(len(args))
+	}
+
+	if patch.Name != nil {
+		sets = append(sets, "name = "+arg(*patch.Name))
+	}
+	if patch.Address != nil {
+		sets = append(sets, "address = "+arg(*patch.Address))
+	}
+	if patch.Latitude != nil {
+		sets = append(sets, "latitude = "+arg(*patch.Latitude))
+	}
+	if patch.Longitude != nil {
+		sets = append(sets, "longitude = "+arg(*patch.Longitude))
+	}
+	if patch.Country != nil {
+		sets = append(sets, "country = "+arg(*patch.Country))
+	}
+	if patch.Province != nil {
+		sets = append(sets, "province = "+arg(*patch.Province))
+	}
+	if patch.Area != nil {
+		sets = append(sets, "area = "+arg(*patch.Area))
+	}
+	if patch.PostalCode != nil {
+		sets = append(sets, "postal_code = "+arg(*patch.PostalCode))
+	}
+	if patch.ContactNumber != nil {
+		sets = append(sets, "contact_number = "+arg(*patch.ContactNumber))
+	}
+	if patch.Description != nil {
+		sets = append(sets, "description = "+arg(*patch.Description))
+	}
+	if patch.CuisineTypes != nil {
+		sets = append(sets, "cuisine_types = "+arg(pq.Array(patch.CuisineTypes)))
+	}
+	if patch.MenuLink != nil {
+		sets = append(sets, "menu_link = "+arg(*patch.MenuLink))
+	}
+	if patch.ServiceDineIn != nil {
+		sets = append(sets, "service_dine_in = "+arg(*patch.ServiceDineIn))
+	}
+	if patch.ServiceTakeaway != nil {
+		sets = append(sets, "service_takeaway = "+arg(*patch.ServiceTakeaway))
+	}
+	if patch.ServiceDelivery != nil {
+		sets = append(sets, "service_delivery = "+arg(*patch.ServiceDelivery))
+	}
+	if patch.LittleExplorerApproved != nil {
+		sets = append(sets, "little_explorer_approved = "+arg(*patch.LittleExplorerApproved))
+	}
+	if patch.PaymentCard != nil {
+		sets = append(sets, "payment_card = "+arg(*patch.PaymentCard))
+	}
+	if patch.PaymentCash != nil {
+		sets = append(sets, "payment_cash = "+arg(*patch.PaymentCash))
+	}
+	if patch.PaymentMobile != nil {
+		sets = append(sets, "payment_mobile = "+arg(*patch.PaymentMobile))
+	}
+	if patch.WheelchairAccess != nil {
+		sets = append(sets, "wheelchair_access = "+arg(*patch.WheelchairAccess))
+	}
+	if patch.ParkingAvailability != nil {
+		sets = append(sets, "parking_availability = "+arg(*patch.ParkingAvailability))
+	}
+	if patch.WifiNetwork != nil {
+		sets = append(sets, "wifi_network = "+arg(*patch.WifiNetwork))
+	}
+	if patch.WifiPassword != nil {
+		sets = append(sets, "wifi_password = "+arg(*patch.WifiPassword))
+	}
+	if patch.DiscountOffered != nil {
+		sets = append(sets, "discount_offered = "+arg(*patch.DiscountOffered))
+	}
+	if patch.DiscountCode != nil {
+		sets = append(sets, "discount_code = "+arg(*patch.DiscountCode))
+	}
+	if patch.ImageUrl != nil {
+		sets = append(sets, "image_url = "+arg(*patch.ImageUrl))
+	}
+	if patch.IsActive != nil {
+		sets = append(sets, "is_active = "+arg(*patch.IsActive))
+	}
+	if patch.OfficialHoldingCompany != nil {
+		sets = append(sets, "official_holding_company = "+arg(*patch.OfficialHoldingCompany))
+	}
+	if patch.OfficialContactName != nil {
+		sets = append(sets, "official_contact_name = "+arg(*patch.OfficialContactName))
+	}
+	if patch.OfficialContactNumber != nil {
+		sets = append(sets, "official_contact_number = "+arg(*patch.OfficialContactNumber))
+	}
+	if patch.OfficialEmail != nil {
+		sets = append(sets, "official_email = "+arg(*patch.OfficialEmail))
+	}
+	if patch.OfficialRepCode != nil {
+		sets = append(sets, "official_rep_code = "+arg(*patch.OfficialRepCode))
+	}
+	if patch.GuestType != nil {
+		sets = append(sets, "guest_type = "+arg(*patch.GuestType))
+	}
+	if patch.AccessLevel != nil {
+		sets = append(sets, "access_level = "+arg(*patch.AccessLevel))
+	}
+
+	if len(sets) == 0 {
+		return s.Get(ctx, id)
+	}
+
+	sets = append(sets, "updated_at = now()")
+	query := "UPDATE restaurants SET " + strings.Join(sets, ", ") + " WHERE id = " + arg(id) + " RETURNING " + restaurantColumns
+	row := appdb.SQLDB.QueryRowContext(ctx, query, args...)
+	r, err := scanRestaurant(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrRestaurantNotFound
+		}
+		return nil, err
+	}
+	return r, nil
+}
+
+func (s *RestaurantStore) Delete(ctx context.Context, id int64) error {
+	res, err := appdb.SQLDB.ExecContext(ctx, "DELETE FROM restaurants WHERE id = $1", id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrRestaurantNotFound
+	}
+	return nil
+}
+
+// GetPartnerCode/RegeneratePartnerCode/TogglePartnerCode are simple enough
+// to not need the full scanRestaurant machinery — a couple of columns each.
+
+func (s *RestaurantStore) GetPartnerCode(ctx context.Context, id int64) (code string, active bool, err error) {
+	err = appdb.SQLDB.QueryRowContext(ctx,
+		"SELECT COALESCE(partner_code, ''), partner_code_active FROM restaurants WHERE id = $1", id,
+	).Scan(&code, &active)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", false, ErrRestaurantNotFound
+	}
+	return code, active, err
+}
+
+func (s *RestaurantStore) RegeneratePartnerCode(ctx context.Context, id int64, newCode string) (code string, active bool, err error) {
+	err = appdb.SQLDB.QueryRowContext(ctx, `
+		UPDATE restaurants SET partner_code = $1, partner_code_active = true, updated_at = now()
+		WHERE id = $2
+		RETURNING partner_code, partner_code_active`,
+		newCode, id,
+	).Scan(&code, &active)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", false, ErrRestaurantNotFound
+	}
+	return code, active, err
+}
+
+func (s *RestaurantStore) TogglePartnerCode(ctx context.Context, id int64, active bool) error {
+	res, err := appdb.SQLDB.ExecContext(ctx,
+		"UPDATE restaurants SET partner_code_active = $1, updated_at = now() WHERE id = $2", active, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrRestaurantNotFound
+	}
+	return nil
+}
