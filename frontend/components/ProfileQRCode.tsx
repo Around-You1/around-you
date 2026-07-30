@@ -23,17 +23,85 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
       : "Use this QR code for social media marketing so that anyone can view all that your establishment has to offer.";
 
   const handleDownload = async () => {
-    const downloadUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(loginUrl)}&bgcolor=000000&color=39FF14&margin=20`;
-    const response = await fetch(downloadUrl);
-    const blob = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = `${profileName.replace(/\s+/g, "-")}-QR-Code.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(blobUrl);
+    const qrDownloadUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(loginUrl)}&bgcolor=000000&color=39FF14&margin=10`;
+
+    // Compose the same title + QR + description card the Print button
+    // produces, onto a canvas, so Download gives the full page rather than
+    // just the bare QR square underneath it.
+    const qrImage = new Image();
+    qrImage.crossOrigin = "anonymous";
+
+    await new Promise<void>((resolve, reject) => {
+      qrImage.onload = () => resolve();
+      qrImage.onerror = () => reject(new Error("Failed to load QR image"));
+      qrImage.src = qrDownloadUrl;
+    });
+
+    const width = 640;
+    const height = 900;
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Background + border, matching the printed page's look.
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = "#39FF14";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(12, 12, width - 24, height - 24);
+
+    // Title.
+    ctx.fillStyle = "#39FF14";
+    ctx.font = "bold 32px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(profileName, width / 2, 70);
+
+    // QR image, centered.
+    const qrSize = 460;
+    const qrX = (width - qrSize) / 2;
+    const qrY = 110;
+    ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
+
+    // Access code, monospace, right under the QR.
+    ctx.fillStyle = "#39FF14";
+    ctx.font = "18px monospace";
+    ctx.fillText(profileCode, width / 2, qrY + qrSize + 40);
+
+    // Description, word-wrapped.
+    ctx.fillStyle = "#aaaaaa";
+    ctx.font = "16px system-ui, sans-serif";
+    const maxLineWidth = width - 100;
+    const words = description.split(" ");
+    let line = "";
+    let y = qrY + qrSize + 80;
+    const lineHeight = 24;
+    for (const word of words) {
+      const testLine = line ? `${line} ${word}` : word;
+      if (ctx.measureText(testLine).width > maxLineWidth && line) {
+        ctx.fillText(line, width / 2, y);
+        line = word;
+        y += lineHeight;
+      } else {
+        line = testLine;
+      }
+    }
+    if (line) {
+      ctx.fillText(line, width / 2, y);
+    }
+
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `${profileName.replace(/\s+/g, "-")}-QR-Code.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    }, "image/png");
   };
 
   const handlePrint = () => {

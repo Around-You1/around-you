@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { MapPin, Phone, ExternalLink, Building2, Store, Compass, LogOut, Navigation, Baby, ChevronDown } from "lucide-react";
-import ProfileQRCode from "../components/ProfileQRCode";
 import BookingsSocialsDropdowns from "../components/BookingsSocialsDropdowns";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
@@ -141,15 +140,6 @@ export default function PartnerDashboard() {
                     <span className="text-red-600 font-medium">Inactive</span>
                   )}
                 </p>
-                {"profileReferenceCode" in entity && entity.profileReferenceCode && entityType && (
-                  <div className="mt-4">
-                    <ProfileQRCode
-                      profileName={entity.name}
-                      profileCode={entity.profileReferenceCode}
-                      entityType={entityType}
-                    />
-                  </div>
-                )}
                 {entityType === "restaurant" && "littleExplorerApproved" in entity && entity.littleExplorerApproved && (
                   <div className="flex flex-wrap gap-2 mt-3">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#AEECE4]/20 text-[#AEECE4] border border-[#AEECE4]/30 rounded-full text-sm font-medium">
