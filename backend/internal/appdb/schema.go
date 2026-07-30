@@ -36,9 +36,35 @@ type OfficialUse struct {
 
 // PaymentMethods are shared across Restaurant, ServiceData, and AttractionData.
 type PaymentMethods struct {
-	PaymentCard   bool `json:"paymentCard"`
-	PaymentCash   bool `json:"paymentCash"`
-	PaymentMobile bool `json:"paymentMobile"`
+	PaymentCard     bool `json:"paymentCard"`
+	PaymentCash     bool `json:"paymentCash"`
+	PaymentMobile   bool `json:"paymentMobile"` // labeled "Mobile Tap" in the UI
+	PaymentGaap     bool `json:"paymentGaap"`
+	PaymentSnapScan bool `json:"paymentSnapScan"`
+	PaymentYoco     bool `json:"paymentYoco"`
+	PaymentZapper   bool `json:"paymentZapper"`
+}
+
+// Socials is shared by Restaurant, Service, and Attraction — each entity's
+// own social media links, distinct from ProfileSettings' platform-wide
+// versions (BookingsSocialsDropdowns.tsx).
+type Socials struct {
+	SocialsWebsite   string `json:"socialsWebsite,omitempty"`
+	SocialsFacebook  string `json:"socialsFacebook,omitempty"`
+	SocialsInstagram string `json:"socialsInstagram,omitempty"`
+	SocialsTiktok    string `json:"socialsTiktok,omitempty"`
+	SocialsTwitter   string `json:"socialsTwitter,omitempty"`
+}
+
+// ExperienceInfo is shared by Service and Attraction — practical details a
+// guest would want before visiting. Restaurant doesn't use this (it has its
+// own Bookings fields instead).
+type ExperienceInfo struct {
+	SafetyInfo      string `json:"safetyInfo,omitempty"`
+	AgeRestrictions string `json:"ageRestrictions,omitempty"`
+	FitnessLevel    string `json:"fitnessLevel,omitempty"`
+	BestTimeOfDay   string `json:"bestTimeOfDay,omitempty"`
+	WhatToBring     string `json:"whatToBring,omitempty"`
 }
 
 // Accommodation matches the field set read/written across
@@ -145,6 +171,11 @@ type Restaurant struct {
 	DiscountOffered string `json:"discountOffered,omitempty"`
 	DiscountCode    string `json:"discountCode,omitempty"`
 
+	BookingsEmail         string `json:"bookingsEmail,omitempty"`
+	BookingsContactNumber string `json:"bookingsContactNumber,omitempty"`
+
+	Socials
+
 	ImageUrl string `json:"imageUrl,omitempty"`
 	IsActive bool   `json:"isActive"`
 
@@ -193,6 +224,9 @@ type ServiceData struct {
 	DiscountOffered string `json:"discountOffered,omitempty"`
 	DiscountCode    string `json:"discountCode,omitempty"`
 
+	ExperienceInfo
+	Socials
+
 	ImageUrl string `json:"imageUrl,omitempty"`
 	IsActive bool   `json:"isActive"`
 
@@ -236,6 +270,9 @@ type AttractionData struct {
 
 	DiscountOffered string `json:"discountOffered,omitempty"`
 	DiscountCode    string `json:"discountCode,omitempty"`
+
+	ExperienceInfo
+	Socials
 
 	ImageUrl string `json:"imageUrl,omitempty"`
 	IsActive bool   `json:"isActive"`
