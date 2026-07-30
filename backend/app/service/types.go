@@ -45,12 +45,28 @@ type CreateRequest struct {
 	PaymentCard   bool `json:"paymentCard"`
 	PaymentCash   bool `json:"paymentCash"`
 	PaymentMobile bool `json:"paymentMobile"`
+	PaymentGaap     bool `json:"paymentGaap"`
+	PaymentSnapScan bool `json:"paymentSnapScan"`
+	PaymentYoco     bool `json:"paymentYoco"`
+	PaymentZapper   bool `json:"paymentZapper"`
 
 	WheelchairAccess    bool `json:"wheelchairAccess"`
 	ParkingAvailability bool `json:"parkingAvailability"`
 
 	DiscountOffered string `json:"discountOffered,omitempty"`
 	DiscountCode    string `json:"discountCode,omitempty"`
+
+	SafetyInfo      string `json:"safetyInfo,omitempty"`
+	AgeRestrictions string `json:"ageRestrictions,omitempty"`
+	FitnessLevel    string `json:"fitnessLevel,omitempty"`
+	BestTimeOfDay   string `json:"bestTimeOfDay,omitempty"`
+	WhatToBring     string `json:"whatToBring,omitempty"`
+
+	SocialsWebsite   string `json:"socialsWebsite,omitempty"`
+	SocialsFacebook  string `json:"socialsFacebook,omitempty"`
+	SocialsInstagram string `json:"socialsInstagram,omitempty"`
+	SocialsTiktok    string `json:"socialsTiktok,omitempty"`
+	SocialsTwitter   string `json:"socialsTwitter,omitempty"`
 
 	ImageUrl string `json:"imageUrl,omitempty"`
 	IsActive bool   `json:"isActive"`
@@ -86,12 +102,28 @@ type UpdateRequest struct {
 	PaymentCard   *bool `json:"paymentCard,omitempty"`
 	PaymentCash   *bool `json:"paymentCash,omitempty"`
 	PaymentMobile *bool `json:"paymentMobile,omitempty"`
+	PaymentGaap     *bool `json:"paymentGaap,omitempty"`
+	PaymentSnapScan *bool `json:"paymentSnapScan,omitempty"`
+	PaymentYoco     *bool `json:"paymentYoco,omitempty"`
+	PaymentZapper   *bool `json:"paymentZapper,omitempty"`
 
 	WheelchairAccess    *bool `json:"wheelchairAccess,omitempty"`
 	ParkingAvailability *bool `json:"parkingAvailability,omitempty"`
 
 	DiscountOffered *string `json:"discountOffered,omitempty"`
 	DiscountCode    *string `json:"discountCode,omitempty"`
+
+	SafetyInfo      *string `json:"safetyInfo,omitempty"`
+	AgeRestrictions *string `json:"ageRestrictions,omitempty"`
+	FitnessLevel    *string `json:"fitnessLevel,omitempty"`
+	BestTimeOfDay   *string `json:"bestTimeOfDay,omitempty"`
+	WhatToBring     *string `json:"whatToBring,omitempty"`
+
+	SocialsWebsite   *string `json:"socialsWebsite,omitempty"`
+	SocialsFacebook  *string `json:"socialsFacebook,omitempty"`
+	SocialsInstagram *string `json:"socialsInstagram,omitempty"`
+	SocialsTiktok    *string `json:"socialsTiktok,omitempty"`
+	SocialsTwitter   *string `json:"socialsTwitter,omitempty"`
 
 	ImageUrl *string `json:"imageUrl,omitempty"`
 	IsActive *bool   `json:"isActive,omitempty"`
