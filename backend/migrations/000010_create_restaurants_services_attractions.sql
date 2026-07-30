@@ -79,6 +79,7 @@ create index if not exists idx_restaurants_area on restaurants (area);
 create index if not exists idx_restaurants_is_active on restaurants (is_active);
 create index if not exists idx_restaurants_lat_lng on restaurants (latitude, longitude);
 
+drop trigger if exists trg_restaurants_updated_at on restaurants;
 create trigger trg_restaurants_updated_at
   before update on restaurants
   for each row execute function set_updated_at();
@@ -142,6 +143,7 @@ create index if not exists idx_services_area on services (area);
 create index if not exists idx_services_is_active on services (is_active);
 create index if not exists idx_services_lat_lng on services (latitude, longitude);
 
+drop trigger if exists trg_services_updated_at on services;
 create trigger trg_services_updated_at
   before update on services
   for each row execute function set_updated_at();
@@ -205,6 +207,7 @@ create index if not exists idx_attractions_area on attractions (area);
 create index if not exists idx_attractions_is_active on attractions (is_active);
 create index if not exists idx_attractions_lat_lng on attractions (latitude, longitude);
 
+drop trigger if exists trg_attractions_updated_at on attractions;
 create trigger trg_attractions_updated_at
   before update on attractions
   for each row execute function set_updated_at();
