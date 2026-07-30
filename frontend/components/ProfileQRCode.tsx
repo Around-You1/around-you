@@ -20,7 +20,7 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
   const description =
     entityType === "accommodation"
       ? "Scan this QR code to automatically log in so as to be able to see all that the Guesthouse has to offer. You will also be able to view Restaurants, Services and Attractions in and 'Around You' up to 150 kilometers."
-      : "Use this QR code for social media marketing so that anyone can view all that your establishment has to offer.";
+      : "Scan this QR code to automatically log in so as to be able to see all that this business has to offer.";
 
   const handleDownload = async () => {
     const qrDownloadUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(loginUrl)}&bgcolor=000000&color=39FF14&margin=10`;

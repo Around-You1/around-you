@@ -651,7 +651,7 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
                 checked={formData.littleExplorerApproved}
                 onCheckedChange={(checked) => setFormData({ ...formData, littleExplorerApproved: checked })}
               />
-              <Label htmlFor="littleExplorerApproved">Little Explorer Approved</Label>
+              <Label htmlFor="littleExplorerApproved">Child Friendly</Label>
             </div>
 
             <div className="flex items-center space-x-2">
