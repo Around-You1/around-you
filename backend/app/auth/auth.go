@@ -149,14 +149,23 @@ func findByAccessCode(ctx context.Context, code string) (*appdb.User, error) {
 		return nil, err
 	}
 
+	var restID int64
+	var restName string
+	err = appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT id, name FROM restaurants
+		WHERE upper(profile_reference_code) = upper($1)
+		   OR (partner_code_active AND upper(partner_code) = upper($1))`, code,
+	).Scan(&restID, &restName)
+	if err == nil {
+		return &appdb.User{Email: "partner@" + restName, Role: "Partner", ProfileType: "restaurant", EntityType: "restaurant", EntityID: restID}, nil
+	}
+	if !isNoRows(err) {
+		return nil, err
+	}
+
 	appdb.DB.Lock()
 	defer appdb.DB.Unlock()
 
-	for _, r := range appdb.DB.Restaurants {
-		if strings.EqualFold(r.ProfileReferenceCode, code) || (r.PartnerCode.Active && strings.EqualFold(r.PartnerCode.Code, code)) {
-			return &appdb.User{Email: "partner@" + r.Name, Role: "Partner", ProfileType: "restaurant", EntityType: "restaurant", EntityID: r.ID}, nil
-		}
-	}
 	for _, s := range appdb.DB.Services {
 		if strings.EqualFold(s.ProfileReferenceCode, code) || (s.PartnerCode.Active && strings.EqualFold(s.PartnerCode.Code, code)) {
 			return &appdb.User{Email: "partner@" + s.Name, Role: "Partner", ProfileType: "service", EntityType: "service", EntityID: s.ID}, nil
@@ -213,6 +222,20 @@ func findByNameAddressProvince(ctx context.Context, name, address, province stri
 		return nil, err
 	}
 
+	var restID int64
+	var restName string
+	err = appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT id, name FROM restaurants
+		WHERE lower(trim(name)) = lower($1) AND lower(trim(address)) = lower($2) AND lower(province) = lower($3)`,
+		name, strings.TrimSpace(address), province,
+	).Scan(&restID, &restName)
+	if err == nil {
+		return &appdb.User{Email: "partner@" + restName, Role: "Partner", ProfileType: "restaurant", EntityType: "restaurant", EntityID: restID}, nil
+	}
+	if !isNoRows(err) {
+		return nil, err
+	}
+
 	appdb.DB.Lock()
 	defer appdb.DB.Unlock()
 
@@ -222,11 +245,6 @@ func findByNameAddressProvince(ctx context.Context, name, address, province stri
 			strings.EqualFold(entityProvince, province)
 	}
 
-	for _, r := range appdb.DB.Restaurants {
-		if matches(r.Name, r.Address, r.Province) {
-			return &appdb.User{Email: "partner@" + r.Name, Role: "Partner", ProfileType: "restaurant", EntityType: "restaurant", EntityID: r.ID}, nil
-		}
-	}
 	for _, s := range appdb.DB.Services {
 		if matches(s.Name, s.Address, s.Province) {
 			return &appdb.User{Email: "partner@" + s.Name, Role: "Partner", ProfileType: "service", EntityType: "service", EntityID: s.ID}, nil

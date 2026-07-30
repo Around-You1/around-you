@@ -1,8 +1,7 @@
 // Package stats implements the admin dashboard's aggregate counts
-// (AdminDashboard.tsx's `backend.stats.get()`). Accommodation counts come
-// from Postgres now that accommodation has migrated (Phase 5); restaurant/
-// service/attraction still read the in-memory appdb.DB store until they
-// migrate too.
+// (AdminDashboard.tsx's `backend.stats.get()`). Accommodation and Restaurant
+// counts come from Postgres now that both have migrated; service/attraction
+// still read the in-memory appdb.DB store until they migrate too.
 package stats
 
 import (
@@ -39,18 +38,17 @@ func Get(ctx context.Context) (*Response, error) {
 	resp.TotalAccommodations = total
 	resp.AccommodationStats = appdb.CategoryStats{TotalCount: total, ActiveCount: active, InactiveCount: total - active}
 
+	var restTotal, restActive int
+	restRow := appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT count(*), count(*) FILTER (WHERE is_active) FROM restaurants`)
+	if err := restRow.Scan(&restTotal, &restActive); err != nil {
+		return nil, err
+	}
+	resp.TotalRestaurants = restTotal
+	resp.RestaurantStats = appdb.CategoryStats{TotalCount: restTotal, ActiveCount: restActive, InactiveCount: restTotal - restActive}
+
 	appdb.DB.Lock()
 	defer appdb.DB.Unlock()
-
-	for _, r := range appdb.DB.Restaurants {
-		resp.TotalRestaurants++
-		resp.RestaurantStats.TotalCount++
-		if r.IsActive {
-			resp.RestaurantStats.ActiveCount++
-		} else {
-			resp.RestaurantStats.InactiveCount++
-		}
-	}
 
 	for _, s := range appdb.DB.Services {
 		resp.TotalServices++

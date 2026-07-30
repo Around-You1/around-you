@@ -54,6 +54,7 @@ const CUISINE_TYPES = [
   "Thai",
   "Vegan",
   "Vegetarian",
+  "Vetkoek",
 ];
 
 export default function RestaurantForm({ restaurantId, onClose }: RestaurantFormProps) {
