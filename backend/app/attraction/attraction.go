@@ -112,7 +112,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.AttractionData, err
 		PostalCode:             req.PostalCode,
 		ContactNumber:          req.ContactNumber,
 		Description:            req.Description,
-		ProfileReferenceCode:   appdb.RandomCode(8),
+		ProfileReferenceCode:   appdb.RandomCode(12),
 		AttractionType:         req.AttractionType,
 		LittleExplorerApproved: req.LittleExplorerApproved,
 		PaymentMethods: appdb.PaymentMethods{
@@ -379,7 +379,7 @@ func ImportAttractions(ctx context.Context, req *ImportRequest) (*ImportResponse
 			Area:                 row.Area,
 			PostalCode:           row.PostalCode,
 			ContactNumber:        row.ContactNumber,
-			ProfileReferenceCode: appdb.RandomCode(8),
+			ProfileReferenceCode: appdb.RandomCode(12),
 			AttractionType:       splitCSVList(row.AttractionType),
 			ImageUrl:             row.ImageUrl,
 			DiscountOffered:      row.DiscountOffered,

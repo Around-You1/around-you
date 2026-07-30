@@ -112,7 +112,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.ServiceData, error)
 		PostalCode:             req.PostalCode,
 		ContactNumber:          req.ContactNumber,
 		Description:            req.Description,
-		ProfileReferenceCode:   appdb.RandomCode(8),
+		ProfileReferenceCode:   appdb.RandomCode(12),
 		ServiceCategories:      req.ServiceCategories,
 		LittleExplorerApproved: req.LittleExplorerApproved,
 		PaymentMethods: appdb.PaymentMethods{
@@ -378,7 +378,7 @@ func ImportServices(ctx context.Context, req *ImportRequest) (*ImportResponse, e
 			Area:                 row.Area,
 			PostalCode:           row.PostalCode,
 			ContactNumber:        row.ContactNumber,
-			ProfileReferenceCode: appdb.RandomCode(8),
+			ProfileReferenceCode: appdb.RandomCode(12),
 			ServiceCategories:    splitCSVList(row.ServiceCategories),
 			ImageUrl:             row.ImageUrl,
 			DiscountOffered:      row.DiscountOffered,

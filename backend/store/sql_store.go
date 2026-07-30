@@ -171,7 +171,7 @@ func (s *Store) Get(ctx context.Context, id int64) (*appdb.Accommodation, error)
 // store assigns all four (ID and the timestamps via the DB itself,
 // ProfileReferenceCode via appdb.RandomCode) and returns the persisted row.
 func (s *Store) Create(ctx context.Context, in *appdb.Accommodation) (*appdb.Accommodation, error) {
-	profileReferenceCode := appdb.RandomCode(8)
+	profileReferenceCode := appdb.RandomCode(12)
 
 	row := appdb.SQLDB.QueryRowContext(ctx, `
 		INSERT INTO accommodations (
