@@ -13,8 +13,8 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
 
   const loginUrl =
     entityType === "accommodation"
-      ? `https://aroundyou.co.za/login?code=${encodeURIComponent(profileCode)}`
-      : `https://aroundyou.co.za/login?code=${encodeURIComponent(profileCode)}&role=partner`;
+      ? `https://aroundyou.co.za/?code=${encodeURIComponent(profileCode)}`
+      : `https://aroundyou.co.za/?code=${encodeURIComponent(profileCode)}&role=partner`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(loginUrl)}&bgcolor=000000&color=39FF14&margin=10`;
 
   const description =

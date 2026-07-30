@@ -82,7 +82,15 @@ export default function AboutYouPage() {
   }, [accessCode, navigate]);
 
   const handleLogin = () => {
-    navigate("/portal");
+    const code = searchParams.get("code");
+    const role = searchParams.get("role");
+    if (code) {
+      const params = new URLSearchParams({ code });
+      if (role) params.set("role", role);
+      navigate(`/portal?${params.toString()}`);
+    } else {
+      navigate("/portal");
+    }
   };
 
   const handleToggle = (id: string) => {
