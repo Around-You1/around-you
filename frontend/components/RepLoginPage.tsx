@@ -172,7 +172,7 @@ export default function RepLoginPage() {
           <div className="pt-2 text-center">
             <button
               type="button"
-              onClick={() => navigate("/login")}
+              onClick={() => navigate("/portal")}
               className="text-sm transition-colors hover:underline underline-offset-4"
               style={{ color: "#444" }}
             >
