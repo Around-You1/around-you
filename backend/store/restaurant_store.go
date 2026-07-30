@@ -41,12 +41,20 @@ const restaurantColumns = `
 	COALESCE(menu_link, '') as menu_link,
 	service_dine_in, service_takeaway, service_delivery, little_explorer_approved,
 	payment_card, payment_cash, payment_mobile,
+	payment_gaap, payment_snapscan, payment_yoco, payment_zapper,
 	wheelchair_access, parking_availability,
 	COALESCE(wifi_network, '') as wifi_network,
 	COALESCE(wifi_password, '') as wifi_password,
 	COALESCE(wifi_credentials, '') as wifi_credentials,
 	COALESCE(discount_offered, '') as discount_offered,
 	COALESCE(discount_code, '') as discount_code,
+	COALESCE(bookings_email, '') as bookings_email,
+	COALESCE(bookings_contact_number, '') as bookings_contact_number,
+	COALESCE(socials_website, '') as socials_website,
+	COALESCE(socials_facebook, '') as socials_facebook,
+	COALESCE(socials_instagram, '') as socials_instagram,
+	COALESCE(socials_tiktok, '') as socials_tiktok,
+	COALESCE(socials_twitter, '') as socials_twitter,
 	COALESCE(image_url, '') as image_url,
 	is_active,
 	COALESCE(official_holding_company, '') as official_holding_company,
@@ -74,9 +82,12 @@ func scanRestaurant(row restaurantScanner) (*appdb.Restaurant, error) {
 		pq.Array(&r.CuisineTypes),
 		&r.MenuLink, &r.ServiceDineIn, &r.ServiceTakeaway, &r.ServiceDelivery, &r.LittleExplorerApproved,
 		&r.PaymentCard, &r.PaymentCash, &r.PaymentMobile,
+		&r.PaymentGaap, &r.PaymentSnapScan, &r.PaymentYoco, &r.PaymentZapper,
 		&r.WheelchairAccess, &r.ParkingAvailability,
 		&r.WifiNetwork, &r.WifiPassword, &r.WifiCredentials,
 		&r.DiscountOffered, &r.DiscountCode,
+		&r.BookingsEmail, &r.BookingsContactNumber,
+		&r.SocialsWebsite, &r.SocialsFacebook, &r.SocialsInstagram, &r.SocialsTiktok, &r.SocialsTwitter,
 		&r.ImageUrl, &r.IsActive,
 		&r.OfficialHoldingCompany, &r.OfficialContactName, &r.OfficialContactNumber, &r.OfficialEmail, &r.OfficialRepCode,
 		&r.GuestType, &r.AccessLevel,
@@ -172,24 +183,30 @@ func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*ap
 			name, address, latitude, longitude, country, province, area, postal_code,
 			contact_number, description, profile_reference_code,
 			cuisine_types, menu_link, service_dine_in, service_takeaway, service_delivery, little_explorer_approved,
-			payment_card, payment_cash, payment_mobile,
+			payment_card, payment_cash, payment_mobile, payment_gaap, payment_snapscan, payment_yoco, payment_zapper,
 			wheelchair_access, parking_availability,
 			wifi_network, wifi_password, wifi_credentials,
-			discount_offered, discount_code, image_url, is_active,
+			discount_offered, discount_code,
+			bookings_email, bookings_contact_number,
+			socials_website, socials_facebook, socials_instagram, socials_tiktok, socials_twitter,
+			image_url, is_active,
 			official_holding_company, official_contact_name, official_contact_number, official_email, official_rep_code,
 			guest_type, access_level, partner_code, partner_code_active
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,
-			$30,$31,$32,$33,$34,$35,$36,$37,$38
+			$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49
 		)
 		RETURNING `+restaurantColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
 		in.ContactNumber, in.Description, in.ProfileReferenceCode,
 		pq.Array(nonNilSlice(in.CuisineTypes)), in.MenuLink, in.ServiceDineIn, in.ServiceTakeaway, in.ServiceDelivery, in.LittleExplorerApproved,
-		in.PaymentCard, in.PaymentCash, in.PaymentMobile,
+		in.PaymentCard, in.PaymentCash, in.PaymentMobile, in.PaymentGaap, in.PaymentSnapScan, in.PaymentYoco, in.PaymentZapper,
 		in.WheelchairAccess, in.ParkingAvailability,
 		in.WifiNetwork, in.WifiPassword, in.WifiCredentials,
-		in.DiscountOffered, in.DiscountCode, in.ImageUrl, in.IsActive,
+		in.DiscountOffered, in.DiscountCode,
+		in.BookingsEmail, in.BookingsContactNumber,
+		in.SocialsWebsite, in.SocialsFacebook, in.SocialsInstagram, in.SocialsTiktok, in.SocialsTwitter,
+		in.ImageUrl, in.IsActive,
 		in.OfficialHoldingCompany, in.OfficialContactName, in.OfficialContactNumber, in.OfficialEmail, in.OfficialRepCode,
 		in.GuestType, in.AccessLevel, in.PartnerCode.Code, in.PartnerCode.Active,
 	)
@@ -222,6 +239,10 @@ type RestaurantPatch struct {
 	PaymentCard   *bool
 	PaymentCash   *bool
 	PaymentMobile *bool
+	PaymentGaap     *bool
+	PaymentSnapScan *bool
+	PaymentYoco     *bool
+	PaymentZapper   *bool
 
 	WheelchairAccess    *bool
 	ParkingAvailability *bool
@@ -231,6 +252,15 @@ type RestaurantPatch struct {
 
 	DiscountOffered *string
 	DiscountCode    *string
+
+	BookingsEmail         *string
+	BookingsContactNumber *string
+
+	SocialsWebsite   *string
+	SocialsFacebook  *string
+	SocialsInstagram *string
+	SocialsTiktok    *string
+	SocialsTwitter   *string
 
 	ImageUrl *string
 	IsActive *bool
@@ -309,6 +339,18 @@ func (s *RestaurantStore) Update(ctx context.Context, id int64, patch Restaurant
 	if patch.PaymentMobile != nil {
 		sets = append(sets, "payment_mobile = "+arg(*patch.PaymentMobile))
 	}
+	if patch.PaymentGaap != nil {
+		sets = append(sets, "payment_gaap = "+arg(*patch.PaymentGaap))
+	}
+	if patch.PaymentSnapScan != nil {
+		sets = append(sets, "payment_snapscan = "+arg(*patch.PaymentSnapScan))
+	}
+	if patch.PaymentYoco != nil {
+		sets = append(sets, "payment_yoco = "+arg(*patch.PaymentYoco))
+	}
+	if patch.PaymentZapper != nil {
+		sets = append(sets, "payment_zapper = "+arg(*patch.PaymentZapper))
+	}
 	if patch.WheelchairAccess != nil {
 		sets = append(sets, "wheelchair_access = "+arg(*patch.WheelchairAccess))
 	}
@@ -326,6 +368,27 @@ func (s *RestaurantStore) Update(ctx context.Context, id int64, patch Restaurant
 	}
 	if patch.DiscountCode != nil {
 		sets = append(sets, "discount_code = "+arg(*patch.DiscountCode))
+	}
+	if patch.BookingsEmail != nil {
+		sets = append(sets, "bookings_email = "+arg(*patch.BookingsEmail))
+	}
+	if patch.BookingsContactNumber != nil {
+		sets = append(sets, "bookings_contact_number = "+arg(*patch.BookingsContactNumber))
+	}
+	if patch.SocialsWebsite != nil {
+		sets = append(sets, "socials_website = "+arg(*patch.SocialsWebsite))
+	}
+	if patch.SocialsFacebook != nil {
+		sets = append(sets, "socials_facebook = "+arg(*patch.SocialsFacebook))
+	}
+	if patch.SocialsInstagram != nil {
+		sets = append(sets, "socials_instagram = "+arg(*patch.SocialsInstagram))
+	}
+	if patch.SocialsTiktok != nil {
+		sets = append(sets, "socials_tiktok = "+arg(*patch.SocialsTiktok))
+	}
+	if patch.SocialsTwitter != nil {
+		sets = append(sets, "socials_twitter = "+arg(*patch.SocialsTwitter))
 	}
 	if patch.ImageUrl != nil {
 		sets = append(sets, "image_url = "+arg(*patch.ImageUrl))
