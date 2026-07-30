@@ -122,7 +122,7 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
     try {
       console.log("[RestaurantForm] Loading restaurant with ID:", restaurantId);
       const backend = getAuthenticatedBackend();
-      const data = await backend.restaurant.get({ restaurantId: String(restaurantId) });
+      const data = await backend.restaurant.get({ id: restaurantId });
       console.log("[RestaurantForm] Received restaurant data:", data);
       setRestaurant(data);
       setOfficialUse({

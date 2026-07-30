@@ -98,9 +98,16 @@ function safeJson(text: string): any {
 // components call.
 function partnerEntity(
   singular: "restaurant" | "service" | "attraction",
-  keys: { del: string; export: string; import: string }
+  keys: { del: string; export: string; import: string; getIdParam?: string }
 ) {
   const base = `/${singular}`;
+  // Restaurant's backend Get uses a plain numeric "id". Service and
+  // Attraction instead use a string serviceId/attractionId (see
+  // app/service/types.go, app/attraction/types.go) — this was previously
+  // hardcoded to "id" for all three, which silently sent nothing useful for
+  // Service/Attraction and broke Restaurant's own form too (it was calling
+  // with a mismatched property name on top of that — see RestaurantForm.tsx).
+  const idParam = keys.getIdParam ?? "id";
   const api: Record<string, (arg?: any) => Promise<any>> = {
     list: (req?: any) =>
       request("GET", base, { query: { sortBy: req?.sortBy, sortOrder: req?.sortOrder } }),
@@ -114,7 +121,7 @@ function partnerEntity(
           radiusKm: req?.radiusKm,
         },
       }),
-    get: (req: any) => request("GET", `${base}/get`, { query: { id: req?.id } }),
+    get: (req: any) => request("GET", `${base}/get`, { query: { [idParam]: req?.[idParam] } }),
     create: (req: any) => request("POST", base, { body: req }),
     update: (req: any) => request("PUT", base, { body: req }),
     getPartnerCode: (req: any) =>
@@ -173,16 +180,19 @@ export const backend = {
     del: "deleteRestaurant",
     export: "exportRestaurants",
     import: "importRestaurants",
+    getIdParam: "id",
   }),
   service: partnerEntity("service", {
     del: "deleteService",
     export: "exportServices",
     import: "importServices",
+    getIdParam: "serviceId",
   }),
   attraction: partnerEntity("attraction", {
     del: "deleteAttraction",
     export: "exportAttractions",
     import: "importAttractions",
+    getIdParam: "attractionId",
   }),
 
   storage: {
