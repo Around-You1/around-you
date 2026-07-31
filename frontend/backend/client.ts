@@ -207,6 +207,17 @@ export const backend = {
   stats: {
     get: () => request("GET", "/stats"),
   },
+
+  rating: {
+    // One vote per guest per partner, enforced server-side — see
+    // app/rating/rating.go. entityType is "restaurant" | "service" |
+    // "attraction"; entityId is the numeric id (not the string
+    // serviceId/attractionId used elsewhere).
+    submitRating: (req: { entityType: string; entityId: number; stars: number }) =>
+      request("POST", "/rating/submit", { body: req }),
+    listSummaries: (req: { entityType: string; entityIds: number[] }) =>
+      request("POST", "/rating/summaries", { body: req }),
+  },
 };
 
 export default backend;
