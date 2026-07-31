@@ -3,71 +3,16 @@ package attraction
 import (
 	"context"
 	"encoding/csv"
-	"sort"
+	"errors"
 	"strconv"
 	"strings"
-	"time"
 
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/errs"
+	"backend_encore/store"
 )
 
-//encore:api auth method=GET path=/attraction
-func List(ctx context.Context, req *ListRequest) (*ListResponse, error) {
-	appdb.DB.Lock()
-	defer appdb.DB.Unlock()
-	out := make([]appdb.AttractionData, 0, len(appdb.DB.Attractions))
-	for _, a := range appdb.DB.Attractions {
-		out = append(out, *a)
-	}
-	sortAttractions(out, req.SortBy, req.SortOrder)
-	return &ListResponse{Attractions: out}, nil
-}
-
-func sortAttractions(items []appdb.AttractionData, sortBy, sortOrder string) {
-	desc := sortOrder != "asc"
-	less := func(i, j int) bool {
-		if sortBy == "name" {
-			return items[i].Name < items[j].Name
-		}
-		return items[i].CreatedAt.Before(items[j].CreatedAt)
-	}
-	sort.SliceStable(items, func(i, j int) bool {
-		if desc {
-			return less(j, i)
-		}
-		return less(i, j)
-	})
-}
-
-//encore:api auth method=GET path=/attraction/by-municipality
-func ListByMunicipality(ctx context.Context, req *ListByMunicipalityRequest) (*ListResponse, error) {
-	appdb.DB.Lock()
-	defer appdb.DB.Unlock()
-	out := make([]appdb.AttractionData, 0)
-	for _, a := range appdb.DB.Attractions {
-		if a.IsActive && strings.EqualFold(a.Area, req.Area) {
-			out = append(out, *a)
-		}
-	}
-	return &ListResponse{Attractions: out}, nil
-}
-
-//encore:api auth method=GET path=/attraction/nearby
-func ListNearby(ctx context.Context, req *ListNearbyRequest) (*ListResponse, error) {
-	appdb.DB.Lock()
-	defer appdb.DB.Unlock()
-	out := make([]appdb.AttractionData, 0)
-	for _, a := range appdb.DB.Attractions {
-		if !a.IsActive || a.Latitude == nil || a.Longitude == nil {
-			continue
-		}
-		if appdb.HaversineKm(req.Latitude, req.Longitude, *a.Latitude, *a.Longitude) <= req.RadiusKm {
-			out = append(out, *a)
-		}
-	}
-	return &ListResponse{Attractions: out}, nil
-}
+var attractions = store.NewAttractionStore()
 
 func lookup(attractionID string) (int64, error) {
 	id, err := strconv.ParseInt(attractionID, 10, 64)
@@ -77,19 +22,53 @@ func lookup(attractionID string) (int64, error) {
 	return id, nil
 }
 
+//encore:api auth method=GET path=/attraction
+func List(ctx context.Context, req *ListRequest) (*ListResponse, error) {
+	items, err := attractions.List(ctx, req.SortBy, req.SortOrder)
+	if err != nil {
+		return nil, err
+	}
+	return &ListResponse{Attractions: items}, nil
+}
+
+//encore:api auth method=GET path=/attraction/by-municipality
+func ListByMunicipality(ctx context.Context, req *ListByMunicipalityRequest) (*ListResponse, error) {
+	items, err := attractions.ListByMunicipality(ctx, req.Area)
+	if err != nil {
+		return nil, err
+	}
+	return &ListResponse{Attractions: items}, nil
+}
+
+//encore:api auth method=GET path=/attraction/nearby
+func ListNearby(ctx context.Context, req *ListNearbyRequest) (*ListResponse, error) {
+	all, err := attractions.ListNearby(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]appdb.AttractionData, 0, len(all))
+	for _, a := range all {
+		if appdb.HaversineKm(req.Latitude, req.Longitude, *a.Latitude, *a.Longitude) <= req.RadiusKm {
+			out = append(out, a)
+		}
+	}
+	return &ListResponse{Attractions: out}, nil
+}
+
 //encore:api auth method=GET path=/attraction/get
 func Get(ctx context.Context, req *GetRequest) (*appdb.AttractionData, error) {
 	id, err := lookup(req.AttractionID)
 	if err != nil {
 		return nil, err
 	}
-	appdb.DB.Lock()
-	defer appdb.DB.Unlock()
-	a, ok := appdb.DB.Attractions[id]
-	if !ok {
-		return nil, &errs.Error{Code: errs.NotFound, Message: "attraction not found"}
+	item, err := attractions.Get(ctx, id)
+	if err != nil {
+		if errors.Is(err, store.ErrAttractionNotFound) {
+			return nil, &errs.Error{Code: errs.NotFound, Message: "attraction not found"}
+		}
+		return nil, err
 	}
-	return a, nil
+	return item, nil
 }
 
 //encore:api auth method=POST path=/attraction
@@ -97,11 +76,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.AttractionData, err
 	if strings.TrimSpace(req.Name) == "" {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "name is required"}
 	}
-	now := time.Now()
-	id := appdb.DB.NextID()
-	a := &appdb.AttractionData{
-		ID:                     id,
-		AttractionID:           strconv.FormatInt(id, 10),
+	in := &appdb.AttractionData{
 		Name:                   req.Name,
 		Address:                req.Address,
 		Latitude:               req.Latitude,
@@ -116,16 +91,35 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.AttractionData, err
 		AttractionType:         req.AttractionType,
 		LittleExplorerApproved: req.LittleExplorerApproved,
 		PaymentMethods: appdb.PaymentMethods{
-			PaymentCard:   req.PaymentCard,
-			PaymentCash:   req.PaymentCash,
-			PaymentMobile: req.PaymentMobile,
+			PaymentCard:     req.PaymentCard,
+			PaymentCash:     req.PaymentCash,
+			PaymentMobile:   req.PaymentMobile,
+			PaymentGaap:     req.PaymentGaap,
+			PaymentSnapScan: req.PaymentSnapScan,
+			PaymentYoco:     req.PaymentYoco,
+			PaymentZapper:   req.PaymentZapper,
 		},
 		WheelchairAccess:    req.WheelchairAccess,
 		ParkingAvailability: req.ParkingAvailability,
 		DiscountOffered:     req.DiscountOffered,
 		DiscountCode:        req.DiscountCode,
-		ImageUrl:            req.ImageUrl,
-		IsActive:            req.IsActive,
+		ExperienceInfo: appdb.ExperienceInfo{
+			SafetyInfo:      req.SafetyInfo,
+			AgeRestrictions: req.AgeRestrictions,
+			FitnessLevel:    req.FitnessLevel,
+			BestTimeOfDay:   req.BestTimeOfDay,
+			WhatToBring:     req.WhatToBring,
+		},
+		Socials: appdb.Socials{
+			SocialsWebsite:   req.SocialsWebsite,
+			SocialsFacebook:  req.SocialsFacebook,
+			SocialsInstagram: req.SocialsInstagram,
+			SocialsTiktok:    req.SocialsTiktok,
+			SocialsTwitter:   req.SocialsTwitter,
+		},
+		ImageUrl:  req.ImageUrl,
+		ImageUrls: req.ImageUrls,
+		IsActive:  req.IsActive,
 		OfficialUse: appdb.OfficialUse{
 			OfficialHoldingCompany: req.OfficialHoldingCompany,
 			OfficialContactName:    req.OfficialContactName,
@@ -136,15 +130,8 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.AttractionData, err
 			AccessLevel:            req.AccessLevel,
 		},
 		PartnerCode: appdb.PartnerCode{Code: appdb.RandomCode(10), Active: true},
-		CreatedAt:   now,
-		UpdatedAt:   now,
 	}
-
-	appdb.DB.Lock()
-	appdb.DB.Attractions[id] = a
-	appdb.DB.Unlock()
-
-	return a, nil
+	return attractions.Create(ctx, in)
 }
 
 //encore:api auth method=PUT path=/attraction
@@ -153,102 +140,59 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.AttractionData, err
 	if err != nil {
 		return nil, err
 	}
-
-	appdb.DB.Lock()
-	defer appdb.DB.Unlock()
-
-	a, ok := appdb.DB.Attractions[id]
-	if !ok {
-		return nil, &errs.Error{Code: errs.NotFound, Message: "attraction not found"}
+	patch := store.AttractionPatch{
+		Name:                   req.Name,
+		Address:                req.Address,
+		Latitude:               req.Latitude,
+		Longitude:              req.Longitude,
+		Country:                req.Country,
+		Province:               req.Province,
+		Area:                   req.Area,
+		PostalCode:             req.PostalCode,
+		ContactNumber:          req.ContactNumber,
+		Description:            req.Description,
+		AttractionType:         req.AttractionType,
+		LittleExplorerApproved: req.LittleExplorerApproved,
+		PaymentCard:            req.PaymentCard,
+		PaymentCash:            req.PaymentCash,
+		PaymentMobile:          req.PaymentMobile,
+		PaymentGaap:            req.PaymentGaap,
+		PaymentSnapScan:        req.PaymentSnapScan,
+		PaymentYoco:            req.PaymentYoco,
+		PaymentZapper:          req.PaymentZapper,
+		WheelchairAccess:       req.WheelchairAccess,
+		ParkingAvailability:    req.ParkingAvailability,
+		DiscountOffered:        req.DiscountOffered,
+		DiscountCode:           req.DiscountCode,
+		SafetyInfo:             req.SafetyInfo,
+		AgeRestrictions:        req.AgeRestrictions,
+		FitnessLevel:           req.FitnessLevel,
+		BestTimeOfDay:          req.BestTimeOfDay,
+		WhatToBring:            req.WhatToBring,
+		SocialsWebsite:         req.SocialsWebsite,
+		SocialsFacebook:        req.SocialsFacebook,
+		SocialsInstagram:       req.SocialsInstagram,
+		SocialsTiktok:          req.SocialsTiktok,
+		SocialsTwitter:         req.SocialsTwitter,
+		ImageUrl:               req.ImageUrl,
+		ImageUrls:              req.ImageUrls,
+		IsActive:               req.IsActive,
+		OfficialHoldingCompany: req.OfficialHoldingCompany,
+		OfficialContactName:    req.OfficialContactName,
+		OfficialContactNumber:  req.OfficialContactNumber,
+		OfficialEmail:          req.OfficialEmail,
+		OfficialRepCode:        req.OfficialRepCode,
+		GuestType:              req.GuestType,
+		AccessLevel:            req.AccessLevel,
 	}
-
-	if req.Name != nil {
-		a.Name = *req.Name
+	item, err := attractions.Update(ctx, id, patch)
+	if err != nil {
+		if errors.Is(err, store.ErrAttractionNotFound) {
+			return nil, &errs.Error{Code: errs.NotFound, Message: "attraction not found"}
+		}
+		return nil, err
 	}
-	if req.Address != nil {
-		a.Address = *req.Address
-	}
-	if req.Latitude != nil {
-		a.Latitude = req.Latitude
-	}
-	if req.Longitude != nil {
-		a.Longitude = req.Longitude
-	}
-	if req.Country != nil {
-		a.Country = *req.Country
-	}
-	if req.Province != nil {
-		a.Province = *req.Province
-	}
-	if req.Area != nil {
-		a.Area = *req.Area
-	}
-	if req.PostalCode != nil {
-		a.PostalCode = *req.PostalCode
-	}
-	if req.ContactNumber != nil {
-		a.ContactNumber = *req.ContactNumber
-	}
-	if req.Description != nil {
-		a.Description = *req.Description
-	}
-	if req.AttractionType != nil {
-		a.AttractionType = req.AttractionType
-	}
-	if req.LittleExplorerApproved != nil {
-		a.LittleExplorerApproved = *req.LittleExplorerApproved
-	}
-	if req.PaymentCard != nil {
-		a.PaymentCard = *req.PaymentCard
-	}
-	if req.PaymentCash != nil {
-		a.PaymentCash = *req.PaymentCash
-	}
-	if req.PaymentMobile != nil {
-		a.PaymentMobile = *req.PaymentMobile
-	}
-	if req.WheelchairAccess != nil {
-		a.WheelchairAccess = *req.WheelchairAccess
-	}
-	if req.ParkingAvailability != nil {
-		a.ParkingAvailability = *req.ParkingAvailability
-	}
-	if req.DiscountOffered != nil {
-		a.DiscountOffered = *req.DiscountOffered
-	}
-	if req.DiscountCode != nil {
-		a.DiscountCode = *req.DiscountCode
-	}
-	if req.ImageUrl != nil {
-		a.ImageUrl = *req.ImageUrl
-	}
-	if req.IsActive != nil {
-		a.IsActive = *req.IsActive
-	}
-	if req.OfficialHoldingCompany != nil {
-		a.OfficialHoldingCompany = *req.OfficialHoldingCompany
-	}
-	if req.OfficialContactName != nil {
-		a.OfficialContactName = *req.OfficialContactName
-	}
-	if req.OfficialContactNumber != nil {
-		a.OfficialContactNumber = *req.OfficialContactNumber
-	}
-	if req.OfficialEmail != nil {
-		a.OfficialEmail = *req.OfficialEmail
-	}
-	if req.OfficialRepCode != nil {
-		a.OfficialRepCode = *req.OfficialRepCode
-	}
-	if req.GuestType != nil {
-		a.GuestType = *req.GuestType
-	}
-	if req.AccessLevel != nil {
-		a.AccessLevel = *req.AccessLevel
-	}
-	a.UpdatedAt = time.Now()
-
-	return a, nil
+	return item, nil
 }
 
 //encore:api auth method=DELETE path=/attraction
@@ -257,48 +201,47 @@ func DeleteAttraction(ctx context.Context, req *DeleteRequest) (*DeleteAttractio
 	if err != nil {
 		return nil, err
 	}
-	appdb.DB.Lock()
-	defer appdb.DB.Unlock()
-	if _, ok := appdb.DB.Attractions[id]; !ok {
-		return nil, &errs.Error{Code: errs.NotFound, Message: "attraction not found"}
+	if err := attractions.Delete(ctx, id); err != nil {
+		if errors.Is(err, store.ErrAttractionNotFound) {
+			return nil, &errs.Error{Code: errs.NotFound, Message: "attraction not found"}
+		}
+		return nil, err
 	}
-	delete(appdb.DB.Attractions, id)
 	return &DeleteAttractionResponse{Success: true}, nil
 }
 
 //encore:api auth method=GET path=/attraction/partner-code
 func GetPartnerCode(ctx context.Context, req *PartnerCodeRequest) (*PartnerCodeResponse, error) {
-	appdb.DB.Lock()
-	defer appdb.DB.Unlock()
-	a, ok := appdb.DB.Attractions[req.ID]
-	if !ok {
-		return nil, &errs.Error{Code: errs.NotFound, Message: "attraction not found"}
+	code, active, err := attractions.GetPartnerCode(ctx, req.ID)
+	if err != nil {
+		if errors.Is(err, store.ErrAttractionNotFound) {
+			return nil, &errs.Error{Code: errs.NotFound, Message: "attraction not found"}
+		}
+		return nil, err
 	}
-	return &PartnerCodeResponse{PartnerCode: a.PartnerCode.Code, CodeActive: a.PartnerCode.Active}, nil
+	return &PartnerCodeResponse{PartnerCode: code, CodeActive: active}, nil
 }
 
 //encore:api auth method=POST path=/attraction/partner-code/regenerate
 func RegeneratePartnerCode(ctx context.Context, req *RegeneratePartnerCodeRequest) (*PartnerCodeResponse, error) {
-	appdb.DB.Lock()
-	defer appdb.DB.Unlock()
-	a, ok := appdb.DB.Attractions[req.ID]
-	if !ok {
-		return nil, &errs.Error{Code: errs.NotFound, Message: "attraction not found"}
+	code, active, err := attractions.RegeneratePartnerCode(ctx, req.ID, appdb.RandomCode(10))
+	if err != nil {
+		if errors.Is(err, store.ErrAttractionNotFound) {
+			return nil, &errs.Error{Code: errs.NotFound, Message: "attraction not found"}
+		}
+		return nil, err
 	}
-	a.PartnerCode.Code = appdb.RandomCode(10)
-	a.PartnerCode.Active = true
-	return &PartnerCodeResponse{PartnerCode: a.PartnerCode.Code, CodeActive: a.PartnerCode.Active}, nil
+	return &PartnerCodeResponse{PartnerCode: code, CodeActive: active}, nil
 }
 
 //encore:api auth method=POST path=/attraction/partner-code/toggle
 func TogglePartnerCode(ctx context.Context, req *TogglePartnerCodeRequest) (*TogglePartnerCodeResponse, error) {
-	appdb.DB.Lock()
-	defer appdb.DB.Unlock()
-	a, ok := appdb.DB.Attractions[req.ID]
-	if !ok {
-		return nil, &errs.Error{Code: errs.NotFound, Message: "attraction not found"}
+	if err := attractions.TogglePartnerCode(ctx, req.ID, req.Active); err != nil {
+		if errors.Is(err, store.ErrAttractionNotFound) {
+			return nil, &errs.Error{Code: errs.NotFound, Message: "attraction not found"}
+		}
+		return nil, err
 	}
-	a.PartnerCode.Active = req.Active
 	return &TogglePartnerCodeResponse{Success: true}, nil
 }
 
@@ -326,12 +269,14 @@ func Template(ctx context.Context) (*CSVResponse, error) {
 
 //encore:api auth method=GET path=/attraction/export
 func ExportAttractions(ctx context.Context) (*CSVResponse, error) {
-	appdb.DB.Lock()
-	defer appdb.DB.Unlock()
+	items, err := attractions.List(ctx, "", "")
+	if err != nil {
+		return nil, err
+	}
 	var sb strings.Builder
 	w := csv.NewWriter(&sb)
 	_ = w.Write(csvHeaders)
-	for _, a := range appdb.DB.Attractions {
+	for _, a := range items {
 		_ = w.Write([]string{
 			a.Name, a.Address, floatStr(a.Latitude), floatStr(a.Longitude), a.Country, a.Province, a.Area, a.PostalCode,
 			a.ContactNumber, strings.Join(a.AttractionType, ","), a.ImageUrl, a.DiscountOffered, a.DiscountCode,
@@ -355,21 +300,14 @@ func floatStr(f *float64) string {
 func ImportAttractions(ctx context.Context, req *ImportRequest) (*ImportResponse, error) {
 	resp := &ImportResponse{Errors: []string{}}
 
-	appdb.DB.Lock()
-	defer appdb.DB.Unlock()
-
 	for i, row := range req.Rows {
 		if strings.TrimSpace(row.Name) == "" {
 			resp.Failed++
 			resp.Errors = append(resp.Errors, rowError(i, row.Name, "name is required"))
 			continue
 		}
-		now := time.Now()
 		lat, lng := row.Latitude, row.Longitude
-		id := appdb.DB.NextIDLocked()
-		a := &appdb.AttractionData{
-			ID:                   id,
-			AttractionID:         strconv.FormatInt(id, 10),
+		in := &appdb.AttractionData{
 			Name:                 row.Name,
 			Address:              row.Address,
 			Latitude:             &lat,
@@ -395,10 +333,12 @@ func ImportAttractions(ctx context.Context, req *ImportRequest) (*ImportResponse
 			LittleExplorerApproved: parseBool(row.LittleExplorerApproved),
 			IsActive:               parseBool(row.IsActive),
 			PartnerCode:            appdb.PartnerCode{Code: appdb.RandomCode(10), Active: true},
-			CreatedAt:              now,
-			UpdatedAt:              now,
 		}
-		appdb.DB.Attractions[id] = a
+		if _, err := attractions.Create(ctx, in); err != nil {
+			resp.Failed++
+			resp.Errors = append(resp.Errors, rowError(i, row.Name, err.Error()))
+			continue
+		}
 		resp.Imported++
 	}
 

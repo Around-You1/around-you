@@ -1,7 +1,7 @@
 // Package stats implements the admin dashboard's aggregate counts
-// (AdminDashboard.tsx's `backend.stats.get()`). Accommodation and Restaurant
-// counts come from Postgres now that both have migrated; service/attraction
-// still read the in-memory appdb.DB store until they migrate too.
+// (AdminDashboard.tsx's `backend.stats.get()`). All four entity types now
+// read from Postgres — Accommodation, Restaurant, Service, and Attraction
+// have all migrated off the in-memory appdb.DB store.
 package stats
 
 import (
@@ -25,54 +25,48 @@ type Response struct {
 	AttractionStats    appdb.CategoryStats `json:"attractionStats"`
 }
 
+func countTable(ctx context.Context, table string) (total, active int, err error) {
+	row := appdb.SQLDB.QueryRowContext(ctx,
+		"SELECT count(*), count(*) FILTER (WHERE is_active) FROM "+table)
+	err = row.Scan(&total, &active)
+	return total, active, err
+}
+
 //encore:api auth method=GET path=/stats
 func Get(ctx context.Context) (*Response, error) {
 	resp := &Response{}
 
-	var total, active int
-	row := appdb.SQLDB.QueryRowContext(ctx, `
-		SELECT count(*), count(*) FILTER (WHERE is_active) FROM accommodations`)
-	if err := row.Scan(&total, &active); err != nil {
+	accTotal, accActive, err := countTable(ctx, "accommodations")
+	if err != nil {
 		return nil, err
 	}
-	resp.TotalAccommodations = total
-	resp.AccommodationStats = appdb.CategoryStats{TotalCount: total, ActiveCount: active, InactiveCount: total - active}
+	resp.TotalAccommodations = accTotal
+	resp.AccommodationStats = appdb.CategoryStats{TotalCount: accTotal, ActiveCount: accActive, InactiveCount: accTotal - accActive}
 
-	var restTotal, restActive int
-	restRow := appdb.SQLDB.QueryRowContext(ctx, `
-		SELECT count(*), count(*) FILTER (WHERE is_active) FROM restaurants`)
-	if err := restRow.Scan(&restTotal, &restActive); err != nil {
+	restTotal, restActive, err := countTable(ctx, "restaurants")
+	if err != nil {
 		return nil, err
 	}
 	resp.TotalRestaurants = restTotal
 	resp.RestaurantStats = appdb.CategoryStats{TotalCount: restTotal, ActiveCount: restActive, InactiveCount: restTotal - restActive}
 
-	appdb.DB.Lock()
-	defer appdb.DB.Unlock()
-
-	for _, s := range appdb.DB.Services {
-		resp.TotalServices++
-		resp.ServiceStats.TotalCount++
-		if s.IsActive {
-			resp.ServiceStats.ActiveCount++
-		} else {
-			resp.ServiceStats.InactiveCount++
-		}
+	svcTotal, svcActive, err := countTable(ctx, "services")
+	if err != nil {
+		return nil, err
 	}
+	resp.TotalServices = svcTotal
+	resp.ServiceStats = appdb.CategoryStats{TotalCount: svcTotal, ActiveCount: svcActive, InactiveCount: svcTotal - svcActive}
 
-	for _, a := range appdb.DB.Attractions {
-		resp.TotalAttractions++
-		resp.AttractionStats.TotalCount++
-		if a.IsActive {
-			resp.AttractionStats.ActiveCount++
-		} else {
-			resp.AttractionStats.InactiveCount++
-		}
+	attTotal, attActive, err := countTable(ctx, "attractions")
+	if err != nil {
+		return nil, err
 	}
+	resp.TotalAttractions = attTotal
+	resp.AttractionStats = appdb.CategoryStats{TotalCount: attTotal, ActiveCount: attActive, InactiveCount: attTotal - attActive}
 
 	// "Partners" = restaurants + services + attractions. Accommodations are
-	// guest lodging (role "Guest" at login), not partner listings, so they're
-	// excluded here — matching the Restaurant/Service/Attraction-only
+	// guest lodging (role "Guest" at login), not partner listings, so
+	// they're excluded here — matching the Restaurant/Service/Attraction-only
 	// "Partner" role used throughout auth.go.
 	resp.TotalPartners = resp.TotalRestaurants + resp.TotalServices + resp.TotalAttractions
 	resp.ActivePartners = resp.RestaurantStats.ActiveCount + resp.ServiceStats.ActiveCount + resp.AttractionStats.ActiveCount

@@ -396,7 +396,7 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
               <Label htmlFor="menuLink">Menu Link</Label>
               <Input
                 id="menuLink"
-                type="url"
+                type="text"
                 value={formData.menuLink}
                 onChange={(e) => setFormData({ ...formData, menuLink: e.target.value })}
               />
@@ -587,7 +587,7 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
                 <Label htmlFor="socialsWebsite">Website</Label>
                 <Input
                   id="socialsWebsite"
-                  type="url"
+                  type="text"
                   value={formData.socialsWebsite}
                   onChange={(e) => setFormData({ ...formData, socialsWebsite: e.target.value })}
                   placeholder="https://example.com"
@@ -597,7 +597,7 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
                 <Label htmlFor="socialsInstagram">Instagram</Label>
                 <Input
                   id="socialsInstagram"
-                  type="url"
+                  type="text"
                   value={formData.socialsInstagram}
                   onChange={(e) => setFormData({ ...formData, socialsInstagram: e.target.value })}
                   placeholder="https://instagram.com/yourpage"
@@ -607,7 +607,7 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
                 <Label htmlFor="socialsTwitter">X (Twitter)</Label>
                 <Input
                   id="socialsTwitter"
-                  type="url"
+                  type="text"
                   value={formData.socialsTwitter}
                   onChange={(e) => setFormData({ ...formData, socialsTwitter: e.target.value })}
                   placeholder="https://x.com/yourpage"
@@ -617,7 +617,7 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
                 <Label htmlFor="socialsYoutube">YouTube</Label>
                 <Input
                   id="socialsYoutube"
-                  type="url"
+                  type="text"
                   value={formData.socialsYoutube}
                   onChange={(e) => setFormData({ ...formData, socialsYoutube: e.target.value })}
                   placeholder="https://youtube.com/yourchannel"
@@ -627,7 +627,7 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
                 <Label htmlFor="socialsTiktok">TikTok</Label>
                 <Input
                   id="socialsTiktok"
-                  type="url"
+                  type="text"
                   value={formData.socialsTiktok}
                   onChange={(e) => setFormData({ ...formData, socialsTiktok: e.target.value })}
                   placeholder="https://tiktok.com/@yourpage"
