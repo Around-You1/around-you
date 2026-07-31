@@ -111,16 +111,14 @@ export default function PartnerDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#AEECE4]/20 to-background p-6">
       <div className="max-w-4xl mx-auto space-y-8 py-8">
-        <div className="flex items-center justify-between">
-          <div className="text-center flex-1">
-            <div className="flex justify-center mb-2"><AppLogo /></div>
-            <h1 className="text-4xl font-bold text-foreground">Partner Portal</h1>
-            <p className="text-lg text-muted-foreground mt-2">{getEntityTypeName()} Dashboard</p>
-          </div>
+        <div className="relative text-center">
+          <div className="flex justify-center mb-2"><AppLogo /></div>
+          <h1 className="text-4xl font-bold text-foreground">Partner Portal</h1>
+          <p className="text-lg text-muted-foreground mt-2">{getEntityTypeName()} Dashboard</p>
           <Button
             variant="ghost"
             onClick={handleLogout}
-            className="flex items-center gap-2"
+            className="absolute top-0 right-0 flex items-center gap-2"
           >
             <LogOut className="h-5 w-5" />
             Logout
@@ -258,7 +256,7 @@ export default function PartnerDashboard() {
                   <div className="flex items-center gap-2">
                     <p className="text-lg font-semibold text-[#AEECE4]">{entity.discountOffered}</p>
                     {entity.discountCode && (
-                      <span className="px-2 py-1 bg-[#AEECE4]/10 text-[#AEECE4] rounded text-xs font-mono">
+                      <span className="px-3 py-1.5 bg-[#AEECE4]/10 text-[#AEECE4] rounded text-lg font-mono font-bold tracking-wide">
                         {entity.discountCode}
                       </span>
                     )}
