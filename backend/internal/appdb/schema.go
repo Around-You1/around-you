@@ -179,8 +179,9 @@ type Restaurant struct {
 
 	Socials
 
-	ImageUrl string `json:"imageUrl,omitempty"`
-	IsActive bool   `json:"isActive"`
+	ImageUrl  string   `json:"imageUrl,omitempty"`
+	ImageUrls []string `json:"imageUrls,omitempty"`
+	IsActive  bool     `json:"isActive"`
 
 	OfficialUse
 
@@ -230,8 +231,9 @@ type ServiceData struct {
 	ExperienceInfo
 	Socials
 
-	ImageUrl string `json:"imageUrl,omitempty"`
-	IsActive bool   `json:"isActive"`
+	ImageUrl  string   `json:"imageUrl,omitempty"`
+	ImageUrls []string `json:"imageUrls,omitempty"`
+	IsActive  bool     `json:"isActive"`
 
 	OfficialUse
 
