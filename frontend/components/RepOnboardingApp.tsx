@@ -26,6 +26,7 @@ const ACCESSIBILITY_OPTIONS = ["Wheelchair Access", "Parking Availability"];
 const DIETARY_OPTIONS = ["Gluten Free", "Halaal", "Kosher", "Nut Free", "Signature Dish", "Chef Recommendation"];
 const SOCIAL_LINKS_OPTIONS = ["Website", "Facebook", "Instagram", "Tiktok", "X"];
 const PAYMENT_OPTIONS = ["Card", "Cash", "Gaap", "Mobile Tap", "Snap Scan", "Yoco", "Zapper"];
+const FACILITIES = ["Braai", "Fly Fishing", "Golf", "Gym", "Laundry", "Spa", "Swimming Pool"];
 
 const CUISINE_TYPES = [
   "African", "À la carte", "American", "Asian", "BBQ", "Bakery", "Boerewors Rolls",
@@ -326,17 +327,6 @@ export default function RepOnboardingApp() {
     return "Guest Only";
   }
 
-  // The Facilities field is a free-text textarea in this form, but the real
-  // Accommodation record stores facilities as a list — split on commas or
-  // new lines, matching how a rep would naturally type "Pool, Braai area,
-  // Wifi" or one item per line.
-  function splitToList(text) {
-    return (text || "")
-      .split(/[,\n]+/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-  }
-
   const submit = async () => {
     if (!data.companyName) {
       alert("Company Name is required.");
@@ -396,7 +386,7 @@ export default function RepOnboardingApp() {
           amenities: data.amenities || "",
           guidelines: data.guidelines || "",
           checkOutInstructions: data.checkOut || "",
-          facilities: splitToList(data.facilities),
+          facilities: data.facilities || [],
           wheelchairAccess: false, // no accessibility checkboxes in this form's Accommodation section
           parkingAvailability: false,
           primaryContact: emergency["Primary"] || "",
@@ -643,11 +633,27 @@ export default function RepOnboardingApp() {
                 <SectionTitle>Visibility</SectionTitle>
                 <CheckboxGroup label="Show profile to" options={["Guest", "Local", "Both"]} selected={visibility} onChange={setVisibility} />
 
-                <SectionTitle>Tier Selection</SectionTitle>
-                <TierButtons tier={tier} setTier={setTier} />
-                <p style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 6 }}>
-                  Tap a tier → its fields open, plus every tier below it.
-                </p>
+                <div
+                  style={{
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 10,
+                    background: colors.background,
+                    paddingTop: 8,
+                    paddingBottom: 4,
+                    marginLeft: -4,
+                    marginRight: -4,
+                    paddingLeft: 4,
+                    paddingRight: 4,
+                    borderBottom: `1px solid ${colors.border}`,
+                  }}
+                >
+                  <SectionTitle>Tier Selection</SectionTitle>
+                  <TierButtons tier={tier} setTier={setTier} />
+                  <p style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 6 }}>
+                    Tap a tier → its fields open, plus every tier below it. You can change this at any time — it stays here as you scroll.
+                  </p>
+                </div>
               </>
             )}
 
@@ -667,7 +673,7 @@ export default function RepOnboardingApp() {
                 <TextField label="Amenities" area value={data.amenities} onChange={set("amenities")} />
                 <TextField label="Guidelines" area value={data.guidelines} onChange={set("guidelines")} />
                 <TextField label="Check-Out Instructions" area value={data.checkOut} onChange={set("checkOut")} />
-                <TextField label="Facilities" area value={data.facilities} onChange={set("facilities")} />
+                <CheckboxGroup label="Facilities" options={FACILITIES} selected={data.facilities || []} onChange={set("facilities")} />
                 <TextField label="WiFi Name" value={data.wifiName} onChange={set("wifiName")} />
                 <TextField label="WiFi Password" value={data.wifiPassword} onChange={set("wifiPassword")} />
                 <label style={labelStyle}>Weather</label>
