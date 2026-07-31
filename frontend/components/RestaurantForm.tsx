@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ProfileReferenceCodeDisplay from "./ProfileReferenceCodeDisplay";
-import ImageUpload from "./ImageUpload";
+import MultiImageUpload from "./MultiImageUpload";
 import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
 import { getAuthenticatedBackend } from "../lib/backend";
 import type { Restaurant } from "~backend/restaurant/types";
@@ -85,6 +85,7 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
     cuisineTypes: [] as string[],
     menuLink: "",
     imageUrl: "",
+    imageUrls: [] as string[],
     discountOffered: "",
     discountCode: "",
     description: "",
@@ -151,6 +152,7 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
         cuisineTypes: data.cuisineTypes,
         menuLink: data.menuLink || "",
         imageUrl: data.imageUrl || "",
+        imageUrls: data.imageUrls || [],
         discountOffered: data.discountOffered || "",
         discountCode: data.discountCode || "",
         description: data.description || "",
@@ -213,6 +215,7 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
           latitude: formData.latitude ? parseFloat(String(formData.latitude)) : null,
           longitude: formData.longitude ? parseFloat(String(formData.longitude)) : null,
           imageUrl: formData.imageUrl || undefined,
+          imageUrls: formData.imageUrls || undefined,
           area: formData.area || undefined,
           officialHoldingCompany: officialUse.officialHoldingCompany || undefined,
           officialContactName: officialUse.officialContactName || undefined,
@@ -235,6 +238,7 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
           latitude: formData.latitude ? parseFloat(String(formData.latitude)) : undefined,
           longitude: formData.longitude ? parseFloat(String(formData.longitude)) : undefined,
           imageUrl: formData.imageUrl || undefined,
+          imageUrls: formData.imageUrls || undefined,
           officialHoldingCompany: officialUse.officialHoldingCompany || undefined,
           officialContactName: officialUse.officialContactName || undefined,
           officialContactNumber: officialUse.officialContactNumber || undefined,
@@ -393,11 +397,10 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
             </div>
           </div>
 
-          <ImageUpload
-            label="Restaurant Image"
-            imageUrl={formData.imageUrl}
-            onImageUploaded={(url) => setFormData({ ...formData, imageUrl: url })}
-            maxSizeMB={5}
+          <MultiImageUpload
+            label="Restaurant Images"
+            images={formData.imageUrls}
+            onChange={(urls) => setFormData({ ...formData, imageUrls: urls, imageUrl: urls[0] || "" })}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import ProfileReferenceCodeDisplay from "./ProfileReferenceCodeDisplay";
-import ImageUpload from "./ImageUpload";
+import MultiImageUpload from "./MultiImageUpload";
 import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
@@ -60,6 +60,7 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
     contactNumber: "",
     attractionType: [] as string[],
     imageUrl: "",
+    imageUrls: [] as string[],
     discountOffered: "",
     discountCode: "",
     description: "",
@@ -107,6 +108,7 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
         contactNumber: data.contactNumber || "",
         attractionType: data.attractionType,
         imageUrl: data.imageUrl || "",
+        imageUrls: data.imageUrls || [],
         discountOffered: data.discountOffered || "",
         discountCode: data.discountCode || "",
         description: data.description || "",
@@ -157,6 +159,7 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
           contactNumber: formData.contactNumber || undefined,
           attractionType: formData.attractionType,
           imageUrl: formData.imageUrl || undefined,
+          imageUrls: formData.imageUrls || undefined,
           discountOffered: formData.discountOffered || undefined,
           discountCode: formData.discountCode || undefined,
           description: formData.description || undefined,
@@ -194,6 +197,7 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
           contactNumber: formData.contactNumber || undefined,
           attractionType: formData.attractionType,
           imageUrl: formData.imageUrl || undefined,
+          imageUrls: formData.imageUrls || undefined,
           discountOffered: formData.discountOffered || undefined,
           discountCode: formData.discountCode || undefined,
           description: formData.description || undefined,
@@ -371,11 +375,10 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
             />
           </div>
 
-          <ImageUpload
-            label="Attraction Image"
-            imageUrl={formData.imageUrl}
-            onImageUploaded={(url) => setFormData({ ...formData, imageUrl: url })}
-            maxSizeMB={5}
+          <MultiImageUpload
+            label="Attraction Images"
+            images={formData.imageUrls}
+            onChange={(urls) => setFormData({ ...formData, imageUrls: urls, imageUrl: urls[0] || "" })}
           />
 
           <div className="grid grid-cols-2 gap-4">

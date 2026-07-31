@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Plus } from "lucide-react";
+import MultiImageUpload from "./MultiImageUpload";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { getAuthenticatedBackend } from "../lib/backend";
 import type { Accommodation } from "~backend/accommodation/types";
 import { useToast } from "@/components/ui/use-toast";
-import ImageUpload from "./ImageUpload";
 import ProfileReferenceCodeDisplay from "./ProfileReferenceCodeDisplay";
 import { SA_PROVINCES } from "../lib/saRegions";
 
@@ -530,54 +529,12 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
           </div>
 
           <div className="space-y-4">
-            <ImageUpload
-              label="Primary Accommodation Image"
-              imageUrl={formData.imageUrl}
-              onImageUploaded={(url) => setFormData({ ...formData, imageUrl: url })}
+            <MultiImageUpload
+              label="Accommodation Images"
+              images={formData.imageUrls}
+              onChange={(urls) => setFormData({ ...formData, imageUrls: urls, imageUrl: urls[0] || "" })}
+              maxImages={MAX_IMAGES}
             />
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>Additional Images ({formData.imageUrls.length}/{MAX_IMAGES})</Label>
-                {formData.imageUrls.length < MAX_IMAGES && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setFormData({ ...formData, imageUrls: ["", ...formData.imageUrls] })}
-                    className="min-h-[36px]"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Add Image
-                  </Button>
-                )}
-              </div>
-              {formData.imageUrls.map((url, index) => (
-                <div key={index} className="relative">
-                  <ImageUpload
-                    label={`Image ${index + 1}`}
-                    imageUrl={url}
-                    onImageUploaded={(newUrl) => {
-                      const updated = [...formData.imageUrls];
-                      updated[index] = newUrl;
-                      setFormData({ ...formData, imageUrls: updated });
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const updated = formData.imageUrls.filter((_, i) => i !== index);
-                      setFormData({ ...formData, imageUrls: updated });
-                    }}
-                    className="absolute top-0 right-0 mt-1 mr-1 min-h-[32px] px-2 z-10"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
           </div>
 
           {accommodation && (

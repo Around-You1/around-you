@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import ProfileReferenceCodeDisplay from "./ProfileReferenceCodeDisplay";
-import ImageUpload from "./ImageUpload";
+import MultiImageUpload from "./MultiImageUpload";
 import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
@@ -175,6 +175,7 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
     contactNumber: "",
     serviceCategories: [] as ServiceCategory[],
     imageUrl: "",
+    imageUrls: [] as string[],
     discountOffered: "",
     discountCode: "",
     description: "",
@@ -222,6 +223,7 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
         contactNumber: data.contactNumber || "",
         serviceCategories: data.serviceCategories,
         imageUrl: data.imageUrl || "",
+        imageUrls: data.imageUrls || [],
         discountOffered: data.discountOffered || "",
         discountCode: data.discountCode || "",
         description: data.description || "",
@@ -272,6 +274,7 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
           contactNumber: formData.contactNumber || undefined,
           serviceCategories: formData.serviceCategories,
           imageUrl: formData.imageUrl || undefined,
+          imageUrls: formData.imageUrls || undefined,
           discountOffered: formData.discountOffered || undefined,
           discountCode: formData.discountCode || undefined,
           description: formData.description || undefined,
@@ -309,6 +312,7 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
           contactNumber: formData.contactNumber || undefined,
           serviceCategories: formData.serviceCategories,
           imageUrl: formData.imageUrl || undefined,
+          imageUrls: formData.imageUrls || undefined,
           discountOffered: formData.discountOffered || undefined,
           discountCode: formData.discountCode || undefined,
           description: formData.description || undefined,
@@ -527,11 +531,10 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
             </div>
           </div>
 
-          <ImageUpload
-            label="Service Image"
-            imageUrl={formData.imageUrl}
-            onImageUploaded={(url) => setFormData({ ...formData, imageUrl: url })}
-            maxSizeMB={5}
+          <MultiImageUpload
+            label="Service Images"
+            images={formData.imageUrls}
+            onChange={(urls) => setFormData({ ...formData, imageUrls: urls, imageUrl: urls[0] || "" })}
           />
 
           <div className="grid grid-cols-2 gap-4">
