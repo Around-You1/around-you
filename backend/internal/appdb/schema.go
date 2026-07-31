@@ -279,6 +279,12 @@ type AttractionData struct {
 	ExperienceInfo
 	Socials
 
+	TrailDifficulty  string `json:"trailDifficulty,omitempty"`
+	WildlifeCautions string `json:"wildlifeCautions,omitempty"`
+	TideWarnings     string `json:"tideWarnings,omitempty"`
+	ParkingNotes     string `json:"parkingNotes,omitempty"`
+	PhotographySpots string `json:"photographySpots,omitempty"`
+
 	ImageUrl  string   `json:"imageUrl,omitempty"`
 	ImageUrls []string `json:"imageUrls,omitempty"`
 	IsActive  bool     `json:"isActive"`

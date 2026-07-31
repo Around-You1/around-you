@@ -41,6 +41,11 @@ const attractionColumns = `
 	COALESCE(fitness_level, '') as fitness_level,
 	COALESCE(best_time_of_day, '') as best_time_of_day,
 	COALESCE(what_to_bring, '') as what_to_bring,
+	COALESCE(trail_difficulty, '') as trail_difficulty,
+	COALESCE(wildlife_cautions, '') as wildlife_cautions,
+	COALESCE(tide_warnings, '') as tide_warnings,
+	COALESCE(parking_notes, '') as parking_notes,
+	COALESCE(photography_spots, '') as photography_spots,
 	COALESCE(socials_website, '') as socials_website,
 	COALESCE(socials_facebook, '') as socials_facebook,
 	COALESCE(socials_instagram, '') as socials_instagram,
@@ -80,6 +85,7 @@ func scanAttraction(row attractionScanner) (*appdb.AttractionData, error) {
 		&a.WheelchairAccess, &a.ParkingAvailability,
 		&a.DiscountOffered, &a.DiscountCode,
 		&a.SafetyInfo, &a.AgeRestrictions, &a.FitnessLevel, &a.BestTimeOfDay, &a.WhatToBring,
+		&a.TrailDifficulty, &a.WildlifeCautions, &a.TideWarnings, &a.ParkingNotes, &a.PhotographySpots,
 		&a.SocialsWebsite, &a.SocialsFacebook, &a.SocialsInstagram, &a.SocialsTiktok, &a.SocialsTwitter,
 		&a.ImageUrl, pq.Array(&a.ImageUrls),
 		&a.IsActive,
@@ -179,6 +185,7 @@ func (s *AttractionStore) Create(ctx context.Context, in *appdb.AttractionData) 
 			wheelchair_access, parking_availability,
 			discount_offered, discount_code,
 			safety_info, age_restrictions, fitness_level, best_time_of_day, what_to_bring,
+			trail_difficulty, wildlife_cautions, tide_warnings, parking_notes, photography_spots,
 			socials_website, socials_facebook, socials_instagram, socials_tiktok, socials_twitter,
 			image_url, image_urls, is_active,
 			official_holding_company, official_contact_name, official_contact_number, official_email, official_rep_code,
@@ -186,7 +193,7 @@ func (s *AttractionStore) Create(ctx context.Context, in *appdb.AttractionData) 
 			guest_type, access_level, partner_code, partner_code_active
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,
-			$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49
+			$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54
 		)
 		RETURNING `+attractionColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -196,6 +203,7 @@ func (s *AttractionStore) Create(ctx context.Context, in *appdb.AttractionData) 
 		in.WheelchairAccess, in.ParkingAvailability,
 		in.DiscountOffered, in.DiscountCode,
 		in.SafetyInfo, in.AgeRestrictions, in.FitnessLevel, in.BestTimeOfDay, in.WhatToBring,
+		in.TrailDifficulty, in.WildlifeCautions, in.TideWarnings, in.ParkingNotes, in.PhotographySpots,
 		in.SocialsWebsite, in.SocialsFacebook, in.SocialsInstagram, in.SocialsTiktok, in.SocialsTwitter,
 		in.ImageUrl, pq.Array(nonNilSlice(in.ImageUrls)), in.IsActive,
 		in.OfficialHoldingCompany, in.OfficialContactName, in.OfficialContactNumber, in.OfficialEmail, in.OfficialRepCode,
@@ -240,6 +248,12 @@ type AttractionPatch struct {
 	FitnessLevel    *string
 	BestTimeOfDay   *string
 	WhatToBring     *string
+
+	TrailDifficulty  *string
+	WildlifeCautions *string
+	TideWarnings     *string
+	ParkingNotes     *string
+	PhotographySpots *string
 
 	SocialsWebsite   *string
 	SocialsFacebook  *string
@@ -354,6 +368,21 @@ func (s *AttractionStore) Update(ctx context.Context, id int64, patch Attraction
 	}
 	if patch.WhatToBring != nil {
 		sets = append(sets, "what_to_bring = "+arg(*patch.WhatToBring))
+	}
+	if patch.TrailDifficulty != nil {
+		sets = append(sets, "trail_difficulty = "+arg(*patch.TrailDifficulty))
+	}
+	if patch.WildlifeCautions != nil {
+		sets = append(sets, "wildlife_cautions = "+arg(*patch.WildlifeCautions))
+	}
+	if patch.TideWarnings != nil {
+		sets = append(sets, "tide_warnings = "+arg(*patch.TideWarnings))
+	}
+	if patch.ParkingNotes != nil {
+		sets = append(sets, "parking_notes = "+arg(*patch.ParkingNotes))
+	}
+	if patch.PhotographySpots != nil {
+		sets = append(sets, "photography_spots = "+arg(*patch.PhotographySpots))
 	}
 	if patch.SocialsWebsite != nil {
 		sets = append(sets, "socials_website = "+arg(*patch.SocialsWebsite))

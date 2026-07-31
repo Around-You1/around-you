@@ -163,19 +163,34 @@ func findByAccessCode(ctx context.Context, code string) (*appdb.User, error) {
 		return nil, err
 	}
 
-	appdb.DB.Lock()
-	defer appdb.DB.Unlock()
+	var svcID int64
+	var svcName string
+	err = appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT id, name FROM services
+		WHERE upper(profile_reference_code) = upper($1)
+		   OR (partner_code_active AND upper(partner_code) = upper($1))`, code,
+	).Scan(&svcID, &svcName)
+	if err == nil {
+		return &appdb.User{Email: "partner@" + svcName, Role: "Partner", ProfileType: "service", EntityType: "service", EntityID: svcID}, nil
+	}
+	if !isNoRows(err) {
+		return nil, err
+	}
 
-	for _, s := range appdb.DB.Services {
-		if strings.EqualFold(s.ProfileReferenceCode, code) || (s.PartnerCode.Active && strings.EqualFold(s.PartnerCode.Code, code)) {
-			return &appdb.User{Email: "partner@" + s.Name, Role: "Partner", ProfileType: "service", EntityType: "service", EntityID: s.ID}, nil
-		}
+	var attID int64
+	var attName string
+	err = appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT id, name FROM attractions
+		WHERE upper(profile_reference_code) = upper($1)
+		   OR (partner_code_active AND upper(partner_code) = upper($1))`, code,
+	).Scan(&attID, &attName)
+	if err == nil {
+		return &appdb.User{Email: "partner@" + attName, Role: "Partner", ProfileType: "attraction", EntityType: "attraction", EntityID: attID}, nil
 	}
-	for _, a := range appdb.DB.Attractions {
-		if strings.EqualFold(a.ProfileReferenceCode, code) || (a.PartnerCode.Active && strings.EqualFold(a.PartnerCode.Code, code)) {
-			return &appdb.User{Email: "partner@" + a.Name, Role: "Partner", ProfileType: "attraction", EntityType: "attraction", EntityID: a.ID}, nil
-		}
+	if !isNoRows(err) {
+		return nil, err
 	}
+
 	return nil, nil
 }
 
@@ -236,25 +251,34 @@ func findByNameAddressProvince(ctx context.Context, name, address, province stri
 		return nil, err
 	}
 
-	appdb.DB.Lock()
-	defer appdb.DB.Unlock()
-
-	matches := func(entityName, entityAddress, entityProvince string) bool {
-		return strings.EqualFold(strings.TrimSpace(entityName), name) &&
-			strings.EqualFold(strings.TrimSpace(entityAddress), strings.TrimSpace(address)) &&
-			strings.EqualFold(entityProvince, province)
+	var svcID int64
+	var svcName string
+	err = appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT id, name FROM services
+		WHERE lower(trim(name)) = lower($1) AND lower(trim(address)) = lower($2) AND lower(province) = lower($3)`,
+		name, strings.TrimSpace(address), province,
+	).Scan(&svcID, &svcName)
+	if err == nil {
+		return &appdb.User{Email: "partner@" + svcName, Role: "Partner", ProfileType: "service", EntityType: "service", EntityID: svcID}, nil
+	}
+	if !isNoRows(err) {
+		return nil, err
 	}
 
-	for _, s := range appdb.DB.Services {
-		if matches(s.Name, s.Address, s.Province) {
-			return &appdb.User{Email: "partner@" + s.Name, Role: "Partner", ProfileType: "service", EntityType: "service", EntityID: s.ID}, nil
-		}
+	var attID int64
+	var attName string
+	err = appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT id, name FROM attractions
+		WHERE lower(trim(name)) = lower($1) AND lower(trim(address)) = lower($2) AND lower(province) = lower($3)`,
+		name, strings.TrimSpace(address), province,
+	).Scan(&attID, &attName)
+	if err == nil {
+		return &appdb.User{Email: "partner@" + attName, Role: "Partner", ProfileType: "attraction", EntityType: "attraction", EntityID: attID}, nil
 	}
-	for _, a := range appdb.DB.Attractions {
-		if matches(a.Name, a.Address, a.Province) {
-			return &appdb.User{Email: "partner@" + a.Name, Role: "Partner", ProfileType: "attraction", EntityType: "attraction", EntityID: a.ID}, nil
-		}
+	if !isNoRows(err) {
+		return nil, err
 	}
+
 	return nil, nil
 }
 

@@ -340,9 +340,26 @@ function ImageUpload({ images, setImages }) {
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
+  const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
   const addFiles = (fileList) => {
-    const files = Array.from(fileList).slice(0, 10 - images.length);
-    const previews = files.map((f) => ({ url: URL.createObjectURL(f), name: f.name, file: f }));
+    const incoming = Array.from(fileList).slice(0, 10 - images.length);
+    const accepted = [];
+    const rejected = [];
+    for (const f of incoming) {
+      if (ALLOWED_IMAGE_TYPES.includes(f.type)) {
+        accepted.push(f);
+      } else {
+        rejected.push(f.name);
+      }
+    }
+    if (rejected.length > 0) {
+      alert(
+        `${rejected.length} photo${rejected.length === 1 ? "" : "s"} couldn't be used: ${rejected.join(", ")}. ` +
+        `This usually means an iPhone photo saved in HEIC format — please choose "Most Compatible" in your phone's camera settings, or edit/resave the photo as JPEG before selecting it here.`
+      );
+    }
+    const previews = accepted.map((f) => ({ url: URL.createObjectURL(f), name: f.name, file: f }));
     setImages((prev) => [...prev, ...previews].slice(0, 10));
   };
 
@@ -539,6 +556,8 @@ export default function RepOnboardingApp() {
           imageUrl: primaryImageUrl,
           imageUrls: uploadedImageUrls,
           isActive: false,
+          officialHoldingCompany: data.holdingCompany || "",
+          officialEmail: data.businessEmail || "",
           officialContactName: data.personResponsible || repSession.repName,
           officialContactNumber: data.personResponsibleNumber || "",
           officialRepCode: repSession.repCode,
@@ -583,6 +602,8 @@ export default function RepOnboardingApp() {
           imageUrl: primaryImageUrl,
           imageUrls: uploadedImageUrls,
           isActive: false,
+          officialHoldingCompany: data.holdingCompany || "",
+          officialEmail: data.businessEmail || "",
           officialContactName: data.personResponsible || repSession.repName,
           officialContactNumber: data.personResponsibleNumber || "",
           officialRepCode: repSession.repCode,
@@ -629,6 +650,8 @@ export default function RepOnboardingApp() {
           imageUrl: primaryImageUrl,
           imageUrls: uploadedImageUrls,
           isActive: false,
+          officialHoldingCompany: data.holdingCompany || "",
+          officialEmail: data.businessEmail || "",
           officialContactName: data.personResponsible || repSession.repName,
           officialContactNumber: data.personResponsibleNumber || "",
           officialRepCode: repSession.repCode,
@@ -672,9 +695,16 @@ export default function RepOnboardingApp() {
           fitnessLevel: data.fitnessLevel || "",
           bestTimeOfDay: data.bestTimeOfDay || "",
           whatToBring: data.whatToBring || "",
+          trailDifficulty: data.trailDifficulty || "",
+          wildlifeCautions: data.wildlifeCautions || "",
+          tideWarnings: data.tideWarnings || "",
+          parkingNotes: data.parkingNotes || "",
+          photographySpots: data.photographySpots || "",
           imageUrl: primaryImageUrl,
           imageUrls: uploadedImageUrls,
           isActive: false,
+          officialHoldingCompany: data.holdingCompany || "",
+          officialEmail: data.businessEmail || "",
           officialContactName: data.personResponsible || repSession.repName,
           officialContactNumber: data.personResponsibleNumber || "",
           officialRepCode: repSession.repCode,
@@ -787,8 +817,10 @@ export default function RepOnboardingApp() {
 
             <SectionTitle>Company Details</SectionTitle>
             <TextField label="Company Name" value={data.companyName} onChange={set("companyName")} />
+            <TextField label="Holding Company" value={data.holdingCompany} onChange={set("holdingCompany")} />
             <TextField label="Address" value={data.address} onChange={set("address")} />
             <TextField label="Contact Number" value={data.contactNumber} onChange={set("contactNumber")} />
+            <TextField label="Business Email" value={data.businessEmail} onChange={set("businessEmail")} />
             <TextField label="Person Responsible" value={data.personResponsible} onChange={set("personResponsible")} />
             <TextField label="Person Responsible Number" value={data.personResponsibleNumber} onChange={set("personResponsibleNumber")} />
             <TextField label="Company Registration Number" value={data.companyRegNumber} onChange={set("companyRegNumber")} />
@@ -940,6 +972,16 @@ export default function RepOnboardingApp() {
                     <TextField label="Fitness Level" value={data.fitnessLevel} onChange={set("fitnessLevel")} />
                     <TextField label="Best Time of Day" value={data.bestTimeOfDay} onChange={set("bestTimeOfDay")} />
                     <TextField label="What to Bring" value={data.whatToBring} onChange={set("whatToBring")} />
+                  </>
+                )}
+                {isAttraction && (
+                  <>
+                    <SectionTitle>Attraction Extras</SectionTitle>
+                    <TextField label="Trail Difficulty" value={data.trailDifficulty} onChange={set("trailDifficulty")} />
+                    <TextField label="Wildlife Cautions" value={data.wildlifeCautions} onChange={set("wildlifeCautions")} />
+                    <TextField label="Tide Warnings" value={data.tideWarnings} onChange={set("tideWarnings")} />
+                    <TextField label="Parking Notes" value={data.parkingNotes} onChange={set("parkingNotes")} />
+                    <TextField label="Photography Spots" value={data.photographySpots} onChange={set("photographySpots")} />
                   </>
                 )}
               </>

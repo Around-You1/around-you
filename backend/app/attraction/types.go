@@ -62,6 +62,12 @@ type CreateRequest struct {
 	BestTimeOfDay   string `json:"bestTimeOfDay,omitempty"`
 	WhatToBring     string `json:"whatToBring,omitempty"`
 
+	TrailDifficulty  string `json:"trailDifficulty,omitempty"`
+	WildlifeCautions string `json:"wildlifeCautions,omitempty"`
+	TideWarnings     string `json:"tideWarnings,omitempty"`
+	ParkingNotes     string `json:"parkingNotes,omitempty"`
+	PhotographySpots string `json:"photographySpots,omitempty"`
+
 	SocialsWebsite   string `json:"socialsWebsite,omitempty"`
 	SocialsFacebook  string `json:"socialsFacebook,omitempty"`
 	SocialsInstagram string `json:"socialsInstagram,omitempty"`
@@ -122,6 +128,12 @@ type UpdateRequest struct {
 	FitnessLevel    *string `json:"fitnessLevel,omitempty"`
 	BestTimeOfDay   *string `json:"bestTimeOfDay,omitempty"`
 	WhatToBring     *string `json:"whatToBring,omitempty"`
+
+	TrailDifficulty  *string `json:"trailDifficulty,omitempty"`
+	WildlifeCautions *string `json:"wildlifeCautions,omitempty"`
+	TideWarnings     *string `json:"tideWarnings,omitempty"`
+	ParkingNotes     *string `json:"parkingNotes,omitempty"`
+	PhotographySpots *string `json:"photographySpots,omitempty"`
 
 	SocialsWebsite   *string `json:"socialsWebsite,omitempty"`
 	SocialsFacebook  *string `json:"socialsFacebook,omitempty"`

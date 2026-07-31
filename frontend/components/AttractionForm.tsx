@@ -81,6 +81,11 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
     fitnessLevel: "",
     bestTimeOfDay: "",
     whatToBring: "",
+    trailDifficulty: "",
+    wildlifeCautions: "",
+    tideWarnings: "",
+    parkingNotes: "",
+    photographySpots: "",
     wheelchairAccess: false,
     parkingAvailability: false,
     littleExplorerApproved: false,
@@ -143,6 +148,11 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
         fitnessLevel: data.fitnessLevel || "",
         bestTimeOfDay: data.bestTimeOfDay || "",
         whatToBring: data.whatToBring || "",
+        trailDifficulty: data.trailDifficulty || "",
+        wildlifeCautions: data.wildlifeCautions || "",
+        tideWarnings: data.tideWarnings || "",
+        parkingNotes: data.parkingNotes || "",
+        photographySpots: data.photographySpots || "",
         wheelchairAccess: data.wheelchairAccess || false,
         parkingAvailability: data.parkingAvailability || false,
         littleExplorerApproved: data.littleExplorerApproved || false,
@@ -208,6 +218,11 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
           fitnessLevel: formData.fitnessLevel,
           bestTimeOfDay: formData.bestTimeOfDay,
           whatToBring: formData.whatToBring,
+          trailDifficulty: formData.trailDifficulty,
+          wildlifeCautions: formData.wildlifeCautions,
+          tideWarnings: formData.tideWarnings,
+          parkingNotes: formData.parkingNotes,
+          photographySpots: formData.photographySpots,
           wheelchairAccess: formData.wheelchairAccess,
           parkingAvailability: formData.parkingAvailability,
           littleExplorerApproved: formData.littleExplorerApproved,
@@ -260,6 +275,11 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
           fitnessLevel: formData.fitnessLevel,
           bestTimeOfDay: formData.bestTimeOfDay,
           whatToBring: formData.whatToBring,
+          trailDifficulty: formData.trailDifficulty,
+          wildlifeCautions: formData.wildlifeCautions,
+          tideWarnings: formData.tideWarnings,
+          parkingNotes: formData.parkingNotes,
+          photographySpots: formData.photographySpots,
           wheelchairAccess: formData.wheelchairAccess,
           parkingAvailability: formData.parkingAvailability,
           littleExplorerApproved: formData.littleExplorerApproved,
@@ -507,6 +527,52 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
                   id="whatToBring"
                   value={formData.whatToBring}
                   onChange={(e) => setFormData({ ...formData, whatToBring: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <Label className="text-base font-semibold">Attraction Extras</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="trailDifficulty">Trail Difficulty</Label>
+                <Input
+                  id="trailDifficulty"
+                  value={formData.trailDifficulty}
+                  onChange={(e) => setFormData({ ...formData, trailDifficulty: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="wildlifeCautions">Wildlife Cautions</Label>
+                <Input
+                  id="wildlifeCautions"
+                  value={formData.wildlifeCautions}
+                  onChange={(e) => setFormData({ ...formData, wildlifeCautions: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tideWarnings">Tide Warnings</Label>
+                <Input
+                  id="tideWarnings"
+                  value={formData.tideWarnings}
+                  onChange={(e) => setFormData({ ...formData, tideWarnings: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="parkingNotes">Parking Notes</Label>
+                <Input
+                  id="parkingNotes"
+                  value={formData.parkingNotes}
+                  onChange={(e) => setFormData({ ...formData, parkingNotes: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="photographySpots">Photography Spots</Label>
+                <Input
+                  id="photographySpots"
+                  value={formData.photographySpots}
+                  onChange={(e) => setFormData({ ...formData, photographySpots: e.target.value })}
                 />
               </div>
             </div>
