@@ -76,6 +76,11 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
     socialsInstagram: "",
     socialsTwitter: "",
     socialsTiktok: "",
+    safetyInfo: "",
+    ageRestrictions: "",
+    fitnessLevel: "",
+    bestTimeOfDay: "",
+    whatToBring: "",
     wheelchairAccess: false,
     parkingAvailability: false,
     littleExplorerApproved: false,
@@ -133,6 +138,11 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
         socialsInstagram: data.socialsInstagram || "",
         socialsTwitter: data.socialsTwitter || "",
         socialsTiktok: data.socialsTiktok || "",
+        safetyInfo: data.safetyInfo || "",
+        ageRestrictions: data.ageRestrictions || "",
+        fitnessLevel: data.fitnessLevel || "",
+        bestTimeOfDay: data.bestTimeOfDay || "",
+        whatToBring: data.whatToBring || "",
         wheelchairAccess: data.wheelchairAccess || false,
         parkingAvailability: data.parkingAvailability || false,
         littleExplorerApproved: data.littleExplorerApproved || false,
@@ -193,6 +203,11 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
           socialsInstagram: formData.socialsInstagram,
           socialsTwitter: formData.socialsTwitter,
           socialsTiktok: formData.socialsTiktok,
+          safetyInfo: formData.safetyInfo,
+          ageRestrictions: formData.ageRestrictions,
+          fitnessLevel: formData.fitnessLevel,
+          bestTimeOfDay: formData.bestTimeOfDay,
+          whatToBring: formData.whatToBring,
           wheelchairAccess: formData.wheelchairAccess,
           parkingAvailability: formData.parkingAvailability,
           littleExplorerApproved: formData.littleExplorerApproved,
@@ -240,6 +255,11 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
           socialsInstagram: formData.socialsInstagram,
           socialsTwitter: formData.socialsTwitter,
           socialsTiktok: formData.socialsTiktok,
+          safetyInfo: formData.safetyInfo,
+          ageRestrictions: formData.ageRestrictions,
+          fitnessLevel: formData.fitnessLevel,
+          bestTimeOfDay: formData.bestTimeOfDay,
+          whatToBring: formData.whatToBring,
           wheelchairAccess: formData.wheelchairAccess,
           parkingAvailability: formData.parkingAvailability,
           littleExplorerApproved: formData.littleExplorerApproved,
@@ -444,6 +464,52 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
             />
+          </div>
+
+          <div className="space-y-4">
+            <Label className="text-base font-semibold">Experience Info</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="safetyInfo">Safety Info</Label>
+                <Input
+                  id="safetyInfo"
+                  value={formData.safetyInfo}
+                  onChange={(e) => setFormData({ ...formData, safetyInfo: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ageRestrictions">Age Restrictions</Label>
+                <Input
+                  id="ageRestrictions"
+                  value={formData.ageRestrictions}
+                  onChange={(e) => setFormData({ ...formData, ageRestrictions: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="fitnessLevel">Fitness Level</Label>
+                <Input
+                  id="fitnessLevel"
+                  value={formData.fitnessLevel}
+                  onChange={(e) => setFormData({ ...formData, fitnessLevel: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bestTimeOfDay">Best Time of Day</Label>
+                <Input
+                  id="bestTimeOfDay"
+                  value={formData.bestTimeOfDay}
+                  onChange={(e) => setFormData({ ...formData, bestTimeOfDay: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="whatToBring">What to Bring</Label>
+                <Input
+                  id="whatToBring"
+                  value={formData.whatToBring}
+                  onChange={(e) => setFormData({ ...formData, whatToBring: e.target.value })}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-4">

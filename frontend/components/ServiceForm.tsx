@@ -29,9 +29,12 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     label: "Accessibility & Languages",
     subcategories: [
-      "Translation Services",
-      "Sign Language Support",
+      "Accessibility Consulting",
+      "Assistive Technology Services",
       "Braille & Large Print Services",
+      "Interpretation Services",
+      "Sign Language Support",
+      "Translation Services",
     ],
   },
   {
@@ -40,32 +43,33 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
       "Accounting & Bookkeeping",
       "Business Consulting",
       "HR & Recruitment",
+      "IT Support & Networking",
       "Legal & Compliance",
+      "Office Supplies & Equipment",
       "Printing & Document Services",
       "Virtual Assistants",
-      "Office Supplies & Equipment",
-      "IT Support & Networking",
     ],
   },
   {
     label: "Community & Local",
     subcategories: [
+      "Charity & Non Profit Services",
       "Community Centres",
       "Local Clubs & Associations",
-      "Religious Organisations",
-      "Charity & Non Profit Services",
       "Local Events & Activities",
       "Public Services & Municipal Office",
+      "Religious Organizations",
     ],
   },
   {
     label: "Food & Drink",
     subcategories: [
-      "Grocery Stores",
-      "Butcheries & Fishmongers",
       "Bakeries",
-      "Fresh Produce Markets",
+      "Butcheries & Fishmongers",
       "Catering Services",
+      "Fresh Produce Markets",
+      "Grocery Stores",
+      "Takeaways & Fast Food",
       "Water & Ice Supply",
     ],
   },
@@ -80,7 +84,6 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
       "Holistic Therapies",
       "Skin Care & Aesthetics",
       "Spas & Beauty Treatments",
-      "Spas & Massage",
       "Wellness Retreats",
     ],
   },
@@ -90,21 +93,21 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
       "Architecture",
       "Cleaning Services",
       "Gardening & Landscaping",
-      "Plumbing",
-      "Electrical Services",
-      "Building & Renovations",
-      "Pest Control",
       "Home Security",
-      "Real Estate & Rentals",
       "Interior Design & Décor",
+      "Pest Control",
+      "Real Estate & Rentals",
     ],
   },
   {
     label: "Leisure & Experiences",
     subcategories: [
       "Arts & Culture",
+      "Events & Entertainment",
+      "Fitness & Gyms",
       "Kids Activities",
       "Sport Clubs",
+      "Tours & Activities",
     ],
   },
   {
@@ -122,28 +125,30 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     label: "Services & Trades",
     subcategories: [
-      "Mechanics",
-      "Carpenters",
-      "Handyman Services",
-      "Welders",
-      "Painters",
       "Appliance Repairs",
+      "Carpenters",
+      "Electricians",
+      "Handyman Services",
       "Locksmiths",
+      "Mechanics",
+      "Painters",
+      "Plumbers",
+      "Welders",
     ],
   },
   {
     label: "Transport",
     subcategories: [
-      "Vehicle Rentals",
-      "Trailer Hire",
-      "Moving Services",
+      "Delivery & Courier Services",
       "Equipment Hire",
+      "Freight & Haulage",
       "Logistics Support",
+      "Moving Services",
       "Shuttle Services",
       "Taxi & Ride Hailing",
-      "Delivery & Courier Services",
       "Towing Services",
-      "Freight & Haulage",
+      "Trailer Hire",
+      "Vehicle Rentals",
     ],
   },
 ];
@@ -191,6 +196,11 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
     socialsInstagram: "",
     socialsTwitter: "",
     socialsTiktok: "",
+    safetyInfo: "",
+    ageRestrictions: "",
+    fitnessLevel: "",
+    bestTimeOfDay: "",
+    whatToBring: "",
     wheelchairAccess: false,
     parkingAvailability: false,
     littleExplorerApproved: false,
@@ -248,6 +258,11 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
         socialsInstagram: data.socialsInstagram || "",
         socialsTwitter: data.socialsTwitter || "",
         socialsTiktok: data.socialsTiktok || "",
+        safetyInfo: data.safetyInfo || "",
+        ageRestrictions: data.ageRestrictions || "",
+        fitnessLevel: data.fitnessLevel || "",
+        bestTimeOfDay: data.bestTimeOfDay || "",
+        whatToBring: data.whatToBring || "",
         wheelchairAccess: data.wheelchairAccess || false,
         parkingAvailability: data.parkingAvailability || false,
         littleExplorerApproved: data.littleExplorerApproved || false,
@@ -308,6 +323,11 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
           socialsInstagram: formData.socialsInstagram,
           socialsTwitter: formData.socialsTwitter,
           socialsTiktok: formData.socialsTiktok,
+          safetyInfo: formData.safetyInfo,
+          ageRestrictions: formData.ageRestrictions,
+          fitnessLevel: formData.fitnessLevel,
+          bestTimeOfDay: formData.bestTimeOfDay,
+          whatToBring: formData.whatToBring,
           wheelchairAccess: formData.wheelchairAccess,
           parkingAvailability: formData.parkingAvailability,
           littleExplorerApproved: formData.littleExplorerApproved,
@@ -355,6 +375,11 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
           socialsInstagram: formData.socialsInstagram,
           socialsTwitter: formData.socialsTwitter,
           socialsTiktok: formData.socialsTiktok,
+          safetyInfo: formData.safetyInfo,
+          ageRestrictions: formData.ageRestrictions,
+          fitnessLevel: formData.fitnessLevel,
+          bestTimeOfDay: formData.bestTimeOfDay,
+          whatToBring: formData.whatToBring,
           wheelchairAccess: formData.wheelchairAccess,
           parkingAvailability: formData.parkingAvailability,
           littleExplorerApproved: formData.littleExplorerApproved,
@@ -600,6 +625,52 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
             />
+          </div>
+
+          <div className="space-y-4">
+            <Label className="text-base font-semibold">Experience Info</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="safetyInfo">Safety Info</Label>
+                <Input
+                  id="safetyInfo"
+                  value={formData.safetyInfo}
+                  onChange={(e) => setFormData({ ...formData, safetyInfo: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ageRestrictions">Age Restrictions</Label>
+                <Input
+                  id="ageRestrictions"
+                  value={formData.ageRestrictions}
+                  onChange={(e) => setFormData({ ...formData, ageRestrictions: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="fitnessLevel">Fitness Level</Label>
+                <Input
+                  id="fitnessLevel"
+                  value={formData.fitnessLevel}
+                  onChange={(e) => setFormData({ ...formData, fitnessLevel: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bestTimeOfDay">Best Time of Day</Label>
+                <Input
+                  id="bestTimeOfDay"
+                  value={formData.bestTimeOfDay}
+                  onChange={(e) => setFormData({ ...formData, bestTimeOfDay: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="whatToBring">What to Bring</Label>
+                <Input
+                  id="whatToBring"
+                  value={formData.whatToBring}
+                  onChange={(e) => setFormData({ ...formData, whatToBring: e.target.value })}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-4">
