@@ -28,6 +28,147 @@ const SOCIAL_LINKS_OPTIONS = ["Website", "Facebook", "Instagram", "Tiktok", "X"]
 const PAYMENT_OPTIONS = ["Card", "Cash", "Gaap", "Mobile Tap", "Snap Scan", "Yoco", "Zapper"];
 const FACILITIES = ["Braai", "Fly Fishing", "Golf", "Gym", "Laundry", "Spa", "Swimming Pool"];
 
+const CATEGORY_GROUPS = [
+  {
+    label: "Accessibility & Languages",
+    subcategories: [
+      "Accessibility Consulting",
+      "Assistive Technology Services",
+      "Braille & Large Print Services",
+      "Interpretation Services",
+      "Sign Language Support",
+      "Translation Services",
+    ],
+  },
+  {
+    label: "Business & Admin",
+    subcategories: [
+      "Accounting & Bookkeeping",
+      "Business Consulting",
+      "HR & Recruitment",
+      "IT Support & Networking",
+      "Legal & Compliance",
+      "Office Supplies & Equipment",
+      "Printing & Document Services",
+      "Virtual Assistants",
+    ],
+  },
+  {
+    label: "Community & Local",
+    subcategories: [
+      "Charity & Non Profit Services",
+      "Community Centres",
+      "Local Clubs & Associations",
+      "Local Events & Activities",
+      "Public Services & Municipal Office",
+      "Religious Organizations",
+    ],
+  },
+  {
+    label: "Food & Drink",
+    subcategories: [
+      "Bakeries",
+      "Butcheries & Fishmongers",
+      "Catering Services",
+      "Fresh Produce Markets",
+      "Grocery Stores",
+      "Takeaways & Fast Food",
+      "Water & Ice Supply",
+    ],
+  },
+  {
+    label: "Health & Wellness",
+    subcategories: [
+      "Beauty Boutiques",
+      "Beauty Treatments",
+      "Fitness & Gyms",
+      "Fitness & Wellbeing",
+      "Grooming Services",
+      "Holistic Therapies",
+      "Skin Care & Aesthetics",
+      "Spas & Beauty Treatments",
+      "Wellness Retreats",
+    ],
+  },
+  {
+    label: "Home & Property",
+    subcategories: [
+      "Architecture",
+      "Cleaning Services",
+      "Gardening & Landscaping",
+      "Home Security",
+      "Interior Design & Décor",
+      "Pest Control",
+      "Real Estate & Rentals",
+    ],
+  },
+  {
+    label: "Leisure & Experiences",
+    subcategories: [
+      "Arts & Culture",
+      "Events & Entertainment",
+      "Fitness & Gyms",
+      "Kids Activities",
+      "Sport Clubs",
+      "Tours & Activities",
+    ],
+  },
+  {
+    label: "Safety",
+    subcategories: [
+      "Emergency Services",
+      "Fire & Safety Equipment",
+      "First Aid Training",
+      "Medical Services",
+      "Occupational Health",
+      "Pharmacies",
+      "Security Services",
+    ],
+  },
+  {
+    label: "Services & Trades",
+    subcategories: [
+      "Appliance Repairs",
+      "Carpenters",
+      "Electricians",
+      "Handyman Services",
+      "Locksmiths",
+      "Mechanics",
+      "Painters",
+      "Plumbers",
+      "Welders",
+    ],
+  },
+  {
+    label: "Transport",
+    subcategories: [
+      "Delivery & Courier Services",
+      "Equipment Hire",
+      "Freight & Haulage",
+      "Logistics Support",
+      "Moving Services",
+      "Shuttle Services",
+      "Taxi & Ride Hailing",
+      "Towing Services",
+      "Trailer Hire",
+      "Vehicle Rentals",
+    ],
+  },
+];
+
+const ATTRACTION_CATEGORIES = [
+  "Artisanal Tastings & Pairings",
+  "Beaches & Coastal",
+  "Cultural & Historical",
+  "Entertainment & Events",
+  "Nature & Outdoors",
+  "Shopping & Markets",
+  "Sports & Adventure",
+  "Water-Based Activities",
+  "Wellness & Retreats",
+  "Wildlife & Eco",
+];
+
 const CUISINE_TYPES = [
   "African", "À la carte", "American", "Asian", "BBQ", "Bakery", "Boerewors Rolls",
   "Breakfast", "Bunny Chow", "Burgers", "Cafe", "Cake", "Chinese", "Coffee Shop",
@@ -422,12 +563,23 @@ export default function RepOnboardingApp() {
           paymentCard: (data.paymentOptions || []).includes("Card"),
           paymentCash: (data.paymentOptions || []).includes("Cash"),
           paymentMobile: (data.paymentOptions || []).includes("Mobile Tap"),
+          paymentGaap: (data.paymentOptions || []).includes("Gaap"),
+          paymentSnapScan: (data.paymentOptions || []).includes("Snap Scan"),
+          paymentYoco: (data.paymentOptions || []).includes("Yoco"),
+          paymentZapper: (data.paymentOptions || []).includes("Zapper"),
           wheelchairAccess: (data.accessibility || []).includes("Wheelchair Access"),
           parkingAvailability: (data.accessibility || []).includes("Parking Availability"),
           wifiNetwork: data.wifiName || "",
           wifiPassword: data.wifiPassword || "",
           discountOffered: data.discountOffered || "",
           discountCode: data.discountCode || "",
+          bookingsEmail: data.bookingEmail || "",
+          bookingsContactNumber: data.bookingContact || "",
+          socialsWebsite: (data.socialLinks || {}).Website || "",
+          socialsFacebook: (data.socialLinks || {}).Facebook || "",
+          socialsInstagram: (data.socialLinks || {}).Instagram || "",
+          socialsTiktok: (data.socialLinks || {}).Tiktok || "",
+          socialsTwitter: (data.socialLinks || {}).X || "",
           imageUrl: primaryImageUrl,
           imageUrls: uploadedImageUrls,
           isActive: false,
@@ -451,15 +603,29 @@ export default function RepOnboardingApp() {
           postalCode: data.postalCode || "",
           contactNumber: data.contact || data.contactNumber || "",
           description: data.description || "",
-          serviceCategories: [], // this form has no service-category checklist yet — see note below
+          serviceCategories: data.serviceCategories || [],
           littleExplorerApproved: (data.childFriendly || []).includes("Child Friendly"),
           paymentCard: (data.paymentOptions || []).includes("Card"),
           paymentCash: (data.paymentOptions || []).includes("Cash"),
           paymentMobile: (data.paymentOptions || []).includes("Mobile Tap"),
+          paymentGaap: (data.paymentOptions || []).includes("Gaap"),
+          paymentSnapScan: (data.paymentOptions || []).includes("Snap Scan"),
+          paymentYoco: (data.paymentOptions || []).includes("Yoco"),
+          paymentZapper: (data.paymentOptions || []).includes("Zapper"),
           wheelchairAccess: (data.accessibility || []).includes("Wheelchair Access"),
           parkingAvailability: (data.accessibility || []).includes("Parking Availability"),
           discountOffered: data.discountOffered || "",
           discountCode: data.discountCode || "",
+          socialsWebsite: (data.socialLinks || {}).Website || "",
+          socialsFacebook: (data.socialLinks || {}).Facebook || "",
+          socialsInstagram: (data.socialLinks || {}).Instagram || "",
+          socialsTiktok: (data.socialLinks || {}).Tiktok || "",
+          socialsTwitter: (data.socialLinks || {}).X || "",
+          safetyInfo: data.safetyInfo || "",
+          ageRestrictions: data.ageRestrictions || "",
+          fitnessLevel: data.fitnessLevel || "",
+          bestTimeOfDay: data.bestTimeOfDay || "",
+          whatToBring: data.whatToBring || "",
           imageUrl: primaryImageUrl,
           imageUrls: uploadedImageUrls,
           isActive: false,
@@ -483,15 +649,29 @@ export default function RepOnboardingApp() {
           postalCode: data.postalCode || "",
           contactNumber: data.contact || data.contactNumber || "",
           description: data.description || "",
-          attractionType: [], // this form has no attraction-type checklist yet — see note below
+          attractionType: data.attractionType || [],
           littleExplorerApproved: (data.childFriendly || []).includes("Child Friendly"),
           paymentCard: (data.paymentOptions || []).includes("Card"),
           paymentCash: (data.paymentOptions || []).includes("Cash"),
           paymentMobile: (data.paymentOptions || []).includes("Mobile Tap"),
+          paymentGaap: (data.paymentOptions || []).includes("Gaap"),
+          paymentSnapScan: (data.paymentOptions || []).includes("Snap Scan"),
+          paymentYoco: (data.paymentOptions || []).includes("Yoco"),
+          paymentZapper: (data.paymentOptions || []).includes("Zapper"),
           wheelchairAccess: (data.accessibility || []).includes("Wheelchair Access"),
           parkingAvailability: (data.accessibility || []).includes("Parking Availability"),
           discountOffered: data.discountOffered || "",
           discountCode: data.discountCode || "",
+          socialsWebsite: (data.socialLinks || {}).Website || "",
+          socialsFacebook: (data.socialLinks || {}).Facebook || "",
+          socialsInstagram: (data.socialLinks || {}).Instagram || "",
+          socialsTiktok: (data.socialLinks || {}).Tiktok || "",
+          socialsTwitter: (data.socialLinks || {}).X || "",
+          safetyInfo: data.safetyInfo || "",
+          ageRestrictions: data.ageRestrictions || "",
+          fitnessLevel: data.fitnessLevel || "",
+          bestTimeOfDay: data.bestTimeOfDay || "",
+          whatToBring: data.whatToBring || "",
           imageUrl: primaryImageUrl,
           imageUrls: uploadedImageUrls,
           isActive: false,
@@ -705,6 +885,23 @@ export default function RepOnboardingApp() {
                 {isRestaurant && (
                   <CheckboxGroup label="Cuisine Types" options={CUISINE_TYPES} selected={data.cuisineTypes || []} onChange={set("cuisineTypes")} />
                 )}
+                {isService && (
+                  <>
+                    <SectionTitle>Service Categories</SectionTitle>
+                    {CATEGORY_GROUPS.map((group) => (
+                      <CheckboxGroup
+                        key={group.label}
+                        label={group.label}
+                        options={group.subcategories}
+                        selected={data.serviceCategories || []}
+                        onChange={set("serviceCategories")}
+                      />
+                    ))}
+                  </>
+                )}
+                {isAttraction && (
+                  <CheckboxGroup label="Attraction Categories" options={ATTRACTION_CATEGORIES} selected={data.attractionType || []} onChange={set("attractionType")} />
+                )}
                 <CheckboxGroup label="Child Friendly" options={["Child Friendly"]} selected={data.childFriendly || []} onChange={set("childFriendly")} />
                 <TextField label="Description" area value={data.description} onChange={set("description")} />
                 {(isService || isAttraction) && (
@@ -735,9 +932,16 @@ export default function RepOnboardingApp() {
                 <TextField label="Discount Code" value={data.discountCode} onChange={set("discountCode")} />
                 <SocialLinksField value={data.socialLinks || {}} onChange={set("socialLinks")} />
                 <CheckboxGroup label="Payment Options" options={PAYMENT_OPTIONS} selected={data.paymentOptions || []} onChange={set("paymentOptions")} />
-                <p style={{ fontSize: 11, color: colors.textSecondary }}>
-                  Category checklists (Service/Attraction sub-categories) follow the same pattern as the Admin Dashboard — condensed here for the mobile form.
-                </p>
+                {(isService || isAttraction) && (
+                  <>
+                    <SectionTitle>Experience Info</SectionTitle>
+                    <TextField label="Safety Info" value={data.safetyInfo} onChange={set("safetyInfo")} />
+                    <TextField label="Age Restrictions" value={data.ageRestrictions} onChange={set("ageRestrictions")} />
+                    <TextField label="Fitness Level" value={data.fitnessLevel} onChange={set("fitnessLevel")} />
+                    <TextField label="Best Time of Day" value={data.bestTimeOfDay} onChange={set("bestTimeOfDay")} />
+                    <TextField label="What to Bring" value={data.whatToBring} onChange={set("whatToBring")} />
+                  </>
+                )}
               </>
             )}
 
