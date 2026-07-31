@@ -19,6 +19,7 @@ import (
 	"backend_encore/app/attraction"
 	"backend_encore/app/auth"
 	"backend_encore/app/health"
+	"backend_encore/app/rating"
 	"backend_encore/app/restaurant"
 	"backend_encore/app/service"
 	"backend_encore/app/stats"
@@ -124,6 +125,10 @@ func main() {
 
 	// ---- Stats (auth) ------------------------------------------------------
 	r.auth("GET /stats", httpx.Empty(stats.Get))
+
+	// ---- Rating (auth) ------------------------------------------------------
+	r.auth("POST /rating/submit", httpx.Body(rating.SubmitRating))
+	r.auth("POST /rating/summaries", httpx.Body(rating.ListSummaries))
 
 	// ---- Not found -----------------------------------------------------------
 	// Go's default 404 for an unmatched pattern is plain text, not the
