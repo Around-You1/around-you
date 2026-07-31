@@ -67,6 +67,15 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
     paymentCard: false,
     paymentCash: false,
     paymentMobile: false,
+    paymentGaap: false,
+    paymentSnapScan: false,
+    paymentYoco: false,
+    paymentZapper: false,
+    socialsWebsite: "",
+    socialsFacebook: "",
+    socialsInstagram: "",
+    socialsTwitter: "",
+    socialsTiktok: "",
     wheelchairAccess: false,
     parkingAvailability: false,
     littleExplorerApproved: false,
@@ -115,6 +124,15 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
         paymentCard: data.paymentCard || false,
         paymentCash: data.paymentCash || false,
         paymentMobile: data.paymentMobile || false,
+        paymentGaap: data.paymentGaap || false,
+        paymentSnapScan: data.paymentSnapScan || false,
+        paymentYoco: data.paymentYoco || false,
+        paymentZapper: data.paymentZapper || false,
+        socialsWebsite: data.socialsWebsite || "",
+        socialsFacebook: data.socialsFacebook || "",
+        socialsInstagram: data.socialsInstagram || "",
+        socialsTwitter: data.socialsTwitter || "",
+        socialsTiktok: data.socialsTiktok || "",
         wheelchairAccess: data.wheelchairAccess || false,
         parkingAvailability: data.parkingAvailability || false,
         littleExplorerApproved: data.littleExplorerApproved || false,
@@ -166,6 +184,15 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
           paymentCard: formData.paymentCard,
           paymentCash: formData.paymentCash,
           paymentMobile: formData.paymentMobile,
+          paymentGaap: formData.paymentGaap,
+          paymentSnapScan: formData.paymentSnapScan,
+          paymentYoco: formData.paymentYoco,
+          paymentZapper: formData.paymentZapper,
+          socialsWebsite: formData.socialsWebsite,
+          socialsFacebook: formData.socialsFacebook,
+          socialsInstagram: formData.socialsInstagram,
+          socialsTwitter: formData.socialsTwitter,
+          socialsTiktok: formData.socialsTiktok,
           wheelchairAccess: formData.wheelchairAccess,
           parkingAvailability: formData.parkingAvailability,
           littleExplorerApproved: formData.littleExplorerApproved,
@@ -204,6 +231,15 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
           paymentCard: formData.paymentCard,
           paymentCash: formData.paymentCash,
           paymentMobile: formData.paymentMobile,
+          paymentGaap: formData.paymentGaap,
+          paymentSnapScan: formData.paymentSnapScan,
+          paymentYoco: formData.paymentYoco,
+          paymentZapper: formData.paymentZapper,
+          socialsWebsite: formData.socialsWebsite,
+          socialsFacebook: formData.socialsFacebook,
+          socialsInstagram: formData.socialsInstagram,
+          socialsTwitter: formData.socialsTwitter,
+          socialsTiktok: formData.socialsTiktok,
           wheelchairAccess: formData.wheelchairAccess,
           parkingAvailability: formData.parkingAvailability,
           littleExplorerApproved: formData.littleExplorerApproved,
@@ -435,7 +471,39 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
                   checked={formData.paymentMobile}
                   onCheckedChange={(checked) => setFormData({ ...formData, paymentMobile: checked })}
                 />
-                <Label htmlFor="paymentMobile">Mobile</Label>
+                <Label htmlFor="paymentMobile">Mobile Tap</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="paymentGaap"
+                  checked={formData.paymentGaap}
+                  onCheckedChange={(checked) => setFormData({ ...formData, paymentGaap: checked })}
+                />
+                <Label htmlFor="paymentGaap">Gaap</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="paymentSnapScan"
+                  checked={formData.paymentSnapScan}
+                  onCheckedChange={(checked) => setFormData({ ...formData, paymentSnapScan: checked })}
+                />
+                <Label htmlFor="paymentSnapScan">Snap Scan</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="paymentYoco"
+                  checked={formData.paymentYoco}
+                  onCheckedChange={(checked) => setFormData({ ...formData, paymentYoco: checked })}
+                />
+                <Label htmlFor="paymentYoco">Yoco</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="paymentZapper"
+                  checked={formData.paymentZapper}
+                  onCheckedChange={(checked) => setFormData({ ...formData, paymentZapper: checked })}
+                />
+                <Label htmlFor="paymentZapper">Zapper</Label>
               </div>
             </div>
           </div>
@@ -462,6 +530,62 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
             </div>
           </div>
 
+          <div className="space-y-4">
+            <Label className="text-base font-semibold">Socials</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="socialsWebsite">Website</Label>
+                <Input
+                  id="socialsWebsite"
+                  type="text"
+                  value={formData.socialsWebsite}
+                  onChange={(e) => setFormData({ ...formData, socialsWebsite: e.target.value })}
+                  placeholder="https://example.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="socialsFacebook">Facebook</Label>
+                <Input
+                  id="socialsFacebook"
+                  type="text"
+                  value={formData.socialsFacebook}
+                  onChange={(e) => setFormData({ ...formData, socialsFacebook: e.target.value })}
+                  placeholder="https://facebook.com/yourpage"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="socialsInstagram">Instagram</Label>
+                <Input
+                  id="socialsInstagram"
+                  type="text"
+                  value={formData.socialsInstagram}
+                  onChange={(e) => setFormData({ ...formData, socialsInstagram: e.target.value })}
+                  placeholder="https://instagram.com/yourpage"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="socialsTwitter">X (Twitter)</Label>
+                <Input
+                  id="socialsTwitter"
+                  type="text"
+                  value={formData.socialsTwitter}
+                  onChange={(e) => setFormData({ ...formData, socialsTwitter: e.target.value })}
+                  placeholder="https://x.com/yourpage"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="socialsTiktok">TikTok</Label>
+                <Input
+                  id="socialsTiktok"
+                  type="text"
+                  value={formData.socialsTiktok}
+                  onChange={(e) => setFormData({ ...formData, socialsTiktok: e.target.value })}
+                  placeholder="https://tiktok.com/@yourpage"
+                />
+              </div>
+            </div>
+          </div>
+
           {attractionData && (
             <ProfileReferenceCodeDisplay
               entityType="attraction"
@@ -478,7 +602,7 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
                 checked={formData.littleExplorerApproved}
                 onCheckedChange={(checked) => setFormData({ ...formData, littleExplorerApproved: checked })}
               />
-              <Label htmlFor="littleExplorerApproved">Little Explorer Approved</Label>
+              <Label htmlFor="littleExplorerApproved">Child Friendly</Label>
             </div>
             <div className="flex items-center space-x-2">
               <Switch

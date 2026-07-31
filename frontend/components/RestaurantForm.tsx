@@ -92,6 +92,10 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
     paymentCard: false,
     paymentCash: false,
     paymentMobile: false,
+    paymentGaap: false,
+    paymentSnapScan: false,
+    paymentYoco: false,
+    paymentZapper: false,
     wheelchairAccess: false,
     parkingAvailability: false,
     serviceDineIn: false,
@@ -104,7 +108,7 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
     socialsWebsite: "",
     socialsInstagram: "",
     socialsTwitter: "",
-    socialsYoutube: "",
+    socialsFacebook: "",
     socialsTiktok: "",
     littleExplorerApproved: false,
     isActive: false,
@@ -159,6 +163,10 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
         paymentCard: data.paymentCard || false,
         paymentCash: data.paymentCash || false,
         paymentMobile: data.paymentMobile || false,
+        paymentGaap: data.paymentGaap || false,
+        paymentSnapScan: data.paymentSnapScan || false,
+        paymentYoco: data.paymentYoco || false,
+        paymentZapper: data.paymentZapper || false,
         wheelchairAccess: data.wheelchairAccess || false,
         parkingAvailability: data.parkingAvailability || false,
         serviceDineIn: data.serviceDineIn || false,
@@ -171,7 +179,7 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
         socialsWebsite: data.socialsWebsite || "",
         socialsInstagram: data.socialsInstagram || "",
         socialsTwitter: data.socialsTwitter || "",
-        socialsYoutube: data.socialsYoutube || "",
+        socialsFacebook: data.socialsFacebook || "",
         socialsTiktok: data.socialsTiktok || "",
         littleExplorerApproved: data.littleExplorerApproved,
         isActive: data.isActive,
@@ -487,7 +495,39 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
                   checked={formData.paymentMobile}
                   onCheckedChange={(checked) => setFormData({ ...formData, paymentMobile: checked })}
                 />
-                <Label htmlFor="paymentMobile">Mobile Payment</Label>
+                <Label htmlFor="paymentMobile">Mobile Tap</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="paymentGaap"
+                  checked={formData.paymentGaap}
+                  onCheckedChange={(checked) => setFormData({ ...formData, paymentGaap: checked })}
+                />
+                <Label htmlFor="paymentGaap">Gaap</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="paymentSnapScan"
+                  checked={formData.paymentSnapScan}
+                  onCheckedChange={(checked) => setFormData({ ...formData, paymentSnapScan: checked })}
+                />
+                <Label htmlFor="paymentSnapScan">Snap Scan</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="paymentYoco"
+                  checked={formData.paymentYoco}
+                  onCheckedChange={(checked) => setFormData({ ...formData, paymentYoco: checked })}
+                />
+                <Label htmlFor="paymentYoco">Yoco</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="paymentZapper"
+                  checked={formData.paymentZapper}
+                  onCheckedChange={(checked) => setFormData({ ...formData, paymentZapper: checked })}
+                />
+                <Label htmlFor="paymentZapper">Zapper</Label>
               </div>
             </div>
           </div>
@@ -626,13 +666,13 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="socialsYoutube">YouTube</Label>
+                <Label htmlFor="socialsFacebook">Facebook</Label>
                 <Input
-                  id="socialsYoutube"
+                  id="socialsFacebook"
                   type="text"
-                  value={formData.socialsYoutube}
-                  onChange={(e) => setFormData({ ...formData, socialsYoutube: e.target.value })}
-                  placeholder="https://youtube.com/yourchannel"
+                  value={formData.socialsFacebook}
+                  onChange={(e) => setFormData({ ...formData, socialsFacebook: e.target.value })}
+                  placeholder="https://facebook.com/yourpage"
                 />
               </div>
               <div className="space-y-2">
