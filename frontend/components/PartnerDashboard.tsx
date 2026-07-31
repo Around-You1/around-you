@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { MapPin, Phone, ExternalLink, Building2, Store, Compass, LogOut, Navigation, Baby, ChevronDown } from "lucide-react";
-import BookingsSocialsDropdowns from "../components/BookingsSocialsDropdowns";
+import {
+  MapPin, Phone, ExternalLink, Building2, Store, Compass, LogOut, Navigation, Baby,
+  Wifi, CreditCard, Accessibility, CarFront, Globe, Facebook, Instagram, Mail,
+} from "lucide-react";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 import OptimizedImage from "../components/OptimizedImage";
@@ -16,6 +17,40 @@ import type { ServiceData } from "~backend/service/types";
 import type { AttractionData } from "~backend/attraction/types";
 
 type EntityData = Restaurant | ServiceData | AttractionData;
+
+// PAYMENT_LABELS maps each backend boolean field to its display label — one
+// place to add a payment option in future rather than five.
+const PAYMENT_LABELS: [string, string][] = [
+  ["paymentCard", "Card"],
+  ["paymentCash", "Cash"],
+  ["paymentMobile", "Mobile Tap"],
+  ["paymentGaap", "Gaap"],
+  ["paymentSnapScan", "Snap Scan"],
+  ["paymentYoco", "Yoco"],
+  ["paymentZapper", "Zapper"],
+];
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h3 className="font-semibold text-sm text-muted-foreground mb-2">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function TagList({ items }: { items: string[] }) {
+  if (!items || items.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((item) => (
+        <span key={item} className="px-3 py-1 bg-[#AEECE4]/10 text-[#AEECE4] rounded-full text-sm">
+          {item}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 export default function PartnerDashboard() {
   const [entity, setEntity] = useState<EntityData | null>(null);
@@ -108,6 +143,19 @@ export default function PartnerDashboard() {
     );
   }
 
+  const e = entity as any; // fields vary by entity type; guarded by checks below
+
+  const activePayments = PAYMENT_LABELS.filter(([field]) => e[field]).map(([, label]) => label);
+  const images: string[] = e.imageUrls && e.imageUrls.length > 0 ? e.imageUrls : e.imageUrl ? [e.imageUrl] : [];
+  const hasSocials = e.socialsWebsite || e.socialsFacebook || e.socialsInstagram || e.socialsTiktok || e.socialsTwitter;
+  const hasBookings = entityType === "restaurant" && (e.bookingsEmail || e.bookingsContactNumber);
+  const hasExperienceInfo =
+    (entityType === "service" || entityType === "attraction") &&
+    (e.safetyInfo || e.ageRestrictions || e.fitnessLevel || e.bestTimeOfDay || e.whatToBring);
+  const hasAttractionExtras =
+    entityType === "attraction" &&
+    (e.trailDifficulty || e.wildlifeCautions || e.tideWarnings || e.parkingNotes || e.photographySpots);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#AEECE4]/20 to-background p-6">
       <div className="max-w-4xl mx-auto space-y-8 py-8">
@@ -138,11 +186,11 @@ export default function PartnerDashboard() {
                     <span className="text-red-600 font-medium">Inactive</span>
                   )}
                 </p>
-                {entityType === "restaurant" && "littleExplorerApproved" in entity && entity.littleExplorerApproved && (
+                {entityType === "restaurant" && e.littleExplorerApproved && (
                   <div className="flex flex-wrap gap-2 mt-3">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#AEECE4]/20 text-[#AEECE4] border border-[#AEECE4]/30 rounded-full text-sm font-medium">
                       <Baby className="h-4 w-4" />
-                      Little Explorer Approved
+                      Child Friendly
                     </span>
                   </div>
                 )}
@@ -150,26 +198,22 @@ export default function PartnerDashboard() {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {"imageUrl" in entity && entity.imageUrl && (
-              <OptimizedImage
-                src={entity.imageUrl}
-                alt={entity.name}
-                className="w-full h-64 object-cover rounded-lg"
-                placeholderClassName="w-full h-64 rounded-lg"
-              />
+            {images.length > 0 && (
+              <div className={images.length === 1 ? "" : "grid grid-cols-2 sm:grid-cols-3 gap-3"}>
+                {images.map((url, i) => (
+                  <OptimizedImage
+                    key={url + i}
+                    src={url}
+                    alt={`${entity.name} photo ${i + 1}`}
+                    className={images.length === 1 ? "w-full h-64 object-cover rounded-lg" : "w-full aspect-square object-cover rounded-lg"}
+                    placeholderClassName={images.length === 1 ? "w-full h-64 rounded-lg" : "w-full aspect-square rounded-lg"}
+                  />
+                ))}
+              </div>
             )}
 
             <div className="grid gap-4">
-              {entityType === "restaurant" && (
-                <div className="space-y-2">
-                  <BookingsSocialsDropdowns
-                    triggerClass="flex items-center gap-2 text-sm font-medium hover:text-[#AEECE4] transition-colors w-full text-left"
-                    contentClass="pl-6 pt-2"
-                  />
-                </div>
-              )}
-              <div>
-                <h3 className="font-semibold text-sm text-muted-foreground mb-2">Location</h3>
+              <Section title="Location">
                 <div className="flex items-start gap-2">
                   <MapPin className="h-5 w-5 mt-0.5 text-[#AEECE4] flex-shrink-0" />
                   <div className="flex-1">
@@ -189,85 +233,165 @@ export default function PartnerDashboard() {
                     Get Directions
                   </Button>
                 )}
-              </div>
+              </Section>
 
-              {"contactNumber" in entity && entity.contactNumber && (
-                <div>
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-2">Contact</h3>
-                  <a
-                    href={`tel:${entity.contactNumber}`}
-                    className="flex items-center gap-2 text-[#AEECE4] hover:underline"
-                  >
+              {e.contactNumber && (
+                <Section title="Contact">
+                  <a href={`tel:${e.contactNumber}`} className="flex items-center gap-2 text-[#AEECE4] hover:underline">
                     <Phone className="h-5 w-5" />
-                    {entity.contactNumber}
+                    {e.contactNumber}
                   </a>
-                </div>
+                </Section>
               )}
 
-              {entityType === "restaurant" && "cuisineTypes" in entity && entity.cuisineTypes.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-2">Cuisine Types</h3>
+              {entityType === "restaurant" && e.cuisineTypes?.length > 0 && (
+                <Section title="Cuisine Types"><TagList items={e.cuisineTypes} /></Section>
+              )}
+              {entityType === "service" && e.serviceCategories?.length > 0 && (
+                <Section title="Service Categories"><TagList items={e.serviceCategories} /></Section>
+              )}
+              {entityType === "attraction" && e.attractionType?.length > 0 && (
+                <Section title="Attraction Categories"><TagList items={e.attractionType} /></Section>
+              )}
+
+              {entityType === "restaurant" && (
+                <Section title="Service Options">
+                  <TagList
+                    items={[
+                      e.serviceDineIn && "Dine-In",
+                      e.serviceTakeaway && "Takeaway",
+                      e.serviceDelivery && "Delivery",
+                    ].filter(Boolean) as string[]}
+                  />
+                </Section>
+              )}
+
+              {e.description && <Section title="Description"><p className="text-sm">{e.description}</p></Section>}
+
+              <Section title="Accessibility">
+                <div className="flex flex-wrap gap-4 text-sm">
+                  <span className={`flex items-center gap-1.5 ${e.wheelchairAccess ? "text-[#AEECE4]" : "text-muted-foreground/50"}`}>
+                    <Accessibility className="h-4 w-4" /> Wheelchair Access
+                  </span>
+                  <span className={`flex items-center gap-1.5 ${e.parkingAvailability ? "text-[#AEECE4]" : "text-muted-foreground/50"}`}>
+                    <CarFront className="h-4 w-4" /> Parking Available
+                  </span>
+                </div>
+              </Section>
+
+              {activePayments.length > 0 && (
+                <Section title="Payment Options">
                   <div className="flex flex-wrap gap-2">
-                    {entity.cuisineTypes.map((type) => (
-                      <span key={type} className="px-3 py-1 bg-[#AEECE4]/10 text-[#AEECE4] rounded-full text-sm">
-                        {type}
+                    {activePayments.map((label) => (
+                      <span key={label} className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#AEECE4]/10 text-[#AEECE4] rounded-full text-sm">
+                        <CreditCard className="h-3.5 w-3.5" /> {label}
                       </span>
                     ))}
                   </div>
-                </div>
+                </Section>
               )}
 
-              {entityType === "service" && "serviceCategories" in entity && entity.serviceCategories.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-2">Service Categories</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {entity.serviceCategories.map((category) => (
-                      <span key={category} className="px-3 py-1 bg-[#AEECE4]/10 text-[#AEECE4] rounded-full text-sm">
-                        {category}
-                      </span>
-                    ))}
+              {entityType === "restaurant" && e.wifiNetwork && (
+                <Section title="WiFi">
+                  <p className="flex items-center gap-2 text-sm">
+                    <Wifi className="h-4 w-4 text-[#AEECE4]" />
+                    {e.wifiNetwork}{e.wifiPassword ? ` — ${e.wifiPassword}` : ""}
+                  </p>
+                </Section>
+              )}
+
+              {hasExperienceInfo && (
+                <Section title="Experience Info">
+                  <div className="text-sm space-y-1">
+                    {e.safetyInfo && <p><span className="text-muted-foreground">Safety Info: </span>{e.safetyInfo}</p>}
+                    {e.ageRestrictions && <p><span className="text-muted-foreground">Age Restrictions: </span>{e.ageRestrictions}</p>}
+                    {e.fitnessLevel && <p><span className="text-muted-foreground">Fitness Level: </span>{e.fitnessLevel}</p>}
+                    {e.bestTimeOfDay && <p><span className="text-muted-foreground">Best Time of Day: </span>{e.bestTimeOfDay}</p>}
+                    {e.whatToBring && <p><span className="text-muted-foreground">What to Bring: </span>{e.whatToBring}</p>}
                   </div>
-                </div>
+                </Section>
               )}
 
-              {entityType === "attraction" && "attractionType" in entity && entity.attractionType.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-2">Attraction Types</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {entity.attractionType.map((type) => (
-                      <span key={type} className="px-3 py-1 bg-[#AEECE4]/10 text-[#AEECE4] rounded-full text-sm">
-                        {type}
-                      </span>
-                    ))}
+              {hasAttractionExtras && (
+                <Section title="Attraction Extras">
+                  <div className="text-sm space-y-1">
+                    {e.trailDifficulty && <p><span className="text-muted-foreground">Trail Difficulty: </span>{e.trailDifficulty}</p>}
+                    {e.wildlifeCautions && <p><span className="text-muted-foreground">Wildlife Cautions: </span>{e.wildlifeCautions}</p>}
+                    {e.tideWarnings && <p><span className="text-muted-foreground">Tide Warnings: </span>{e.tideWarnings}</p>}
+                    {e.parkingNotes && <p><span className="text-muted-foreground">Parking Notes: </span>{e.parkingNotes}</p>}
+                    {e.photographySpots && <p><span className="text-muted-foreground">Photography Spots: </span>{e.photographySpots}</p>}
                   </div>
-                </div>
+                </Section>
               )}
 
-              {"description" in entity && entity.description && (
-                <div>
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-2">Description</h3>
-                  <p className="text-sm">{entity.description}</p>
-                </div>
+              {hasBookings && (
+                <Section title="Bookings">
+                  <div className="text-sm space-y-1">
+                    {e.bookingsEmail && (
+                      <p className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-[#AEECE4]" />
+                        <a href={`mailto:${e.bookingsEmail}`} className="text-[#AEECE4] hover:underline">{e.bookingsEmail}</a>
+                      </p>
+                    )}
+                    {e.bookingsContactNumber && (
+                      <p className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-[#AEECE4]" />
+                        <a href={`tel:${e.bookingsContactNumber}`} className="text-[#AEECE4] hover:underline">{e.bookingsContactNumber}</a>
+                      </p>
+                    )}
+                  </div>
+                </Section>
               )}
 
-              {"discountOffered" in entity && entity.discountOffered && (
-                <div>
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-2">Discount Offered</h3>
+              {hasSocials && (
+                <Section title="Socials">
+                  <div className="flex flex-wrap gap-3">
+                    {e.socialsWebsite && (
+                      <a href={e.socialsWebsite} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#AEECE4] hover:underline">
+                        <Globe className="h-4 w-4" /> Website
+                      </a>
+                    )}
+                    {e.socialsFacebook && (
+                      <a href={e.socialsFacebook} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#AEECE4] hover:underline">
+                        <Facebook className="h-4 w-4" /> Facebook
+                      </a>
+                    )}
+                    {e.socialsInstagram && (
+                      <a href={e.socialsInstagram} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#AEECE4] hover:underline">
+                        <Instagram className="h-4 w-4" /> Instagram
+                      </a>
+                    )}
+                    {e.socialsTiktok && (
+                      <a href={e.socialsTiktok} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#AEECE4] hover:underline">
+                        TikTok
+                      </a>
+                    )}
+                    {e.socialsTwitter && (
+                      <a href={e.socialsTwitter} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#AEECE4] hover:underline">
+                        X (Twitter)
+                      </a>
+                    )}
+                  </div>
+                </Section>
+              )}
+
+              {e.discountOffered && (
+                <Section title="Discount Offered">
                   <div className="flex items-center gap-2">
-                    <p className="text-lg font-semibold text-[#AEECE4]">{entity.discountOffered}</p>
-                    {entity.discountCode && (
+                    <p className="text-lg font-semibold text-[#AEECE4]">{e.discountOffered}</p>
+                    {e.discountCode && (
                       <span className="px-3 py-1.5 bg-[#AEECE4]/10 text-[#AEECE4] rounded text-lg font-mono font-bold tracking-wide">
-                        {entity.discountCode}
+                        {e.discountCode}
                       </span>
                     )}
                   </div>
-                </div>
+                </Section>
               )}
 
-              {entityType === "restaurant" && "menuLink" in entity && entity.menuLink && (
+              {entityType === "restaurant" && e.menuLink && (
                 <div>
                   <Button
-                    onClick={() => window.open(entity.menuLink!, "_blank")}
+                    onClick={() => window.open(e.menuLink, "_blank")}
                     className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black"
                   >
                     <ExternalLink className="h-5 w-5 mr-2" />
