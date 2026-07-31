@@ -42,6 +42,9 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
     officialContactNumber: "",
     officialEmail: "",
     officialRepCode: "",
+    officialRepName: "",
+    companyRegNumber: "",
+    companyVatNumber: "",
     guestType: "",
     accessLevel: "",
   });
@@ -169,6 +172,9 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
           officialContactNumber: officialUse.officialContactNumber || undefined,
           officialEmail: officialUse.officialEmail || undefined,
           officialRepCode: officialUse.officialRepCode || undefined,
+          officialRepName: officialUse.officialRepName || undefined,
+          companyRegNumber: officialUse.companyRegNumber || undefined,
+          companyVatNumber: officialUse.companyVatNumber || undefined,
           guestType: officialUse.guestType || undefined,
           accessLevel: officialUse.accessLevel || undefined,
         });
@@ -203,6 +209,9 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
           officialContactNumber: officialUse.officialContactNumber || undefined,
           officialEmail: officialUse.officialEmail || undefined,
           officialRepCode: officialUse.officialRepCode || undefined,
+          officialRepName: officialUse.officialRepName || undefined,
+          companyRegNumber: officialUse.companyRegNumber || undefined,
+          companyVatNumber: officialUse.companyVatNumber || undefined,
           guestType: officialUse.guestType || undefined,
           accessLevel: officialUse.accessLevel || undefined,
         });

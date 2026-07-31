@@ -72,14 +72,18 @@ type CreateRequest struct {
 	SocialsTiktok    string `json:"socialsTiktok,omitempty"`
 	SocialsTwitter   string `json:"socialsTwitter,omitempty"`
 
-	ImageUrl string `json:"imageUrl,omitempty"`
-	IsActive bool   `json:"isActive"`
+	ImageUrl  string   `json:"imageUrl,omitempty"`
+	ImageUrls []string `json:"imageUrls,omitempty"`
+	IsActive  bool     `json:"isActive"`
 
 	OfficialHoldingCompany string `json:"officialHoldingCompany,omitempty"`
 	OfficialContactName    string `json:"officialContactName,omitempty"`
 	OfficialContactNumber  string `json:"officialContactNumber,omitempty"`
 	OfficialEmail          string `json:"officialEmail,omitempty"`
 	OfficialRepCode        string `json:"officialRepCode,omitempty"`
+	OfficialRepName        string `json:"officialRepName,omitempty"`
+	CompanyRegNumber       string `json:"companyRegNumber,omitempty"`
+	CompanyVatNumber       string `json:"companyVatNumber,omitempty"`
 	GuestType              string `json:"guestType,omitempty"`
 	AccessLevel            string `json:"accessLevel,omitempty"`
 }
@@ -133,14 +137,18 @@ type UpdateRequest struct {
 	SocialsTiktok    *string `json:"socialsTiktok,omitempty"`
 	SocialsTwitter   *string `json:"socialsTwitter,omitempty"`
 
-	ImageUrl *string `json:"imageUrl,omitempty"`
-	IsActive *bool   `json:"isActive,omitempty"`
+	ImageUrl  *string  `json:"imageUrl,omitempty"`
+	ImageUrls []string `json:"imageUrls,omitempty"`
+	IsActive  *bool    `json:"isActive,omitempty"`
 
 	OfficialHoldingCompany *string `json:"officialHoldingCompany,omitempty"`
 	OfficialContactName    *string `json:"officialContactName,omitempty"`
 	OfficialContactNumber  *string `json:"officialContactNumber,omitempty"`
 	OfficialEmail          *string `json:"officialEmail,omitempty"`
 	OfficialRepCode        *string `json:"officialRepCode,omitempty"`
+	OfficialRepName        *string `json:"officialRepName,omitempty"`
+	CompanyRegNumber       *string `json:"companyRegNumber,omitempty"`
+	CompanyVatNumber       *string `json:"companyVatNumber,omitempty"`
 	GuestType              *string `json:"guestType,omitempty"`
 	AccessLevel            *string `json:"accessLevel,omitempty"`
 }

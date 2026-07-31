@@ -9,6 +9,9 @@ export interface OfficialUseData {
   officialContactNumber: string;
   officialEmail: string;
   officialRepCode: string;
+  officialRepName: string;
+  companyRegNumber: string;
+  companyVatNumber: string;
   guestType: string;
   accessLevel: string;
 }
@@ -97,7 +100,7 @@ export default function OfficialUseSection({ data, onChange }: OfficialUseSectio
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="officialContactName">Contact Name</Label>
+            <Label htmlFor="officialContactName">Person Responsible</Label>
             <Input
               id="officialContactName"
               value={data.officialContactName}
@@ -106,7 +109,7 @@ export default function OfficialUseSection({ data, onChange }: OfficialUseSectio
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="officialContactNumber">Contact Number</Label>
+            <Label htmlFor="officialContactNumber">Person Responsible Number</Label>
             <Input
               id="officialContactNumber"
               value={data.officialContactNumber}
@@ -126,12 +129,39 @@ export default function OfficialUseSection({ data, onChange }: OfficialUseSectio
             />
           </div>
           <div className="space-y-2">
+            <Label htmlFor="companyRegNumber">Company Registration Number</Label>
+            <Input
+              id="companyRegNumber"
+              value={data.companyRegNumber}
+              onChange={set("companyRegNumber")}
+              placeholder="Company registration number"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="companyVatNumber">Company VAT Number</Label>
+            <Input
+              id="companyVatNumber"
+              value={data.companyVatNumber}
+              onChange={set("companyVatNumber")}
+              placeholder="Company VAT number"
+            />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="officialRepCode">Rep Code</Label>
             <Input
               id="officialRepCode"
               value={data.officialRepCode}
               onChange={set("officialRepCode")}
               placeholder="Rep code"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="officialRepName">Rep Name</Label>
+            <Input
+              id="officialRepName"
+              value={data.officialRepName}
+              onChange={set("officialRepName")}
+              placeholder="Rep's full name"
             />
           </div>
         </div>

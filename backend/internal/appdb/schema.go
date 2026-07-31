@@ -26,10 +26,13 @@ type EmergencyContact struct {
 // (mirrors OfficialUseSection.tsx's OfficialUseData).
 type OfficialUse struct {
 	OfficialHoldingCompany string `json:"officialHoldingCompany,omitempty"`
-	OfficialContactName    string `json:"officialContactName,omitempty"`
+	OfficialContactName    string `json:"officialContactName,omitempty"` // labeled "Person Responsible" in the UI — the CLIENT's contact person, not the rep
 	OfficialContactNumber  string `json:"officialContactNumber,omitempty"`
 	OfficialEmail          string `json:"officialEmail,omitempty"`
 	OfficialRepCode        string `json:"officialRepCode,omitempty"`
+	OfficialRepName        string `json:"officialRepName,omitempty"` // the REP's own name, distinct from OfficialContactName above
+	CompanyRegNumber       string `json:"companyRegNumber,omitempty"`
+	CompanyVatNumber       string `json:"companyVatNumber,omitempty"`
 	GuestType              string `json:"guestType,omitempty"`
 	AccessLevel            string `json:"accessLevel,omitempty"`
 }

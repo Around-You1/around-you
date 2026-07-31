@@ -56,12 +56,16 @@ const restaurantColumns = `
 	COALESCE(socials_tiktok, '') as socials_tiktok,
 	COALESCE(socials_twitter, '') as socials_twitter,
 	COALESCE(image_url, '') as image_url,
+	image_urls,
 	is_active,
 	COALESCE(official_holding_company, '') as official_holding_company,
 	COALESCE(official_contact_name, '') as official_contact_name,
 	COALESCE(official_contact_number, '') as official_contact_number,
 	COALESCE(official_email, '') as official_email,
 	COALESCE(official_rep_code, '') as official_rep_code,
+	COALESCE(official_rep_name, '') as official_rep_name,
+	COALESCE(company_reg_number, '') as company_reg_number,
+	COALESCE(company_vat_number, '') as company_vat_number,
 	COALESCE(guest_type, '') as guest_type,
 	COALESCE(access_level, '') as access_level,
 	COALESCE(partner_code, '') as partner_code,
@@ -88,8 +92,9 @@ func scanRestaurant(row restaurantScanner) (*appdb.Restaurant, error) {
 		&r.DiscountOffered, &r.DiscountCode,
 		&r.BookingsEmail, &r.BookingsContactNumber,
 		&r.SocialsWebsite, &r.SocialsFacebook, &r.SocialsInstagram, &r.SocialsTiktok, &r.SocialsTwitter,
-		&r.ImageUrl, &r.IsActive,
+		&r.ImageUrl, pq.Array(&r.ImageUrls), &r.IsActive,
 		&r.OfficialHoldingCompany, &r.OfficialContactName, &r.OfficialContactNumber, &r.OfficialEmail, &r.OfficialRepCode,
+		&r.OfficialRepName, &r.CompanyRegNumber, &r.CompanyVatNumber,
 		&r.GuestType, &r.AccessLevel,
 		&r.PartnerCode.Code, &r.PartnerCode.Active,
 		&r.CreatedAt, &r.UpdatedAt,
@@ -189,12 +194,13 @@ func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*ap
 			discount_offered, discount_code,
 			bookings_email, bookings_contact_number,
 			socials_website, socials_facebook, socials_instagram, socials_tiktok, socials_twitter,
-			image_url, is_active,
+			image_url, image_urls, is_active,
 			official_holding_company, official_contact_name, official_contact_number, official_email, official_rep_code,
+			official_rep_name, company_reg_number, company_vat_number,
 			guest_type, access_level, partner_code, partner_code_active
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,
-			$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49
+			$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53
 		)
 		RETURNING `+restaurantColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -206,8 +212,9 @@ func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*ap
 		in.DiscountOffered, in.DiscountCode,
 		in.BookingsEmail, in.BookingsContactNumber,
 		in.SocialsWebsite, in.SocialsFacebook, in.SocialsInstagram, in.SocialsTiktok, in.SocialsTwitter,
-		in.ImageUrl, in.IsActive,
+		in.ImageUrl, pq.Array(nonNilSlice(in.ImageUrls)), in.IsActive,
 		in.OfficialHoldingCompany, in.OfficialContactName, in.OfficialContactNumber, in.OfficialEmail, in.OfficialRepCode,
+		in.OfficialRepName, in.CompanyRegNumber, in.CompanyVatNumber,
 		in.GuestType, in.AccessLevel, in.PartnerCode.Code, in.PartnerCode.Active,
 	)
 	return scanRestaurant(row)
@@ -262,14 +269,18 @@ type RestaurantPatch struct {
 	SocialsTiktok    *string
 	SocialsTwitter   *string
 
-	ImageUrl *string
-	IsActive *bool
+	ImageUrl  *string
+	ImageUrls []string
+	IsActive  *bool
 
 	OfficialHoldingCompany *string
 	OfficialContactName    *string
 	OfficialContactNumber  *string
 	OfficialEmail          *string
 	OfficialRepCode        *string
+	OfficialRepName        *string
+	CompanyRegNumber       *string
+	CompanyVatNumber       *string
 	GuestType              *string
 	AccessLevel            *string
 }
@@ -393,6 +404,9 @@ func (s *RestaurantStore) Update(ctx context.Context, id int64, patch Restaurant
 	if patch.ImageUrl != nil {
 		sets = append(sets, "image_url = "+arg(*patch.ImageUrl))
 	}
+	if patch.ImageUrls != nil {
+		sets = append(sets, "image_urls = "+arg(pq.Array(patch.ImageUrls)))
+	}
 	if patch.IsActive != nil {
 		sets = append(sets, "is_active = "+arg(*patch.IsActive))
 	}
@@ -410,6 +424,15 @@ func (s *RestaurantStore) Update(ctx context.Context, id int64, patch Restaurant
 	}
 	if patch.OfficialRepCode != nil {
 		sets = append(sets, "official_rep_code = "+arg(*patch.OfficialRepCode))
+	}
+	if patch.OfficialRepName != nil {
+		sets = append(sets, "official_rep_name = "+arg(*patch.OfficialRepName))
+	}
+	if patch.CompanyRegNumber != nil {
+		sets = append(sets, "company_reg_number = "+arg(*patch.CompanyRegNumber))
+	}
+	if patch.CompanyVatNumber != nil {
+		sets = append(sets, "company_vat_number = "+arg(*patch.CompanyVatNumber))
 	}
 	if patch.GuestType != nil {
 		sets = append(sets, "guest_type = "+arg(*patch.GuestType))
