@@ -213,7 +213,7 @@ func withCORS(next http.Handler) http.Handler {
 		if allowedOrigins[origin] {
 			h.Set("Access-Control-Allow-Origin", origin)
 			h.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			h.Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+			h.Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Supabase-Token")
 			h.Set("Access-Control-Allow-Credentials", "true")
 		}
 

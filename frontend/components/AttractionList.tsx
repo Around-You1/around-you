@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Edit, Trash2, Navigation, Loader2, Copy, ChevronDown, ChevronRight } from "lucide-react";
+import { Edit, Trash2, Navigation, Loader2, Copy, ChevronDown, ChevronRight, Star } from "lucide-react";
 import ProfileQRCode from "./ProfileQRCode";
 import ProfileClassificationGroups from "./ProfileClassificationGroups";
 import { getAuthenticatedBackend } from "../lib/backend";
@@ -21,6 +21,25 @@ interface AttractionListProps {
 }
 
 const FALLBACK = "The company has opted not to make this information visible.";
+
+// StarRatingDisplay is read-only here — admins/partners can see how a
+// listing is rated, but the actual vote is cast on the guest-facing side,
+// not from this internal management list.
+function StarRatingDisplay({ average, count }: { average: number; count: number }) {
+  if (!count) {
+    return <span className="text-xs text-muted-foreground italic shrink-0">No ratings yet</span>;
+  }
+  return (
+    <span
+      className="flex items-center gap-1 text-xs shrink-0"
+      title={`${average.toFixed(1)} out of 5, from ${count} rating${count === 1 ? "" : "s"}`}
+    >
+      <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+      <span className="font-medium text-foreground">{average.toFixed(1)}</span>
+      <span className="text-muted-foreground">({count})</span>
+    </span>
+  );
+}
 
 function FieldRow({ label, value }: { label: string; value: string | number | boolean | null | undefined }) {
   const displayValue =
@@ -44,7 +63,24 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
   const [gettingDirections, setGettingDirections] = useState<string | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
   const [openIds, setOpenIds] = useState<Set<string>>(new Set());
+  const [ratings, setRatings] = useState<Record<number, { averageRating: number; ratingCount: number }>>({});
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (attractions.length === 0) return;
+    const backend = getAuthenticatedBackend();
+    backend.rating
+      .listSummaries({ entityType: "attraction", entityIds: attractions.map((a) => a.id) })
+      .then((res) => {
+        const byId: Record<number, { averageRating: number; ratingCount: number }> = {};
+        for (const s of res.summaries) {
+          byId[s.entityId] = { averageRating: s.averageRating, ratingCount: s.ratingCount };
+        }
+        setRatings(byId);
+      })
+      .catch((error) => console.error("Failed to load ratings:", error));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attractions.map((a) => a.id).join(",")]);
 
   const filteredAttractions = attractions.filter((attraction) => {
     if (!searchQuery) return true;
@@ -161,6 +197,10 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
                     <button className="flex items-center gap-2 flex-1 min-w-0 text-left">
                       {isOpen ? <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />}
                       <h3 className="font-semibold text-sm text-foreground truncate min-w-[120px]">{attraction.name}</h3>
+                      <StarRatingDisplay
+                        average={ratings[attraction.id]?.averageRating ?? 0}
+                        count={ratings[attraction.id]?.ratingCount ?? 0}
+                      />
                       {attraction.isDuplicate && (
                         <Badge variant="destructive" className="text-xs shrink-0" title={attraction.duplicateReason || "Duplicate Entry"}>
                           Duplicate
