@@ -213,7 +213,7 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <OfficialUseSection data={officialUse} onChange={setOfficialUse} />
+          <OfficialUseSection data={officialUse} onChange={setOfficialUse} showTierFields={false} />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
