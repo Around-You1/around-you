@@ -34,49 +34,53 @@ interface AccommodationFormProps {
 }
 
 export default function AccommodationForm({ accommodation, onClose }: AccommodationFormProps) {
-  const [officialUse, setOfficialUse] = useState<OfficialUseData>({
-    officialHoldingCompany: "",
-    officialContactName: "",
-    officialContactNumber: "",
-    officialEmail: "",
-    officialRepCode: "",
-    officialRepName: "",
-    companyRegNumber: "",
-    companyVatNumber: "",
-    guestType: "",
-    accessLevel: "",
-  });
+  // Initialised straight from the `accommodation` prop rather than blank-then-
+  // filled-by-useEffect. The Province <Select> reads its value when it mounts
+  // and does not re-sync if the value arrives a render later, which is why it
+  // showed "Select Province" on an existing record whose province was set.
+  const [officialUse, setOfficialUse] = useState<OfficialUseData>(() => ({
+    officialHoldingCompany: accommodation?.officialHoldingCompany || "",
+    officialContactName: accommodation?.officialContactName || "",
+    officialContactNumber: accommodation?.officialContactNumber || "",
+    officialEmail: accommodation?.officialEmail || "",
+    officialRepCode: accommodation?.officialRepCode || "",
+    officialRepName: accommodation?.officialRepName || "",
+    companyRegNumber: accommodation?.companyRegNumber || "",
+    companyVatNumber: accommodation?.companyVatNumber || "",
+    guestType: accommodation?.guestType || "",
+    accessLevel: accommodation?.accessLevel || "",
+  }));
 
-  const [formData, setFormData] = useState({
-    name: "",
-    address: "",
-    latitude: "",
-    longitude: "",
-    country: "South Africa",
-    province: "",
-    area: "",
-    postalCode: "",
-    contact: "",
-    description: "",
-    wifiName: "",
-    wifiPassword: "",
-    imageUrl: "",
-    imageUrls: [] as string[],
-    checkInInstructions: "",
-    amenities: "",
-    guidelines: "",
-    checkOutInstructions: "",
-    wheelchairAccess: false,
-    parkingAvailability: false,
-    primaryContact: "",
-    policeContact: "",
-    doctorContact: "",
-    ambulanceContact: "",
-    hospitalContact: "",
-    fireDepartmentContact: "",
-    facilities: [] as string[],
-    isActive: false,
-  });
+  const [formData, setFormData] = useState(() => ({
+    name: accommodation?.name || "",
+    address: accommodation?.address || "",
+    latitude: accommodation?.latitude != null ? String(accommodation.latitude) : "",
+    longitude: accommodation?.longitude != null ? String(accommodation.longitude) : "",
+    country: accommodation?.country || "South Africa",
+    province: accommodation?.province || "",
+    area: accommodation?.area || "",
+    postalCode: accommodation?.postalCode || "",
+    contact: accommodation?.contact || "",
+    description: accommodation?.description || "",
+    wifiName: accommodation?.wifiName || "",
+    wifiPassword: accommodation?.wifiPassword || "",
+    imageUrl: accommodation?.imageUrl || "",
+    imageUrls: (accommodation?.imageUrls || []) as string[],
+    checkInInstructions: accommodation?.checkInInstructions || "",
+    amenities: accommodation?.amenities || "",
+    guidelines: accommodation?.guidelines || "",
+    checkOutInstructions: accommodation?.checkOutInstructions || "",
+    wheelchairAccess: accommodation?.wheelchairAccess || false,
+    parkingAvailability: accommodation?.parkingAvailability || false,
+    primaryContact: accommodation?.primaryContact || "",
+    policeContact: accommodation?.policeContact || "",
+    doctorContact: accommodation?.doctorContact || "",
+    ambulanceContact: accommodation?.ambulanceContact || "",
+    hospitalContact: accommodation?.hospitalContact || "",
+    fireDepartmentContact: accommodation?.fireDepartmentContact || "",
+    facilities: (accommodation?.facilities || []) as string[],
+    isActive: accommodation?.isActive ?? false,
+  }));
 
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
