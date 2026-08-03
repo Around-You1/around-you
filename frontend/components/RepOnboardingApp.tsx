@@ -437,6 +437,12 @@ export default function RepOnboardingApp() {
   const [partnerType, setPartnerType] = useState(null); // "Accommodations" | "Restaurants" | "Services" | "Attractions"
   const [tier, setTier] = useState(0);
   const [visibility, setVisibility] = useState([]);
+  // Booking partner: mutually exclusive with the Guest/Local/Both tier model.
+  // When true, the partner is auto-assigned to Both (Guest + Local), the Tier +
+  // Visibility controls are hidden, the full profile form is shown, and billing
+  // is by 15% commission per booking instead of a monthly tier. Persisted for now
+  // via accessLevel = "Booking" (a dedicated backend flag is a later phase).
+  const [booking, setBooking] = useState(false);
   const [country, setCountry] = useState([]);
   const [province, setProvince] = useState([]);
   const [data, setData] = useState<Record<string, any>>({});
@@ -454,7 +460,7 @@ export default function RepOnboardingApp() {
     setAutoSaveStatus("Saving…");
     const t = setTimeout(() => setAutoSaveStatus("Auto-saved to Admin Dashboard ✓"), 500);
     return () => clearTimeout(t);
-  }, [data, emergency, images, country, province, visibility, tier, partnerType]);
+  }, [data, emergency, images, country, province, visibility, tier, booking, partnerType]);
 
   const isAccommodation = partnerType === "Accommodations";
   const isRestaurant = partnerType === "Restaurants";
@@ -469,7 +475,7 @@ export default function RepOnboardingApp() {
     : "Attraction Name";
 
   const reset = () => {
-    setPartnerType(null); setTier(0); setVisibility([]); setCountry([]); setProvince([]);
+    setPartnerType(null); setTier(0); setVisibility([]); setBooking(false); setCountry([]); setProvince([]);
     setData({}); setEmergency({}); setImages([]); setSubmitted(null);
   };
 
@@ -477,12 +483,21 @@ export default function RepOnboardingApp() {
   // real backend's single guestType value (see OfficialUseSection.tsx's
   // GUEST_TYPE_OPTIONS: "Guest Only" | "Local" | "Both"). Accommodation has
   // no guestType field at all, so this is only used for the other three.
+  // Booking partners are always "Both" — they show to Guests and Locals.
   function resolveGuestType() {
+    if (booking) return "Both";
     const hasGuest = visibility.includes("Guest") || visibility.includes("Both");
     const hasLocal = visibility.includes("Local") || visibility.includes("Both");
     if (hasGuest && hasLocal) return "Both";
     if (hasLocal) return "Local";
     return "Guest Only";
+  }
+
+  // A Booking partner is marked with accessLevel = "Booking" (billed by
+  // commission, not a tier). Otherwise it's the selected tier, or "" if none.
+  function resolveAccessLevel() {
+    if (booking) return "Booking";
+    return tier >= 1 ? `Tier ${tier}` : "";
   }
 
   const submit = async () => {
@@ -611,7 +626,7 @@ export default function RepOnboardingApp() {
           companyRegNumber: data.companyRegNumber || "",
           companyVatNumber: data.companyVatNumber || "",
           guestType: resolveGuestType(),
-          accessLevel: tier >= 1 ? `Tier ${tier}` : "",
+          accessLevel: resolveAccessLevel(),
         });
       } else if (isService) {
         created = await backend.service.create({
@@ -659,7 +674,7 @@ export default function RepOnboardingApp() {
           companyRegNumber: data.companyRegNumber || "",
           companyVatNumber: data.companyVatNumber || "",
           guestType: resolveGuestType(),
-          accessLevel: tier >= 1 ? `Tier ${tier}` : "",
+          accessLevel: resolveAccessLevel(),
         });
       } else {
         created = await backend.attraction.create({
@@ -712,7 +727,7 @@ export default function RepOnboardingApp() {
           companyRegNumber: data.companyRegNumber || "",
           companyVatNumber: data.companyVatNumber || "",
           guestType: resolveGuestType(),
-          accessLevel: tier >= 1 ? `Tier ${tier}` : "",
+          accessLevel: resolveAccessLevel(),
         });
       }
 
@@ -720,6 +735,7 @@ export default function RepOnboardingApp() {
         companyName: data.companyName,
         partnerType,
         tier,
+        booking,
         accessCode: created.profileReferenceCode,
         imagesCount: images.length,
         uploadedCount: uploadedImageUrls.length,
@@ -741,7 +757,7 @@ export default function RepOnboardingApp() {
           <h2 style={{ color: colors.primary, fontSize: 18, marginBottom: 6 }}>Profile Submitted</h2>
           <p style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 16 }}>
             {submitted.companyName} was created under {submitted.partnerType}
-            {submitted.tier ? ` — Tier ${submitted.tier}` : ""}, status: <b style={{ color: colors.error }}>Non-Active</b>.
+            {submitted.booking ? " — Booking Partner (15% commission)" : submitted.tier ? ` — Tier ${submitted.tier}` : ""}, status: <b style={{ color: colors.error }}>Non-Active</b>.
           </p>
 
           <div style={{ background: colors.surface2, borderRadius: 10, padding: 14, marginBottom: 16, textAlign: "left" }}>
@@ -751,6 +767,9 @@ export default function RepOnboardingApp() {
 
           <ul style={{ textAlign: "left", color: colors.textSecondary, fontSize: 12, lineHeight: 1.8, paddingLeft: 18, marginBottom: 18 }}>
             <li>Saved to the Admin Dashboard just now (Non-Active, pending review)</li>
+            {submitted.booking && (
+              <li>Booking Partner — shown to Guests &amp; Locals, billed 15% commission per booking</li>
+            )}
             {submitted.imagesCount > 0 && submitted.uploadedCount === submitted.imagesCount && (
               <li>
                 {submitted.uploadedCount} photo{submitted.uploadedCount === 1 ? "" : "s"} uploaded successfully
@@ -843,35 +862,65 @@ export default function RepOnboardingApp() {
             {!isAccommodation && (
               <>
                 <SectionTitle>Visibility</SectionTitle>
-                <CheckboxGroup label="Show profile to" options={["Guest", "Local", "Both"]} selected={visibility} onChange={setVisibility} />
 
-                <div
+                {/* Booking partner box — sits beside the Guest / Local / Both choice.
+                    Mutually exclusive: enabling Booking hides the Guest/Local/Both +
+                    Tier controls (the partner is auto-set to Both and billed by
+                    commission). The Booking box itself is greyed out and unclickable
+                    while any Guest/Local/Both option is selected. */}
+                <button
+                  type="button"
+                  onClick={() => { if (visibility.length === 0) setBooking((b) => !b); }}
+                  disabled={visibility.length > 0}
                   style={{
-                    position: "sticky",
-                    top: 0,
-                    zIndex: 10,
-                    background: colors.background,
-                    paddingTop: 8,
-                    paddingBottom: 4,
-                    marginLeft: -4,
-                    marginRight: -4,
-                    paddingLeft: 4,
-                    paddingRight: 4,
-                    borderBottom: `1px solid ${colors.border}`,
+                    width: "100%", textAlign: "left", padding: "14px 16px", borderRadius: 12,
+                    fontWeight: 800, fontSize: 15, marginBottom: 8,
+                    cursor: visibility.length > 0 ? "not-allowed" : "pointer",
+                    background: booking ? colors.primary : "transparent",
+                    color: booking ? "#000" : colors.primary,
+                    border: `2px solid ${booking ? colors.primary : colors.border}`,
+                    opacity: visibility.length > 0 ? 0.4 : 1,
                   }}
                 >
-                  <SectionTitle>Tier Selection</SectionTitle>
-                  <TierButtons tier={tier} setTier={setTier} />
-                  <p style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 6 }}>
-                    Tap a tier → its fields open, plus every tier below it. You can change this at any time — it stays here as you scroll.
-                  </p>
-                </div>
+                  {booking ? "✓ Booking Partner" : "Booking"}
+                </button>
+                <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: 0, marginBottom: 12 }}>
+                  Booking partners are shown to both Guests and Locals and pay 15% commission per booking instead of a monthly tier. Turning this on hides the Tier and Guest/Local/Both options.
+                </p>
+
+                {!booking && (
+                  <>
+                    <CheckboxGroup label="Show profile to" options={["Guest", "Local", "Both"]} selected={visibility} onChange={setVisibility} />
+
+                    <div
+                      style={{
+                        position: "sticky",
+                        top: 0,
+                        zIndex: 10,
+                        background: colors.background,
+                        paddingTop: 8,
+                        paddingBottom: 4,
+                        marginLeft: -4,
+                        marginRight: -4,
+                        paddingLeft: 4,
+                        paddingRight: 4,
+                        borderBottom: `1px solid ${colors.border}`,
+                      }}
+                    >
+                      <SectionTitle>Tier Selection</SectionTitle>
+                      <TierButtons tier={tier} setTier={setTier} />
+                      <p style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 6 }}>
+                        Tap a tier → its fields open, plus every tier below it. You can change this at any time — it stays here as you scroll.
+                      </p>
+                    </div>
+                  </>
+                )}
               </>
             )}
 
-            {(isAccommodation || tier >= 1) && (
+            {(isAccommodation || booking || tier >= 1) && (
               <>
-                <SectionTitle>{isAccommodation ? "Accommodation Details" : "Tier 1"}</SectionTitle>
+                <SectionTitle>{isAccommodation ? "Accommodation Details" : booking ? "Profile Details" : "Tier 1"}</SectionTitle>
                 <ImageUpload images={images} setImages={setImages} />
                 <TextField label={nameLabel} value={data.name} onChange={set("name")} />
               </>
@@ -903,17 +952,17 @@ export default function RepOnboardingApp() {
               </>
             )}
 
-            {!isAccommodation && tier >= 2 && (
+            {!isAccommodation && (booking || tier >= 2) && (
               <>
-                <SectionTitle>Tier 2</SectionTitle>
+                <SectionTitle>{booking ? "Location & Access" : "Tier 2"}</SectionTitle>
                 <TextField label="Address (public listing)" value={data.publicAddress} onChange={set("publicAddress")} />
                 <CheckboxGroup label="Accessibility Options" options={ACCESSIBILITY_OPTIONS} selected={data.accessibility || []} onChange={set("accessibility")} />
               </>
             )}
 
-            {!isAccommodation && tier >= 3 && (
+            {!isAccommodation && (booking || tier >= 3) && (
               <>
-                <SectionTitle>Tier 3</SectionTitle>
+                <SectionTitle>{booking ? "Categories & Description" : "Tier 3"}</SectionTitle>
                 {isRestaurant && (
                   <CheckboxGroup label="Cuisine Types" options={CUISINE_TYPES} selected={data.cuisineTypes || []} onChange={set("cuisineTypes")} />
                 )}
@@ -942,9 +991,9 @@ export default function RepOnboardingApp() {
               </>
             )}
 
-            {!isAccommodation && tier >= 4 && (
+            {!isAccommodation && (booking || tier >= 4) && (
               <>
-                <SectionTitle>Tier 4</SectionTitle>
+                <SectionTitle>{booking ? "Extras" : "Tier 4"}</SectionTitle>
                 {isRestaurant && (
                   <>
                     <TextField label="Booking Email Address" value={data.bookingEmail} onChange={set("bookingEmail")} />
