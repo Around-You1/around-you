@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Edit, MapPin, Trash2, Loader2, ChevronDown, ChevronRight, Copy } from "lucide-react";
+import { Edit, MapPin, Trash2, Loader2, ChevronDown, ChevronRight, Copy, Star } from "lucide-react";
 import ProfileQRCode from "./ProfileQRCode";
 import ProfileClassificationGroups from "./ProfileClassificationGroups";
 import type { Restaurant } from "~backend/restaurant/types";
@@ -19,6 +19,25 @@ interface RestaurantListProps {
 }
 
 const FALLBACK = "The company has opted not to make this information visible.";
+
+// StarRatingDisplay is read-only here — admins/partners can see how a
+// listing is rated, but the actual vote is cast on the guest-facing side,
+// not from this internal management list.
+function StarRatingDisplay({ average, count }: { average: number; count: number }) {
+  if (!count) {
+    return <span className="text-xs text-muted-foreground italic shrink-0">No ratings yet</span>;
+  }
+  return (
+    <span
+      className="flex items-center gap-1 text-xs shrink-0"
+      title={`${average.toFixed(1)} out of 5, from ${count} rating${count === 1 ? "" : "s"}`}
+    >
+      <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+      <span className="font-medium text-foreground">{average.toFixed(1)}</span>
+      <span className="text-muted-foreground">({count})</span>
+    </span>
+  );
+}
 
 function FieldRow({ label, value }: { label: string; value: string | number | boolean | null | undefined }) {
   const displayValue =
@@ -42,6 +61,23 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
   const [gettingDirections, setGettingDirections] = useState<number | null>(null);
   const [toggling, setToggling] = useState<number | null>(null);
   const [openIds, setOpenIds] = useState<Set<number>>(new Set());
+  const [ratings, setRatings] = useState<Record<number, { averageRating: number; ratingCount: number }>>({});
+
+  useEffect(() => {
+    if (restaurants.length === 0) return;
+    const backend = getAuthenticatedBackend();
+    backend.rating
+      .listSummaries({ entityType: "restaurant", entityIds: restaurants.map((r) => r.id) })
+      .then((res) => {
+        const byId: Record<number, { averageRating: number; ratingCount: number }> = {};
+        for (const s of res.summaries) {
+          byId[s.entityId] = { averageRating: s.averageRating, ratingCount: s.ratingCount };
+        }
+        setRatings(byId);
+      })
+      .catch((error) => console.error("Failed to load ratings:", error));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restaurants.map((r) => r.id).join(",")]);
 
   const toggleOpen = (id: number) => {
     setOpenIds((prev) => {
@@ -127,6 +163,10 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
                     <button className="flex items-center gap-2 flex-1 min-w-0 text-left">
                       {isOpen ? <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />}
                       <h3 className="font-semibold text-sm text-foreground truncate min-w-[120px]">{restaurant.name}</h3>
+                      <StarRatingDisplay
+                        average={ratings[restaurant.id]?.averageRating ?? 0}
+                        count={ratings[restaurant.id]?.ratingCount ?? 0}
+                      />
                       {restaurant.isDuplicate && (
                         <Badge variant="destructive" className="text-xs shrink-0" title={restaurant.duplicateReason || "Duplicate Entry"}>
                           Duplicate
