@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Phone, ExternalLink, Tag, ChevronDown, Search, Eye, EyeOff, MapPin, Mail, Globe, Instagram, Twitter, Youtube, Music } from "lucide-react";
+import { Phone, ExternalLink, Tag, ChevronDown, Search, Eye, EyeOff, MapPin, Mail, Globe, Instagram, Twitter, Youtube, Music, Star } from "lucide-react";
 import AddressDropdown from "../components/AddressDropdown";
 import DirectionsDropdown from "../components/DirectionsDropdown";
 import { getAuthenticatedBackend } from "../lib/backend";
@@ -24,6 +24,21 @@ import AppLogo from "../components/AppLogo";
 
 const FALLBACK = "The company has opted not to make this information visible.";
 
+// Mirrors backend/app/rating/types.go Summary. myRating is 0/absent until
+// this guest has voted; averageRating/ratingCount cover everyone's votes.
+interface RatingSummary {
+  entityType: string;
+  entityId: number;
+  averageRating: number;
+  ratingCount: number;
+  myRating?: number;
+}
+
+type RatableType = "restaurant" | "service" | "attraction";
+
+const ratingKey = (entityType: string, entityId: number | string) =>
+  `${entityType}:${Number(entityId)}`;
+
 export default function GuestDashboard() {
   const [accommodation, setAccommodation] = useState<Accommodation | null>(null);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -39,6 +54,8 @@ export default function GuestDashboard() {
 
   const [visiblePasswords, setVisiblePasswords] = useState<Set<number>>(new Set());
   const [selectedContact, setSelectedContact] = useState<string>("");
+  // Star ratings, keyed "<entityType>:<entityId>" so all three tabs share one map.
+  const [ratings, setRatings] = useState<Record<string, RatingSummary>>({});
   const { toast } = useToast();
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -119,6 +136,49 @@ export default function GuestDashboard() {
     }
   }, [searchQuery, restaurants, services, attractions]);
 
+  // Fetches every rating summary for the three lists in three round trips
+  // (one per entity type) rather than one per card. Deliberately silent on
+  // failure: a ratings outage must not blank out the whole dashboard.
+  const loadRatings = async (
+    restaurantList: Restaurant[],
+    serviceList: ServiceData[],
+    attractionList: AttractionData[]
+  ) => {
+    try {
+      const backend = getAuthenticatedBackend();
+      const empty = { summaries: [] as RatingSummary[] };
+      const [restaurantRes, serviceRes, attractionRes] = await Promise.all([
+        restaurantList.length
+          ? backend.rating.listSummaries({ entityType: "restaurant", entityIds: restaurantList.map((x) => Number(x.id)) })
+          : Promise.resolve(empty),
+        serviceList.length
+          ? backend.rating.listSummaries({ entityType: "service", entityIds: serviceList.map((x) => Number(x.id)) })
+          : Promise.resolve(empty),
+        attractionList.length
+          ? backend.rating.listSummaries({ entityType: "attraction", entityIds: attractionList.map((x) => Number(x.id)) })
+          : Promise.resolve(empty),
+      ]);
+
+      const map: Record<string, RatingSummary> = {};
+      [
+        ...((restaurantRes as { summaries?: RatingSummary[] }).summaries || []),
+        ...((serviceRes as { summaries?: RatingSummary[] }).summaries || []),
+        ...((attractionRes as { summaries?: RatingSummary[] }).summaries || []),
+      ].forEach((summary) => {
+        map[ratingKey(summary.entityType, summary.entityId)] = summary;
+      });
+      setRatings(map);
+    } catch (error) {
+      console.error("Failed to load ratings:", error);
+    }
+  };
+
+  // Called by each card's StarRating after a successful vote, so the average
+  // and the guest's own star count update without a full reload.
+  const applyRatingSummary = (summary: RatingSummary) => {
+    setRatings((prev) => ({ ...prev, [ratingKey(summary.entityType, summary.entityId)]: summary }));
+  };
+
   const loadAccommodationDetails = async () => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -148,6 +208,7 @@ export default function GuestDashboard() {
       setFilteredRestaurants(restaurantData.restaurants);
       setFilteredServices(serviceData.services);
       setFilteredAttractions(attractionData.attractions);
+      void loadRatings(restaurantData.restaurants, serviceData.services, attractionData.attractions);
     } catch (error) {
       console.error("Failed to load area partners:", error);
       toast({ title: "Error", description: "Failed to load area partners", variant: "destructive" });
@@ -172,6 +233,7 @@ export default function GuestDashboard() {
       setFilteredRestaurants(restaurantData.restaurants);
       setFilteredServices(serviceData.services);
       setFilteredAttractions(attractionData.attractions);
+      void loadRatings(restaurantData.restaurants, serviceData.services, attractionData.attractions);
     } catch (error) {
       console.error("Failed to load nearby partners:", error);
       toast({ title: "Error", description: "Failed to load nearby partners", variant: "destructive" });
@@ -545,8 +607,15 @@ export default function GuestDashboard() {
                           <div className="flex-1 min-w-0 space-y-2">
                             <div className="flex items-center gap-2 flex-wrap">
                               <h4 className="font-semibold truncate">{restaurant.name}</h4>
-                              {restaurant.littleExplorerApproved && <span title="Little Explorer Approved">👶</span>}
+                              {restaurant.littleExplorerApproved && <span title="Child Friendly">👶</span>}
                             </div>
+
+                            <StarRating
+                              entityType="restaurant"
+                              entityId={Number(restaurant.id)}
+                              summary={ratings[ratingKey("restaurant", restaurant.id)]}
+                              onRated={applyRatingSummary}
+                            />
 
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
@@ -882,6 +951,13 @@ export default function GuestDashboard() {
                           <div className="flex-1 min-w-0 space-y-2">
                             <h4 className="font-semibold truncate">{service.name}</h4>
 
+                            <StarRating
+                              entityType="service"
+                              entityId={Number(service.id)}
+                              summary={ratings[ratingKey("service", service.id)]}
+                              onRated={applyRatingSummary}
+                            />
+
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
@@ -1051,6 +1127,13 @@ export default function GuestDashboard() {
                           <div className="flex-1 min-w-0 space-y-2">
                             <h4 className="font-semibold truncate">{attraction.name}</h4>
 
+                            <StarRating
+                              entityType="attraction"
+                              entityId={Number(attraction.id)}
+                              summary={ratings[ratingKey("attraction", attraction.id)]}
+                              onRated={applyRatingSummary}
+                            />
+
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
@@ -1201,6 +1284,95 @@ export default function GuestDashboard() {
         </div>
         <SwipeIndicator show={filteredRestaurants.length > 0 || filteredServices.length > 0 || filteredAttractions.length > 0} />
       </div>
+    </div>
+  );
+}
+
+// StarRating is the guest-facing, tap-to-rate widget. Deliberately NOT used on
+// the Accommodation card above — guests rate Restaurants, Services and
+// Attractions only.
+//
+// One tap submits immediately (no separate save button: on mobile a second tap
+// is a second chance to lose the vote). Once submitted, the server returns the
+// recalculated summary, which replaces the local copy.
+//
+// Re-voting is allowed and overwrites the previous vote — the DB's unique
+// constraint on (entity_type, entity_id, voter_key) means it updates rather
+// than stacking a second vote.
+function StarRating({
+  entityType,
+  entityId,
+  summary,
+  onRated,
+}: {
+  entityType: RatableType;
+  entityId: number;
+  summary?: RatingSummary;
+  onRated: (summary: RatingSummary) => void;
+}) {
+  const [hovered, setHovered] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+
+  const myRating = summary?.myRating ?? 0;
+  const average = summary?.averageRating ?? 0;
+  const count = summary?.ratingCount ?? 0;
+
+  // Hover preview wins while the pointer is over the row; otherwise show the
+  // guest's own vote. Touch devices never fire hover, so they just see myRating.
+  const highlighted = hovered || myRating;
+
+  const submit = async (stars: number) => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const res = await backend.rating.submitRating({ entityType, entityId, stars });
+      const updated = (res as { summary?: RatingSummary }).summary;
+      if (updated) onRated(updated);
+      toast({
+        title: "Thanks for rating",
+        description: `You gave ${stars} star${stars === 1 ? "" : "s"}.`,
+      });
+    } catch (error) {
+      console.error("Failed to submit rating:", error);
+      toast({
+        title: "Error",
+        description: "Could not save your rating. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center" onMouseLeave={() => setHovered(0)}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            disabled={saving}
+            aria-label={`Rate ${star} star${star === 1 ? "" : "s"}`}
+            onClick={() => submit(star)}
+            onMouseEnter={() => setHovered(star)}
+            className="p-0.5 -m-0.5 disabled:opacity-50 touch-manipulation"
+          >
+            <Star
+              className={`h-5 w-5 sm:h-4 sm:w-4 transition-colors ${
+                star <= highlighted
+                  ? "fill-yellow-400 text-yellow-400"
+                  : "text-muted-foreground/40"
+              }`}
+            />
+          </button>
+        ))}
+      </div>
+      <span className="text-xs text-muted-foreground">
+        {count > 0 ? `${average.toFixed(1)} (${count})` : "Be the first to rate"}
+        {myRating > 0 ? " \u00B7 you rated this" : ""}
+      </span>
     </div>
   );
 }
