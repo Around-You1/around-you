@@ -67,6 +67,11 @@ const accommodationColumns = `
 	COALESCE(official_contact_number, '') as official_contact_number,
 	COALESCE(official_email, '') as official_email,
 	COALESCE(official_rep_code, '') as official_rep_code,
+	COALESCE(official_rep_name, '') as official_rep_name,
+	COALESCE(company_reg_number, '') as company_reg_number,
+	COALESCE(company_vat_number, '') as company_vat_number,
+	COALESCE(guest_type, '') as guest_type,
+	COALESCE(access_level, '') as access_level,
 	created_at, updated_at
 `
 
@@ -89,7 +94,9 @@ func scanAccommodation(row scanner) (*appdb.Accommodation, error) {
 		&a.PrimaryContact, &a.PoliceContact, &a.DoctorContact, &a.AmbulanceContact,
 		&a.HospitalContact, &a.FireDepartmentContact, &emergencyContactsJSON, &a.ImageUrl,
 		pq.Array(&a.ImageUrls), &a.IsActive, &a.OfficialHoldingCompany, &a.OfficialContactName,
-		&a.OfficialContactNumber, &a.OfficialEmail, &a.OfficialRepCode, &a.CreatedAt, &a.UpdatedAt,
+		&a.OfficialContactNumber, &a.OfficialEmail, &a.OfficialRepCode,
+		&a.OfficialRepName, &a.CompanyRegNumber, &a.CompanyVatNumber, &a.GuestType, &a.AccessLevel,
+		&a.CreatedAt, &a.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -182,10 +189,13 @@ func (s *Store) Create(ctx context.Context, in *appdb.Accommodation) (*appdb.Acc
 			amenities, guidelines, primary_contact, police_contact, doctor_contact,
 			ambulance_contact, hospital_contact, fire_department_contact, image_url,
 			image_urls, is_active, official_holding_company, official_contact_name,
-			official_contact_number, official_email, official_rep_code
+			official_contact_number, official_email, official_rep_code,
+			official_rep_name, company_reg_number, company_vat_number,
+			guest_type, access_level
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
-			$19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34
+			$19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34,
+			$35, $36, $37, $38, $39
 		)
 		RETURNING`+accommodationColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -196,6 +206,8 @@ func (s *Store) Create(ctx context.Context, in *appdb.Accommodation) (*appdb.Acc
 		in.AmbulanceContact, in.HospitalContact, in.FireDepartmentContact, in.ImageUrl,
 		pq.Array(nonNilSlice(in.ImageUrls)), in.IsActive, in.OfficialHoldingCompany, in.OfficialContactName,
 		in.OfficialContactNumber, in.OfficialEmail, in.OfficialRepCode,
+		in.OfficialRepName, in.CompanyRegNumber, in.CompanyVatNumber,
+		in.GuestType, in.AccessLevel,
 	)
 
 	return scanAccommodation(row)
@@ -249,6 +261,11 @@ type Patch struct {
 	OfficialContactNumber  *string
 	OfficialEmail          *string
 	OfficialRepCode        *string
+	OfficialRepName        *string
+	CompanyRegNumber       *string
+	CompanyVatNumber       *string
+	GuestType              *string
+	AccessLevel            *string
 }
 
 // Update applies patch to the accommodation with the given id and returns
@@ -359,6 +376,21 @@ func (s *Store) Update(ctx context.Context, id int64, patch Patch) (*appdb.Accom
 	}
 	if patch.OfficialRepCode != nil {
 		sets = append(sets, "official_rep_code = "+arg(*patch.OfficialRepCode))
+	}
+	if patch.OfficialRepName != nil {
+		sets = append(sets, "official_rep_name = "+arg(*patch.OfficialRepName))
+	}
+	if patch.CompanyRegNumber != nil {
+		sets = append(sets, "company_reg_number = "+arg(*patch.CompanyRegNumber))
+	}
+	if patch.CompanyVatNumber != nil {
+		sets = append(sets, "company_vat_number = "+arg(*patch.CompanyVatNumber))
+	}
+	if patch.GuestType != nil {
+		sets = append(sets, "guest_type = "+arg(*patch.GuestType))
+	}
+	if patch.AccessLevel != nil {
+		sets = append(sets, "access_level = "+arg(*patch.AccessLevel))
 	}
 
 	sets = append(sets, "updated_at = now()")

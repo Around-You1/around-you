@@ -66,6 +66,11 @@ type CreateRequest struct {
 	OfficialContactNumber  string `json:"officialContactNumber,omitempty"`
 	OfficialEmail          string `json:"officialEmail,omitempty"`
 	OfficialRepCode        string `json:"officialRepCode,omitempty"`
+	OfficialRepName        string `json:"officialRepName,omitempty"`
+	CompanyRegNumber       string `json:"companyRegNumber,omitempty"`
+	CompanyVatNumber       string `json:"companyVatNumber,omitempty"`
+	GuestType              string `json:"guestType,omitempty"`
+	AccessLevel            string `json:"accessLevel,omitempty"`
 }
 
 // UpdateRequest is the same as CreateRequest but keyed by ID and with every
@@ -117,6 +122,11 @@ type UpdateRequest struct {
 	OfficialContactNumber  *string `json:"officialContactNumber,omitempty"`
 	OfficialEmail          *string `json:"officialEmail,omitempty"`
 	OfficialRepCode        *string `json:"officialRepCode,omitempty"`
+	OfficialRepName        *string `json:"officialRepName,omitempty"`
+	CompanyRegNumber       *string `json:"companyRegNumber,omitempty"`
+	CompanyVatNumber       *string `json:"companyVatNumber,omitempty"`
+	GuestType              *string `json:"guestType,omitempty"`
+	AccessLevel            *string `json:"accessLevel,omitempty"`
 }
 
 // ---- Delete ----------------------------------------------------------------

@@ -40,6 +40,9 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
     officialContactNumber: "",
     officialEmail: "",
     officialRepCode: "",
+    officialRepName: "",
+    companyRegNumber: "",
+    companyVatNumber: "",
     guestType: "",
     accessLevel: "",
   });
@@ -86,8 +89,11 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
         officialContactNumber: accommodation.officialContactNumber || "",
         officialEmail: accommodation.officialEmail || "",
         officialRepCode: accommodation.officialRepCode || "",
-        guestType: "",
-        accessLevel: "",
+        officialRepName: accommodation.officialRepName || "",
+        companyRegNumber: accommodation.companyRegNumber || "",
+        companyVatNumber: accommodation.companyVatNumber || "",
+        guestType: accommodation.guestType || "",
+        accessLevel: accommodation.accessLevel || "",
       });
       setFormData({
         name: accommodation.name,
@@ -151,6 +157,11 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
           officialContactNumber: officialUse.officialContactNumber || undefined,
           officialEmail: officialUse.officialEmail || undefined,
           officialRepCode: officialUse.officialRepCode || undefined,
+          officialRepName: officialUse.officialRepName || undefined,
+          companyRegNumber: officialUse.companyRegNumber || undefined,
+          companyVatNumber: officialUse.companyVatNumber || undefined,
+          guestType: officialUse.guestType || undefined,
+          accessLevel: officialUse.accessLevel || undefined,
         });
         toast({
           title: "Success",
@@ -167,6 +178,11 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
           officialContactNumber: officialUse.officialContactNumber || undefined,
           officialEmail: officialUse.officialEmail || undefined,
           officialRepCode: officialUse.officialRepCode || undefined,
+          officialRepName: officialUse.officialRepName || undefined,
+          companyRegNumber: officialUse.companyRegNumber || undefined,
+          companyVatNumber: officialUse.companyVatNumber || undefined,
+          guestType: officialUse.guestType || undefined,
+          accessLevel: officialUse.accessLevel || undefined,
         });
         toast({
           title: "Accommodation Created",

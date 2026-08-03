@@ -83,6 +83,11 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Accommodation, erro
 			OfficialContactNumber:  req.OfficialContactNumber,
 			OfficialEmail:          req.OfficialEmail,
 			OfficialRepCode:        req.OfficialRepCode,
+			OfficialRepName:        req.OfficialRepName,
+			CompanyRegNumber:       req.CompanyRegNumber,
+			CompanyVatNumber:       req.CompanyVatNumber,
+			GuestType:              req.GuestType,
+			AccessLevel:            req.AccessLevel,
 		},
 	}
 
@@ -125,6 +130,11 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.Accommodation, erro
 		OfficialContactNumber:  req.OfficialContactNumber,
 		OfficialEmail:          req.OfficialEmail,
 		OfficialRepCode:        req.OfficialRepCode,
+		OfficialRepName:        req.OfficialRepName,
+		CompanyRegNumber:       req.CompanyRegNumber,
+		CompanyVatNumber:       req.CompanyVatNumber,
+		GuestType:              req.GuestType,
+		AccessLevel:            req.AccessLevel,
 	}
 
 	a, err := accommodations.Update(ctx, req.ID, patch)
