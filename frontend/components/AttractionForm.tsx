@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +35,11 @@ const ATTRACTION_CATEGORIES = [
 
 export default function AttractionForm({ attractionId, onClose }: AttractionFormProps) {
   const [loading, setLoading] = useState(false);
+  // Gate the form render until the record has loaded. The Province <Select>
+  // reads its value when it mounts and does not re-sync if the value arrives a
+  // render later — so on edit we wait for the data before rendering the form,
+  // exactly as RestaurantForm does. Prevents a blank Province on edit.
+  const [initialLoading, setInitialLoading] = useState(false);
   const [attractionData, setAttractionData] = useState<AttractionData | null>(null);
   const [officialUse, setOfficialUse] = useState<OfficialUseData>({
     officialHoldingCompany: "",
@@ -101,6 +106,7 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
 
   const loadAttraction = async () => {
     if (!attractionId) return;
+    setInitialLoading(true);
     try {
       const backend = getAuthenticatedBackend();
       const data = await backend.attraction.get({ attractionId });
@@ -168,6 +174,8 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
         description: "Failed to load attraction details",
         variant: "destructive",
       });
+    } finally {
+      setInitialLoading(false);
     }
   };
 
@@ -316,15 +324,25 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
     }
   };
 
+  if (initialLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Loading Attraction...</CardTitle>
+        </CardHeader>
+        <CardContent className="flex justify-center items-center py-12">
+          <div className="text-muted-foreground">Loading attraction details...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{attractionId ? "Edit" : "Add"} Attraction</DialogTitle>
-          <DialogDescription>
-            {attractionId ? "Update the attraction details below" : "Fill in the details to add a new attraction"}
-          </DialogDescription>
-        </DialogHeader>
+    <Card>
+      <CardHeader>
+        <CardTitle>{attractionId ? "Edit" : "Add"} Attraction</CardTitle>
+      </CardHeader>
+      <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <OfficialUseSection data={officialUse} onChange={setOfficialUse} />
 
@@ -758,7 +776,7 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </CardContent>
+    </Card>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -155,6 +155,11 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
 
 export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
   const [loading, setLoading] = useState(false);
+  // Gate the form render until the record has loaded. The Province <Select>
+  // reads its value when it mounts and does not re-sync if the value arrives a
+  // render later — so on edit we wait for the data before rendering the form,
+  // exactly as RestaurantForm does. Prevents a blank Province on edit.
+  const [initialLoading, setInitialLoading] = useState(false);
   const [serviceData, setServiceData] = useState<ServiceData | null>(null);
   const [officialUse, setOfficialUse] = useState<OfficialUseData>({
     officialHoldingCompany: "",
@@ -216,6 +221,7 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
 
   const loadService = async () => {
     if (!serviceId) return;
+    setInitialLoading(true);
     try {
       const backend = getAuthenticatedBackend();
       const data = await backend.service.get({ serviceId });
@@ -278,6 +284,8 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
         description: "Failed to load service details",
         variant: "destructive",
       });
+    } finally {
+      setInitialLoading(false);
     }
   };
 
@@ -432,15 +440,25 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
     }));
   };
 
+  if (initialLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Loading Service...</CardTitle>
+        </CardHeader>
+        <CardContent className="flex justify-center items-center py-12">
+          <div className="text-muted-foreground">Loading service details...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{serviceId ? "Edit" : "Add"} Service</DialogTitle>
-          <DialogDescription>
-            {serviceId ? "Update the service details below" : "Fill in the details to add a new service"}
-          </DialogDescription>
-        </DialogHeader>
+    <Card>
+      <CardHeader>
+        <CardTitle>{serviceId ? "Edit" : "Add"} Service</CardTitle>
+      </CardHeader>
+      <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <OfficialUseSection data={officialUse} onChange={setOfficialUse} />
 
@@ -853,7 +871,7 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </CardContent>
+    </Card>
   );
 }

@@ -140,13 +140,13 @@ export default function AttractionTab({ onUpdate }: AttractionTabProps) {
         />
       </div>
 
-      <AttractionList key={refreshKey} onEdit={handleEdit} onUpdate={onUpdate} searchQuery={searchQuery} sortBy={sortBy} sortOrder={sortOrder} />
-
-      {showForm && (
+      {showForm ? (
         <AttractionForm
           attractionId={editingAttractionId}
           onClose={handleFormClose}
         />
+      ) : (
+        <AttractionList key={refreshKey} onEdit={handleEdit} onUpdate={onUpdate} searchQuery={searchQuery} sortBy={sortBy} sortOrder={sortOrder} />
       )}
 
       {showImport && (

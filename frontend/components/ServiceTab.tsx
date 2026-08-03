@@ -140,13 +140,13 @@ export default function ServiceTab({ onUpdate }: ServiceTabProps) {
         />
       </div>
 
-      <ServiceList key={refreshKey} onEdit={handleEdit} onUpdate={onUpdate} searchQuery={searchQuery} sortBy={sortBy} sortOrder={sortOrder} />
-
-      {showForm && (
+      {showForm ? (
         <ServiceForm
           serviceId={editingServiceId}
           onClose={handleFormClose}
         />
+      ) : (
+        <ServiceList key={refreshKey} onEdit={handleEdit} onUpdate={onUpdate} searchQuery={searchQuery} sortBy={sortBy} sortOrder={sortOrder} />
       )}
 
       {showImport && (
