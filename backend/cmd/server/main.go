@@ -188,14 +188,12 @@ var allowedOrigins = map[string]bool{
 	"https://www.aroundyou.co.za": true,
 	"http://localhost:3000":       true, // local frontend dev server
 
-	// Vercel deployment URLs. The first is the specific one shared so far —
-	// note this includes a random per-deployment ID (ply2di3o7) that Vercel
-	// generates fresh on every redeploy, so it WILL stop matching the next
-	// time the frontend is redeployed. The stable one to actually rely on is
-	// the "Production" domain shown on the Vercel project's main page
-	// (usually just <project-name>.vercel.app, without a random suffix) —
-	// add that here too once known, alongside or instead of the one below.
-	"https://around-ply2di3o7-daves-projects-79564653.vercel.app": true,
+	// No *.vercel.app origin is listed on purpose. The site is only ever used
+	// via the aroundyou.co.za custom domain, so Vercel's per-deployment
+	// preview URLs (which carry a random ID that changes on every redeploy)
+	// would be dead weight here. If a preview URL is ever needed, add the
+	// project's STABLE domain from Vercel → Settings → Domains — the plain
+	// <project-name>.vercel.app one, not a URL containing a random suffix.
 }
 
 // withCORS allows the separately-hosted frontend to call the API from the
