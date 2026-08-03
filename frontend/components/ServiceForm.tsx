@@ -226,6 +226,9 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
         officialContactNumber: data.officialContactNumber || "",
         officialEmail: data.officialEmail || "",
         officialRepCode: data.officialRepCode || "",
+        officialRepName: data.officialRepName || "",
+        companyRegNumber: data.companyRegNumber || "",
+        companyVatNumber: data.companyVatNumber || "",
         guestType: data.guestType || "",
         accessLevel: data.accessLevel || "",
       });
