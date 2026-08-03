@@ -101,43 +101,61 @@ export default function ServiceTab({ onUpdate }: ServiceTabProps) {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
-        <div className="flex justify-between items-center gap-4">
-          <div className="flex gap-2">
-            <Button onClick={handleAdd}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Service
-            </Button>
-            <Button variant="outline" onClick={() => setShowImport(true)}>
-              <Upload className="w-4 h-4 mr-2" />
-              Import CSV
-            </Button>
-            <Button variant="outline" onClick={handleExport}>
-              <Download className="w-4 h-4 mr-2" />
-              Download Bulk CSV
-            </Button>
-            <Button variant="outline" onClick={handleDownloadTemplate}>
-              <FileText className="w-4 h-4 mr-2" />
-              Download Template
-            </Button>
-          </div>
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div className="flex flex-col sm:flex-row gap-4 justify-between">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               placeholder="Search services..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
+              className="pl-10"
             />
           </div>
+          <Button
+            onClick={handleAdd}
+            className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Service
+          </Button>
         </div>
-        <SortControls
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          onSortChange={(newSortBy, newSortOrder) => {
-            setSortBy(newSortBy);
-            setSortOrder(newSortOrder);
-          }}
-        />
+
+        <div className="flex flex-col sm:flex-row gap-2 justify-between">
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowImport(true)}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Import CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download Bulk CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadTemplate}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Download Template
+            </Button>
+          </div>
+          <SortControls
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSortChange={(newSortBy, newSortOrder) => {
+              setSortBy(newSortBy);
+              setSortOrder(newSortOrder);
+            }}
+          />
+        </div>
       </div>
 
       {showForm ? (
