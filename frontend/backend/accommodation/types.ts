@@ -19,6 +19,9 @@ export interface Accommodation {
   area?: string;
   postalCode: string;
 
+  contact?: string;
+  description?: string;
+
   profileReferenceCode?: string;
   isDuplicate?: boolean;
   duplicateReason?: string;
@@ -55,6 +58,9 @@ export interface Accommodation {
   officialContactNumber?: string;
   officialEmail?: string;
   officialRepCode?: string;
+  officialRepName?: string;
+  companyRegNumber?: string;
+  companyVatNumber?: string;
   guestType?: string;
   accessLevel?: string;
 

@@ -7,10 +7,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const nextConfig = {
   reactStrictMode: true,
 
-  // The imported component files are best-effort typed (they were authored
-  // against an Encore-generated client). Let dev/prod run even if a stray
-  // type doesn't line up; tighten later by removing this.
-  typescript: { ignoreBuildErrors: true },
+  // TypeScript checking is enforced on build. Type errors used to be silently
+  // ignored here, which hid several real data bugs — keep this on. ESLint is
+  // still skipped during builds; tighten that separately later.
+  typescript: { ignoreBuildErrors: false },
   eslint: { ignoreDuringBuilds: true },
 
   webpack: (config) => {

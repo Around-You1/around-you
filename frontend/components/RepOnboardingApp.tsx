@@ -210,14 +210,14 @@ function fileToDataURL(file) {
   });
 }
 
-const inputStyle = {
+const inputStyle: React.CSSProperties = {
   width: "100%", background: colors.surface2, border: `1px solid ${colors.border}`,
   color: colors.textPrimary, borderRadius: 10, padding: "12px 14px", fontSize: 15,
   marginBottom: 10, boxSizing: "border-box",
 };
 const labelStyle = { fontSize: 12, color: colors.textSecondary, marginBottom: 4, display: "block" };
 
-function TextField({ label, value, onChange, area }) {
+function TextField({ label, value, onChange, area }: { label?: any; value?: any; onChange?: (val: any) => void; area?: boolean }) {
   const Comp = area ? "textarea" : "input";
   return (
     <div>
@@ -342,7 +342,7 @@ function ImageUpload({ images, setImages }) {
 
   const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
-  const addFiles = (fileList) => {
+  const addFiles = (fileList: FileList) => {
     const incoming = Array.from(fileList).slice(0, 10 - images.length);
     const accepted = [];
     const rejected = [];
@@ -439,8 +439,8 @@ export default function RepOnboardingApp() {
   const [visibility, setVisibility] = useState([]);
   const [country, setCountry] = useState([]);
   const [province, setProvince] = useState([]);
-  const [data, setData] = useState({});
-  const [emergency, setEmergency] = useState({});
+  const [data, setData] = useState<Record<string, any>>({});
+  const [emergency, setEmergency] = useState<Record<string, string>>({});
   const [images, setImages] = useState([]);
   const [autoSaveStatus, setAutoSaveStatus] = useState("");
   const [submitted, setSubmitted] = useState(null);

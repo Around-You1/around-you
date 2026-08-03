@@ -40,6 +40,16 @@ export interface Restaurant {
   discountOffered?: string;
   discountCode?: string;
 
+  bookingsEmail?: string;
+  bookingsContactNumber?: string;
+
+  socialsWebsite?: string;
+  socialsFacebook?: string;
+  socialsInstagram?: string;
+  socialsTwitter?: string;
+  socialsTiktok?: string;
+  socialsYoutube?: string;
+
   imageUrl?: string;
   isActive: boolean;
 
