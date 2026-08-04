@@ -9,6 +9,9 @@
 package appdb
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -68,6 +71,54 @@ type ExperienceInfo struct {
 	FitnessLevel    string `json:"fitnessLevel,omitempty"`
 	BestTimeOfDay   string `json:"bestTimeOfDay,omitempty"`
 	WhatToBring     string `json:"whatToBring,omitempty"`
+}
+
+// BookingItem is a single bookable product/service a partner offers, with a
+// price and a duration in minutes. Used by Booking partners (accessLevel
+// "Booking") — a guest can select one or more when requesting a booking.
+type BookingItem struct {
+	Name     string  `json:"name"`
+	Price    float64 `json:"price"`
+	Duration int     `json:"duration"` // minutes
+}
+
+// BookingItems is a list of BookingItem stored as a single jsonb column. It
+// implements sql/driver Valuer + Scanner so the store can read/write it as
+// JSON without a separate table.
+type BookingItems []BookingItem
+
+func (b BookingItems) Value() (driver.Value, error) {
+	if b == nil {
+		return "[]", nil
+	}
+	data, err := json.Marshal([]BookingItem(b))
+	if err != nil {
+		return nil, err
+	}
+	return string(data), nil
+}
+
+func (b *BookingItems) Scan(src interface{}) error {
+	if src == nil {
+		*b = BookingItems{}
+		return nil
+	}
+	switch v := src.(type) {
+	case []byte:
+		if len(v) == 0 {
+			*b = BookingItems{}
+			return nil
+		}
+		return json.Unmarshal(v, b)
+	case string:
+		if v == "" {
+			*b = BookingItems{}
+			return nil
+		}
+		return json.Unmarshal([]byte(v), b)
+	default:
+		return fmt.Errorf("appdb: cannot scan %T into BookingItems", src)
+	}
 }
 
 // Accommodation matches the field set read/written across
@@ -176,6 +227,8 @@ type Restaurant struct {
 
 	BookingsEmail         string `json:"bookingsEmail,omitempty"`
 	BookingsContactNumber string `json:"bookingsContactNumber,omitempty"`
+
+	BookingItems BookingItems `json:"bookingItems,omitempty"`
 
 	Socials
 

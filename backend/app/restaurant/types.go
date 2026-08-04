@@ -86,6 +86,7 @@ type CreateRequest struct {
 	CompanyVatNumber       string `json:"companyVatNumber,omitempty"`
 	GuestType              string `json:"guestType,omitempty"`
 	AccessLevel            string `json:"accessLevel,omitempty"`
+	BookingItems           []appdb.BookingItem `json:"bookingItems,omitempty"`
 }
 
 type UpdateRequest struct {
@@ -151,6 +152,7 @@ type UpdateRequest struct {
 	CompanyVatNumber       *string `json:"companyVatNumber,omitempty"`
 	GuestType              *string `json:"guestType,omitempty"`
 	AccessLevel            *string `json:"accessLevel,omitempty"`
+	BookingItems           []appdb.BookingItem `json:"bookingItems,omitempty"`
 }
 
 type DeleteRequest struct {
