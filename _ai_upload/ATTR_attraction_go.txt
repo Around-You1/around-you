@@ -125,7 +125,6 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.AttractionData, err
 		ImageUrl:  req.ImageUrl,
 		ImageUrls: req.ImageUrls,
 		IsActive:  req.IsActive,
-		BookingItems: req.BookingItems,
 		OfficialUse: appdb.OfficialUse{
 			OfficialHoldingCompany: req.OfficialHoldingCompany,
 			OfficialContactName:    req.OfficialContactName,
@@ -201,7 +200,6 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.AttractionData, err
 		CompanyVatNumber:       req.CompanyVatNumber,
 		GuestType:              req.GuestType,
 		AccessLevel:            req.AccessLevel,
-		BookingItems:           req.BookingItems,
 	}
 	item, err := attractions.Update(ctx, id, patch)
 	if err != nil {

@@ -1,11 +1,5 @@
 // Mirrors the Go appdb.AttractionData JSON shape.
 
-export interface BookingItem {
-  name: string;
-  price: number;
-  duration: number; // minutes
-}
-
 export interface AttractionData {
   id: number;
   attractionId: string;
@@ -49,8 +43,6 @@ export interface AttractionData {
   officialRepCode?: string;
   guestType?: string;
   accessLevel?: string;
-
-  bookingItems?: BookingItem[];
 
   createdAt: string;
   updatedAt: string;
