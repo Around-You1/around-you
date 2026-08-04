@@ -437,11 +437,6 @@ export default function RepOnboardingApp() {
   const [partnerType, setPartnerType] = useState(null); // "Accommodations" | "Restaurants" | "Services" | "Attractions"
   const [tier, setTier] = useState(0);
   const [visibility, setVisibility] = useState([]);
-  // Booking partner: mutually exclusive with the Guest/Local/Both tier model.
-  // When true, the partner is auto-assigned to Both (Guest + Local), the Tier +
-  // Visibility controls are hidden, the full profile form is shown, and billing
-  // is by 15% commission per booking instead of a monthly tier. Persisted for now
-  // via accessLevel = "Booking" (a dedicated backend flag is a later phase).
   const [booking, setBooking] = useState(false);
   const [bookingItems, setBookingItems] = useState<Array<{ name: string; price: string; duration: string }>>([]);
   const [country, setCountry] = useState([]);
@@ -484,7 +479,6 @@ export default function RepOnboardingApp() {
   // real backend's single guestType value (see OfficialUseSection.tsx's
   // GUEST_TYPE_OPTIONS: "Guest Only" | "Local" | "Both"). Accommodation has
   // no guestType field at all, so this is only used for the other three.
-  // Booking partners are always "Both" — they show to Guests and Locals.
   function resolveGuestType() {
     if (booking) return "Both";
     const hasGuest = visibility.includes("Guest") || visibility.includes("Both");
@@ -494,8 +488,6 @@ export default function RepOnboardingApp() {
     return "Guest Only";
   }
 
-  // A Booking partner is marked with accessLevel = "Booking" (billed by
-  // commission, not a tier). Otherwise it's the selected tier, or "" if none.
   function resolveAccessLevel() {
     if (booking) return "Booking";
     return tier >= 1 ? `Tier ${tier}` : "";
@@ -680,6 +672,11 @@ export default function RepOnboardingApp() {
           companyRegNumber: data.companyRegNumber || "",
           companyVatNumber: data.companyVatNumber || "",
           guestType: resolveGuestType(),
+          bookingItems: booking
+            ? bookingItems
+                .filter((it) => it.name.trim())
+                .map((it) => ({ name: it.name.trim(), price: Number(it.price) || 0, duration: Number(it.duration) || 0 }))
+            : [],
           accessLevel: resolveAccessLevel(),
         });
       } else {
@@ -733,6 +730,11 @@ export default function RepOnboardingApp() {
           companyRegNumber: data.companyRegNumber || "",
           companyVatNumber: data.companyVatNumber || "",
           guestType: resolveGuestType(),
+          bookingItems: booking
+            ? bookingItems
+                .filter((it) => it.name.trim())
+                .map((it) => ({ name: it.name.trim(), price: Number(it.price) || 0, duration: Number(it.duration) || 0 }))
+            : [],
           accessLevel: resolveAccessLevel(),
         });
       }
@@ -869,11 +871,6 @@ export default function RepOnboardingApp() {
               <>
                 <SectionTitle>Visibility</SectionTitle>
 
-                {/* Booking partner box — sits beside the Guest / Local / Both choice.
-                    Mutually exclusive: enabling Booking hides the Guest/Local/Both +
-                    Tier controls (the partner is auto-set to Both and billed by
-                    commission). The Booking box itself is greyed out and unclickable
-                    while any Guest/Local/Both option is selected. */}
                 <button
                   type="button"
                   onClick={() => { if (visibility.length === 0) setBooking((b) => !b); }}
@@ -894,7 +891,7 @@ export default function RepOnboardingApp() {
                   Booking partners are shown to both Guests and Locals and pay 15% commission per booking instead of a monthly tier. Turning this on hides the Tier and Guest/Local/Both options.
                 </p>
 
-                {booking && isRestaurant && (
+                {booking && (
                   <div style={{ marginBottom: 12 }}>
                     <SectionTitle>Bookable Items</SectionTitle>
                     <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: -4, marginBottom: 8 }}>
@@ -913,7 +910,7 @@ export default function RepOnboardingApp() {
                           style={{ ...inputStyle, marginBottom: 0, width: 70 }} />
                         <button type="button"
                           onClick={() => setBookingItems((rows) => rows.filter((_, idx) => idx !== i))}
-                          style={{ background: colors.error, color: "#000", border: "none", borderRadius: 8, width: 32, height: 40, cursor: "pointer", fontSize: 14, flexShrink: 0 }}>✕</button>
+                          style={{ background: colors.error, color: "#000", border: "none", borderRadius: 8, width: 32, height: 40, cursor: "pointer", fontSize: 14, flexShrink: 0 }}>✗</button>
                       </div>
                     ))}
                     <button type="button"
