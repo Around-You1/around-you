@@ -210,6 +210,7 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
     parkingAvailability: false,
     littleExplorerApproved: false,
     isActive: false,
+    bookingItems: [] as { name: string; price: number; duration: number }[],
   });
   const { toast } = useToast();
 
@@ -276,6 +277,7 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
         parkingAvailability: data.parkingAvailability || false,
         littleExplorerApproved: data.littleExplorerApproved || false,
         isActive: data.isActive,
+        bookingItems: data.bookingItems || [],
       });
     } catch (error) {
       console.error("Failed to load service:", error);
@@ -353,6 +355,7 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
           companyVatNumber: officialUse.companyVatNumber || undefined,
           guestType: officialUse.guestType || undefined,
           accessLevel: officialUse.accessLevel || undefined,
+          bookingItems: formData.bookingItems,
         });
         toast({
           title: "Success",
@@ -405,6 +408,7 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
           companyVatNumber: officialUse.companyVatNumber || undefined,
           guestType: officialUse.guestType || undefined,
           accessLevel: officialUse.accessLevel || undefined,
+          bookingItems: formData.bookingItems,
         });
         toast({
           title: "Success",
@@ -776,6 +780,40 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
                 <Label htmlFor="parkingAvailability">Parking Available</Label>
               </div>
             </div>
+          </div>
+
+          <div className="space-y-4">
+            <Label className="text-base font-semibold">Bookable Items</Label>
+            <p className="text-sm text-muted-foreground">
+              Products or services a guest can select when booking (name, price in Rand, duration in minutes).
+            </p>
+            {formData.bookingItems.map((item, i) => (
+              <div key={i} className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_auto] gap-2 items-end">
+                <div className="space-y-1">
+                  <Label className="text-xs">Item</Label>
+                  <Input value={item.name}
+                    onChange={(e) => setFormData({ ...formData, bookingItems: formData.bookingItems.map((r, idx) => (idx === i ? { ...r, name: e.target.value } : r)) })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Price (R)</Label>
+                  <Input type="number" step="any" value={item.price}
+                    onChange={(e) => setFormData({ ...formData, bookingItems: formData.bookingItems.map((r, idx) => (idx === i ? { ...r, price: parseFloat(e.target.value) || 0 } : r)) })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Duration (min)</Label>
+                  <Input type="number" step="1" value={item.duration}
+                    onChange={(e) => setFormData({ ...formData, bookingItems: formData.bookingItems.map((r, idx) => (idx === i ? { ...r, duration: parseInt(e.target.value) || 0 } : r)) })} />
+                </div>
+                <Button type="button" variant="outline"
+                  onClick={() => setFormData({ ...formData, bookingItems: formData.bookingItems.filter((_, idx) => idx !== i) })}>
+                  Remove
+                </Button>
+              </div>
+            ))}
+            <Button type="button" variant="outline"
+              onClick={() => setFormData({ ...formData, bookingItems: [...formData.bookingItems, { name: "", price: 0, duration: 0 }] })}>
+              + Add Item
+            </Button>
           </div>
 
           <div className="space-y-4">
