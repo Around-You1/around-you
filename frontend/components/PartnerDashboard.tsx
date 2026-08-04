@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   MapPin, Phone, ExternalLink, Building2, Store, Compass, LogOut, Navigation, Baby,
-  Wifi, CreditCard, Accessibility, CarFront, Globe, Facebook, Instagram, Mail,
+  Wifi, CreditCard, Accessibility, CarFront, Globe, Facebook, Instagram,
 } from "lucide-react";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
@@ -148,7 +148,6 @@ export default function PartnerDashboard() {
   const activePayments = PAYMENT_LABELS.filter(([field]) => e[field]).map(([, label]) => label);
   const images: string[] = e.imageUrls && e.imageUrls.length > 0 ? e.imageUrls : e.imageUrl ? [e.imageUrl] : [];
   const hasSocials = e.socialsWebsite || e.socialsFacebook || e.socialsInstagram || e.socialsTiktok || e.socialsTwitter;
-  const hasBookings = entityType === "restaurant" && (e.bookingsEmail || e.bookingsContactNumber);
   const hasExperienceInfo =
     (entityType === "service" || entityType === "attraction") &&
     (e.safetyInfo || e.ageRestrictions || e.fitnessLevel || e.bestTimeOfDay || e.whatToBring);
@@ -320,25 +319,6 @@ export default function PartnerDashboard() {
                     {e.tideWarnings && <p><span className="text-muted-foreground">Tide Warnings: </span>{e.tideWarnings}</p>}
                     {e.parkingNotes && <p><span className="text-muted-foreground">Parking Notes: </span>{e.parkingNotes}</p>}
                     {e.photographySpots && <p><span className="text-muted-foreground">Photography Spots: </span>{e.photographySpots}</p>}
-                  </div>
-                </Section>
-              )}
-
-              {hasBookings && (
-                <Section title="Bookings">
-                  <div className="text-sm space-y-1">
-                    {e.bookingsEmail && (
-                      <p className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-[#AEECE4]" />
-                        <a href={`mailto:${e.bookingsEmail}`} className="text-[#AEECE4] hover:underline">{e.bookingsEmail}</a>
-                      </p>
-                    )}
-                    {e.bookingsContactNumber && (
-                      <p className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-[#AEECE4]" />
-                        <a href={`tel:${e.bookingsContactNumber}`} className="text-[#AEECE4] hover:underline">{e.bookingsContactNumber}</a>
-                      </p>
-                    )}
                   </div>
                 </Section>
               )}

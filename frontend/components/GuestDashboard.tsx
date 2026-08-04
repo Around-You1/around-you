@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Phone, ExternalLink, Tag, ChevronDown, Search, Eye, EyeOff, MapPin, Mail, Globe, Instagram, Twitter, Youtube, Music, Star } from "lucide-react";
+import { Phone, ExternalLink, Tag, ChevronDown, Search, Eye, EyeOff, MapPin, Globe, Instagram, Twitter, Youtube, Music, Star } from "lucide-react";
 import AddressDropdown from "../components/AddressDropdown";
 import DirectionsDropdown from "../components/DirectionsDropdown";
 import { getAuthenticatedBackend } from "../lib/backend";
@@ -835,36 +835,6 @@ export default function GuestDashboard() {
                               longitude={restaurant.longitude}
                             />
 
-                            <Collapsible>
-                              <CollapsibleTrigger className={triggerClass}>
-                                <ChevronDown className="h-4 w-4" />
-                                Bookings
-                              </CollapsibleTrigger>
-                              <CollapsibleContent className={`${contentClass} text-sm space-y-2`}>
-                                {restaurant.bookingsEmail || restaurant.bookingsContactNumber ? (
-                                  <>
-                                    {restaurant.bookingsEmail && (
-                                      <div className="flex items-center gap-2">
-                                        <Mail className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                                        <a href={`mailto:${restaurant.bookingsEmail}`} className="text-purple-600 hover:underline break-all">
-                                          {restaurant.bookingsEmail}
-                                        </a>
-                                      </div>
-                                    )}
-                                    {restaurant.bookingsContactNumber && (
-                                      <div className="flex items-center gap-2">
-                                        <Phone className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                                        <a href={`tel:${restaurant.bookingsContactNumber}`} className="text-purple-600 hover:underline">
-                                          {restaurant.bookingsContactNumber}
-                                        </a>
-                                      </div>
-                                    )}
-                                  </>
-                                ) : (
-                                  fallbackSpan
-                                )}
-                              </CollapsibleContent>
-                            </Collapsible>
 
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
