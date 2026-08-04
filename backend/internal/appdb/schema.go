@@ -271,6 +271,7 @@ type ServiceData struct {
 	DuplicateReason      string `json:"duplicateReason,omitempty"`
 
 	ServiceCategories      []string `json:"serviceCategories"`
+	BookingItems           BookingItems `json:"bookingItems,omitempty"`
 	LittleExplorerApproved bool     `json:"littleExplorerApproved"`
 
 	PaymentMethods
@@ -319,6 +320,7 @@ type AttractionData struct {
 	DuplicateReason      string `json:"duplicateReason,omitempty"`
 
 	AttractionType         []string `json:"attractionType"`
+	BookingItems           BookingItems `json:"bookingItems,omitempty"`
 	LittleExplorerApproved bool     `json:"littleExplorerApproved"`
 
 	PaymentMethods
