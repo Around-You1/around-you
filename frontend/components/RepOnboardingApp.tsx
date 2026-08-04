@@ -545,7 +545,7 @@ export default function RepOnboardingApp() {
 
       if (isAccommodation) {
         created = await backend.accommodation.create({
-          name: data.companyName,
+          name: data.name || data.companyName,
           address: data.address || "",
           latitude,
           longitude,
@@ -580,7 +580,7 @@ export default function RepOnboardingApp() {
         });
       } else if (isRestaurant) {
         created = await backend.restaurant.create({
-          name: data.companyName,
+          name: data.name || data.companyName,
           address: data.address || "",
           latitude,
           longitude,
@@ -636,7 +636,7 @@ export default function RepOnboardingApp() {
         });
       } else if (isService) {
         created = await backend.service.create({
-          name: data.companyName,
+          name: data.name || data.companyName,
           address: data.address || "",
           latitude,
           longitude,
@@ -684,7 +684,7 @@ export default function RepOnboardingApp() {
         });
       } else {
         created = await backend.attraction.create({
-          name: data.companyName,
+          name: data.name || data.companyName,
           address: data.address || "",
           latitude,
           longitude,
@@ -738,7 +738,7 @@ export default function RepOnboardingApp() {
       }
 
       setSubmitted({
-        companyName: data.companyName,
+        companyName: data.name || data.companyName,
         partnerType,
         tier,
         booking,
