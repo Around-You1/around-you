@@ -18,6 +18,7 @@ import (
 	"backend_encore/app/analytics"
 	"backend_encore/app/attraction"
 	"backend_encore/app/auth"
+	"backend_encore/app/booking"
 	"backend_encore/app/health"
 	"backend_encore/app/rating"
 	"backend_encore/app/restaurant"
@@ -115,6 +116,11 @@ func main() {
 	r.auth("GET /attraction/template", httpx.Empty(attraction.Template))
 	r.auth("GET /attraction/export", httpx.Empty(attraction.ExportAttractions))
 	r.auth("POST /attraction/import", httpx.Body(attraction.ImportAttractions))
+
+	// ---- Booking (auth) ----------------------------------------------------
+	r.auth("POST /booking", httpx.Body(booking.Create))
+	r.auth("GET /booking/mine", httpx.Query(booking.Mine))
+	r.auth("POST /booking/cancel", httpx.Body(booking.Cancel))
 
 	// ---- Storage (mixed) ---------------------------------------------------
 	r.auth("POST /storage/upload", httpx.Body(storage.Upload))

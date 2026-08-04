@@ -218,6 +218,12 @@ export const backend = {
     listSummaries: (req: { entityType: string; entityIds: number[] }) =>
       request("POST", "/rating/summaries", { body: req }),
   },
+
+  booking: {
+    create: (req: any) => request("POST", "/booking", { body: req }),
+    mine: (req: any) => request("GET", "/booking/mine", { query: { email: req?.email } }),
+    cancel: (req: any) => request("POST", "/booking/cancel", { body: req }),
+  },
 };
 
 export default backend;
