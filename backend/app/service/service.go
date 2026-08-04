@@ -120,6 +120,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.ServiceData, error)
 		ImageUrl: req.ImageUrl,
 		ImageUrls: req.ImageUrls,
 		IsActive: req.IsActive,
+		BookingItems: req.BookingItems,
 		OfficialUse: appdb.OfficialUse{
 			OfficialHoldingCompany: req.OfficialHoldingCompany,
 			OfficialContactName:    req.OfficialContactName,
@@ -190,6 +191,7 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.ServiceData, error)
 		CompanyVatNumber:       req.CompanyVatNumber,
 		GuestType:              req.GuestType,
 		AccessLevel:            req.AccessLevel,
+		BookingItems:           req.BookingItems,
 	}
 	item, err := services.Update(ctx, id, patch)
 	if err != nil {

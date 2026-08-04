@@ -63,6 +63,7 @@ const serviceColumns = `
 	COALESCE(access_level, '') as access_level,
 	COALESCE(partner_code, '') as partner_code,
 	partner_code_active,
+		COALESCE(booking_items, '[]'::jsonb) as booking_items,
 	created_at, updated_at
 `
 
@@ -88,6 +89,7 @@ func scanService(row serviceScanner) (*appdb.ServiceData, error) {
 		&s.OfficialRepName, &s.CompanyRegNumber, &s.CompanyVatNumber,
 		&s.GuestType, &s.AccessLevel,
 		&s.PartnerCode.Code, &s.PartnerCode.Active,
+		&s.BookingItems,
 		&s.CreatedAt, &s.UpdatedAt,
 	)
 	if err != nil {
@@ -184,10 +186,10 @@ func (s *ServiceStore) Create(ctx context.Context, in *appdb.ServiceData) (*appd
 			image_url, image_urls, is_active,
 			official_holding_company, official_contact_name, official_contact_number, official_email, official_rep_code,
 			official_rep_name, company_reg_number, company_vat_number,
-			guest_type, access_level, partner_code, partner_code_active
+			guest_type, access_level, partner_code, partner_code_active, booking_items
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,
-			$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49
+			$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50
 		)
 		RETURNING `+serviceColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -202,6 +204,7 @@ func (s *ServiceStore) Create(ctx context.Context, in *appdb.ServiceData) (*appd
 		in.OfficialHoldingCompany, in.OfficialContactName, in.OfficialContactNumber, in.OfficialEmail, in.OfficialRepCode,
 		in.OfficialRepName, in.CompanyRegNumber, in.CompanyVatNumber,
 		in.GuestType, in.AccessLevel, in.PartnerCode.Code, in.PartnerCode.Active,
+		in.BookingItems,
 	)
 	return scanService(row)
 }
@@ -262,6 +265,7 @@ type ServicePatch struct {
 	CompanyVatNumber       *string
 	GuestType              *string
 	AccessLevel            *string
+	BookingItems           appdb.BookingItems
 }
 
 func (s *ServiceStore) Update(ctx context.Context, id int64, patch ServicePatch) (*appdb.ServiceData, error) {
@@ -409,6 +413,9 @@ func (s *ServiceStore) Update(ctx context.Context, id int64, patch ServicePatch)
 	}
 	if patch.AccessLevel != nil {
 		sets = append(sets, "access_level = "+arg(*patch.AccessLevel))
+	}
+	if patch.BookingItems != nil {
+		sets = append(sets, "booking_items = "+arg(patch.BookingItems))
 	}
 
 	if len(sets) == 0 {

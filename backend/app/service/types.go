@@ -42,9 +42,9 @@ type CreateRequest struct {
 	ServiceCategories      []string `json:"serviceCategories"`
 	LittleExplorerApproved bool     `json:"littleExplorerApproved"`
 
-	PaymentCard   bool `json:"paymentCard"`
-	PaymentCash   bool `json:"paymentCash"`
-	PaymentMobile bool `json:"paymentMobile"`
+	PaymentCard     bool `json:"paymentCard"`
+	PaymentCash     bool `json:"paymentCash"`
+	PaymentMobile   bool `json:"paymentMobile"`
 	PaymentGaap     bool `json:"paymentGaap"`
 	PaymentSnapScan bool `json:"paymentSnapScan"`
 	PaymentYoco     bool `json:"paymentYoco"`
@@ -82,6 +82,7 @@ type CreateRequest struct {
 	CompanyVatNumber       string `json:"companyVatNumber,omitempty"`
 	GuestType              string `json:"guestType,omitempty"`
 	AccessLevel            string `json:"accessLevel,omitempty"`
+	BookingItems           []appdb.BookingItem `json:"bookingItems,omitempty"`
 }
 
 type UpdateRequest struct {
@@ -103,9 +104,9 @@ type UpdateRequest struct {
 	ServiceCategories      []string `json:"serviceCategories,omitempty"`
 	LittleExplorerApproved *bool    `json:"littleExplorerApproved,omitempty"`
 
-	PaymentCard   *bool `json:"paymentCard,omitempty"`
-	PaymentCash   *bool `json:"paymentCash,omitempty"`
-	PaymentMobile *bool `json:"paymentMobile,omitempty"`
+	PaymentCard     *bool `json:"paymentCard,omitempty"`
+	PaymentCash     *bool `json:"paymentCash,omitempty"`
+	PaymentMobile   *bool `json:"paymentMobile,omitempty"`
 	PaymentGaap     *bool `json:"paymentGaap,omitempty"`
 	PaymentSnapScan *bool `json:"paymentSnapScan,omitempty"`
 	PaymentYoco     *bool `json:"paymentYoco,omitempty"`
@@ -143,6 +144,7 @@ type UpdateRequest struct {
 	CompanyVatNumber       *string `json:"companyVatNumber,omitempty"`
 	GuestType              *string `json:"guestType,omitempty"`
 	AccessLevel            *string `json:"accessLevel,omitempty"`
+	BookingItems           []appdb.BookingItem `json:"bookingItems,omitempty"`
 }
 
 type DeleteRequest struct {
