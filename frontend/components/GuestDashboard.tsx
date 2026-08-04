@@ -60,6 +60,7 @@ export default function GuestDashboard() {
   const [bookingFor, setBookingFor] = useState<
     { entityType: RatableType; entityId: number; entityName: string; items: BookItem[] } | null
   >(null);
+  const [showMyBookings, setShowMyBookings] = useState(false);
   const { toast } = useToast();
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -554,6 +555,9 @@ export default function GuestDashboard() {
         )}
 
         <div className="space-y-4">
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={() => setShowMyBookings(true)}>My Bookings</Button>
+          </div>
           {isLocalMode ? (
             <Label className="text-lg font-medium">Local Partners</Label>
           ) : (
@@ -1295,6 +1299,7 @@ export default function GuestDashboard() {
             items={bookingFor.items}
           />
         )}
+        {showMyBookings && <MyBookingsModal onClose={() => setShowMyBookings(false)} />}
         <SwipeIndicator show={filteredRestaurants.length > 0 || filteredServices.length > 0 || filteredAttractions.length > 0} />
       </div>
     </div>
@@ -1545,6 +1550,98 @@ function BookingModal({
           <Button onClick={submit} disabled={saving} className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black">
             {saving ? "Sending…" : "Confirm Booking"}
           </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// MyBookingsModal lets a client look up their own bookings by the email they
+// booked with, and cancel any that aren't already cancelled. Only the client
+// can cancel (the backend checks the email); the partner cannot.
+function MyBookingsModal({ onClose }: { onClose: () => void }) {
+  const [email, setEmail] = useState("");
+  const [bookings, setBookings] = useState<any[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const { toast } = useToast();
+
+  const find = async () => {
+    if (!email.trim()) {
+      toast({ title: "Enter your email", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const res = await backend.booking.mine({ email: email.trim() });
+      setBookings((res as { bookings?: any[] }).bookings || []);
+    } catch (error: any) {
+      console.error("Failed to load bookings:", error);
+      toast({ title: "Couldn't load bookings", description: error?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cancel = async (id: number) => {
+    setBusyId(id);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.booking.cancel({ id, email: email.trim() });
+      setBookings((prev) => (prev || []).map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)));
+      toast({ title: "Booking cancelled" });
+    } catch (error: any) {
+      console.error("Failed to cancel booking:", error);
+      toast({ title: "Couldn't cancel", description: error?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-background rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-lg font-semibold">My Bookings</h3>
+        <p className="text-xs text-muted-foreground">Enter the email you booked with to see and cancel your bookings.</p>
+        <div className="flex gap-2">
+          <Input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Button onClick={find} disabled={loading} className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black whitespace-nowrap">
+            {loading ? "…" : "Find"}
+          </Button>
+        </div>
+
+        {bookings !== null &&
+          (bookings.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No bookings found for that email.</p>
+          ) : (
+            <div className="space-y-2">
+              {bookings.map((b) => (
+                <div key={b.id} className="border rounded-md p-3 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium text-sm">{b.entityName}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded ${b.status === "cancelled" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
+                      {b.status}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {b.bookingDate}{b.bookingTime ? ` · ${b.bookingTime}` : ""} · R {(Number(b.total) || 0).toFixed(2)}
+                  </div>
+                  {Array.isArray(b.items) && b.items.length > 0 && (
+                    <div className="text-xs">{b.items.map((it: any) => it.name).join(", ")}</div>
+                  )}
+                  {b.status !== "cancelled" && (
+                    <Button variant="outline" size="sm" onClick={() => cancel(b.id)} disabled={busyId === b.id}>
+                      {busyId === b.id ? "Cancelling…" : "Cancel booking"}
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+
+        <div className="flex justify-end pt-1">
+          <Button variant="outline" onClick={onClose}>Close</Button>
         </div>
       </div>
     </div>
