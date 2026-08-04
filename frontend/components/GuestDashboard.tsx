@@ -1391,11 +1391,9 @@ function StarRating({
 }
 
 
-// BookingModal is the guest-facing booking panel for a Booking partner. The
-// guest picks one or more of the partner's bookable items (with a running
-// total), a date/time, and their contact details, then submits a booking
-// request. Prices are re-checked server-side; the total shown here is just a
-// preview.
+// BookingModal is the guest-facing booking panel for a Booking partner. Date
+// and time use simple in-app dropdowns (not the native OS pickers) so there is
+// no hard-to-reach "Set" button on mobile. Prices are re-checked server-side.
 function BookingModal({
   onClose,
   entityType,
@@ -1417,6 +1415,21 @@ function BookingModal({
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const dateOptions = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const label = d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+    return { iso, label };
+  });
+  const timeOptions: string[] = [];
+  for (let h = 8; h <= 20; h++) {
+    for (const m of [0, 30]) {
+      timeOptions.push(`${pad(h)}:${pad(m)}`);
+    }
+  }
 
   const chosen = items.filter((_, i) => selected[i]);
   const total = chosen.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
@@ -1474,7 +1487,7 @@ function BookingModal({
                     checked={!!selected[i]}
                     onChange={() => setSelected((s) => ({ ...s, [i]: !s[i] }))}
                   />
-                  {it.name}{it.duration ? ` \u00B7 ${it.duration} min` : ""}
+                  {it.name}{it.duration ? ` · ${it.duration} min` : ""}
                 </span>
                 <span className="text-sm font-medium whitespace-nowrap">R {(Number(it.price) || 0).toFixed(2)}</span>
               </label>
@@ -1486,15 +1499,28 @@ function BookingModal({
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <Label className="text-xs">Date</Label>
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Time</Label>
-            <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-          </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Date</Label>
+          <Select value={date} onValueChange={setDate}>
+            <SelectTrigger><SelectValue placeholder="Choose a date" /></SelectTrigger>
+            <SelectContent>
+              {dateOptions.map((d) => (
+                <SelectItem key={d.iso} value={d.iso}>{d.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs">Time (optional)</Label>
+          <Select value={time} onValueChange={setTime}>
+            <SelectTrigger><SelectValue placeholder="Any time" /></SelectTrigger>
+            <SelectContent>
+              {timeOptions.map((tOpt) => (
+                <SelectItem key={tOpt} value={tOpt}>{tOpt}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-1">
@@ -1517,7 +1543,7 @@ function BookingModal({
         <div className="flex justify-end gap-2 pt-1">
           <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black">
-            {saving ? "Sending\u2026" : "Confirm Booking"}
+            {saving ? "Sending…" : "Confirm Booking"}
           </Button>
         </div>
       </div>
