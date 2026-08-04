@@ -35,6 +35,7 @@ interface RatingSummary {
 }
 
 type RatableType = "restaurant" | "service" | "attraction";
+type BookItem = { name: string; price: number; duration: number };
 
 const ratingKey = (entityType: string, entityId: number | string) =>
   `${entityType}:${Number(entityId)}`;
@@ -56,6 +57,9 @@ export default function GuestDashboard() {
   const [selectedContact, setSelectedContact] = useState<string>("");
   // Star ratings, keyed "<entityType>:<entityId>" so all three tabs share one map.
   const [ratings, setRatings] = useState<Record<string, RatingSummary>>({});
+  const [bookingFor, setBookingFor] = useState<
+    { entityType: RatableType; entityId: number; entityName: string; items: BookItem[] } | null
+  >(null);
   const { toast } = useToast();
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -617,6 +621,16 @@ export default function GuestDashboard() {
                               onRated={applyRatingSummary}
                             />
 
+                            {restaurant.accessLevel === "Booking" && (
+                              <Button
+                                size="sm"
+                                className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black w-full sm:w-auto"
+                                onClick={() => setBookingFor({ entityType: "restaurant", entityId: Number(restaurant.id), entityName: restaurant.name, items: (restaurant.bookingItems || []) as BookItem[] })}
+                              >
+                                Book
+                              </Button>
+                            )}
+
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
@@ -928,6 +942,16 @@ export default function GuestDashboard() {
                               onRated={applyRatingSummary}
                             />
 
+                            {service.accessLevel === "Booking" && (
+                              <Button
+                                size="sm"
+                                className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black w-full sm:w-auto"
+                                onClick={() => setBookingFor({ entityType: "service", entityId: Number(service.id), entityName: service.name, items: (service.bookingItems || []) as BookItem[] })}
+                              >
+                                Book
+                              </Button>
+                            )}
+
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
@@ -1104,6 +1128,16 @@ export default function GuestDashboard() {
                               onRated={applyRatingSummary}
                             />
 
+                            {attraction.accessLevel === "Booking" && (
+                              <Button
+                                size="sm"
+                                className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black w-full sm:w-auto"
+                                onClick={() => setBookingFor({ entityType: "attraction", entityId: Number(attraction.id), entityName: attraction.name, items: (attraction.bookingItems || []) as BookItem[] })}
+                              >
+                                Book
+                              </Button>
+                            )}
+
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
@@ -1252,6 +1286,15 @@ export default function GuestDashboard() {
             </TabsContent>
           </Tabs>
         </div>
+        {bookingFor && (
+          <BookingModal
+            onClose={() => setBookingFor(null)}
+            entityType={bookingFor.entityType}
+            entityId={bookingFor.entityId}
+            entityName={bookingFor.entityName}
+            items={bookingFor.items}
+          />
+        )}
         <SwipeIndicator show={filteredRestaurants.length > 0 || filteredServices.length > 0 || filteredAttractions.length > 0} />
       </div>
     </div>
@@ -1343,6 +1386,141 @@ function StarRating({
         {count > 0 ? `${average.toFixed(1)} (${count})` : "Be the first to rate"}
         {myRating > 0 ? " \u00B7 you rated this" : ""}
       </span>
+    </div>
+  );
+}
+
+
+// BookingModal is the guest-facing booking panel for a Booking partner. The
+// guest picks one or more of the partner's bookable items (with a running
+// total), a date/time, and their contact details, then submits a booking
+// request. Prices are re-checked server-side; the total shown here is just a
+// preview.
+function BookingModal({
+  onClose,
+  entityType,
+  entityId,
+  entityName,
+  items,
+}: {
+  onClose: () => void;
+  entityType: RatableType;
+  entityId: number;
+  entityName: string;
+  items: BookItem[];
+}) {
+  const [selected, setSelected] = useState<Record<number, boolean>>({});
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+
+  const chosen = items.filter((_, i) => selected[i]);
+  const total = chosen.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
+
+  const submit = async () => {
+    if (chosen.length === 0 || !name.trim() || !email.trim() || !date) {
+      toast({
+        title: "A few details missing",
+        description: "Pick at least one item and fill in your name, email and a date.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setSaving(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.booking.create({
+        entityType,
+        entityId: Number(entityId),
+        customerName: name.trim(),
+        customerEmail: email.trim(),
+        customerPhone: phone.trim(),
+        bookingDate: date,
+        bookingTime: time,
+        items: chosen.map((it) => ({ name: it.name, price: Number(it.price) || 0, duration: Number(it.duration) || 0 })),
+      });
+      toast({ title: "Booking requested", description: `Your booking with ${entityName} has been sent.` });
+      onClose();
+    } catch (error: any) {
+      console.error("Booking failed:", error);
+      toast({ title: "Booking failed", description: error?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-background rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-5 space-y-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-semibold">Book {entityName}</h3>
+
+        {items.length === 0 ? (
+          <p className="text-sm text-muted-foreground">This partner hasn't listed any bookable items yet.</p>
+        ) : (
+          <div className="space-y-2">
+            <Label className="text-sm">Select items</Label>
+            {items.map((it, i) => (
+              <label key={i} className="flex items-center justify-between gap-2 border rounded-md p-2 cursor-pointer">
+                <span className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={!!selected[i]}
+                    onChange={() => setSelected((s) => ({ ...s, [i]: !s[i] }))}
+                  />
+                  {it.name}{it.duration ? ` \u00B7 ${it.duration} min` : ""}
+                </span>
+                <span className="text-sm font-medium whitespace-nowrap">R {(Number(it.price) || 0).toFixed(2)}</span>
+              </label>
+            ))}
+            <div className="flex justify-between text-sm font-semibold pt-1">
+              <span>Total</span>
+              <span>R {total.toFixed(2)}</span>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs">Date</Label>
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Time</Label>
+            <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs">Your name</Label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Email</Label>
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Phone (optional)</Label>
+          <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          You can change or cancel this booking yourself from "My Bookings" using this email. The partner cannot change or cancel it.
+        </p>
+
+        <div className="flex justify-end gap-2 pt-1">
+          <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
+          <Button onClick={submit} disabled={saving} className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black">
+            {saving ? "Sending\u2026" : "Confirm Booking"}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
