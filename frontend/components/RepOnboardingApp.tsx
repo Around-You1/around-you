@@ -443,6 +443,7 @@ export default function RepOnboardingApp() {
   // is by 15% commission per booking instead of a monthly tier. Persisted for now
   // via accessLevel = "Booking" (a dedicated backend flag is a later phase).
   const [booking, setBooking] = useState(false);
+  const [bookingItems, setBookingItems] = useState<Array<{ name: string; price: string; duration: string }>>([]);
   const [country, setCountry] = useState([]);
   const [province, setProvince] = useState([]);
   const [data, setData] = useState<Record<string, any>>({});
@@ -460,7 +461,7 @@ export default function RepOnboardingApp() {
     setAutoSaveStatus("Saving…");
     const t = setTimeout(() => setAutoSaveStatus("Auto-saved to Admin Dashboard ✓"), 500);
     return () => clearTimeout(t);
-  }, [data, emergency, images, country, province, visibility, tier, booking, partnerType]);
+  }, [data, emergency, images, country, province, visibility, tier, booking, bookingItems, partnerType]);
 
   const isAccommodation = partnerType === "Accommodations";
   const isRestaurant = partnerType === "Restaurants";
@@ -475,7 +476,7 @@ export default function RepOnboardingApp() {
     : "Attraction Name";
 
   const reset = () => {
-    setPartnerType(null); setTier(0); setVisibility([]); setBooking(false); setCountry([]); setProvince([]);
+    setPartnerType(null); setTier(0); setVisibility([]); setBooking(false); setBookingItems([]); setCountry([]); setProvince([]);
     setData({}); setEmergency({}); setImages([]); setSubmitted(null);
   };
 
@@ -626,6 +627,11 @@ export default function RepOnboardingApp() {
           companyRegNumber: data.companyRegNumber || "",
           companyVatNumber: data.companyVatNumber || "",
           guestType: resolveGuestType(),
+          bookingItems: booking
+            ? bookingItems
+                .filter((it) => it.name.trim())
+                .map((it) => ({ name: it.name.trim(), price: Number(it.price) || 0, duration: Number(it.duration) || 0 }))
+            : [],
           accessLevel: resolveAccessLevel(),
         });
       } else if (isService) {
@@ -887,6 +893,36 @@ export default function RepOnboardingApp() {
                 <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: 0, marginBottom: 12 }}>
                   Booking partners are shown to both Guests and Locals and pay 15% commission per booking instead of a monthly tier. Turning this on hides the Tier and Guest/Local/Both options.
                 </p>
+
+                {booking && isRestaurant && (
+                  <div style={{ marginBottom: 12 }}>
+                    <SectionTitle>Bookable Items</SectionTitle>
+                    <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: -4, marginBottom: 8 }}>
+                      Products or services a guest can select when booking. Price in Rand, duration in minutes.
+                    </p>
+                    {bookingItems.map((it, i) => (
+                      <div key={i} style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center" }}>
+                        <input placeholder="Item name" value={it.name}
+                          onChange={(e) => setBookingItems((rows) => rows.map((r, idx) => (idx === i ? { ...r, name: e.target.value } : r)))}
+                          style={{ ...inputStyle, marginBottom: 0, flex: 2 }} />
+                        <input placeholder="Price" inputMode="decimal" value={it.price}
+                          onChange={(e) => setBookingItems((rows) => rows.map((r, idx) => (idx === i ? { ...r, price: e.target.value } : r)))}
+                          style={{ ...inputStyle, marginBottom: 0, flex: 1 }} />
+                        <input placeholder="Mins" inputMode="numeric" value={it.duration}
+                          onChange={(e) => setBookingItems((rows) => rows.map((r, idx) => (idx === i ? { ...r, duration: e.target.value } : r)))}
+                          style={{ ...inputStyle, marginBottom: 0, width: 70 }} />
+                        <button type="button"
+                          onClick={() => setBookingItems((rows) => rows.filter((_, idx) => idx !== i))}
+                          style={{ background: colors.error, color: "#000", border: "none", borderRadius: 8, width: 32, height: 40, cursor: "pointer", fontSize: 14, flexShrink: 0 }}>✕</button>
+                      </div>
+                    ))}
+                    <button type="button"
+                      onClick={() => setBookingItems((rows) => [...rows, { name: "", price: "", duration: "" }])}
+                      style={{ background: colors.surface2, border: `1px solid ${colors.primary}`, color: colors.primary, borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                      + Add Item
+                    </button>
+                  </div>
+                )}
 
                 {!booking && (
                   <>

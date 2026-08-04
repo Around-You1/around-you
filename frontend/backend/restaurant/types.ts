@@ -1,5 +1,11 @@
 // Mirrors the Go appdb.Restaurant JSON shape.
 
+export interface BookingItem {
+  name: string;
+  price: number;
+  duration: number; // minutes
+}
+
 export interface Restaurant {
   id: number;
   name: string;
@@ -60,6 +66,8 @@ export interface Restaurant {
   officialRepCode?: string;
   guestType?: string;
   accessLevel?: string;
+
+  bookingItems?: BookingItem[];
 
   createdAt: string;
   updatedAt: string;
