@@ -1,14 +1,15 @@
-
 package booking
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"strings"
 
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/errs"
+	"backend_encore/internal/mailer"
 	"backend_encore/store"
 )
 
@@ -19,28 +20,31 @@ var (
 	attractions = store.NewAttractionStore()
 )
 
-func partnerInfo(ctx context.Context, entityType string, entityID int64) (name, accessLevel string, items appdb.BookingItems, err error) {
+// partnerInfo pulls the fields the booking flow needs from whichever entity the
+// booking is for: display name, notification email, whether it's a Booking
+// partner, and its authoritative bookable items (used to price server-side).
+func partnerInfo(ctx context.Context, entityType string, entityID int64) (name, email, accessLevel string, items appdb.BookingItems, err error) {
 	switch entityType {
 	case "restaurant":
 		r, e := restaurants.Get(ctx, entityID)
 		if e != nil {
-			return "", "", nil, e
+			return "", "", "", nil, e
 		}
-		return r.Name, r.AccessLevel, r.BookingItems, nil
+		return r.Name, r.OfficialEmail, r.AccessLevel, r.BookingItems, nil
 	case "service":
 		s, e := services.Get(ctx, entityID)
 		if e != nil {
-			return "", "", nil, e
+			return "", "", "", nil, e
 		}
-		return s.Name, s.AccessLevel, s.BookingItems, nil
+		return s.Name, s.OfficialEmail, s.AccessLevel, s.BookingItems, nil
 	case "attraction":
 		a, e := attractions.Get(ctx, entityID)
 		if e != nil {
-			return "", "", nil, e
+			return "", "", "", nil, e
 		}
-		return a.Name, a.AccessLevel, a.BookingItems, nil
+		return a.Name, a.OfficialEmail, a.AccessLevel, a.BookingItems, nil
 	default:
-		return "", "", nil, &errs.Error{Code: errs.InvalidArgument, Message: "invalid entityType"}
+		return "", "", "", nil, &errs.Error{Code: errs.InvalidArgument, Message: "invalid entityType"}
 	}
 }
 
@@ -58,7 +62,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Booking, error) {
 	if len(req.Items) == 0 {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "select at least one item"}
 	}
-	name, accessLevel, partnerItems, err := partnerInfo(ctx, req.EntityType, req.EntityID)
+	name, partnerEmail, accessLevel, partnerItems, err := partnerInfo(ctx, req.EntityType, req.EntityID)
 	if err != nil {
 		return nil, &errs.Error{Code: errs.NotFound, Message: "partner not found"}
 	}
@@ -95,7 +99,59 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Booking, error) {
 		Commission:    commission,
 		Status:        "pending",
 	}
-	return bookings.Create(ctx, b)
+	created, err := bookings.Create(ctx, b)
+	if err != nil {
+		return nil, err
+	}
+
+	// Best-effort partner alert email — never blocks or fails the booking.
+	if strings.TrimSpace(partnerEmail) != "" {
+		subject := "New booking request on Around You"
+		go func() { _ = mailer.Send(strings.TrimSpace(partnerEmail), subject, bookingEmailHTML(created)) }()
+	}
+
+	return created, nil
+}
+
+func bookingEmailHTML(b *appdb.Booking) string {
+	itemNames := make([]string, 0, len(b.Items))
+	for _, it := range b.Items {
+		itemNames = append(itemNames, it.Name)
+	}
+	when := b.BookingDate
+	if b.BookingTime != "" {
+		when += " at " + b.BookingTime
+	}
+	return fmt.Sprintf(
+		`<h2>New booking request</h2>`+
+			`<p>You have a new booking on Around You for <strong>%s</strong>.</p>`+
+			`<ul>`+
+			`<li><strong>When:</strong> %s</li>`+
+			`<li><strong>Customer:</strong> %s%s</li>`+
+			`<li><strong>Items:</strong> %s</li>`+
+			`<li><strong>Total:</strong> R %.2f</li>`+
+			`</ul>`+
+			`<p>This booking is managed by the customer in the app. You cannot change or cancel it; only the customer can.</p>`,
+		b.EntityName,
+		when,
+		b.CustomerName, contactSuffix(b),
+		strings.Join(itemNames, ", "),
+		b.Total,
+	)
+}
+
+func contactSuffix(b *appdb.Booking) string {
+	parts := []string{}
+	if b.CustomerPhone != "" {
+		parts = append(parts, b.CustomerPhone)
+	}
+	if b.CustomerEmail != "" {
+		parts = append(parts, b.CustomerEmail)
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return " (" + strings.Join(parts, ", ") + ")"
 }
 
 //encore:api auth method=GET path=/booking/mine
