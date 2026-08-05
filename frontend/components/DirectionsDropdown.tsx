@@ -38,7 +38,7 @@ export default function DirectionsDropdown({ latitude, longitude }: DirectionsDr
 
   return (
     <Collapsible>
-      <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:text-purple-600 transition-colors w-full text-left min-h-[44px] touch-manipulation">
+      <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:text-purple-600 transition-colors w-full text-left">
         <ChevronDown className="h-4 w-4" />
         Directions
       </CollapsibleTrigger>

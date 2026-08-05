@@ -273,7 +273,7 @@ export default function GuestDashboard() {
     );
   }
 
-  const triggerClass = "flex items-center gap-2 text-sm font-medium hover:text-purple-600 transition-colors w-full text-left min-h-[44px] touch-manipulation";
+  const triggerClass = "flex items-center gap-2 text-sm font-medium hover:text-purple-600 transition-colors w-full text-left";
   const contentClass = "pl-6 pt-2";
   const fallbackSpan = <span className="text-sm text-muted-foreground italic">{FALLBACK}</span>;
 
@@ -563,9 +563,7 @@ export default function GuestDashboard() {
         )}
 
         <div className="space-y-4">
-          <div className="flex justify-end">
-            <Button variant="outline" size="sm" onClick={() => setShowMyBookings(true)}>My Bookings</Button>
-          </div>
+          <Button className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold" onClick={() => setShowMyBookings(true)}>My Bookings</Button>
           {isLocalMode ? (
             <Label className="text-lg font-medium">Local Partners</Label>
           ) : (
