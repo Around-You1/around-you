@@ -34,3 +34,16 @@ type CancelRequest struct {
 type CancelResponse struct {
 	Success bool `json:"success"`
 }
+
+// UpdateRequest reschedules an existing booking. Only the client (verified by
+// matching email) can do this; items/total are unchanged.
+type UpdateRequest struct {
+	ID          int64  `json:"id"`
+	Email       string `json:"email"`
+	BookingDate string `json:"bookingDate"`
+	BookingTime string `json:"bookingTime,omitempty"`
+}
+
+type UpdateResponse struct {
+	Success bool `json:"success"`
+}

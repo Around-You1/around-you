@@ -1548,10 +1548,21 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
   const [bookings, setBookings] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editDate, setEditDate] = useState("");
+  const [editTime, setEditTime] = useState("");
   const { toast } = useToast();
   const pad = (n: number) => String(n).padStart(2, "0");
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const dateOptions = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() + i);
+    const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const label = d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+    return { iso, label };
+  });
+  const timeOptions: string[] = [];
+  for (let h = 8; h <= 20; h++) { for (const m of [0, 30]) { timeOptions.push(`${pad(h)}:${pad(m)}`); } }
   const find = async () => {
     if (!email.trim()) { toast({ title: "Enter your email", variant: "destructive" }); return; }
     setLoading(true);
@@ -1572,6 +1583,20 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
       toast({ title: "Booking cancelled" });
     } catch (error: any) {
       toast({ title: "Couldn't cancel", description: error?.message || "Please try again.", variant: "destructive" });
+    } finally { setBusyId(null); }
+  };
+  const startEdit = (b: any) => { setEditingId(b.id); setEditDate(b.bookingDate || ""); setEditTime(b.bookingTime || ""); };
+  const saveEdit = async (id: number) => {
+    if (!editDate) { toast({ title: "Pick a date", variant: "destructive" }); return; }
+    setBusyId(id);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.booking.update({ id, email: email.trim(), bookingDate: editDate, bookingTime: editTime });
+      setBookings((prev) => (prev || []).map((b) => (b.id === id ? { ...b, bookingDate: editDate, bookingTime: editTime } : b)));
+      setEditingId(null);
+      toast({ title: "Booking updated" });
+    } catch (error: any) {
+      toast({ title: "Couldn't update", description: error?.message || "Please try again.", variant: "destructive" });
     } finally { setBusyId(null); }
   };
   return (
@@ -1596,11 +1621,39 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
                   </div>
                   <div className="text-xs text-muted-foreground">{b.bookingDate}{b.bookingTime ? ` · ${b.bookingTime}` : ""} · R {(Number(b.total) || 0).toFixed(2)}</div>
                   {Array.isArray(b.items) && b.items.length > 0 && (<div className="text-xs">{b.items.map((it: any) => it.name).join(", ")}</div>)}
-                  {b.status !== "cancelled" && (
-                    <Button variant="outline" size="sm" onClick={() => cancel(b.id)} disabled={busyId === b.id}>
-                      {busyId === b.id ? "Cancelling…" : "Cancel booking"}
-                    </Button>
-                  )}
+                  {b.status !== "cancelled" && editingId === b.id ? (
+                    <div className="space-y-2 pt-1">
+                      <div className="space-y-1">
+                        <Label className="text-xs">New date</Label>
+                        <Select value={editDate} onValueChange={setEditDate}>
+                          <SelectTrigger><SelectValue placeholder="Choose a date" /></SelectTrigger>
+                          <SelectContent>{dateOptions.map((d) => (<SelectItem key={d.iso} value={d.iso}>{d.label}</SelectItem>))}</SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">New time (optional)</Label>
+                        <Select value={editTime} onValueChange={setEditTime}>
+                          <SelectTrigger><SelectValue placeholder="Any time" /></SelectTrigger>
+                          <SelectContent>{timeOptions.map((tOpt) => (<SelectItem key={tOpt} value={tOpt}>{tOpt}</SelectItem>))}</SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black" onClick={() => saveEdit(b.id)} disabled={busyId === b.id}>
+                          {busyId === b.id ? "Saving…" : "Save"}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setEditingId(null)} disabled={busyId === b.id}>Cancel</Button>
+                      </div>
+                    </div>
+                  ) : b.status !== "cancelled" ? (
+                    <div className="flex gap-2">
+                      {b.bookingDate >= todayStr && (
+                        <Button variant="outline" size="sm" onClick={() => startEdit(b)} disabled={busyId === b.id}>Edit date/time</Button>
+                      )}
+                      <Button variant="outline" size="sm" onClick={() => cancel(b.id)} disabled={busyId === b.id}>
+                        {busyId === b.id ? "Cancelling…" : "Cancel booking"}
+                      </Button>
+                    </div>
+                  ) : null}
                   {b.status !== "cancelled" && b.bookingDate && b.bookingDate <= todayStr && (
                     <InlineRater entityType={b.entityType} entityId={Number(b.entityId)} />
                   )}

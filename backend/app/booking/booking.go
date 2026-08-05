@@ -178,6 +178,20 @@ func ForPartner(ctx context.Context, req *ForPartnerRequest) (*ListResponse, err
 	return &ListResponse{Bookings: items}, nil
 }
 
+//encore:api auth method=POST path=/booking/update
+func Update(ctx context.Context, req *UpdateRequest) (*UpdateResponse, error) {
+	if strings.TrimSpace(req.BookingDate) == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "a booking date is required"}
+	}
+	if err := bookings.UpdateDateTime(ctx, req.ID, strings.TrimSpace(req.Email), strings.TrimSpace(req.BookingDate), strings.TrimSpace(req.BookingTime)); err != nil {
+		if errors.Is(err, store.ErrBookingNotFound) {
+			return nil, &errs.Error{Code: errs.NotFound, Message: "no matching booking found for that email"}
+		}
+		return nil, err
+	}
+	return &UpdateResponse{Success: true}, nil
+}
+
 //encore:api auth method=POST path=/booking/cancel
 func Cancel(ctx context.Context, req *CancelRequest) (*CancelResponse, error) {
 	if err := bookings.Cancel(ctx, req.ID, strings.TrimSpace(req.Email)); err != nil {

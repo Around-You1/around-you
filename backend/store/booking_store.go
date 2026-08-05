@@ -103,6 +103,26 @@ func (s *BookingStore) ListForPartner(ctx context.Context, entityType string, en
 	return out, rows.Err()
 }
 
+// UpdateDateTime changes only the date/time of a booking, and only if the
+// supplied email matches and the booking isn't cancelled — so only the client
+// can reschedule their own booking, never the partner. Items/total stay put.
+func (s *BookingStore) UpdateDateTime(ctx context.Context, id int64, email, date, time string) error {
+	res, err := appdb.SQLDB.ExecContext(ctx,
+		"UPDATE bookings SET booking_date = $3, booking_time = $4, updated_at = now() WHERE id = $1 AND lower(customer_email) = lower($2) AND status <> 'cancelled'",
+		id, email, date, time)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrBookingNotFound
+	}
+	return nil
+}
+
 // Cancel marks a booking cancelled, but only if the supplied email matches —
 // so only the client can cancel their own bookings, never the partner.
 func (s *BookingStore) Cancel(ctx context.Context, id int64, email string) error {
