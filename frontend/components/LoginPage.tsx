@@ -410,7 +410,7 @@ export default function LoginPage() {
 
       if (alreadyVerified) {
         const res = await backend.auth.localGuestLogin({ email, province: localProvince, postalCode: localPostalCode.trim() });
-        storeAndNavigate(res.token, res.user, "/guest-dashboard", `${localPostalCode.trim()} (local)`);
+        storeAndNavigate(res.token, res.user, "/guest-dashboard", email.split("@")[0]);
         return;
       }
 
@@ -457,7 +457,7 @@ export default function LoginPage() {
       setLoading(true);
       try {
         const res = await backend.auth.localGuestLogin({ email, province, postalCode });
-        storeAndNavigate(res.token, res.user, "/guest-dashboard", `${postalCode} (local)`);
+        storeAndNavigate(res.token, res.user, "/guest-dashboard", email.split("@")[0]);
       } catch (err: any) {
         toast({ title: "Login Failed", description: err?.message || "Unable to sign in. Please try again.", variant: "destructive" });
       } finally { setLoading(false); }

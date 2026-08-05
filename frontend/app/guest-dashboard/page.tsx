@@ -35,7 +35,11 @@ export default function GuestDashboardPage() {
       role = undefined;
     }
 
-    if (!token || role !== "Guest") {
+    // Both Holiday Guests ("Guest") and Local Guests ("LocalGuest") use this
+    // dashboard — GuestDashboard switches to a local view (no accommodation)
+    // when role === "LocalGuest". Previously only "Guest" was allowed, which
+    // bounced every local straight back to /login (the phantom second sign-in).
+    if (!token || (role !== "Guest" && role !== "LocalGuest")) {
       router.replace("/login");
       return;
     }
