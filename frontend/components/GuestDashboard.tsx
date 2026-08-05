@@ -273,7 +273,7 @@ export default function GuestDashboard() {
     );
   }
 
-  const triggerClass = "flex items-center gap-2 text-sm font-medium hover:text-purple-600 transition-colors w-full text-left";
+  const triggerClass = "flex items-center gap-2 text-sm font-medium hover:text-purple-600 transition-colors w-full text-left min-h-[44px] touch-manipulation";
   const contentClass = "pl-6 pt-2";
   const fallbackSpan = <span className="text-sm text-muted-foreground italic">{FALLBACK}</span>;
 
@@ -756,7 +756,7 @@ export default function GuestDashboard() {
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
-                                Little Explorer Approved
+                                Child Friendly
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {restaurant.littleExplorerApproved ? (
@@ -1044,7 +1044,7 @@ export default function GuestDashboard() {
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
-                                Little Explorer Approved
+                                Child Friendly
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {service.littleExplorerApproved ? (
@@ -1237,7 +1237,7 @@ export default function GuestDashboard() {
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
-                                Little Explorer Approved
+                                Child Friendly
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {attraction.littleExplorerApproved ? (
