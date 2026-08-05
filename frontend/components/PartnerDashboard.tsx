@@ -167,7 +167,7 @@ export default function PartnerDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-[#AEECE4]/20 to-background p-6">
       <div className="max-w-4xl mx-auto space-y-8 py-8">
         <div className="relative text-center">
-          <div className="flex justify-center mb-2"><AppLogo /></div>
+          <div className="flex justify-center mb-2"><AppLogo src="/around-you-logo-print.png" /></div>
           <h1 className="text-4xl font-bold text-foreground">Partner Portal</h1>
           <p className="text-lg text-muted-foreground mt-2">{getEntityTypeName()} Dashboard</p>
           <Button
