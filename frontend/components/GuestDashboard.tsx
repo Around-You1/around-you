@@ -623,6 +623,7 @@ export default function GuestDashboard() {
                               entityId={Number(restaurant.id)}
                               summary={ratings[ratingKey("restaurant", restaurant.id)]}
                               onRated={applyRatingSummary}
+                              readOnly
                             />
 
                             {restaurant.accessLevel === "Booking" && (
@@ -944,6 +945,7 @@ export default function GuestDashboard() {
                               entityId={Number(service.id)}
                               summary={ratings[ratingKey("service", service.id)]}
                               onRated={applyRatingSummary}
+                              readOnly
                             />
 
                             {service.accessLevel === "Booking" && (
@@ -1130,6 +1132,7 @@ export default function GuestDashboard() {
                               entityId={Number(attraction.id)}
                               summary={ratings[ratingKey("attraction", attraction.id)]}
                               onRated={applyRatingSummary}
+                              readOnly
                             />
 
                             {attraction.accessLevel === "Booking" && (
@@ -1322,11 +1325,13 @@ function StarRating({
   entityId,
   summary,
   onRated,
+  readOnly = false,
 }: {
   entityType: RatableType;
   entityId: number;
   summary?: RatingSummary;
   onRated: (summary: RatingSummary) => void;
+  readOnly?: boolean;
 }) {
   const [hovered, setHovered] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -1338,7 +1343,7 @@ function StarRating({
 
   // Hover preview wins while the pointer is over the row; otherwise show the
   // guest's own vote. Touch devices never fire hover, so they just see myRating.
-  const highlighted = hovered || myRating;
+  const highlighted = readOnly ? Math.round(average) : hovered || myRating;
 
   const submit = async (stars: number) => {
     if (saving) return;
@@ -1371,9 +1376,9 @@ function StarRating({
           <button
             key={star}
             type="button"
-            disabled={saving}
+            disabled={saving || readOnly}
             aria-label={`Rate ${star} star${star === 1 ? "" : "s"}`}
-            onClick={() => submit(star)}
+            onClick={() => { if (!readOnly) submit(star); }}
             onMouseEnter={() => setHovered(star)}
             className="p-0.5 -m-0.5 disabled:opacity-50 touch-manipulation"
           >
@@ -1389,28 +1394,15 @@ function StarRating({
       </div>
       <span className="text-xs text-muted-foreground">
         {count > 0 ? `${average.toFixed(1)} (${count})` : "Be the first to rate"}
-        {myRating > 0 ? " \u00B7 you rated this" : ""}
+        {!readOnly && myRating > 0 ? " \u00B7 you rated this" : ""}
       </span>
     </div>
   );
 }
 
 
-// BookingModal is the guest-facing booking panel for a Booking partner. Date
-// and time use simple in-app dropdowns (not the native OS pickers) so there is
-// no hard-to-reach "Set" button on mobile. Prices are re-checked server-side.
-function BookingModal({
-  onClose,
-  entityType,
-  entityId,
-  entityName,
-  items,
-}: {
-  onClose: () => void;
-  entityType: RatableType;
-  entityId: number;
-  entityName: string;
-  items: BookItem[];
+function BookingModal({ onClose, entityType, entityId, entityName, items }: {
+  onClose: () => void; entityType: RatableType; entityId: number; entityName: string; items: BookItem[];
 }) {
   const [selected, setSelected] = useState<Record<number, boolean>>({});
   const [date, setDate] = useState("");
@@ -1423,42 +1415,29 @@ function BookingModal({
 
   const pad = (n: number) => String(n).padStart(2, "0");
   const dateOptions = Array.from({ length: 30 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
+    const d = new Date(); d.setDate(d.getDate() + i);
     const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
     const label = d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
     return { iso, label };
   });
   const timeOptions: string[] = [];
-  for (let h = 8; h <= 20; h++) {
-    for (const m of [0, 30]) {
-      timeOptions.push(`${pad(h)}:${pad(m)}`);
-    }
-  }
+  for (let h = 8; h <= 20; h++) { for (const m of [0, 30]) { timeOptions.push(`${pad(h)}:${pad(m)}`); } }
 
   const chosen = items.filter((_, i) => selected[i]);
   const total = chosen.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
 
   const submit = async () => {
     if (chosen.length === 0 || !name.trim() || !email.trim() || !date) {
-      toast({
-        title: "A few details missing",
-        description: "Pick at least one item and fill in your name, email and a date.",
-        variant: "destructive",
-      });
+      toast({ title: "A few details missing", description: "Pick at least one item and fill in your name, email and a date.", variant: "destructive" });
       return;
     }
     setSaving(true);
     try {
       const backend = getAuthenticatedBackend();
       await backend.booking.create({
-        entityType,
-        entityId: Number(entityId),
-        customerName: name.trim(),
-        customerEmail: email.trim(),
-        customerPhone: phone.trim(),
-        bookingDate: date,
-        bookingTime: time,
+        entityType, entityId: Number(entityId),
+        customerName: name.trim(), customerEmail: email.trim(), customerPhone: phone.trim(),
+        bookingDate: date, bookingTime: time,
         items: chosen.map((it) => ({ name: it.name, price: Number(it.price) || 0, duration: Number(it.duration) || 0 })),
       });
       toast({ title: "Booking requested", description: `Your booking with ${entityName} has been sent.` });
@@ -1466,19 +1445,13 @@ function BookingModal({
     } catch (error: any) {
       console.error("Booking failed:", error);
       toast({ title: "Booking failed", description: error?.message || "Please try again.", variant: "destructive" });
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
-      <div
-        className="bg-background rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-5 space-y-4"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="bg-background rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-semibold">Book {entityName}</h3>
-
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground">This partner hasn't listed any bookable items yet.</p>
         ) : (
@@ -1487,78 +1460,72 @@ function BookingModal({
             {items.map((it, i) => (
               <label key={i} className="flex items-center justify-between gap-2 border rounded-md p-2 cursor-pointer">
                 <span className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={!!selected[i]}
-                    onChange={() => setSelected((s) => ({ ...s, [i]: !s[i] }))}
-                  />
+                  <input type="checkbox" checked={!!selected[i]} onChange={() => setSelected((s) => ({ ...s, [i]: !s[i] }))} />
                   {it.name}{it.duration ? ` · ${it.duration} min` : ""}
                 </span>
                 <span className="text-sm font-medium whitespace-nowrap">R {(Number(it.price) || 0).toFixed(2)}</span>
               </label>
             ))}
-            <div className="flex justify-between text-sm font-semibold pt-1">
-              <span>Total</span>
-              <span>R {total.toFixed(2)}</span>
-            </div>
+            <div className="flex justify-between text-sm font-semibold pt-1"><span>Total</span><span>R {total.toFixed(2)}</span></div>
           </div>
         )}
-
         <div className="space-y-1">
           <Label className="text-xs">Date</Label>
           <Select value={date} onValueChange={setDate}>
             <SelectTrigger><SelectValue placeholder="Choose a date" /></SelectTrigger>
-            <SelectContent>
-              {dateOptions.map((d) => (
-                <SelectItem key={d.iso} value={d.iso}>{d.label}</SelectItem>
-              ))}
-            </SelectContent>
+            <SelectContent>{dateOptions.map((d) => (<SelectItem key={d.iso} value={d.iso}>{d.label}</SelectItem>))}</SelectContent>
           </Select>
         </div>
-
         <div className="space-y-1">
           <Label className="text-xs">Time (optional)</Label>
           <Select value={time} onValueChange={setTime}>
             <SelectTrigger><SelectValue placeholder="Any time" /></SelectTrigger>
-            <SelectContent>
-              {timeOptions.map((tOpt) => (
-                <SelectItem key={tOpt} value={tOpt}>{tOpt}</SelectItem>
-              ))}
-            </SelectContent>
+            <SelectContent>{timeOptions.map((tOpt) => (<SelectItem key={tOpt} value={tOpt}>{tOpt}</SelectItem>))}</SelectContent>
           </Select>
         </div>
-
-        <div className="space-y-1">
-          <Label className="text-xs">Your name</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Email</Label>
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Phone (optional)</Label>
-          <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
-        </div>
-
-        <p className="text-xs text-muted-foreground">
-          You can change or cancel this booking yourself from "My Bookings" using this email. The partner cannot change or cancel it.
-        </p>
-
+        <div className="space-y-1"><Label className="text-xs">Your name</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
+        <div className="space-y-1"><Label className="text-xs">Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+        <div className="space-y-1"><Label className="text-xs">Phone (optional)</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+        <p className="text-xs text-muted-foreground">You can change or cancel this booking yourself from "My Bookings" using this email. The partner cannot change or cancel it.</p>
         <div className="flex justify-end gap-2 pt-1">
           <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
-          <Button onClick={submit} disabled={saving} className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black">
-            {saving ? "Sending…" : "Confirm Booking"}
-          </Button>
+          <Button onClick={submit} disabled={saving} className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black">{saving ? "Sending…" : "Confirm Booking"}</Button>
         </div>
       </div>
     </div>
   );
 }
 
-// MyBookingsModal lets a client look up their own bookings by the email they
-// booked with, and cancel any that aren't already cancelled. Only the client
-// can cancel (the backend checks the email); the partner cannot.
+// InlineRater: tap-to-rate shown in My Bookings only, for bookings whose date
+// has passed — this is how the "rate only after attending" rule is enforced.
+function InlineRater({ entityType, entityId }: { entityType: RatableType; entityId: number }) {
+  const [saved, setSaved] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+  const rate = async (stars: number) => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.rating.submitRating({ entityType, entityId, stars });
+      setSaved(stars);
+      toast({ title: "Thanks for rating", description: `You gave ${stars} star${stars === 1 ? "" : "s"}.` });
+    } catch (error: any) {
+      toast({ title: "Couldn't save rating", description: error?.message || "Please try again.", variant: "destructive" });
+    } finally { setSaving(false); }
+  };
+  return (
+    <div className="flex items-center gap-1 pt-1">
+      <span className="text-xs text-muted-foreground mr-1">Rate your visit:</span>
+      {[1, 2, 3, 4, 5].map((s) => (
+        <button key={s} type="button" disabled={saving} onClick={() => rate(s)} className="disabled:opacity-50">
+          <Star className={`h-4 w-4 ${s <= saved ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/40"}`} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function MyBookingsModal({ onClose }: { onClose: () => void }) {
   const [email, setEmail] = useState("");
   const [bookings, setBookings] = useState<any[] | null>(null);
@@ -1566,11 +1533,12 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
   const [busyId, setBusyId] = useState<number | null>(null);
   const { toast } = useToast();
 
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
   const find = async () => {
-    if (!email.trim()) {
-      toast({ title: "Enter your email", variant: "destructive" });
-      return;
-    }
+    if (!email.trim()) { toast({ title: "Enter your email", variant: "destructive" }); return; }
     setLoading(true);
     try {
       const backend = getAuthenticatedBackend();
@@ -1579,9 +1547,7 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
     } catch (error: any) {
       console.error("Failed to load bookings:", error);
       toast({ title: "Couldn't load bookings", description: error?.message || "Please try again.", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const cancel = async (id: number) => {
@@ -1594,23 +1560,18 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
     } catch (error: any) {
       console.error("Failed to cancel booking:", error);
       toast({ title: "Couldn't cancel", description: error?.message || "Please try again.", variant: "destructive" });
-    } finally {
-      setBusyId(null);
-    }
+    } finally { setBusyId(null); }
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-background rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-semibold">My Bookings</h3>
-        <p className="text-xs text-muted-foreground">Enter the email you booked with to see and cancel your bookings.</p>
+        <p className="text-xs text-muted-foreground">Enter the email you booked with to see, cancel, or rate your bookings.</p>
         <div className="flex gap-2">
           <Input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <Button onClick={find} disabled={loading} className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black whitespace-nowrap">
-            {loading ? "…" : "Find"}
-          </Button>
+          <Button onClick={find} disabled={loading} className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black whitespace-nowrap">{loading ? "…" : "Find"}</Button>
         </div>
-
         {bookings !== null &&
           (bookings.length === 0 ? (
             <p className="text-sm text-muted-foreground">No bookings found for that email.</p>
@@ -1620,29 +1581,23 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
                 <div key={b.id} className="border rounded-md p-3 space-y-1">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium text-sm">{b.entityName}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded ${b.status === "cancelled" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
-                      {b.status}
-                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded ${b.status === "cancelled" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>{b.status}</span>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {b.bookingDate}{b.bookingTime ? ` · ${b.bookingTime}` : ""} · R {(Number(b.total) || 0).toFixed(2)}
-                  </div>
-                  {Array.isArray(b.items) && b.items.length > 0 && (
-                    <div className="text-xs">{b.items.map((it: any) => it.name).join(", ")}</div>
-                  )}
+                  <div className="text-xs text-muted-foreground">{b.bookingDate}{b.bookingTime ? ` · ${b.bookingTime}` : ""} · R {(Number(b.total) || 0).toFixed(2)}</div>
+                  {Array.isArray(b.items) && b.items.length > 0 && (<div className="text-xs">{b.items.map((it: any) => it.name).join(", ")}</div>)}
                   {b.status !== "cancelled" && (
                     <Button variant="outline" size="sm" onClick={() => cancel(b.id)} disabled={busyId === b.id}>
                       {busyId === b.id ? "Cancelling…" : "Cancel booking"}
                     </Button>
                   )}
+                  {b.status !== "cancelled" && b.bookingDate && b.bookingDate <= todayStr && (
+                    <InlineRater entityType={b.entityType} entityId={Number(b.entityId)} />
+                  )}
                 </div>
               ))}
             </div>
           ))}
-
-        <div className="flex justify-end pt-1">
-          <Button variant="outline" onClick={onClose}>Close</Button>
-        </div>
+        <div className="flex justify-end pt-1"><Button variant="outline" onClick={onClose}>Close</Button></div>
       </div>
     </div>
   );
