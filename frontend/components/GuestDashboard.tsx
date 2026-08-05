@@ -61,6 +61,14 @@ export default function GuestDashboard() {
     { entityType: RatableType; entityId: number; entityName: string; items: BookItem[] } | null
   >(null);
   const [showMyBookings, setShowMyBookings] = useState(false);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const toggleCard = (key: string) =>
+    setExpandedCards((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   const { toast } = useToast();
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -623,9 +631,8 @@ export default function GuestDashboard() {
                               entityId={Number(restaurant.id)}
                               summary={ratings[ratingKey("restaurant", restaurant.id)]}
                               onRated={applyRatingSummary}
-                              readOnly
+                              readOnly={restaurant.accessLevel === "Booking"}
                             />
-
                             {restaurant.accessLevel === "Booking" && (
                               <Button
                                 size="sm"
@@ -635,6 +642,11 @@ export default function GuestDashboard() {
                                 Book
                               </Button>
                             )}
+                            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => toggleCard("restaurant:" + restaurant.id)}>
+                              {expandedCards.has("restaurant:" + restaurant.id) ? "Less info" : "More info"}
+                            </Button>
+                            {expandedCards.has("restaurant:" + restaurant.id) && (
+                              <>
 
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
@@ -909,6 +921,8 @@ export default function GuestDashboard() {
                                 )}
                               </CollapsibleContent>
                             </Collapsible>
+                              </>
+                            )}
                           </div>
                         </div>
                       </CardContent>
@@ -945,9 +959,8 @@ export default function GuestDashboard() {
                               entityId={Number(service.id)}
                               summary={ratings[ratingKey("service", service.id)]}
                               onRated={applyRatingSummary}
-                              readOnly
+                              readOnly={service.accessLevel === "Booking"}
                             />
-
                             {service.accessLevel === "Booking" && (
                               <Button
                                 size="sm"
@@ -957,6 +970,11 @@ export default function GuestDashboard() {
                                 Book
                               </Button>
                             )}
+                            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => toggleCard("service:" + service.id)}>
+                              {expandedCards.has("service:" + service.id) ? "Less info" : "More info"}
+                            </Button>
+                            {expandedCards.has("service:" + service.id) && (
+                              <>
 
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
@@ -1096,6 +1114,8 @@ export default function GuestDashboard() {
                               latitude={service.latitude}
                               longitude={service.longitude}
                             />
+                              </>
+                            )}
                           </div>
                         </div>
                       </CardContent>
@@ -1132,9 +1152,8 @@ export default function GuestDashboard() {
                               entityId={Number(attraction.id)}
                               summary={ratings[ratingKey("attraction", attraction.id)]}
                               onRated={applyRatingSummary}
-                              readOnly
+                              readOnly={attraction.accessLevel === "Booking"}
                             />
-
                             {attraction.accessLevel === "Booking" && (
                               <Button
                                 size="sm"
@@ -1144,6 +1163,11 @@ export default function GuestDashboard() {
                                 Book
                               </Button>
                             )}
+                            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => toggleCard("attraction:" + attraction.id)}>
+                              {expandedCards.has("attraction:" + attraction.id) ? "Less info" : "More info"}
+                            </Button>
+                            {expandedCards.has("attraction:" + attraction.id) && (
+                              <>
 
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
@@ -1283,6 +1307,8 @@ export default function GuestDashboard() {
                               latitude={attraction.latitude}
                               longitude={attraction.longitude}
                             />
+                              </>
+                            )}
                           </div>
                         </div>
                       </CardContent>
@@ -1412,7 +1438,6 @@ function BookingModal({ onClose, entityType, entityId, entityName, items }: {
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
-
   const pad = (n: number) => String(n).padStart(2, "0");
   const dateOptions = Array.from({ length: 30 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() + i);
@@ -1422,10 +1447,8 @@ function BookingModal({ onClose, entityType, entityId, entityName, items }: {
   });
   const timeOptions: string[] = [];
   for (let h = 8; h <= 20; h++) { for (const m of [0, 30]) { timeOptions.push(`${pad(h)}:${pad(m)}`); } }
-
   const chosen = items.filter((_, i) => selected[i]);
   const total = chosen.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
-
   const submit = async () => {
     if (chosen.length === 0 || !name.trim() || !email.trim() || !date) {
       toast({ title: "A few details missing", description: "Pick at least one item and fill in your name, email and a date.", variant: "destructive" });
@@ -1443,11 +1466,9 @@ function BookingModal({ onClose, entityType, entityId, entityName, items }: {
       toast({ title: "Booking requested", description: `Your booking with ${entityName} has been sent.` });
       onClose();
     } catch (error: any) {
-      console.error("Booking failed:", error);
       toast({ title: "Booking failed", description: error?.message || "Please try again.", variant: "destructive" });
     } finally { setSaving(false); }
   };
-
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-background rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
@@ -1496,8 +1517,6 @@ function BookingModal({ onClose, entityType, entityId, entityName, items }: {
   );
 }
 
-// InlineRater: tap-to-rate shown in My Bookings only, for bookings whose date
-// has passed — this is how the "rate only after attending" rule is enforced.
 function InlineRater({ entityType, entityId }: { entityType: RatableType; entityId: number }) {
   const [saved, setSaved] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -1532,11 +1551,9 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
   const { toast } = useToast();
-
   const pad = (n: number) => String(n).padStart(2, "0");
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-
   const find = async () => {
     if (!email.trim()) { toast({ title: "Enter your email", variant: "destructive" }); return; }
     setLoading(true);
@@ -1545,11 +1562,9 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
       const res = await backend.booking.mine({ email: email.trim() });
       setBookings((res as { bookings?: any[] }).bookings || []);
     } catch (error: any) {
-      console.error("Failed to load bookings:", error);
       toast({ title: "Couldn't load bookings", description: error?.message || "Please try again.", variant: "destructive" });
     } finally { setLoading(false); }
   };
-
   const cancel = async (id: number) => {
     setBusyId(id);
     try {
@@ -1558,11 +1573,9 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
       setBookings((prev) => (prev || []).map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)));
       toast({ title: "Booking cancelled" });
     } catch (error: any) {
-      console.error("Failed to cancel booking:", error);
       toast({ title: "Couldn't cancel", description: error?.message || "Please try again.", variant: "destructive" });
     } finally { setBusyId(null); }
   };
-
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-background rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
