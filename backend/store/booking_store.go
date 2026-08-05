@@ -1,6 +1,4 @@
-// BookingStore persists customer bookings (see app/booking). Bookings are a
-// new table rather than an in-memory map, for the same durability reasons as
-// the other stores.
+// BookingStore persists customer bookings (see app/booking).
 package store
 
 import (
@@ -66,8 +64,6 @@ func (s *BookingStore) Create(ctx context.Context, in *appdb.Booking) (*appdb.Bo
 	return scanBooking(row)
 }
 
-// ListByEmail returns every booking made with the given email (case-insensitive),
-// newest first. This is how a client sees "My Bookings".
 func (s *BookingStore) ListByEmail(ctx context.Context, email string) ([]appdb.Booking, error) {
 	rows, err := appdb.SQLDB.QueryContext(ctx,
 		"SELECT "+bookingColumns+" FROM bookings WHERE lower(customer_email) = lower($1) ORDER BY created_at DESC", email)
@@ -86,10 +82,29 @@ func (s *BookingStore) ListByEmail(ctx context.Context, email string) ([]appdb.B
 	return out, rows.Err()
 }
 
-// Cancel marks a booking cancelled, but only if the supplied email matches the
-// booking's customer email — so a client can only cancel their own bookings,
-// and partners cannot cancel at all (they never call this). Returns
-// ErrBookingNotFound if nothing matched (wrong id/email, or already cancelled).
+// ListForPartner returns every booking for one partner (entity), newest first.
+// Used by the partner's own read-only bookings view.
+func (s *BookingStore) ListForPartner(ctx context.Context, entityType string, entityID int64) ([]appdb.Booking, error) {
+	rows, err := appdb.SQLDB.QueryContext(ctx,
+		"SELECT "+bookingColumns+" FROM bookings WHERE entity_type = $1 AND entity_id = $2 ORDER BY booking_date DESC, created_at DESC",
+		entityType, entityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []appdb.Booking{}
+	for rows.Next() {
+		b, err := scanBooking(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *b)
+	}
+	return out, rows.Err()
+}
+
+// Cancel marks a booking cancelled, but only if the supplied email matches —
+// so only the client can cancel their own bookings, never the partner.
 func (s *BookingStore) Cancel(ctx context.Context, id int64, email string) error {
 	res, err := appdb.SQLDB.ExecContext(ctx,
 		"UPDATE bookings SET status = 'cancelled', updated_at = now() WHERE id = $1 AND lower(customer_email) = lower($2) AND status <> 'cancelled'",

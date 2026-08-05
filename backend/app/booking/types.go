@@ -2,10 +2,6 @@ package booking
 
 import "backend_encore/internal/appdb"
 
-// CreateRequest is what the guest sends. Prices are NOT trusted from the
-// client — the handler re-prices from the partner's own bookable items by
-// matching item names. Only entityType, entityId, the customer contact
-// details, date/time and the chosen item names matter here.
 type CreateRequest struct {
 	EntityType    string              `json:"entityType"`
 	EntityID      int64               `json:"entityId"`
@@ -17,9 +13,13 @@ type CreateRequest struct {
 	Items         []appdb.BookingItem `json:"items"`
 }
 
-// MineRequest looks up a client's bookings by the email they booked with.
 type MineRequest struct {
 	Email string `query:"email"`
+}
+
+type ForPartnerRequest struct {
+	EntityType string `query:"entityType"`
+	EntityID   int64  `query:"entityId"`
 }
 
 type ListResponse struct {

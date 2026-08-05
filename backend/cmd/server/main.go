@@ -120,6 +120,7 @@ func main() {
 	// ---- Booking (auth) ----------------------------------------------------
 	r.auth("POST /booking", httpx.Body(booking.Create))
 	r.auth("GET /booking/mine", httpx.Query(booking.Mine))
+	r.auth("GET /booking/for-partner", httpx.Query(booking.ForPartner))
 	r.auth("POST /booking/cancel", httpx.Body(booking.Cancel))
 
 	// ---- Storage (mixed) ---------------------------------------------------

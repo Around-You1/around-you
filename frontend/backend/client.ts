@@ -222,6 +222,7 @@ export const backend = {
   booking: {
     create: (req: any) => request("POST", "/booking", { body: req }),
     mine: (req: any) => request("GET", "/booking/mine", { query: { email: req?.email } }),
+    forPartner: (req: any) => request("GET", "/booking/for-partner", { query: { entityType: req?.entityType, entityId: req?.entityId } }),
     cancel: (req: any) => request("POST", "/booking/cancel", { body: req }),
   },
 };

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   MapPin, Phone, ExternalLink, Building2, Store, Compass, LogOut, Navigation, Baby,
-  Wifi, CreditCard, Accessibility, CarFront, Globe, Facebook, Instagram,
+  Wifi, CreditCard, Accessibility, CarFront, Globe, Facebook, Instagram, Mail,
 } from "lucide-react";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
@@ -56,6 +56,7 @@ export default function PartnerDashboard() {
   const [entity, setEntity] = useState<EntityData | null>(null);
   const [entityType, setEntityType] = useState<"restaurant" | "service" | "attraction" | null>(null);
   const [loading, setLoading] = useState(true);
+  const [bookings, setBookings] = useState<any[]>([]);
   const router = useRouter();
   const navigate = (to: string, opts?: { replace?: boolean }) =>
     opts?.replace ? router.replace(to) : router.push(to);
@@ -93,6 +94,12 @@ export default function PartnerDashboard() {
       }
 
       setEntity(data);
+      try {
+        const bk = await backend.booking.forPartner({ entityType: user.entityType, entityId: user.entityId });
+        setBookings((bk as { bookings?: any[] }).bookings || []);
+      } catch (bkErr) {
+        console.error("Failed to load bookings:", bkErr);
+      }
     } catch (error) {
       console.error("Failed to load entity details:", error);
       toast({
@@ -148,6 +155,7 @@ export default function PartnerDashboard() {
   const activePayments = PAYMENT_LABELS.filter(([field]) => e[field]).map(([, label]) => label);
   const images: string[] = e.imageUrls && e.imageUrls.length > 0 ? e.imageUrls : e.imageUrl ? [e.imageUrl] : [];
   const hasSocials = e.socialsWebsite || e.socialsFacebook || e.socialsInstagram || e.socialsTiktok || e.socialsTwitter;
+  const hasBookings = entityType === "restaurant" && (e.bookingsEmail || e.bookingsContactNumber);
   const hasExperienceInfo =
     (entityType === "service" || entityType === "attraction") &&
     (e.safetyInfo || e.ageRestrictions || e.fitnessLevel || e.bestTimeOfDay || e.whatToBring);
@@ -323,6 +331,25 @@ export default function PartnerDashboard() {
                 </Section>
               )}
 
+              {hasBookings && (
+                <Section title="Bookings">
+                  <div className="text-sm space-y-1">
+                    {e.bookingsEmail && (
+                      <p className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-[#AEECE4]" />
+                        <a href={`mailto:${e.bookingsEmail}`} className="text-[#AEECE4] hover:underline">{e.bookingsEmail}</a>
+                      </p>
+                    )}
+                    {e.bookingsContactNumber && (
+                      <p className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-[#AEECE4]" />
+                        <a href={`tel:${e.bookingsContactNumber}`} className="text-[#AEECE4] hover:underline">{e.bookingsContactNumber}</a>
+                      </p>
+                    )}
+                  </div>
+                </Section>
+              )}
+
               {hasSocials && (
                 <Section title="Socials">
                   <div className="flex flex-wrap gap-3">
@@ -382,6 +409,44 @@ export default function PartnerDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {(e.accessLevel === "Booking" || bookings.length > 0) && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Bookings Received</CardTitle>
+                {bookings.filter((b) => b.status === "pending").length > 0 && (
+                  <span className="inline-flex items-center justify-center h-6 px-2 rounded-full bg-red-600 text-white text-xs font-bold">
+                    {bookings.filter((b) => b.status === "pending").length} new
+                  </span>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Read-only. Only the customer can change or cancel a booking (from the app), so this list always reflects real bookings.
+              </p>
+              {bookings.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No bookings yet.</p>
+              ) : (
+                bookings.map((b) => (
+                  <div key={b.id} className={`border rounded-lg p-3 space-y-1 ${b.status === "cancelled" ? "opacity-60" : ""}`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium text-sm">{b.bookingDate}{b.bookingTime ? ` \u00B7 ${b.bookingTime}` : ""}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded ${b.status === "cancelled" ? "bg-red-100 text-red-700" : b.status === "pending" ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-700"}`}>{b.status}</span>
+                    </div>
+                    <div className="text-sm">{b.customerName}</div>
+                    <div className="text-xs text-muted-foreground">{[b.customerPhone, b.customerEmail].filter(Boolean).join(" \u00B7 ")}</div>
+                    {Array.isArray(b.items) && b.items.length > 0 && (
+                      <div className="text-xs text-muted-foreground">{b.items.map((it: any) => it.name).join(", ")}</div>
+                    )}
+                    <div className="text-sm font-medium">R {(Number(b.total) || 0).toFixed(2)}</div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
