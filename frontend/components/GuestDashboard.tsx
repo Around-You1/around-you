@@ -283,7 +283,7 @@ export default function GuestDashboard() {
         {isLocalMode ? (
           <div className="space-y-4">
             <div className="text-center space-y-2">
-              <div className="flex justify-center mb-2"><AppLogo /></div>
+              <div className="flex justify-center mb-2"><AppLogo src="/logo-dark.png" /></div>
               <h1 className="text-4xl font-bold text-foreground">Around You</h1>
               <p className="text-lg text-muted-foreground">Local Guest</p>
             </div>
@@ -302,7 +302,7 @@ export default function GuestDashboard() {
         ) : (
           <>
             <div className="text-center space-y-2">
-              <div className="flex justify-center mb-2"><AppLogo /></div>
+              <div className="flex justify-center mb-2"><AppLogo src="/logo-dark.png" /></div>
               <h1 className="text-4xl font-bold text-foreground">Welcome to</h1>
               <p className="text-lg text-muted-foreground">{accommodation!.name}</p>
             </div>

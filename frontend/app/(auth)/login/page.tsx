@@ -92,7 +92,7 @@ function LoginInner() {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center space-y-2">
           <div className="flex justify-center">
-            <AppLogo />
+            <AppLogo src="/logo-dark.png" />
           </div>
           <CardTitle className="text-3xl font-bold">Around You</CardTitle>
           <p className="text-muted-foreground">Locals — sign in with your email</p>
