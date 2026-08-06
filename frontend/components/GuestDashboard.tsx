@@ -49,6 +49,8 @@ export default function GuestDashboard() {
   const [filteredServices, setFilteredServices] = useState<ServiceData[]>([]);
   const [filteredAttractions, setFilteredAttractions] = useState<AttractionData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [minRating, setMinRating] = useState(0); // 0 = Any; else 3 / 4 / 4.5
+  const [discountsOnly, setDiscountsOnly] = useState(false);
   const [radiusKm, setRadiusKm] = useState([150]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>("restaurants");
@@ -112,42 +114,67 @@ export default function GuestDashboard() {
     return trimmedQuery.split(/\s+/).every((kw) => haystack.includes(kw));
   };
 
+  // Turn a partner's boolean service options + discount into searchable words,
+  // so queries like "delivery", "wheelchair" or "discount" find them even
+  // though those aren't categories. Fields absent on an entity are just falsy.
+  const optionKeywords = (e: any): string[] => {
+    const kw: string[] = [];
+    if (e.serviceDineIn) kw.push("dine-in", "eat in", "sit down");
+    if (e.serviceTakeaway) kw.push("takeaway", "take away", "takeout");
+    if (e.serviceDelivery) kw.push("delivery", "deliver");
+    if (e.wheelchairAccess) kw.push("wheelchair", "accessible");
+    if (e.parkingAvailability) kw.push("parking");
+    if (e.discountOffered && String(e.discountOffered).trim()) {
+      kw.push("discount", "special", "offer", String(e.discountOffered));
+    }
+    return kw;
+  };
+
+  const hasDiscount = (e: any): boolean => !!(e.discountOffered && String(e.discountOffered).trim());
+
+  // Rating gate for the "3★ & above" filter. Unrated partners (no votes yet)
+  // are kept — per the chosen behaviour they show BELOW rated ones rather than
+  // being hidden. Only partners rated *below* the threshold are removed.
+  const passesRating = (entityType: string, id: number | string): boolean => {
+    if (minRating <= 0) return true;
+    const summary = ratings[ratingKey(entityType, id)];
+    const count = summary?.ratingCount || 0;
+    if (count === 0) return true; // unrated — kept, sorted to the bottom
+    return (summary?.averageRating || 0) >= minRating;
+  };
+
+  // When a rating filter is active, order rated partners (highest first) above
+  // unrated ones. With "Any" selected we leave the original order untouched.
+  const sortByRating = <T extends { id: number | string }>(entityType: string, list: T[]): T[] => {
+    if (minRating <= 0) return list;
+    const score = (e: T) => {
+      const s = ratings[ratingKey(entityType, e.id)];
+      return (s?.ratingCount || 0) > 0 ? (s?.averageRating || 0) : -1;
+    };
+    return [...list].sort((a, b) => score(b) - score(a));
+  };
+
   useEffect(() => {
     const trimmed = searchQuery.trim();
-    if (trimmed) {
-      setFilteredRestaurants(
-        restaurants.filter((r) =>
-          matchesSearch(trimmed, [
-            r.name,
-            r.description,
-            ...r.cuisineTypes,
-          ])
-        )
-      );
-      setFilteredServices(
-        services.filter((s) =>
-          matchesSearch(trimmed, [
-            s.name,
-            s.description,
-            ...s.serviceCategories,
-          ])
-        )
-      );
-      setFilteredAttractions(
-        attractions.filter((a) =>
-          matchesSearch(trimmed, [
-            a.name,
-            a.description,
-            ...a.attractionType,
-          ])
-        )
-      );
-    } else {
-      setFilteredRestaurants(restaurants);
-      setFilteredServices(services);
-      setFilteredAttractions(attractions);
-    }
-  }, [searchQuery, restaurants, services, attractions]);
+    const applyAll = <T extends { id: number | string; name?: string; description?: string; area?: string; province?: string }>(
+      entityType: string,
+      list: T[],
+      categories: (e: T) => string[]
+    ): T[] => {
+      const filtered = list.filter((e) => {
+        const searchOk =
+          !trimmed ||
+          matchesSearch(trimmed, [e.name, e.description, ...categories(e), e.area, e.province, ...optionKeywords(e)]);
+        const discountOk = !discountsOnly || hasDiscount(e);
+        const ratingOk = passesRating(entityType, e.id);
+        return searchOk && discountOk && ratingOk;
+      });
+      return sortByRating(entityType, filtered);
+    };
+    setFilteredRestaurants(applyAll("restaurant", restaurants, (r) => r.cuisineTypes || []));
+    setFilteredServices(applyAll("service", services, (s) => s.serviceCategories || []));
+    setFilteredAttractions(applyAll("attraction", attractions, (a) => a.attractionType || []));
+  }, [searchQuery, restaurants, services, attractions, ratings, minRating, discountsOnly]);
 
   // Fetches every rating summary for the three lists in three round trips
   // (one per entity type) rather than one per card. Deliberately silent on
@@ -590,6 +617,42 @@ export default function GuestDashboard() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 text-ellipsis"
             />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={String(minRating)} onValueChange={(v) => setMinRating(Number(v))}>
+              <SelectTrigger className="w-auto min-w-[140px] h-9">
+                <Star className="h-4 w-4 mr-1 text-yellow-400 fill-yellow-400" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">Any rating</SelectItem>
+                <SelectItem value="3">3★ &amp; above</SelectItem>
+                <SelectItem value="4">4★ &amp; above</SelectItem>
+                <SelectItem value="4.5">4.5★ &amp; above</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              type="button"
+              variant={discountsOnly ? "default" : "outline"}
+              size="sm"
+              className={discountsOnly ? "h-9 bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black" : "h-9"}
+              onClick={() => setDiscountsOnly((v) => !v)}
+            >
+              <Tag className="h-4 w-4 mr-1" />
+              Discounts only
+            </Button>
+            {(minRating > 0 || discountsOnly || searchQuery.trim()) && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-9"
+                onClick={() => { setMinRating(0); setDiscountsOnly(false); setSearchQuery(""); }}
+              >
+                Clear
+              </Button>
+            )}
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
