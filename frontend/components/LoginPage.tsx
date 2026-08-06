@@ -655,6 +655,14 @@ export default function LoginPage() {
             >
               Rep
             </button>
+            <button
+              type="button"
+              onClick={() => navigate("/acc-login")}
+              className="text-sm transition-colors hover:underline underline-offset-4"
+              style={{ color: "#444" }}
+            >
+              Acc
+            </button>
           </div>
         </div>
       </div>

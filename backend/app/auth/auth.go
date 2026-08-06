@@ -14,6 +14,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -452,6 +453,44 @@ func RepLogin(ctx context.Context, req *RepLoginRequest) (*LoginResponse, error)
 		return nil, err
 	}
 
+	return issueSession(ctx, &u)
+}
+
+// AccLoginRequest is the accountant sign-in: a single shared access code,
+// checked against the ACC_ACCESS_CODE env var (a Fly secret). No self-service
+// signup and no per-person accounts yet — this is the shell the accounting
+// analytics will hang off later.
+type AccLoginRequest struct {
+	AccessCode string `json:"accessCode"`
+}
+
+//encore:api public method=POST path=/auth/acc-login
+func AccLogin(ctx context.Context, req *AccLoginRequest) (*LoginResponse, error) {
+	code := strings.TrimSpace(req.AccessCode)
+	if code == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "access code is required"}
+	}
+	expected := strings.TrimSpace(os.Getenv("ACC_ACCESS_CODE"))
+	if expected == "" {
+		return nil, &errs.Error{Code: errs.Unauthenticated, Message: "accountant access is not configured"}
+	}
+	if !strings.EqualFold(code, expected) {
+		return nil, &errs.Error{Code: errs.Unauthenticated, Message: "invalid access code"}
+	}
+
+	// Reuse a single accountant user row across logins rather than creating a
+	// new one every time (same idea as the LocalGuest dedupe).
+	const accEmail = "accountant@aroundyou.co.za"
+	var u appdb.User
+	err := appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT id, email, role FROM users WHERE role = 'Accountant' AND lower(email) = lower($1)`, accEmail,
+	).Scan(&u.ID, &u.Email, &u.Role)
+	if err != nil {
+		if isNoRows(err) {
+			return issueSession(ctx, &appdb.User{Email: accEmail, Role: "Accountant"})
+		}
+		return nil, err
+	}
 	return issueSession(ctx, &u)
 }
 

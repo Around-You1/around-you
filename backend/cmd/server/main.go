@@ -59,6 +59,7 @@ func main() {
 	r.public("POST /auth/local-guest-login", httpx.Body(auth.LocalGuestLogin))
 	r.public("POST /auth/login", httpx.Body(auth.Login))
 	r.public("POST /auth/rep-login", httpx.Body(auth.RepLogin))
+	r.public("POST /auth/acc-login", httpx.Body(auth.AccLogin))
 	r.auth("POST /auth/create-rep", httpx.Body(auth.CreateRep))
 	r.auth("GET /auth/reps", httpx.Empty(auth.ListReps))
 	r.auth("GET /analytics/rep-activity", httpx.Empty(analytics.RepActivityReport))
