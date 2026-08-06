@@ -57,6 +57,7 @@ const restaurantColumns = `
 	COALESCE(socials_twitter, '') as socials_twitter,
 	COALESCE(image_url, '') as image_url,
 	image_urls,
+	COALESCE(menu_pdf_urls, '{}') as menu_pdf_urls,
 	is_active,
 	COALESCE(official_holding_company, '') as official_holding_company,
 	COALESCE(official_contact_name, '') as official_contact_name,
@@ -93,7 +94,7 @@ func scanRestaurant(row restaurantScanner) (*appdb.Restaurant, error) {
 		&r.DiscountOffered, &r.DiscountCode,
 		&r.BookingsEmail, &r.BookingsContactNumber,
 		&r.SocialsWebsite, &r.SocialsFacebook, &r.SocialsInstagram, &r.SocialsTiktok, &r.SocialsTwitter,
-		&r.ImageUrl, pq.Array(&r.ImageUrls), &r.IsActive,
+		&r.ImageUrl, pq.Array(&r.ImageUrls), pq.Array(&r.MenuPdfUrls), &r.IsActive,
 		&r.OfficialHoldingCompany, &r.OfficialContactName, &r.OfficialContactNumber, &r.OfficialEmail, &r.OfficialRepCode,
 		&r.OfficialRepName, &r.CompanyRegNumber, &r.CompanyVatNumber,
 		&r.GuestType, &r.AccessLevel,
@@ -272,9 +273,10 @@ type RestaurantPatch struct {
 	SocialsTiktok    *string
 	SocialsTwitter   *string
 
-	ImageUrl  *string
-	ImageUrls []string
-	IsActive  *bool
+	ImageUrl    *string
+	ImageUrls   []string
+	MenuPdfUrls []string
+	IsActive    *bool
 
 	OfficialHoldingCompany *string
 	OfficialContactName    *string
@@ -410,6 +412,9 @@ func (s *RestaurantStore) Update(ctx context.Context, id int64, patch Restaurant
 	}
 	if patch.ImageUrls != nil {
 		sets = append(sets, "image_urls = "+arg(pq.Array(patch.ImageUrls)))
+	}
+	if patch.MenuPdfUrls != nil {
+		sets = append(sets, "menu_pdf_urls = "+arg(pq.Array(patch.MenuPdfUrls)))
 	}
 	if patch.IsActive != nil {
 		sets = append(sets, "is_active = "+arg(*patch.IsActive))

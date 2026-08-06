@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ProfileReferenceCodeDisplay from "./ProfileReferenceCodeDisplay";
 import MultiImageUpload from "./MultiImageUpload";
+import MultiPdfUpload from "./MultiPdfUpload";
 import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
 import { getAuthenticatedBackend } from "../lib/backend";
 import type { Restaurant } from "~backend/restaurant/types";
@@ -86,6 +87,7 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
     menuLink: "",
     imageUrl: "",
     imageUrls: [] as string[],
+    menuPdfUrls: [] as string[],
     discountOffered: "",
     discountCode: "",
     description: "",
@@ -161,6 +163,7 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
         menuLink: data.menuLink || "",
         imageUrl: data.imageUrl || "",
         imageUrls: data.imageUrls || [],
+        menuPdfUrls: data.menuPdfUrls || [],
         discountOffered: data.discountOffered || "",
         discountCode: data.discountCode || "",
         description: data.description || "",
@@ -414,6 +417,12 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
             label="Restaurant Images"
             images={formData.imageUrls}
             onChange={(urls) => setFormData({ ...formData, imageUrls: urls, imageUrl: urls[0] || "" })}
+          />
+
+          <MultiPdfUpload
+            label="Menu PDF(s)"
+            pdfs={formData.menuPdfUrls}
+            onChange={(urls) => setFormData({ ...formData, menuPdfUrls: urls })}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -672,7 +681,7 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
           </div>
 
           <div className="space-y-4">
-            <Label className="text-base font-semibold">Socials</Label>
+            <Label className="text-base font-semibold">Social Media</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="socialsWebsite">Website</Label>

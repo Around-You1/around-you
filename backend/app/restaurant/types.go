@@ -138,9 +138,10 @@ type UpdateRequest struct {
 	SocialsTiktok    *string `json:"socialsTiktok,omitempty"`
 	SocialsTwitter   *string `json:"socialsTwitter,omitempty"`
 
-	ImageUrl  *string  `json:"imageUrl,omitempty"`
-	ImageUrls []string `json:"imageUrls,omitempty"`
-	IsActive  *bool    `json:"isActive,omitempty"`
+	ImageUrl    *string  `json:"imageUrl,omitempty"`
+	ImageUrls   []string `json:"imageUrls,omitempty"`
+	MenuPdfUrls []string `json:"menuPdfUrls,omitempty"`
+	IsActive    *bool    `json:"isActive,omitempty"`
 
 	OfficialHoldingCompany *string `json:"officialHoldingCompany,omitempty"`
 	OfficialContactName    *string `json:"officialContactName,omitempty"`

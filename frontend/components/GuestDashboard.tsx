@@ -700,7 +700,7 @@ export default function GuestDashboard() {
                                 className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black w-full sm:w-auto"
                                 onClick={() => setBookingFor({ entityType: "restaurant", entityId: Number(restaurant.id), entityName: restaurant.name, items: (restaurant.bookingItems || []) as BookItem[] })}
                               >
-                                Book
+                                Click here to book at this establishment.
                               </Button>
                             )}
                             <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => toggleCard("restaurant:" + restaurant.id)}>
@@ -755,6 +755,33 @@ export default function GuestDashboard() {
                                     <ExternalLink className="h-3 w-3 flex-shrink-0" />
                                     <span className="break-all">{restaurant.menuLink}</span>
                                   </a>
+                                ) : (
+                                  fallbackSpan
+                                )}
+                              </CollapsibleContent>
+                            </Collapsible>
+
+                            <Collapsible>
+                              <CollapsibleTrigger className={triggerClass}>
+                                <ChevronDown className="h-4 w-4" />
+                                Menu (PDF)
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className={contentClass}>
+                                {restaurant.menuPdfUrls && restaurant.menuPdfUrls.length > 0 ? (
+                                  <div className="space-y-1">
+                                    {restaurant.menuPdfUrls.map((url, i) => (
+                                      <a
+                                        key={url + i}
+                                        href={url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-purple-600 hover:underline flex items-center gap-1 text-sm"
+                                      >
+                                        <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                                        <span>View menu — page {i + 1}</span>
+                                      </a>
+                                    ))}
+                                  </div>
                                 ) : (
                                   fallbackSpan
                                 )}
@@ -931,7 +958,7 @@ export default function GuestDashboard() {
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
-                                Socials
+                                Social Media
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm space-y-2`}>
                                 {restaurant.socialsWebsite || restaurant.socialsInstagram || restaurant.socialsTwitter || restaurant.socialsYoutube || restaurant.socialsTiktok ? (
@@ -1028,7 +1055,7 @@ export default function GuestDashboard() {
                                 className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black w-full sm:w-auto"
                                 onClick={() => setBookingFor({ entityType: "service", entityId: Number(service.id), entityName: service.name, items: (service.bookingItems || []) as BookItem[] })}
                               >
-                                Book
+                                Click here to book at this establishment.
                               </Button>
                             )}
                             <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => toggleCard("service:" + service.id)}>
@@ -1221,7 +1248,7 @@ export default function GuestDashboard() {
                                 className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black w-full sm:w-auto"
                                 onClick={() => setBookingFor({ entityType: "attraction", entityId: Number(attraction.id), entityName: attraction.name, items: (attraction.bookingItems || []) as BookItem[] })}
                               >
-                                Book
+                                Click here to book at this establishment.
                               </Button>
                             )}
                             <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => toggleCard("attraction:" + attraction.id)}>

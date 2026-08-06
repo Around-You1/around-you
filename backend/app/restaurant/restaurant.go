@@ -168,6 +168,7 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.Restaurant, error) 
 		SocialsTwitter:         req.SocialsTwitter,
 		ImageUrl:               req.ImageUrl,
 		ImageUrls:              req.ImageUrls,
+		MenuPdfUrls:            req.MenuPdfUrls,
 		IsActive:               req.IsActive,
 		OfficialHoldingCompany: req.OfficialHoldingCompany,
 		OfficialContactName:    req.OfficialContactName,

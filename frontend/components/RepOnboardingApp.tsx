@@ -259,7 +259,7 @@ function CheckboxGroup({ label, options, selected = [], onChange }) {
   );
 }
 
-function SocialLinksField({ label = "Social Links", value = {}, onChange }) {
+function SocialLinksField({ label = "Social Media", value = {}, onChange }) {
   const toggle = (opt) => {
     const next = { ...value };
     if (opt in next) delete next[opt];

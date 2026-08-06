@@ -137,6 +137,8 @@ func extensionForContentType(ct string) string {
 		return ".webp"
 	case "image/gif":
 		return ".gif"
+	case "application/pdf":
+		return ".pdf"
 	default:
 		return ""
 	}

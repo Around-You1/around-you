@@ -79,7 +79,7 @@ export default function BookingsSocialsDropdowns({ triggerClass, contentClass }:
       <Collapsible>
         <CollapsibleTrigger className={triggerClass}>
           <ChevronDown className="h-4 w-4" />
-          Socials
+          Social Media
         </CollapsibleTrigger>
         <CollapsibleContent className={`${contentClass} text-sm space-y-2`}>
           {hasSocials ? (

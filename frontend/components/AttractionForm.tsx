@@ -722,7 +722,7 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
           </div>
 
           <div className="space-y-4">
-            <Label className="text-base font-semibold">Socials</Label>
+            <Label className="text-base font-semibold">Social Media</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="socialsWebsite">Website</Label>

@@ -351,7 +351,7 @@ export default function PartnerDashboard() {
               )}
 
               {hasSocials && (
-                <Section title="Socials">
+                <Section title="Social Media">
                   <div className="flex flex-wrap gap-3">
                     {e.socialsWebsite && (
                       <a href={e.socialsWebsite} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#AEECE4] hover:underline">
