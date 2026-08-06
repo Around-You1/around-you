@@ -478,6 +478,32 @@ func (s *AttractionStore) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
+// GetEditCode/RegenerateEditCode manage the partner "edit code" (see the
+// editcode package) — kept out of scanAttraction so it never leaks into JSON.
+
+func (s *AttractionStore) GetEditCode(ctx context.Context, id int64) (string, error) {
+	var code string
+	err := appdb.SQLDB.QueryRowContext(ctx,
+		"SELECT COALESCE(edit_code, '') FROM attractions WHERE id = $1", id,
+	).Scan(&code)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrAttractionNotFound
+	}
+	return code, err
+}
+
+func (s *AttractionStore) RegenerateEditCode(ctx context.Context, id int64, newCode string) (string, error) {
+	var code string
+	err := appdb.SQLDB.QueryRowContext(ctx,
+		"UPDATE attractions SET edit_code = $1, updated_at = now() WHERE id = $2 RETURNING edit_code",
+		newCode, id,
+	).Scan(&code)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrAttractionNotFound
+	}
+	return code, err
+}
+
 func (s *AttractionStore) GetPartnerCode(ctx context.Context, id int64) (code string, active bool, err error) {
 	err = appdb.SQLDB.QueryRowContext(ctx,
 		"SELECT COALESCE(partner_code, ''), partner_code_active FROM attractions WHERE id = $1", id,

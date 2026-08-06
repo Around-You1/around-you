@@ -19,6 +19,7 @@ import (
 	"backend_encore/app/attraction"
 	"backend_encore/app/auth"
 	"backend_encore/app/booking"
+	"backend_encore/app/editcode"
 	"backend_encore/app/health"
 	"backend_encore/app/rating"
 	"backend_encore/app/restaurant"
@@ -122,6 +123,11 @@ func main() {
 	r.auth("GET /booking/mine", httpx.Query(booking.Mine))
 	r.auth("GET /booking/for-partner", httpx.Query(booking.ForPartner))
 	r.auth("POST /booking/cancel", httpx.Body(booking.Cancel))
+
+	// ---- Edit code (partner self-service profile editing) ------------------
+	r.auth("GET /edit-code", httpx.Query(editcode.Get))
+	r.auth("POST /edit-code/regenerate", httpx.Body(editcode.Regenerate))
+	r.auth("POST /edit-code/verify", httpx.Body(editcode.Verify))
 
 	// ---- Storage (mixed) ---------------------------------------------------
 	r.auth("POST /storage/upload", httpx.Body(storage.Upload))

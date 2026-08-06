@@ -226,6 +226,15 @@ export const backend = {
     cancel: (req: any) => request("POST", "/booking/cancel", { body: req }),
     update: (req: any) => request("POST", "/booking/update", { body: req }),
   },
+
+  // Partner "edit code" — a secret (separate from the partner/view code) that
+  // lets a partner unlock editing of their own profile. get/regenerate are
+  // admin-only; verify is what the partner calls before the edit form opens.
+  editCode: {
+    get: (req: any) => request("GET", "/edit-code", { query: { entityType: req?.entityType, entityId: req?.entityId } }),
+    regenerate: (req: any) => request("POST", "/edit-code/regenerate", { body: req }),
+    verify: (req: any) => request("POST", "/edit-code/verify", { body: req }),
+  },
 };
 
 export default backend;

@@ -29,11 +29,51 @@ export default function PartnerAccessCodeDisplay({ entityId, entityType }: Partn
   const [showRegenerateDialog, setShowRegenerateDialog] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isTogglingActive, setIsTogglingActive] = useState(false);
+  const [editCode, setEditCode] = useState<string | null>(null);
+  const [editCopied, setEditCopied] = useState(false);
+  const [showEditRegenDialog, setShowEditRegenDialog] = useState(false);
+  const [isRegeneratingEdit, setIsRegeneratingEdit] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     loadPartnerCode();
+    loadEditCode();
   }, [entityId, entityType]);
+
+  const loadEditCode = async () => {
+    try {
+      const backend = getAuthenticatedBackend();
+      const res = await backend.editCode.get({ entityType, entityId });
+      setEditCode((res as { editCode?: string }).editCode ?? null);
+    } catch (error) {
+      console.error("Failed to load edit code:", error);
+    }
+  };
+
+  const copyEditToClipboard = () => {
+    if (editCode) {
+      navigator.clipboard.writeText(editCode);
+      setEditCopied(true);
+      toast({ title: "Copied!", description: "Partner edit code copied to clipboard" });
+      setTimeout(() => setEditCopied(false), 2000);
+    }
+  };
+
+  const handleRegenerateEdit = async () => {
+    setIsRegeneratingEdit(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const res = await backend.editCode.regenerate({ entityType, entityId });
+      setEditCode((res as { editCode?: string }).editCode ?? null);
+      toast({ title: "Edit Code Regenerated", description: "A new edit code has been generated. Share it with the partner." });
+    } catch (error) {
+      console.error("Failed to regenerate edit code:", error);
+      toast({ title: "Error", description: "Failed to regenerate edit code. Please try again.", variant: "destructive" });
+    } finally {
+      setIsRegeneratingEdit(false);
+      setShowEditRegenDialog(false);
+    }
+  };
 
   const loadPartnerCode = async () => {
     try {
@@ -195,6 +235,49 @@ export default function PartnerAccessCodeDisplay({ entityId, entityType }: Partn
           </Button>
         </div>
       </div>
+
+      <div className="space-y-4 p-4 bg-muted/50 rounded-lg mt-4">
+        <Label className="text-base font-semibold">Partner Edit Code</Label>
+        <div className="flex gap-2">
+          <Input value={editCode ?? ""} readOnly className="font-mono" placeholder="—" />
+          <Button type="button" variant="outline" onClick={copyEditToClipboard} className="flex-shrink-0" disabled={!editCode}>
+            {editCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          </Button>
+        </div>
+        <div className="flex items-start justify-between gap-4">
+          <p className="text-xs text-muted-foreground">
+            Give this to the partner so they can edit their own profile from the Partner Dashboard. It is separate from the login code above and does not grant login.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setShowEditRegenDialog(true)}
+            disabled={isRegeneratingEdit}
+            className="flex-shrink-0"
+          >
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Regenerate
+          </Button>
+        </div>
+      </div>
+
+      <AlertDialog open={showEditRegenDialog} onOpenChange={setShowEditRegenDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Regenerate Edit Code?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This generates a new edit code and invalidates the current one. A partner using the old edit code will need the new one to edit their profile. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRegenerateEdit} disabled={isRegeneratingEdit}>
+              {isRegeneratingEdit ? "Regenerating..." : "Regenerate"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={showRegenerateDialog} onOpenChange={setShowRegenerateDialog}>
         <AlertDialogContent>
