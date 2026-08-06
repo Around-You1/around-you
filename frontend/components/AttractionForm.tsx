@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface AttractionFormProps {
   attractionId: string | null;
   onClose: () => void;
+  partnerEdit?: boolean;
 }
 
 const ATTRACTION_CATEGORIES = [
@@ -33,7 +34,7 @@ const ATTRACTION_CATEGORIES = [
   "Wildlife & Eco",
 ];
 
-export default function AttractionForm({ attractionId, onClose }: AttractionFormProps) {
+export default function AttractionForm({ attractionId, onClose, partnerEdit = false }: AttractionFormProps) {
   const [loading, setLoading] = useState(false);
   // Gate the form render until the record has loaded. The Province <Select>
   // reads its value when it mounts and does not re-sync if the value arrives a
@@ -344,11 +345,11 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{attractionId ? "Edit" : "Add"} Attraction</CardTitle>
+        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${attractionId ? "Edit" : "Add"} Attraction`}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <OfficialUseSection data={officialUse} onChange={setOfficialUse} />
+          {!partnerEdit && <OfficialUseSection data={officialUse} onChange={setOfficialUse} />}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -777,7 +778,7 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
             </div>
           </div>
 
-          {attractionData && (
+          {!partnerEdit && attractionData && (
             <ProfileReferenceCodeDisplay
               entityType="attraction"
               entityId={attractionData.id}
@@ -795,14 +796,16 @@ export default function AttractionForm({ attractionId, onClose }: AttractionForm
               />
               <Label htmlFor="littleExplorerApproved">Child Friendly</Label>
             </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-              />
-              <Label htmlFor="isActive">Active</Label>
-            </div>
+            {!partnerEdit && (
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="isActive"
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+                />
+                <Label htmlFor="isActive">Active</Label>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-4">

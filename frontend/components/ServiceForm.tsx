@@ -18,6 +18,7 @@ import { X } from "lucide-react";
 interface ServiceFormProps {
   serviceId: string | null;
   onClose: () => void;
+  partnerEdit?: boolean;
 }
 
 interface CategoryGroup {
@@ -153,7 +154,7 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
   },
 ];
 
-export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
+export default function ServiceForm({ serviceId, onClose, partnerEdit = false }: ServiceFormProps) {
   const [loading, setLoading] = useState(false);
   // Gate the form render until the record has loaded. The Province <Select>
   // reads its value when it mounts and does not re-sync if the value arrives a
@@ -460,11 +461,11 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{serviceId ? "Edit" : "Add"} Service</CardTitle>
+        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${serviceId ? "Edit" : "Add"} Service`}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <OfficialUseSection data={officialUse} onChange={setOfficialUse} />
+          {!partnerEdit && <OfficialUseSection data={officialUse} onChange={setOfficialUse} />}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -872,7 +873,7 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
             </div>
           </div>
 
-          {serviceData && (
+          {!partnerEdit && serviceData && (
             <ProfileReferenceCodeDisplay
               entityType="service"
               entityId={serviceData.id}
@@ -890,14 +891,16 @@ export default function ServiceForm({ serviceId, onClose }: ServiceFormProps) {
               />
               <Label htmlFor="littleExplorerApproved">Child Friendly</Label>
             </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-              />
-              <Label htmlFor="isActive">Active</Label>
-            </div>
+            {!partnerEdit && (
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="isActive"
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+                />
+                <Label htmlFor="isActive">Active</Label>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-4">

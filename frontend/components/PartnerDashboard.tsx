@@ -12,6 +12,11 @@ import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 import OptimizedImage from "../components/OptimizedImage";
 import AppLogo from "../components/AppLogo";
+import RestaurantForm from "../components/RestaurantForm";
+import ServiceForm from "../components/ServiceForm";
+import AttractionForm from "../components/AttractionForm";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { Restaurant } from "~backend/restaurant/types";
 import type { ServiceData } from "~backend/service/types";
 import type { AttractionData } from "~backend/attraction/types";
@@ -57,6 +62,10 @@ export default function PartnerDashboard() {
   const [entityType, setEntityType] = useState<"restaurant" | "service" | "attraction" | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState<any[]>([]);
+  const [editing, setEditing] = useState(false);
+  const [showGate, setShowGate] = useState(false);
+  const [editCodeInput, setEditCodeInput] = useState("");
+  const [verifying, setVerifying] = useState(false);
   const router = useRouter();
   const navigate = (to: string, opts?: { replace?: boolean }) =>
     opts?.replace ? router.replace(to) : router.push(to);
@@ -118,6 +127,36 @@ export default function PartnerDashboard() {
     navigate("/");
   };
 
+  // Verify the partner's edit code server-side before revealing the editable
+  // form. Only their own entity can be verified (enforced in the backend too).
+  const verifyAndOpen = async () => {
+    if (!entity || !entityType) return;
+    if (!editCodeInput.trim()) {
+      toast({ title: "Enter your edit code", variant: "destructive" });
+      return;
+    }
+    setVerifying(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const res = await backend.editCode.verify({
+        entityType,
+        entityId: (entity as { id: number }).id,
+        code: editCodeInput.trim(),
+      });
+      if ((res as { valid?: boolean }).valid) {
+        setShowGate(false);
+        setEditCodeInput("");
+        setEditing(true);
+      } else {
+        toast({ title: "Incorrect code", description: "That edit code doesn't match. Check with the Around You team if unsure.", variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: "Couldn't verify", description: error?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const getEntityIcon = () => {
     if (entityType === "restaurant") return <Store className="h-12 w-12 text-[#AEECE4]" />;
     if (entityType === "service") return <Building2 className="h-12 w-12 text-[#AEECE4]" />;
@@ -146,6 +185,30 @@ export default function PartnerDashboard() {
             <p>No partner entity assigned</p>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  // When editing (edit code verified), show the matching form in partnerEdit
+  // mode — admin-only sections hidden, admin values preserved on save.
+  if (editing) {
+    const closeAndReload = () => {
+      setEditing(false);
+      loadEntityDetails();
+    };
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#AEECE4]/20 to-background p-6">
+        <div className="max-w-4xl mx-auto py-8">
+          {entityType === "restaurant" && (
+            <RestaurantForm restaurantId={(entity as Restaurant).id} onClose={closeAndReload} partnerEdit />
+          )}
+          {entityType === "service" && (
+            <ServiceForm serviceId={(entity as ServiceData).serviceId} onClose={closeAndReload} partnerEdit />
+          )}
+          {entityType === "attraction" && (
+            <AttractionForm attractionId={(entity as AttractionData).attractionId} onClose={closeAndReload} partnerEdit />
+          )}
+        </div>
       </div>
     );
   }
@@ -179,6 +242,39 @@ export default function PartnerDashboard() {
             Logout
           </Button>
         </div>
+
+        <Button
+          className="w-full bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black font-semibold"
+          onClick={() => setShowGate(true)}
+        >
+          Edit Profile
+        </Button>
+
+        {showGate && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowGate(false)}>
+            <div className="bg-background rounded-lg shadow-lg max-w-sm w-full p-5 space-y-4" onClick={(ev) => ev.stopPropagation()}>
+              <h3 className="text-lg font-semibold">Enter your edit code</h3>
+              <p className="text-sm text-muted-foreground">Enter the edit code the Around You team gave you to unlock editing of your profile.</p>
+              <div className="space-y-1">
+                <Label htmlFor="edit-code-input" className="text-xs">Edit code</Label>
+                <Input
+                  id="edit-code-input"
+                  value={editCodeInput}
+                  onChange={(ev) => setEditCodeInput(ev.target.value)}
+                  placeholder="Edit code"
+                  className="font-mono tracking-widest"
+                  onKeyDown={(ev) => { if (ev.key === "Enter") verifyAndOpen(); }}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowGate(false)} disabled={verifying}>Cancel</Button>
+                <Button onClick={verifyAndOpen} disabled={verifying} className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black">
+                  {verifying ? "Checking…" : "Unlock"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <Card>
           <CardHeader>

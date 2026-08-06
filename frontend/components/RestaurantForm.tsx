@@ -19,6 +19,10 @@ import { SA_PROVINCES } from "../lib/saRegions";
 interface RestaurantFormProps {
   restaurantId: number | null;
   onClose: () => void;
+  // When true, this form is being used by a partner (via the edit code), not an
+  // admin: admin-only sections (Official Use, access/edit codes, Active toggle)
+  // are hidden and their existing values pass through the save untouched.
+  partnerEdit?: boolean;
 }
 
 const CUISINE_TYPES = [
@@ -58,7 +62,7 @@ const CUISINE_TYPES = [
   "Vetkoek",
 ];
 
-export default function RestaurantForm({ restaurantId, onClose }: RestaurantFormProps) {
+export default function RestaurantForm({ restaurantId, onClose, partnerEdit = false }: RestaurantFormProps) {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [officialUse, setOfficialUse] = useState<OfficialUseData>({
     officialHoldingCompany: "",
@@ -309,11 +313,11 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{restaurantId ? "Edit" : "Add"} Restaurant</CardTitle>
+        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${restaurantId ? "Edit" : "Add"} Restaurant`}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <OfficialUseSection data={officialUse} onChange={setOfficialUse} />
+          {!partnerEdit && <OfficialUseSection data={officialUse} onChange={setOfficialUse} />}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
@@ -736,7 +740,7 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
             </div>
           </div>
 
-          {restaurant && (
+          {!partnerEdit && restaurant && (
             <ProfileReferenceCodeDisplay
               entityType="restaurant"
               entityId={restaurant.id}
@@ -754,14 +758,16 @@ export default function RestaurantForm({ restaurantId, onClose }: RestaurantForm
               <Label htmlFor="littleExplorerApproved">Child Friendly</Label>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-              />
-              <Label htmlFor="isActive">Active</Label>
-            </div>
+            {!partnerEdit && (
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="isActive"
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+                />
+                <Label htmlFor="isActive">Active</Label>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-4">
