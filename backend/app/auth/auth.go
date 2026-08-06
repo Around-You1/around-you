@@ -59,6 +59,22 @@ func FromContext(ctx context.Context) *Data {
 	return d
 }
 
+// IsPrivileged reports whether the caller is an internal role (SuperAdmin /
+// Admin / Rep) allowed to see full records. Guests and partners are NOT
+// privileged — the read handlers hand them sanitized data (see StripSensitive)
+// so a scraped guest token yields only what the UI displays.
+func IsPrivileged(ctx context.Context) bool {
+	d := FromContext(ctx)
+	if d == nil || d.User == nil {
+		return false
+	}
+	switch d.User.Role {
+	case "SuperAdmin", "Admin", "Rep":
+		return true
+	}
+	return false
+}
+
 // Validate resolves a bearer token to the signed-in user, or returns an
 // *errs.Error with code Unauthenticated. The HTTP middleware (see
 // cmd/server/main.go) calls this for every route that previously carried the

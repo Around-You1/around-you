@@ -7,12 +7,24 @@ import (
 	"strconv"
 	"strings"
 
+	"backend_encore/app/auth"
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/errs"
 	"backend_encore/store"
 )
 
 var attractions = store.NewAttractionStore()
+
+// publicize strips sensitive fields for non-internal callers (anti-scraping).
+func publicize(ctx context.Context, items []appdb.AttractionData) []appdb.AttractionData {
+	if auth.IsPrivileged(ctx) {
+		return items
+	}
+	for i := range items {
+		items[i].StripSensitive()
+	}
+	return items
+}
 
 func lookup(attractionID string) (int64, error) {
 	id, err := strconv.ParseInt(attractionID, 10, 64)
@@ -28,7 +40,7 @@ func List(ctx context.Context, req *ListRequest) (*ListResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &ListResponse{Attractions: items}, nil
+	return &ListResponse{Attractions: publicize(ctx, items)}, nil
 }
 
 //encore:api auth method=GET path=/attraction/by-municipality
@@ -37,7 +49,7 @@ func ListByMunicipality(ctx context.Context, req *ListByMunicipalityRequest) (*L
 	if err != nil {
 		return nil, err
 	}
-	return &ListResponse{Attractions: items}, nil
+	return &ListResponse{Attractions: publicize(ctx, items)}, nil
 }
 
 //encore:api auth method=GET path=/attraction/nearby
@@ -52,7 +64,7 @@ func ListNearby(ctx context.Context, req *ListNearbyRequest) (*ListResponse, err
 			out = append(out, a)
 		}
 	}
-	return &ListResponse{Attractions: out}, nil
+	return &ListResponse{Attractions: publicize(ctx, out)}, nil
 }
 
 //encore:api auth method=GET path=/attraction/get
@@ -67,6 +79,9 @@ func Get(ctx context.Context, req *GetRequest) (*appdb.AttractionData, error) {
 			return nil, &errs.Error{Code: errs.NotFound, Message: "attraction not found"}
 		}
 		return nil, err
+	}
+	if !auth.IsPrivileged(ctx) {
+		item.StripSensitive()
 	}
 	return item, nil
 }

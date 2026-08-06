@@ -353,6 +353,56 @@ type AttractionData struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
+// StripSensitive blanks the fields that must never reach a guest/partner client
+// (and therefore a scraper): the profile reference code (a login credential),
+// the internal Official Use business details, and duplicate bookkeeping. It
+// deliberately KEEPS GuestType and AccessLevel — the guest UI needs accessLevel
+// ("Booking") and page routing needs guestType, and neither is sensitive.
+// Called by the read handlers for any non-internal caller.
+func (r *Restaurant) StripSensitive() {
+	r.ProfileReferenceCode = ""
+	r.IsDuplicate = false
+	r.DuplicateReason = ""
+	r.BookingsEmail = ""
+	r.BookingsContactNumber = ""
+	r.OfficialHoldingCompany = ""
+	r.OfficialContactName = ""
+	r.OfficialContactNumber = ""
+	r.OfficialEmail = ""
+	r.OfficialRepCode = ""
+	r.OfficialRepName = ""
+	r.CompanyRegNumber = ""
+	r.CompanyVatNumber = ""
+}
+
+func (s *ServiceData) StripSensitive() {
+	s.ProfileReferenceCode = ""
+	s.IsDuplicate = false
+	s.DuplicateReason = ""
+	s.OfficialHoldingCompany = ""
+	s.OfficialContactName = ""
+	s.OfficialContactNumber = ""
+	s.OfficialEmail = ""
+	s.OfficialRepCode = ""
+	s.OfficialRepName = ""
+	s.CompanyRegNumber = ""
+	s.CompanyVatNumber = ""
+}
+
+func (a *AttractionData) StripSensitive() {
+	a.ProfileReferenceCode = ""
+	a.IsDuplicate = false
+	a.DuplicateReason = ""
+	a.OfficialHoldingCompany = ""
+	a.OfficialContactName = ""
+	a.OfficialContactNumber = ""
+	a.OfficialEmail = ""
+	a.OfficialRepCode = ""
+	a.OfficialRepName = ""
+	a.CompanyRegNumber = ""
+	a.CompanyVatNumber = ""
+}
+
 // User matches the `user` object LoginPage.tsx / AccessCodeResolver.tsx store
 // in localStorage and that GuestDashboard.tsx / PartnerDashboard.tsx read back
 // (role, profileType, email, accommodationId, area/municipality, entityType,

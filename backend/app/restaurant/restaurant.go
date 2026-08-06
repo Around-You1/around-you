@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"backend_encore/app/auth"
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/errs"
 	"backend_encore/store"
@@ -14,13 +15,26 @@ import (
 
 var restaurants = store.NewRestaurantStore()
 
+// publicize strips sensitive fields (see appdb.Restaurant.StripSensitive) unless
+// the caller is an internal role. Applied to every guest-reachable read so a
+// scraped guest token only ever receives display fields.
+func publicize(ctx context.Context, items []appdb.Restaurant) []appdb.Restaurant {
+	if auth.IsPrivileged(ctx) {
+		return items
+	}
+	for i := range items {
+		items[i].StripSensitive()
+	}
+	return items
+}
+
 //encore:api auth method=GET path=/restaurant
 func List(ctx context.Context, req *ListRequest) (*ListResponse, error) {
 	items, err := restaurants.List(ctx, req.SortBy, req.SortOrder)
 	if err != nil {
 		return nil, err
 	}
-	return &ListResponse{Restaurants: items}, nil
+	return &ListResponse{Restaurants: publicize(ctx, items)}, nil
 }
 
 //encore:api auth method=GET path=/restaurant/by-municipality
@@ -29,7 +43,7 @@ func ListByMunicipality(ctx context.Context, req *ListByMunicipalityRequest) (*L
 	if err != nil {
 		return nil, err
 	}
-	return &ListResponse{Restaurants: items}, nil
+	return &ListResponse{Restaurants: publicize(ctx, items)}, nil
 }
 
 //encore:api auth method=GET path=/restaurant/nearby
@@ -44,7 +58,7 @@ func ListNearby(ctx context.Context, req *ListNearbyRequest) (*ListResponse, err
 			out = append(out, r)
 		}
 	}
-	return &ListResponse{Restaurants: out}, nil
+	return &ListResponse{Restaurants: publicize(ctx, out)}, nil
 }
 
 //encore:api auth method=GET path=/restaurant/get
@@ -55,6 +69,9 @@ func Get(ctx context.Context, req *GetRequest) (*appdb.Restaurant, error) {
 			return nil, &errs.Error{Code: errs.NotFound, Message: "restaurant not found"}
 		}
 		return nil, err
+	}
+	if !auth.IsPrivileged(ctx) {
+		r.StripSensitive()
 	}
 	return r, nil
 }
