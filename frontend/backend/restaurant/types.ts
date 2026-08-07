@@ -26,6 +26,7 @@ export interface Restaurant {
   duplicateReason?: string;
 
   cuisineTypes: string[];
+  restaurantType?: string[];
   menuLink?: string;
   serviceDineIn: boolean;
   serviceTakeaway: boolean;

@@ -72,7 +72,6 @@ const CATEGORY_GROUPS = [
       "Catering Services",
       "Fresh Produce Markets",
       "Grocery Stores",
-      "Takeaways & Fast Food",
       "Water & Ice Supply",
     ],
   },
@@ -179,6 +178,8 @@ const CUISINE_TYPES = [
   "Scones", "Seafood", "Spanish", "Steaks", "Sushi", "Soup", "Thai", "Toasties",
   "Vegan", "Vegetarian", "Vetkoek",
 ];
+
+const RESTAURANT_TYPES = ["Food Truck", "Home Meals", "Take Away", "Pop Up", "Restaurant"];
 
 // Rep's own session — the real signed-in rep, from Rep sign-in (full name +
 // rep code), read from the same localStorage the rest of the app already
@@ -582,6 +583,7 @@ export default function RepOnboardingApp() {
           contactNumber: data.contactNumber || "",
           description: data.description || "",
           cuisineTypes: data.cuisineTypes || [],
+          restaurantType: data.restaurantType || [],
           menuLink: data.menuLink || "",
           serviceDineIn: true,
           serviceTakeaway: true,
@@ -998,6 +1000,9 @@ export default function RepOnboardingApp() {
                 <SectionTitle>{booking ? "Categories & Description" : "Tier 3"}</SectionTitle>
                 {isRestaurant && (
                   <CheckboxGroup label="Cuisine Types" options={CUISINE_TYPES} selected={data.cuisineTypes || []} onChange={set("cuisineTypes")} />
+                )}
+                {isRestaurant && (
+                  <CheckboxGroup label="Restaurant Type" options={RESTAURANT_TYPES} selected={data.restaurantType || []} onChange={set("restaurantType")} />
                 )}
                 {isService && (
                   <>

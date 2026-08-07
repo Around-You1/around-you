@@ -62,6 +62,8 @@ const CUISINE_TYPES = [
   "Vetkoek",
 ];
 
+const RESTAURANT_TYPES = ["Food Truck", "Home Meals", "Take Away", "Pop Up", "Restaurant"];
+
 export default function RestaurantForm({ restaurantId, onClose, partnerEdit = false }: RestaurantFormProps) {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [officialUse, setOfficialUse] = useState<OfficialUseData>({
@@ -88,6 +90,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
     postalCode: "",
     contactNumber: "",
     cuisineTypes: [] as string[],
+    restaurantType: [] as string[],
     menuLink: "",
     imageUrl: "",
     imageUrls: [] as string[],
@@ -164,6 +167,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
         postalCode: data.postalCode,
         contactNumber: data.contactNumber || "",
         cuisineTypes: data.cuisineTypes,
+        restaurantType: data.restaurantType || [],
         menuLink: data.menuLink || "",
         imageUrl: data.imageUrl || "",
         imageUrls: data.imageUrls || [],
@@ -294,6 +298,15 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
       cuisineTypes: formData.cuisineTypes.includes(cuisine)
         ? formData.cuisineTypes.filter((c) => c !== cuisine)
         : [...formData.cuisineTypes, cuisine],
+    });
+  };
+
+  const toggleRestaurantType = (t: string) => {
+    setFormData({
+      ...formData,
+      restaurantType: formData.restaurantType.includes(t)
+        ? formData.restaurantType.filter((x) => x !== t)
+        : [...formData.restaurantType, t],
     });
   };
 
@@ -472,6 +485,24 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
                   />
                   <Label htmlFor={cuisine} className="cursor-pointer font-normal">
                     {cuisine}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Restaurant Type</Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {RESTAURANT_TYPES.map((rt) => (
+                <div key={rt} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`rtype-${rt}`}
+                    checked={formData.restaurantType.includes(rt)}
+                    onCheckedChange={() => toggleRestaurantType(rt)}
+                  />
+                  <Label htmlFor={`rtype-${rt}`} className="cursor-pointer font-normal">
+                    {rt}
                   </Label>
                 </div>
               ))}

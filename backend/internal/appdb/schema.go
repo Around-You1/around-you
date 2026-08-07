@@ -207,6 +207,7 @@ type Restaurant struct {
 	DuplicateReason      string `json:"duplicateReason,omitempty"`
 
 	CuisineTypes           []string `json:"cuisineTypes"`
+	RestaurantType         []string `json:"restaurantType"`
 	MenuLink               string   `json:"menuLink,omitempty"`
 	ServiceDineIn          bool     `json:"serviceDineIn"`
 	ServiceTakeaway        bool     `json:"serviceTakeaway"`

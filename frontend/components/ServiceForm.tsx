@@ -70,7 +70,6 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
       "Catering Services",
       "Fresh Produce Markets",
       "Grocery Stores",
-      "Takeaways & Fast Food",
       "Water & Ice Supply",
     ],
   },

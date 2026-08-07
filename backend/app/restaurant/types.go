@@ -40,6 +40,7 @@ type CreateRequest struct {
 	Description   string `json:"description,omitempty"`
 
 	CuisineTypes           []string `json:"cuisineTypes"`
+	RestaurantType         []string `json:"restaurantType"`
 	MenuLink               string   `json:"menuLink,omitempty"`
 	ServiceDineIn          bool     `json:"serviceDineIn"`
 	ServiceTakeaway        bool     `json:"serviceTakeaway"`
@@ -106,6 +107,7 @@ type UpdateRequest struct {
 	Description   *string `json:"description,omitempty"`
 
 	CuisineTypes           []string `json:"cuisineTypes,omitempty"`
+	RestaurantType         []string `json:"restaurantType,omitempty"`
 	MenuLink               *string  `json:"menuLink,omitempty"`
 	ServiceDineIn          *bool    `json:"serviceDineIn,omitempty"`
 	ServiceTakeaway        *bool    `json:"serviceTakeaway,omitempty"`

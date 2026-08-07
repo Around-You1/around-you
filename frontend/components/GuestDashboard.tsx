@@ -171,7 +171,7 @@ export default function GuestDashboard() {
       });
       return sortByRating(entityType, filtered);
     };
-    setFilteredRestaurants(applyAll("restaurant", restaurants, (r) => r.cuisineTypes || []));
+    setFilteredRestaurants(applyAll("restaurant", restaurants, (r) => [...(r.cuisineTypes || []), ...(r.restaurantType || [])]));
     setFilteredServices(applyAll("service", services, (s) => s.serviceCategories || []));
     setFilteredAttractions(applyAll("attraction", attractions, (a) => a.attractionType || []));
   }, [searchQuery, restaurants, services, attractions, ratings, minRating, discountsOnly]);
@@ -730,6 +730,26 @@ export default function GuestDashboard() {
                                     {restaurant.cuisineTypes.map((cuisine) => (
                                       <span key={cuisine} className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs">
                                         {cuisine}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  fallbackSpan
+                                )}
+                              </CollapsibleContent>
+                            </Collapsible>
+
+                            <Collapsible>
+                              <CollapsibleTrigger className={triggerClass}>
+                                <ChevronDown className="h-4 w-4" />
+                                Restaurant Type
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className={contentClass}>
+                                {restaurant.restaurantType && restaurant.restaurantType.length > 0 ? (
+                                  <div className="flex flex-wrap gap-2">
+                                    {restaurant.restaurantType.map((rt) => (
+                                      <span key={rt} className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs">
+                                        {rt}
                                       </span>
                                     ))}
                                   </div>
