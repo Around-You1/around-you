@@ -64,6 +64,7 @@ export default function GuestDashboard() {
   >(null);
   const [showMyBookings, setShowMyBookings] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [showAccInfo, setShowAccInfo] = useState(false);
   const toggleCard = (key: string) =>
     setExpandedCards((prev) => {
       const next = new Set(prev);
@@ -349,6 +350,16 @@ export default function GuestDashboard() {
                 </div>
                 <h3 className="font-semibold text-lg truncate">{accommodation!.name}</h3>
 
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-3"
+                  onClick={() => setShowAccInfo((v) => !v)}
+                >
+                  {showAccInfo ? "Less info" : "More info"}
+                </Button>
+
+                {showAccInfo && (
                 <div className="mt-4 space-y-2">
                   <AddressDropdown
                     address={accommodation!.address}
@@ -584,6 +595,7 @@ export default function GuestDashboard() {
                   </Collapsible>
 
                 </div>
+                )}
               </CardContent>
             </Card>
           </>
