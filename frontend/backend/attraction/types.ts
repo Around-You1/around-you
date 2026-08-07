@@ -40,6 +40,7 @@ export interface AttractionData {
   discountCode?: string;
 
   imageUrl?: string;
+  imageUrls?: string[];
   isActive: boolean;
 
   officialHoldingCompany?: string;

@@ -58,6 +58,7 @@ export interface Restaurant {
   socialsYoutube?: string;
 
   imageUrl?: string;
+  imageUrls?: string[];
   menuPdfUrls?: string[];
   isActive: boolean;
 

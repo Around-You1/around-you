@@ -13,7 +13,6 @@ import DirectionsDropdown from "../components/DirectionsDropdown";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 import { useSwipe } from "../lib/useSwipe";
-import OptimizedImage from "../components/OptimizedImage";
 import ImageCarousel from "../components/ImageCarousel";
 import SwipeIndicator from "../components/SwipeIndicator";
 import type { Accommodation } from "~backend/accommodation/types";
@@ -687,11 +686,12 @@ export default function GuestDashboard() {
                     <Card key={restaurant.id} className="hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
                       <CardContent className="p-4">
                         <div className="flex flex-col sm:flex-row gap-3">
-                          <OptimizedImage
-                            src={restaurant.imageUrl || ""}
+                          <ImageCarousel
+                            images={restaurant.imageUrls && restaurant.imageUrls.length > 0 ? restaurant.imageUrls : (restaurant.imageUrl ? [restaurant.imageUrl] : [])}
                             alt={restaurant.name}
                             className="w-full sm:w-20 h-32 sm:h-20 object-cover rounded flex-shrink-0"
                             placeholderClassName="w-full sm:w-20 h-32 sm:h-20 rounded flex-shrink-0"
+                            intervalMs={3000}
                           />
                           <div className="flex-1 min-w-0 space-y-2">
                             <div className="flex items-center gap-2 flex-wrap">
@@ -1065,11 +1065,12 @@ export default function GuestDashboard() {
                     <Card key={service.id} className="hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
                       <CardContent className="p-4">
                         <div className="flex flex-col sm:flex-row gap-3">
-                          <OptimizedImage
-                            src={service.imageUrl || ""}
+                          <ImageCarousel
+                            images={service.imageUrls && service.imageUrls.length > 0 ? service.imageUrls : (service.imageUrl ? [service.imageUrl] : [])}
                             alt={service.name}
                             className="w-full sm:w-20 h-32 sm:h-20 object-cover rounded flex-shrink-0"
                             placeholderClassName="w-full sm:w-20 h-32 sm:h-20 rounded flex-shrink-0"
+                            intervalMs={3000}
                           />
                           <div className="flex-1 min-w-0 space-y-2">
                             <h4 className="font-semibold truncate">{service.name}</h4>
@@ -1258,11 +1259,12 @@ export default function GuestDashboard() {
                     <Card key={attraction.id} className="hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
                       <CardContent className="p-4">
                         <div className="flex flex-col sm:flex-row gap-3">
-                          <OptimizedImage
-                            src={attraction.imageUrl || ""}
+                          <ImageCarousel
+                            images={attraction.imageUrls && attraction.imageUrls.length > 0 ? attraction.imageUrls : (attraction.imageUrl ? [attraction.imageUrl] : [])}
                             alt={attraction.name}
                             className="w-full sm:w-20 h-32 sm:h-20 object-cover rounded flex-shrink-0"
                             placeholderClassName="w-full sm:w-20 h-32 sm:h-20 rounded flex-shrink-0"
+                            intervalMs={3000}
                           />
                           <div className="flex-1 min-w-0 space-y-2">
                             <h4 className="font-semibold truncate">{attraction.name}</h4>

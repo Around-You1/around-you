@@ -34,6 +34,7 @@ export interface ServiceData {
   discountOffered?: string;
   discountCode?: string;
   imageUrl?: string;
+  imageUrls?: string[];
   isActive: boolean;
   officialHoldingCompany?: string;
   officialContactName?: string;
