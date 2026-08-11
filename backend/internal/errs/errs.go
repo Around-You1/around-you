@@ -25,6 +25,7 @@ const (
 	Unauthenticated
 	PermissionDenied
 	AlreadyExists
+	ResourceExhausted
 )
 
 // Error is the concrete error type handlers return. It mirrors
@@ -57,6 +58,8 @@ func CodeString(c ErrCode) string {
 		return "permission_denied"
 	case AlreadyExists:
 		return "already_exists"
+	case ResourceExhausted:
+		return "resource_exhausted"
 	default:
 		return "internal"
 	}
@@ -77,6 +80,8 @@ func HTTPStatus(c ErrCode) int {
 		return http.StatusForbidden
 	case AlreadyExists:
 		return http.StatusConflict
+	case ResourceExhausted:
+		return http.StatusTooManyRequests
 	default:
 		return http.StatusInternalServerError
 	}

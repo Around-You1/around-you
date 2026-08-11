@@ -12,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"backend_encore/app/accommodation"
@@ -29,6 +30,7 @@ import (
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/errs"
 	"backend_encore/internal/httpx"
+	"backend_encore/internal/ratelimit"
 )
 
 func main() {
@@ -48,7 +50,7 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	r := router{mux: mux}
+	r := router{mux: mux, lim: ratelimit.New(rateLimitPerMin())}
 
 	// ---- Health (public) ---------------------------------------------------
 	r.public("GET /ping", httpx.Empty(health.Ping))
@@ -171,6 +173,7 @@ func main() {
 // router registers handlers, optionally behind the bearer-token check.
 type router struct {
 	mux *http.ServeMux
+	lim *ratelimit.Limiter
 }
 
 func (r router) public(pattern string, h http.HandlerFunc) {
@@ -178,16 +181,26 @@ func (r router) public(pattern string, h http.HandlerFunc) {
 }
 
 func (r router) auth(pattern string, h http.HandlerFunc) {
-	r.mux.Handle(pattern, requireAuth(h))
+	r.mux.Handle(pattern, requireAuth(r.lim, h))
 }
 
 // requireAuth rejects requests without a valid bearer token, matching the
-// gate Encore's `auth` tag used to apply.
-func requireAuth(next http.HandlerFunc) http.HandlerFunc {
+// gate Encore's `auth` tag used to apply. It also applies a per-token rate
+// limit: a normal guest/admin session never approaches the threshold, but an
+// automated client trying to iterate many areas/coordinates to bulk-pull the
+// directory hits it and receives HTTP 429. Keyed on the bearer token so the
+// limit scopes to a single login session.
+func requireAuth(lim *ratelimit.Limiter, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		data, err := auth.Validate(req.Context(), req.Header.Get("Authorization"))
+		token := req.Header.Get("Authorization")
+		data, err := auth.Validate(req.Context(), token)
 		if err != nil {
 			writeErr(w, err)
+			return
+		}
+		if lim != nil && !lim.Allow(token) {
+			w.Header().Set("Retry-After", "60")
+			writeErr(w, &errs.Error{Code: errs.ResourceExhausted, Message: "rate limit exceeded, please slow down"})
 			return
 		}
 		next(w, req.WithContext(auth.WithData(req.Context(), data)))
@@ -255,4 +268,17 @@ func port() string {
 		return p
 	}
 	return "4000"
+}
+
+// rateLimitPerMin is the per-token request ceiling per minute, overridable via
+// the RATE_LIMIT_PER_MIN env var. The default (180 = 3/sec sustained, with a
+// matching burst) sits far above real usage — a dashboard load fires only a
+// handful of parallel calls — so legitimate users never hit it.
+func rateLimitPerMin() int {
+	if v := os.Getenv("RATE_LIMIT_PER_MIN"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return n
+		}
+	}
+	return 180
 }
