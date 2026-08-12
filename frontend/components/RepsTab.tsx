@@ -16,6 +16,7 @@ interface Rep {
   region: string;
   province: string;
   status: string;
+  email: string;
 }
 
 const PROVINCES = [
@@ -36,6 +37,7 @@ const selectClass =
 export default function RepsTab() {
   const [reps, setReps] = useState<Rep[]>([]);
   const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const [creating, setCreating] = useState(false);
   const [savingId, setSavingId] = useState<number | null>(null);
   const { toast } = useToast();
@@ -63,9 +65,10 @@ export default function RepsTab() {
     setCreating(true);
     try {
       const backend = getAuthenticatedBackend();
-      const result = await backend.auth.createRep({ fullName: fullName.trim() });
+      const result = await backend.auth.createRep({ fullName: fullName.trim(), email: email.trim() });
       toast({ title: "Rep created", description: `${result.fullName} — code: ${result.repCode}` });
       setFullName("");
+      setEmail("");
       loadReps();
     } catch (error: any) {
       console.error("Failed to create rep:", error);
@@ -90,6 +93,7 @@ export default function RepsTab() {
         region: rep.region || "",
         province: rep.province || "",
         status: rep.status || "Active",
+        email: rep.email || "",
       });
       toast({ title: "Rep updated", description: `${rep.fullName} saved` });
       loadReps(); // reflect auto Team-Leader promotion of the chosen upline
@@ -123,6 +127,17 @@ export default function RepsTab() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="e.g. Jane Adams"
+                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+              />
+            </div>
+            <div className="flex-1 space-y-1.5">
+              <Label htmlFor="rep-email-input">Email (optional)</Label>
+              <Input
+                id="rep-email-input"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="e.g. jane@example.com"
                 onKeyDown={(e) => e.key === "Enter" && handleCreate()}
               />
             </div>
@@ -222,6 +237,16 @@ export default function RepsTab() {
                         <option value="Active">Active</option>
                         <option value="Inactive">Inactive</option>
                       </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs">Email</Label>
+                      <Input
+                        type="email"
+                        value={rep.email}
+                        onChange={(e) => setRepField(rep.id, { email: e.target.value })}
+                        placeholder="rep@example.com"
+                      />
                     </div>
                   </div>
 

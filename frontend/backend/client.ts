@@ -153,7 +153,7 @@ export const backend = {
       request("POST", "/auth/rep-login", { body: req }),
     accLogin: (req: { accessCode: string }) =>
       request("POST", "/auth/acc-login", { body: req }),
-    createRep: (req: { fullName: string }) =>
+    createRep: (req: { fullName: string; email?: string }) =>
       request("POST", "/auth/create-rep", { body: req }),
     listReps: () => request("GET", "/auth/reps"),
     updateRep: (req: {
@@ -163,6 +163,7 @@ export const backend = {
       region: string;
       province: string;
       status: string;
+      email: string;
     }) => request("POST", "/auth/rep/update", { body: req }),
   },
   billing: {
@@ -173,6 +174,8 @@ export const backend = {
       request("GET", "/billing/statement", { query: req }),
     markPeriodPaid: (req: { period: string; repCode?: string }) =>
       request("POST", "/billing/statement/mark-paid", { body: req }),
+    emailStatements: (req: { period?: string }) =>
+      request("POST", "/billing/statement/email", { body: req }),
   },
 
   analytics: {

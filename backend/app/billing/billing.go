@@ -130,3 +130,31 @@ func MarkPeriodPaid(ctx context.Context, req *MarkPaidRequest) (*MarkPaidRespons
 	}
 	return &MarkPaidResponse{Updated: n}, nil
 }
+
+type EmailStatementsRequest struct {
+	Period string `json:"period"`
+}
+
+type EmailStatementsResponse struct {
+	Sent int `json:"sent"`
+}
+
+// EmailStatements is SuperAdmin-only — emails each rep (who has an email) their
+// commission statement for the month.
+//
+//encore:api auth method=POST path=/billing/statement/email
+func EmailStatements(ctx context.Context, req *EmailStatementsRequest) (*EmailStatementsResponse, error) {
+	data := auth.FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can email statements"}
+	}
+	period := req.Period
+	if period == "" {
+		period = time.Now().Format("2006-01")
+	}
+	n, err := billingcore.EmailStatements(ctx, period)
+	if err != nil {
+		return nil, err
+	}
+	return &EmailStatementsResponse{Sent: n}, nil
+}

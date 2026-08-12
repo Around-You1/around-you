@@ -65,6 +65,7 @@ export default function BillingTab() {
   const [period, setPeriod] = useState(() => new Date().toISOString().slice(0, 7));
   const [statements, setStatements] = useState<RepStatement[]>([]);
   const [paying, setPaying] = useState(false);
+  const [emailing, setEmailing] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -109,6 +110,19 @@ export default function BillingTab() {
       toast({ title: "Error", description: error?.message || "Failed to mark paid", variant: "destructive" });
     } finally {
       setPaying(false);
+    }
+  };
+
+  const handleEmailStatements = async () => {
+    setEmailing(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const r = await backend.billing.emailStatements({ period });
+      toast({ title: "Statements emailed", description: `${r.sent} rep(s) emailed for ${period}` });
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Failed to email statements", variant: "destructive" });
+    } finally {
+      setEmailing(false);
     }
   };
 
@@ -272,6 +286,9 @@ export default function BillingTab() {
               className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black"
             >
               {paying ? "Recording…" : "Mark month's Accrued as Paid"}
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleEmailStatements} disabled={emailing}>
+              {emailing ? "Emailing…" : "Email statements to reps"}
             </Button>
           </div>
           {statements.length === 0 ? (

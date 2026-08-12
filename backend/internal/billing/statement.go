@@ -2,8 +2,10 @@ package billing
 
 import (
 	"context"
+	"fmt"
 
 	"backend_encore/internal/appdb"
+	"backend_encore/internal/mailer"
 )
 
 // RepStatement is one rep's commission summary for a single month.
@@ -62,4 +64,47 @@ func MarkPeriodPaid(ctx context.Context, period, repCode string) (int, error) {
 	}
 	n, _ := res.RowsAffected()
 	return int(n), nil
+}
+
+// EmailStatements emails each rep who has a rep_email their commission
+// statement for the month, and returns how many were sent. Best-effort per rep
+// (a missing email or a mail hiccup just skips that rep). Reps without an email
+// remain viewable to the SuperAdmin in the Billing tab.
+func EmailStatements(ctx context.Context, period string) (int, error) {
+	stmts, err := MonthlyStatements(ctx, period)
+	if err != nil {
+		return 0, err
+	}
+	sent := 0
+	for _, s := range stmts {
+		var email, name string
+		if err := appdb.SQLDB.QueryRowContext(ctx,
+			`SELECT COALESCE(rep_email, ''), COALESCE(full_name, '') FROM users WHERE role = 'Rep' AND lower(rep_code) = lower($1)`,
+			s.RepCode,
+		).Scan(&email, &name); err != nil {
+			continue
+		}
+		if email == "" {
+			continue
+		}
+		_ = mailer.Send(email, "Your Around You commission statement — "+period, renderStatementHTML(name, s.RepCode, period, s))
+		sent++
+	}
+	return sent, nil
+}
+
+func renderStatementHTML(name, repCode, period string, s RepStatement) string {
+	return fmt.Sprintf(`
+<div style="font-family:Arial,sans-serif;max-width:560px">
+  <h2>Around You — Commission Statement</h2>
+  <p>Hi %s (%s),</p>
+  <p>Your commissions for %s:</p>
+  <table style="width:100%%;border-collapse:collapse" cellpadding="6">
+    <tr><td>Own (30%%)</td><td style="text-align:right">%s</td></tr>
+    <tr><td>Team-leader override (10%%)</td><td style="text-align:right">%s</td></tr>
+    <tr><td><strong>Total</strong></td><td style="text-align:right"><strong>%s</strong></td></tr>
+    <tr><td>Paid</td><td style="text-align:right">%s</td></tr>
+    <tr><td>Still accrued</td><td style="text-align:right">%s</td></tr>
+  </table>
+</div>`, name, repCode, period, rands(s.OwnCents), rands(s.OverrideCents), rands(s.TotalCents), rands(s.PaidCents), rands(s.AccruedCents))
 }

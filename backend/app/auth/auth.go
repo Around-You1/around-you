@@ -512,6 +512,7 @@ func AccLogin(ctx context.Context, req *AccLoginRequest) (*LoginResponse, error)
 
 type CreateRepRequest struct {
 	FullName string `json:"fullName"`
+	Email    string `json:"email"`
 }
 
 type CreateRepResponse struct {
@@ -548,9 +549,9 @@ func CreateRep(ctx context.Context, req *CreateRepRequest) (*CreateRepResponse, 
 	email := strings.ToLower(repCode) + "@reps.aroundyou.internal"
 
 	if _, err := appdb.SQLDB.ExecContext(ctx, `
-		INSERT INTO users (email, role, full_name, rep_code)
-		VALUES ($1, 'Rep', $2, $3)`,
-		email, fullName, repCode,
+		INSERT INTO users (email, role, full_name, rep_code, rep_email)
+		VALUES ($1, 'Rep', $2, $3, NULLIF($4, ''))`,
+		email, fullName, repCode, strings.TrimSpace(req.Email),
 	); err != nil {
 		return nil, err
 	}
@@ -592,6 +593,7 @@ type Rep struct {
 	Region        string `json:"region"`
 	Province      string `json:"province"`
 	Status        string `json:"status"`
+	Email         string `json:"email"`
 }
 
 type ListRepsResponse struct {
@@ -611,7 +613,8 @@ func ListReps(ctx context.Context) (*ListRepsResponse, error) {
 	rows, err := appdb.SQLDB.QueryContext(ctx, `
 		SELECT id, COALESCE(full_name, ''), COALESCE(rep_code, ''),
 		       COALESCE(upline_rep_code, ''), is_team_leader,
-		       COALESCE(region, ''), COALESCE(province, ''), rep_status
+		       COALESCE(region, ''), COALESCE(province, ''), rep_status,
+		       COALESCE(rep_email, '')
 		FROM users WHERE role = 'Rep' ORDER BY rep_code ASC`)
 	if err != nil {
 		return nil, err
@@ -622,7 +625,7 @@ func ListReps(ctx context.Context) (*ListRepsResponse, error) {
 	for rows.Next() {
 		var r Rep
 		if err := rows.Scan(&r.ID, &r.FullName, &r.RepCode,
-			&r.UplineRepCode, &r.IsTeamLeader, &r.Region, &r.Province, &r.Status); err != nil {
+			&r.UplineRepCode, &r.IsTeamLeader, &r.Region, &r.Province, &r.Status, &r.Email); err != nil {
 			return nil, err
 		}
 		reps = append(reps, r)
@@ -697,10 +700,12 @@ func UpdateRep(ctx context.Context, req *UpdateRepRequest) (*Rep, error) {
 		    is_team_leader  = $3,
 		    region          = NULLIF($4, ''),
 		    province        = NULLIF($5, ''),
-		    rep_status      = $6
+		    rep_status      = $6,
+		    rep_email       = NULLIF($7, '')
 		WHERE role = 'Rep' AND lower(rep_code) = lower($1)`,
 		repCode, upline, req.IsTeamLeader,
 		strings.TrimSpace(req.Region), strings.TrimSpace(req.Province), status,
+		strings.TrimSpace(req.Email),
 	)
 	if err != nil {
 		return nil, err
@@ -723,10 +728,11 @@ func UpdateRep(ctx context.Context, req *UpdateRepRequest) (*Rep, error) {
 	err = appdb.SQLDB.QueryRowContext(ctx, `
 		SELECT id, COALESCE(full_name, ''), COALESCE(rep_code, ''),
 		       COALESCE(upline_rep_code, ''), is_team_leader,
-		       COALESCE(region, ''), COALESCE(province, ''), rep_status
+		       COALESCE(region, ''), COALESCE(province, ''), rep_status,
+		       COALESCE(rep_email, '')
 		FROM users WHERE role = 'Rep' AND lower(rep_code) = lower($1)`, repCode,
 	).Scan(&r.ID, &r.FullName, &r.RepCode, &r.UplineRepCode, &r.IsTeamLeader,
-		&r.Region, &r.Province, &r.Status)
+		&r.Region, &r.Province, &r.Status, &r.Email)
 	if err != nil {
 		return nil, err
 	}
