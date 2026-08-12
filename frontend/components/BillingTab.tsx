@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -43,6 +44,15 @@ interface Commission {
   status: string;
 }
 
+interface RepStatement {
+  repCode: string;
+  ownCents: number;
+  overrideCents: number;
+  totalCents: number;
+  paidCents: number;
+  accruedCents: number;
+}
+
 const rand = (cents: number) => `R${(cents / 100).toFixed(2)}`;
 
 const planLabel = (s: Subscription) =>
@@ -52,26 +62,55 @@ export default function BillingTab() {
   const [subs, setSubs] = useState<Subscription[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [commissions, setCommissions] = useState<Commission[]>([]);
+  const [period, setPeriod] = useState(() => new Date().toISOString().slice(0, 7));
+  const [statements, setStatements] = useState<RepStatement[]>([]);
+  const [paying, setPaying] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     (async () => {
       try {
         const backend = getAuthenticatedBackend();
-        const [s, i, c] = await Promise.all([
+        const [s, i, c, st] = await Promise.all([
           backend.billing.listSubscriptions(),
           backend.billing.listInvoices(),
           backend.billing.listCommissions(),
+          backend.billing.statement({ period }),
         ]);
         setSubs(s.subscriptions || []);
         setInvoices(i.invoices || []);
         setCommissions(c.commissions || []);
+        setStatements(st.statements || []);
       } catch (error) {
         console.error("Failed to load billing:", error);
         toast({ title: "Error", description: "Failed to load billing data", variant: "destructive" });
       }
     })();
   }, [toast]);
+
+  const loadStatements = async (p: string) => {
+    try {
+      const backend = getAuthenticatedBackend();
+      const r = await backend.billing.statement({ period: p });
+      setStatements(r.statements || []);
+    } catch (error) {
+      console.error("Failed to load statements:", error);
+    }
+  };
+
+  const handleMarkPaid = async () => {
+    setPaying(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const r = await backend.billing.markPeriodPaid({ period });
+      toast({ title: "Payout recorded", description: `${r.updated} entries marked Paid for ${period}` });
+      loadStatements(period);
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Failed to mark paid", variant: "destructive" });
+    } finally {
+      setPaying(false);
+    }
+  };
 
   const mrrCents = subs
     .filter((s) => s.status === "Active")
@@ -199,6 +238,66 @@ export default function BillingTab() {
                       <td className="py-2 pr-3">{c.periodStart || "—"}</td>
                       <td className="py-2 pr-3">{rand(c.amountCents)}</td>
                       <td className="py-2 pr-3">{c.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Monthly Statements &amp; Payouts</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-end gap-3 mb-4">
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">Month</label>
+              <input
+                type="month"
+                value={period}
+                onChange={(e) => {
+                  setPeriod(e.target.value);
+                  loadStatements(e.target.value);
+                }}
+                className="h-9 rounded-md border border-border bg-background px-2 text-sm"
+              />
+            </div>
+            <Button
+              size="sm"
+              onClick={handleMarkPaid}
+              disabled={paying}
+              className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black"
+            >
+              {paying ? "Recording…" : "Mark month's Accrued as Paid"}
+            </Button>
+          </div>
+          {statements.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No commissions for {period}.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-muted-foreground border-b border-border">
+                    <th className="py-2 pr-3">Rep</th>
+                    <th className="py-2 pr-3">Own 30%</th>
+                    <th className="py-2 pr-3">Override 10%</th>
+                    <th className="py-2 pr-3">Total</th>
+                    <th className="py-2 pr-3">Accrued</th>
+                    <th className="py-2 pr-3">Paid</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {statements.map((s) => (
+                    <tr key={s.repCode} className="border-b border-border/50">
+                      <td className="py-2 pr-3 font-mono">{s.repCode}</td>
+                      <td className="py-2 pr-3">{rand(s.ownCents)}</td>
+                      <td className="py-2 pr-3">{rand(s.overrideCents)}</td>
+                      <td className="py-2 pr-3 font-semibold">{rand(s.totalCents)}</td>
+                      <td className="py-2 pr-3">{rand(s.accruedCents)}</td>
+                      <td className="py-2 pr-3">{rand(s.paidCents)}</td>
                     </tr>
                   ))}
                 </tbody>

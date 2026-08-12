@@ -118,7 +118,7 @@ Each requested metric maps to the new tables (dashboard section: Admin → Analy
 
 ## 7. Proposed build phases
 
-**Status (2026-08-11): Phases 1–5 built and being deployed. Phases 6–7 remain.**
+**Status (2026-08-11): All 7 phases built. Known follow-ups: reps have no email address yet, so rep commission statements are admin-viewable (Billing tab) but not emailed to reps until a rep-email field is added; SARS-specific invoice fields to add when VAT-registered; the Reps analytics section covers the core metrics (leaderboard, MRR, own/override, downline) — the remaining spec sub-metrics can be layered on.**
 
 
 1. **Rep hierarchy** — upline/Team-Leader structure + admin UI to assign it.

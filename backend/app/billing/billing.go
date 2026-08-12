@@ -5,6 +5,7 @@ package billing
 
 import (
 	"context"
+	"time"
 
 	"backend_encore/app/auth"
 	billingcore "backend_encore/internal/billing"
@@ -73,4 +74,59 @@ func ListCommissions(ctx context.Context) (*ListCommissionsResponse, error) {
 // without importing internal/billing directly (which shares this package name).
 func RunMonthlyBilling(ctx context.Context) (int, error) {
 	return billingcore.RunMonthlyBilling(ctx)
+}
+
+type StatementRequest struct {
+	Period string `query:"period"` // "YYYY-MM"; defaults to the current month
+}
+
+type StatementResponse struct {
+	Period     string                     `json:"period"`
+	Statements []billingcore.RepStatement `json:"statements"`
+}
+
+// MonthlyStatements is SuperAdmin-only — each rep's commission summary for a month.
+//
+//encore:api auth method=GET path=/billing/statement
+func MonthlyStatements(ctx context.Context, req *StatementRequest) (*StatementResponse, error) {
+	data := auth.FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can view statements"}
+	}
+	period := req.Period
+	if period == "" {
+		period = time.Now().Format("2006-01")
+	}
+	s, err := billingcore.MonthlyStatements(ctx, period)
+	if err != nil {
+		return nil, err
+	}
+	return &StatementResponse{Period: period, Statements: s}, nil
+}
+
+type MarkPaidRequest struct {
+	Period  string `json:"period"`  // "YYYY-MM"
+	RepCode string `json:"repCode"` // empty = all reps for the period
+}
+
+type MarkPaidResponse struct {
+	Updated int `json:"updated"`
+}
+
+// MarkPeriodPaid is SuperAdmin-only — marks a month's accrued commissions Paid.
+//
+//encore:api auth method=POST path=/billing/statement/mark-paid
+func MarkPeriodPaid(ctx context.Context, req *MarkPaidRequest) (*MarkPaidResponse, error) {
+	data := auth.FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can mark payouts"}
+	}
+	if req.Period == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "period (YYYY-MM) is required"}
+	}
+	n, err := billingcore.MarkPeriodPaid(ctx, req.Period, req.RepCode)
+	if err != nil {
+		return nil, err
+	}
+	return &MarkPaidResponse{Updated: n}, nil
 }

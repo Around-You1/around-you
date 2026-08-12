@@ -169,6 +169,10 @@ export const backend = {
     listSubscriptions: () => request("GET", "/billing/subscriptions"),
     listInvoices: () => request("GET", "/billing/invoices"),
     listCommissions: () => request("GET", "/billing/commissions"),
+    statement: (req: { period?: string }) =>
+      request("GET", "/billing/statement", { query: req }),
+    markPeriodPaid: (req: { period: string; repCode?: string }) =>
+      request("POST", "/billing/statement/mark-paid", { body: req }),
   },
 
   analytics: {
