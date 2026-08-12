@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/csv"
 	"errors"
+	"log"
 	"strconv"
 	"strings"
 
 	"backend_encore/app/auth"
 	"backend_encore/internal/appdb"
+	"backend_encore/internal/billing"
 	"backend_encore/internal/errs"
 	"backend_encore/store"
 )
@@ -155,7 +157,15 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.AttractionData, err
 		},
 		PartnerCode: appdb.PartnerCode{Code: appdb.RandomCode(10), Active: true},
 	}
-	return attractions.Create(ctx, in)
+	created, err := attractions.Create(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	// Create the billing subscription from the partner's tier/audience (idempotent).
+	if subErr := billing.EnsureSubscription(ctx, "attraction", created.ID, created.AccessLevel, created.GuestType, created.OfficialRepCode); subErr != nil {
+		log.Printf("attraction %d created but subscription upsert failed: %v", created.ID, subErr)
+	}
+	return created, nil
 }
 
 //encore:api auth method=PUT path=/attraction

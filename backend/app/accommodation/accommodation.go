@@ -8,10 +8,12 @@ import (
 	"context"
 	"encoding/csv"
 	"errors"
+	"log"
 	"strconv"
 	"strings"
 
 	"backend_encore/internal/appdb"
+	"backend_encore/internal/billing"
 	"backend_encore/internal/errs"
 	"backend_encore/store"
 )
@@ -91,7 +93,16 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Accommodation, erro
 		},
 	}
 
-	return accommodations.Create(ctx, in)
+	created, err := accommodations.Create(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	// Accommodations are Tier 4 by rule; PriceFor sets that regardless of the
+	// (empty) tier/audience fields. Idempotent — failure logs but doesn't block.
+	if subErr := billing.EnsureSubscription(ctx, "accommodation", created.ID, created.AccessLevel, created.GuestType, created.OfficialRepCode); subErr != nil {
+		log.Printf("accommodation %d created but subscription upsert failed: %v", created.ID, subErr)
+	}
+	return created, nil
 }
 
 //encore:api auth method=PUT path=/accommodation

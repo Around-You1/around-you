@@ -21,6 +21,7 @@ import (
 	"backend_encore/app/analytics"
 	"backend_encore/app/attraction"
 	"backend_encore/app/auth"
+	"backend_encore/app/billing"
 	"backend_encore/app/booking"
 	"backend_encore/app/editcode"
 	"backend_encore/app/health"
@@ -133,6 +134,9 @@ func main() {
 	r.auth("GET /booking/mine", httpx.Query(booking.Mine))
 	r.auth("GET /booking/for-partner", httpx.Query(booking.ForPartner))
 	r.auth("POST /booking/cancel", httpx.Body(booking.Cancel))
+
+	// ---- Billing / subscriptions (auth; SuperAdmin-gated in-handler) --------
+	r.auth("GET /billing/subscriptions", httpx.Empty(billing.ListSubscriptions))
 
 	// ---- Edit code (partner self-service profile editing) ------------------
 	r.auth("GET /edit-code", httpx.Query(editcode.Get))

@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/csv"
 	"errors"
+	"log"
 	"strconv"
 	"strings"
 
 	"backend_encore/app/auth"
 	"backend_encore/internal/appdb"
+	"backend_encore/internal/billing"
 	"backend_encore/internal/errs"
 	"backend_encore/store"
 )
@@ -142,7 +144,17 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Restaurant, error) 
 		},
 		PartnerCode: appdb.PartnerCode{Code: appdb.RandomCode(10), Active: true},
 	}
-	return restaurants.Create(ctx, in)
+	created, err := restaurants.Create(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	// Create the billing subscription from the partner's tier/audience. Failure
+	// here must not block onboarding — it is idempotent, so a later edit/re-save
+	// will reconcile it; we log and continue.
+	if subErr := billing.EnsureSubscription(ctx, "restaurant", created.ID, created.AccessLevel, created.GuestType, created.OfficialRepCode); subErr != nil {
+		log.Printf("restaurant %d created but subscription upsert failed: %v", created.ID, subErr)
+	}
+	return created, nil
 }
 
 //encore:api auth method=PUT path=/restaurant

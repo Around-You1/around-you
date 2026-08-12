@@ -165,6 +165,9 @@ export const backend = {
       status: string;
     }) => request("POST", "/auth/rep/update", { body: req }),
   },
+  billing: {
+    listSubscriptions: () => request("GET", "/billing/subscriptions"),
+  },
 
   analytics: {
     repActivity: () => request("GET", "/analytics/rep-activity"),
