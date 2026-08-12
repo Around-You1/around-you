@@ -11,10 +11,41 @@ interface RepActivity {
   dailyCounts: Record<string, number>;
 }
 
+interface RepMetrics {
+  repCode: string;
+  repName: string;
+  status: string;
+  region: string;
+  province: string;
+  isTeamLeader: boolean;
+  uplineRepCode: string;
+  dateJoined: string;
+  partnersSigned: number;
+  byType: Record<string, number>;
+  byPlan: Record<string, number>;
+  activeMrrCents: number;
+  ownCommissionCents: number;
+  overrideCommissionCents: number;
+  totalCommissionCents: number;
+  downlineCount: number;
+  downlineMrrCents: number;
+}
+
+interface RepsAnalytics {
+  reps: RepMetrics[];
+  totalActiveReps: number;
+  totalTeamLeaders: number;
+  totalMrrCents: number;
+  totalCommissionCents: number;
+}
+
 const TIER_ORDER = ["Tier 1", "Tier 2", "Tier 3", "Tier 4", "N/A"];
+
+const rand = (cents: number) => `R${(cents / 100).toFixed(2)}`;
 
 export default function AnalyticsDashboard() {
   const [reps, setReps] = useState<RepActivity[]>([]);
+  const [repStats, setRepStats] = useState<RepsAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -26,8 +57,12 @@ export default function AnalyticsDashboard() {
     setLoading(true);
     try {
       const backend = getAuthenticatedBackend();
-      const data = await backend.analytics.repActivity();
-      setReps(data.reps);
+      const [activity, stats] = await Promise.all([
+        backend.analytics.repActivity(),
+        backend.analytics.reps(),
+      ]);
+      setReps(activity.reps);
+      setRepStats(stats);
     } catch (error) {
       console.error("Failed to load analytics:", error);
       toast({ title: "Error", description: "Failed to load analytics", variant: "destructive" });
@@ -40,6 +75,79 @@ export default function AnalyticsDashboard() {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         <h1 className="text-4xl font-bold text-foreground">Analytics Dashboard</h1>
+
+        {repStats && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Reps — Performance &amp; Commissions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs text-muted-foreground">Active Reps</p>
+                  <p className="text-2xl font-bold">{repStats.totalActiveReps}</p>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs text-muted-foreground">Team Leaders</p>
+                  <p className="text-2xl font-bold">{repStats.totalTeamLeaders}</p>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs text-muted-foreground">Monthly Recurring</p>
+                  <p className="text-2xl font-bold">{rand(repStats.totalMrrCents)}</p>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs text-muted-foreground">Total Commissions</p>
+                  <p className="text-2xl font-bold">{rand(repStats.totalCommissionCents)}</p>
+                </div>
+              </div>
+
+              {repStats.reps.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No reps yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-muted-foreground border-b border-border">
+                        <th className="py-2 pr-3">#</th>
+                        <th className="py-2 pr-3">Rep</th>
+                        <th className="py-2 pr-3">Status</th>
+                        <th className="py-2 pr-3">Partners</th>
+                        <th className="py-2 pr-3">MRR</th>
+                        <th className="py-2 pr-3">Own 30%</th>
+                        <th className="py-2 pr-3">Override 10%</th>
+                        <th className="py-2 pr-3">Total</th>
+                        <th className="py-2 pr-3">Downline</th>
+                        <th className="py-2 pr-3">Downline MRR</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {repStats.reps.map((r, idx) => (
+                        <tr key={r.repCode} className="border-b border-border/50">
+                          <td className="py-2 pr-3">{idx + 1}</td>
+                          <td className="py-2 pr-3">
+                            {r.repName || "(no name)"}
+                            {r.isTeamLeader && (
+                              <span className="ml-2 text-xs rounded px-1.5 py-0.5 bg-[#AEECE4] text-black">TL</span>
+                            )}
+                            <span className="block text-xs text-muted-foreground font-mono">{r.repCode}</span>
+                          </td>
+                          <td className="py-2 pr-3">{r.status}</td>
+                          <td className="py-2 pr-3">{r.partnersSigned}</td>
+                          <td className="py-2 pr-3">{rand(r.activeMrrCents)}</td>
+                          <td className="py-2 pr-3">{rand(r.ownCommissionCents)}</td>
+                          <td className="py-2 pr-3">{rand(r.overrideCommissionCents)}</td>
+                          <td className="py-2 pr-3 font-semibold">{rand(r.totalCommissionCents)}</td>
+                          <td className="py-2 pr-3">{r.downlineCount}</td>
+                          <td className="py-2 pr-3">{rand(r.downlineMrrCents)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

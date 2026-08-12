@@ -173,6 +173,7 @@ export const backend = {
 
   analytics: {
     repActivity: () => request("GET", "/analytics/rep-activity"),
+    reps: () => request("GET", "/analytics/reps"),
   },
 
   accommodation: {

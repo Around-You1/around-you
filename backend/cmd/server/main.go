@@ -73,6 +73,7 @@ func main() {
 	r.auth("GET /auth/reps", httpx.Empty(auth.ListReps))
 	r.auth("POST /auth/rep/update", httpx.Body(auth.UpdateRep))
 	r.auth("GET /analytics/rep-activity", httpx.Empty(analytics.RepActivityReport))
+	r.auth("GET /analytics/reps", httpx.Empty(analytics.RepsAnalytics))
 
 	// ---- Accommodation (auth) ----------------------------------------------
 	r.auth("GET /accommodation", httpx.Query(accommodation.List))
