@@ -10,9 +10,11 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"backend_encore/app/accommodation"
@@ -50,20 +52,25 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	r := router{mux: mux, lim: ratelimit.New(rateLimitPerMin())}
+	r := router{
+		mux:      mux,
+		lim:      ratelimit.New(rateLimitPerMin()),
+		loginLim: ratelimit.New(loginRateLimitPerMin()),
+	}
 
 	// ---- Health (public) ---------------------------------------------------
 	r.public("GET /ping", httpx.Empty(health.Ping))
 
-	// ---- Auth (public) -----------------------------------------------------
-	r.public("POST /auth/access-code-login", httpx.Body(auth.AccessCodeLogin))
-	r.public("POST /auth/secondary-login", httpx.Body(auth.SecondaryLogin))
-	r.public("POST /auth/local-guest-login", httpx.Body(auth.LocalGuestLogin))
-	r.public("POST /auth/login", httpx.Body(auth.Login))
-	r.public("POST /auth/rep-login", httpx.Body(auth.RepLogin))
-	r.public("POST /auth/acc-login", httpx.Body(auth.AccLogin))
+	// ---- Auth (public login — per-IP rate limited to slow brute force) ------
+	r.login("POST /auth/access-code-login", httpx.Body(auth.AccessCodeLogin))
+	r.login("POST /auth/secondary-login", httpx.Body(auth.SecondaryLogin))
+	r.login("POST /auth/local-guest-login", httpx.Body(auth.LocalGuestLogin))
+	r.login("POST /auth/login", httpx.Body(auth.Login))
+	r.login("POST /auth/rep-login", httpx.Body(auth.RepLogin))
+	r.login("POST /auth/acc-login", httpx.Body(auth.AccLogin))
 	r.auth("POST /auth/create-rep", httpx.Body(auth.CreateRep))
 	r.auth("GET /auth/reps", httpx.Empty(auth.ListReps))
+	r.auth("POST /auth/rep/update", httpx.Body(auth.UpdateRep))
 	r.auth("GET /analytics/rep-activity", httpx.Empty(analytics.RepActivityReport))
 
 	// ---- Accommodation (auth) ----------------------------------------------
@@ -172,8 +179,9 @@ func main() {
 
 // router registers handlers, optionally behind the bearer-token check.
 type router struct {
-	mux *http.ServeMux
-	lim *ratelimit.Limiter
+	mux      *http.ServeMux
+	lim      *ratelimit.Limiter // per-token limit for authenticated routes
+	loginLim *ratelimit.Limiter // per-IP limit for public login routes
 }
 
 func (r router) public(pattern string, h http.HandlerFunc) {
@@ -182,6 +190,45 @@ func (r router) public(pattern string, h http.HandlerFunc) {
 
 func (r router) auth(pattern string, h http.HandlerFunc) {
 	r.mux.Handle(pattern, requireAuth(r.lim, h))
+}
+
+// login registers a PUBLIC auth endpoint behind a per-IP rate limit. These are
+// the login routes themselves, so there is no bearer token to key on — the
+// limit is keyed on the caller's IP to slow brute-forcing of access/edit codes.
+func (r router) login(pattern string, h http.HandlerFunc) {
+	r.mux.Handle(pattern, limitByIP(r.loginLim, h))
+}
+
+// limitByIP rejects a request with HTTP 429 once the caller's IP exceeds the
+// limiter's rate. Applied to the public login routes.
+func limitByIP(lim *ratelimit.Limiter, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		if lim != nil && !lim.Allow(clientIP(req)) {
+			w.Header().Set("Retry-After", "60")
+			writeErr(w, &errs.Error{Code: errs.ResourceExhausted, Message: "too many attempts, please wait and try again"})
+			return
+		}
+		next(w, req)
+	}
+}
+
+// clientIP extracts the caller's real IP, honouring Fly.io's proxy. Fly sets
+// Fly-Client-IP to the true client address; X-Forwarded-For (first entry) is
+// the fallback; RemoteAddr is the last resort for direct/local requests.
+func clientIP(req *http.Request) string {
+	if ip := req.Header.Get("Fly-Client-IP"); ip != "" {
+		return ip
+	}
+	if xff := req.Header.Get("X-Forwarded-For"); xff != "" {
+		if i := strings.IndexByte(xff, ','); i >= 0 {
+			return strings.TrimSpace(xff[:i])
+		}
+		return strings.TrimSpace(xff)
+	}
+	if host, _, err := net.SplitHostPort(req.RemoteAddr); err == nil {
+		return host
+	}
+	return req.RemoteAddr
 }
 
 // requireAuth rejects requests without a valid bearer token, matching the
@@ -281,4 +328,19 @@ func rateLimitPerMin() int {
 		}
 	}
 	return 180
+}
+
+// loginRateLimitPerMin is the per-IP login-attempt ceiling per minute,
+// overridable via LOGIN_RATE_LIMIT_PER_MIN. The default (30) is generous for
+// real users — including several guests sharing one accommodation's Wi-Fi/NAT
+// IP — while still capping the volume any single IP can throw at the login
+// routes. Combined with the high entropy of a 12-char code, this makes
+// brute-forcing infeasible.
+func loginRateLimitPerMin() int {
+	if v := os.Getenv("LOGIN_RATE_LIMIT_PER_MIN"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return n
+		}
+	}
+	return 30
 }

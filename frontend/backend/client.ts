@@ -156,6 +156,14 @@ export const backend = {
     createRep: (req: { fullName: string }) =>
       request("POST", "/auth/create-rep", { body: req }),
     listReps: () => request("GET", "/auth/reps"),
+    updateRep: (req: {
+      repCode: string;
+      uplineRepCode: string;
+      isTeamLeader: boolean;
+      region: string;
+      province: string;
+      status: string;
+    }) => request("POST", "/auth/rep/update", { body: req }),
   },
 
   analytics: {

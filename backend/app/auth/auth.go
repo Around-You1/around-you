@@ -584,9 +584,14 @@ func nextRepCode(ctx context.Context) (string, error) {
 }
 
 type Rep struct {
-	ID       int64  `json:"id"`
-	FullName string `json:"fullName"`
-	RepCode  string `json:"repCode"`
+	ID            int64  `json:"id"`
+	FullName      string `json:"fullName"`
+	RepCode       string `json:"repCode"`
+	UplineRepCode string `json:"uplineRepCode"`
+	IsTeamLeader  bool   `json:"isTeamLeader"`
+	Region        string `json:"region"`
+	Province      string `json:"province"`
+	Status        string `json:"status"`
 }
 
 type ListRepsResponse struct {
@@ -604,7 +609,9 @@ func ListReps(ctx context.Context) (*ListRepsResponse, error) {
 	}
 
 	rows, err := appdb.SQLDB.QueryContext(ctx, `
-		SELECT id, COALESCE(full_name, ''), COALESCE(rep_code, '')
+		SELECT id, COALESCE(full_name, ''), COALESCE(rep_code, ''),
+		       COALESCE(upline_rep_code, ''), is_team_leader,
+		       COALESCE(region, ''), COALESCE(province, ''), rep_status
 		FROM users WHERE role = 'Rep' ORDER BY rep_code ASC`)
 	if err != nil {
 		return nil, err
@@ -614,7 +621,8 @@ func ListReps(ctx context.Context) (*ListRepsResponse, error) {
 	reps := []Rep{}
 	for rows.Next() {
 		var r Rep
-		if err := rows.Scan(&r.ID, &r.FullName, &r.RepCode); err != nil {
+		if err := rows.Scan(&r.ID, &r.FullName, &r.RepCode,
+			&r.UplineRepCode, &r.IsTeamLeader, &r.Region, &r.Province, &r.Status); err != nil {
 			return nil, err
 		}
 		reps = append(reps, r)
@@ -624,4 +632,103 @@ func ListReps(ctx context.Context) (*ListRepsResponse, error) {
 	}
 
 	return &ListRepsResponse{Reps: reps}, nil
+}
+
+type UpdateRepRequest struct {
+	RepCode       string `json:"repCode"`
+	UplineRepCode string `json:"uplineRepCode"` // "" clears the upline
+	IsTeamLeader  bool   `json:"isTeamLeader"`
+	Region        string `json:"region"`
+	Province      string `json:"province"`
+	Status        string `json:"status"` // "Active" | "Inactive"
+}
+
+// UpdateRep is SuperAdmin-only. It sets a rep's hierarchy + profile fields:
+// upline (their Team Leader), team-leader flag, region/province, and status.
+// Assigning an upline also marks that upline as a Team Leader. Basic loop
+// guards prevent a rep being their own upline or an immediate A->B->A cycle.
+//
+//encore:api auth method=POST path=/auth/rep/update
+func UpdateRep(ctx context.Context, req *UpdateRepRequest) (*Rep, error) {
+	data := FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can update reps"}
+	}
+
+	repCode := strings.TrimSpace(req.RepCode)
+	if repCode == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "repCode is required"}
+	}
+
+	status := strings.TrimSpace(req.Status)
+	if status == "" {
+		status = "Active"
+	}
+	if status != "Active" && status != "Inactive" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "status must be 'Active' or 'Inactive'"}
+	}
+
+	upline := strings.TrimSpace(req.UplineRepCode)
+	if upline != "" {
+		if strings.EqualFold(upline, repCode) {
+			return nil, &errs.Error{Code: errs.InvalidArgument, Message: "a rep cannot be their own upline"}
+		}
+		// Upline must be an existing rep, and must not already report to this
+		// rep (blocks the obvious two-step loop A->B->A).
+		var uplineUpline sql.NullString
+		err := appdb.SQLDB.QueryRowContext(ctx, `
+			SELECT COALESCE(upline_rep_code, '') FROM users
+			WHERE role = 'Rep' AND lower(rep_code) = lower($1)`, upline,
+		).Scan(&uplineUpline)
+		if isNoRows(err) {
+			return nil, &errs.Error{Code: errs.InvalidArgument, Message: "upline rep code does not exist"}
+		}
+		if err != nil {
+			return nil, err
+		}
+		if strings.EqualFold(uplineUpline.String, repCode) {
+			return nil, &errs.Error{Code: errs.InvalidArgument, Message: "that would create a reporting loop"}
+		}
+	}
+
+	res, err := appdb.SQLDB.ExecContext(ctx, `
+		UPDATE users
+		SET upline_rep_code = NULLIF($2, ''),
+		    is_team_leader  = $3,
+		    region          = NULLIF($4, ''),
+		    province        = NULLIF($5, ''),
+		    rep_status      = $6
+		WHERE role = 'Rep' AND lower(rep_code) = lower($1)`,
+		repCode, upline, req.IsTeamLeader,
+		strings.TrimSpace(req.Region), strings.TrimSpace(req.Province), status,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return nil, &errs.Error{Code: errs.NotFound, Message: "rep not found"}
+	}
+
+	// Assigning an upline makes that upline a Team Leader.
+	if upline != "" {
+		if _, err := appdb.SQLDB.ExecContext(ctx, `
+			UPDATE users SET is_team_leader = true
+			WHERE role = 'Rep' AND lower(rep_code) = lower($1)`, upline,
+		); err != nil {
+			return nil, err
+		}
+	}
+
+	var r Rep
+	err = appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT id, COALESCE(full_name, ''), COALESCE(rep_code, ''),
+		       COALESCE(upline_rep_code, ''), is_team_leader,
+		       COALESCE(region, ''), COALESCE(province, ''), rep_status
+		FROM users WHERE role = 'Rep' AND lower(rep_code) = lower($1)`, repCode,
+	).Scan(&r.ID, &r.FullName, &r.RepCode, &r.UplineRepCode, &r.IsTeamLeader,
+		&r.Region, &r.Province, &r.Status)
+	if err != nil {
+		return nil, err
+	}
+	return &r, nil
 }

@@ -86,14 +86,17 @@ Migration highlights: users+sessions (002), password_hash on users (005), supera
 
 **FIXED TODAY (2026-08-11) — the critical hole.** The public anon key (shipped in the frontend) could read every `public` table directly via Supabase REST (`/rest/v1/<table>`), bypassing the Go API. Verified live: `accommodations` leaked `wifi_password` and `company_vat_number` to an anonymous caller; `users` (with `password_hash`) was similarly at risk. **Fix applied:** enabled + forced RLS on all `public` tables and revoked `anon`/`authenticated` privileges (`20260811_close_supabase_rest_backdoor.sql`). Post-fix probe returns `permission denied (42501)`; app unaffected because `postgres` bypasses RLS. **Back door closed.**
 
-**Already done:** commit `760f9cf` strips sensitive fields from guest-facing Go reads. All Go data endpoints require a bearer token.
+**Already done:**
+- Commit `760f9cf` strips sensitive fields from guest-facing Go reads (restaurant/service/attraction). All Go data endpoints require a bearer token.
+- **Per-token rate limiting** on all authenticated routes (`internal/ratelimit`, wired in `main.go`): 180 req/min/token default, HTTP 429 over limit. Deployed 2026-08-11.
+- **Per-IP brute-force protection on the public login routes** (`limitByIP` + `clientIP` in `main.go`, keyed on Fly-Client-IP): 30 attempts/min/IP default (`LOGIN_RATE_LIMIT_PER_MIN`), HTTP 429 over limit. Slows access/edit-code guessing.
 
 **Remaining layers (priority order):**
-1. **Go API hardening** — extend `760f9cf`: pagination/result caps, per-token rate limiting, finish tier/role-based field-stripping so an authenticated guest/local can't bulk-pull or over-read.
-2. **Coordinate fuzzing** — reduce precision of lat/lng returned to guests/locals on `/nearby` responses.
-3. **Cloudflare** in front of the Go backend — IP-level rate limiting + bot protection + Turnstile on login to throttle mass account/code attempts.
-4. **Access/edit-code strength** — ensure 12-char codes are high-entropy and rate-limit login attempts against brute force.
-5. **App attestation** *(later)* — verify genuine app instances.
+1. **Cloudflare** in front of the Go backend — edge IP-level rate limiting + bot protection + Turnstile on login. Backstops the in-app login limiter at the network layer.
+2. **Confirm accommodation field-stripping** — `760f9cf` did NOT cover `accommodation.go` (wifi/emergency/official fields). Verify nothing sensitive is over-shared to the wrong audience.
+3. **Verify password hashing strength** — `users.password_hash` + `golang.org/x/crypto` (likely bcrypt); confirm strong, salted.
+4. **Coordinate fuzzing** — *decided against* for this app: navigation to venues is core to the product, so partner coordinates must stay exact.
+5. **App attestation** *(later)* — verify genuine app instances (mobile).
 
 ---
 
@@ -107,6 +110,7 @@ Backend env (Fly secrets): `DATABASE_URL` (Supabase Session Pooler), `PORT=4000`
 
 - Use the Supabase **Session** pooler (`:5432`), never the Transaction pooler (`:6543`) — breaks `lib/pq`.
 - RLS is now ON for all `public` tables. The Go `postgres` role bypasses it; **any new direct-REST or supabase-js table access will return empty/denied** unless you add explicit policies. Keep data access flowing through the Go API.
+- **New tables need RLS enabled explicitly.** Migration `000024` enabled RLS on every table that existed when it ran; it does NOT re-run (recorded as applied). Any table created by a *later* migration starts with RLS OFF (Postgres default), which will trip Supabase's `rls_disabled_in_public` advisor. So every new-table migration must include `alter table public.<t> enable row level security; alter table public.<t> force row level security; revoke all on public.<t> from anon, authenticated;`. (Supabase's periodic advisor emails are dated as-of the scan date — cross-check against the live Advisors → Security page before acting.)
 - Go module name `backend_encore` is legacy; Encore is gone. Don't reintroduce it.
 - Keep sensitive fields (`wifi_password`, `wifi_credentials`, `emergency_contacts`, `official_*`, `company_reg_number`, `company_vat_number`, `password_hash`) out of any guest/local-facing response.
 - The written Part 1–4 summaries were never stored in the repo/project knowledge; this file replaces them as the canonical source going forward.
