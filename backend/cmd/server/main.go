@@ -137,6 +137,7 @@ func main() {
 
 	// ---- Billing / subscriptions (auth; SuperAdmin-gated in-handler) --------
 	r.auth("GET /billing/subscriptions", httpx.Empty(billing.ListSubscriptions))
+	r.auth("GET /billing/invoices", httpx.Empty(billing.ListInvoices))
 
 	// ---- Edit code (partner self-service profile editing) ------------------
 	r.auth("GET /edit-code", httpx.Query(editcode.Get))

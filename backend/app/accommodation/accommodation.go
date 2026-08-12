@@ -99,7 +99,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Accommodation, erro
 	}
 	// Accommodations are Tier 4 by rule; PriceFor sets that regardless of the
 	// (empty) tier/audience fields. Idempotent — failure logs but doesn't block.
-	if subErr := billing.EnsureSubscription(ctx, "accommodation", created.ID, created.AccessLevel, created.GuestType, created.OfficialRepCode); subErr != nil {
+	if subErr := billing.OnPartnerOnboarded(ctx, "accommodation", created.ID, created.AccessLevel, created.GuestType, created.OfficialRepCode); subErr != nil {
 		log.Printf("accommodation %d created but subscription upsert failed: %v", created.ID, subErr)
 	}
 	return created, nil

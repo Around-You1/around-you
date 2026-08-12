@@ -14,6 +14,7 @@ import RestaurantTab from "../components/RestaurantTab";
 import ServiceTab from "../components/ServiceTab";
 import AttractionTab from "../components/AttractionTab";
 import RepsTab from "../components/RepsTab";
+import BillingTab from "../components/BillingTab";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -102,12 +103,13 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="accommodations" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-5 min-h-[48px]">
+              <TabsList className="grid w-full grid-cols-6 min-h-[48px]">
                 <TabsTrigger value="accommodations" className="min-h-[44px] touch-manipulation">Accommodations</TabsTrigger>
                 <TabsTrigger value="restaurants" className="min-h-[44px] touch-manipulation">Restaurants</TabsTrigger>
                 <TabsTrigger value="services" className="min-h-[44px] touch-manipulation">Services</TabsTrigger>
                 <TabsTrigger value="attractions" className="min-h-[44px] touch-manipulation">Attractions</TabsTrigger>
                 <TabsTrigger value="reps" className="min-h-[44px] touch-manipulation">Reps</TabsTrigger>
+                <TabsTrigger value="billing" className="min-h-[44px] touch-manipulation">Billing</TabsTrigger>
               </TabsList>
 
               <TabsContent value="accommodations">
@@ -128,6 +130,10 @@ export default function AdminDashboard() {
 
               <TabsContent value="reps">
                 <RepsTab />
+              </TabsContent>
+
+              <TabsContent value="billing">
+                <BillingTab />
               </TabsContent>
             </Tabs>
           </CardContent>

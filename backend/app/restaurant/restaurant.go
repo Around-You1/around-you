@@ -151,7 +151,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Restaurant, error) 
 	// Create the billing subscription from the partner's tier/audience. Failure
 	// here must not block onboarding — it is idempotent, so a later edit/re-save
 	// will reconcile it; we log and continue.
-	if subErr := billing.EnsureSubscription(ctx, "restaurant", created.ID, created.AccessLevel, created.GuestType, created.OfficialRepCode); subErr != nil {
+	if subErr := billing.OnPartnerOnboarded(ctx, "restaurant", created.ID, created.AccessLevel, created.GuestType, created.OfficialRepCode); subErr != nil {
 		log.Printf("restaurant %d created but subscription upsert failed: %v", created.ID, subErr)
 	}
 	return created, nil

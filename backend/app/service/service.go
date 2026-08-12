@@ -157,7 +157,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.ServiceData, error)
 		return nil, err
 	}
 	// Create the billing subscription from the partner's tier/audience (idempotent).
-	if subErr := billing.EnsureSubscription(ctx, "service", created.ID, created.AccessLevel, created.GuestType, created.OfficialRepCode); subErr != nil {
+	if subErr := billing.OnPartnerOnboarded(ctx, "service", created.ID, created.AccessLevel, created.GuestType, created.OfficialRepCode); subErr != nil {
 		log.Printf("service %d created but subscription upsert failed: %v", created.ID, subErr)
 	}
 	return created, nil

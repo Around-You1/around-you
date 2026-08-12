@@ -30,3 +30,22 @@ func ListSubscriptions(ctx context.Context) (*ListSubscriptionsResponse, error) 
 	}
 	return &ListSubscriptionsResponse{Subscriptions: subs}, nil
 }
+
+type ListInvoicesResponse struct {
+	Invoices []billingcore.Invoice `json:"invoices"`
+}
+
+// ListInvoices is SuperAdmin-only — the invoice history across all partners.
+//
+//encore:api auth method=GET path=/billing/invoices
+func ListInvoices(ctx context.Context) (*ListInvoicesResponse, error) {
+	data := auth.FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can view invoices"}
+	}
+	inv, err := billingcore.ListInvoices(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &ListInvoicesResponse{Invoices: inv}, nil
+}

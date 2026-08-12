@@ -167,6 +167,7 @@ export const backend = {
   },
   billing: {
     listSubscriptions: () => request("GET", "/billing/subscriptions"),
+    listInvoices: () => request("GET", "/billing/invoices"),
   },
 
   analytics: {
