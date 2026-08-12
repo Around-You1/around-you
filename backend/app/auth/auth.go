@@ -644,6 +644,7 @@ type UpdateRepRequest struct {
 	Region        string `json:"region"`
 	Province      string `json:"province"`
 	Status        string `json:"status"` // "Active" | "Inactive"
+	Email         string `json:"email"`
 }
 
 // UpdateRep is SuperAdmin-only. It sets a rep's hierarchy + profile fields:
