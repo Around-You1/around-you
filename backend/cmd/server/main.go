@@ -138,6 +138,9 @@ func main() {
 	// ---- Billing / subscriptions (auth; SuperAdmin-gated in-handler) --------
 	r.auth("GET /billing/subscriptions", httpx.Empty(billing.ListSubscriptions))
 	r.auth("GET /billing/invoices", httpx.Empty(billing.ListInvoices))
+	r.auth("GET /billing/commissions", httpx.Empty(billing.ListCommissions))
+	// Scheduler-triggered monthly billing run — token-protected, not user auth.
+	mux.Handle("POST /billing/run", billingRunHandler())
 
 	// ---- Edit code (partner self-service profile editing) ------------------
 	r.auth("GET /edit-code", httpx.Query(editcode.Get))
@@ -313,6 +316,28 @@ func writeErr(w http.ResponseWriter, err error) {
 		"code":    errs.CodeString(e.Code),
 		"message": e.Message,
 	})
+}
+
+// billingRunHandler triggers the monthly billing run. A scheduler (e.g. a
+// GitHub Actions cron) calls it, so there is no user session — instead it
+// requires a shared secret in the X-Billing-Token header matched against the
+// BILLING_RUN_TOKEN env var. If that var is unset the endpoint is closed.
+func billingRunHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		token := os.Getenv("BILLING_RUN_TOKEN")
+		if token == "" || req.Header.Get("X-Billing-Token") != token {
+			writeErr(w, &errs.Error{Code: errs.Unauthenticated, Message: "invalid or missing billing token"})
+			return
+		}
+		n, err := billing.RunMonthlyBilling(req.Context())
+		if err != nil {
+			writeErr(w, err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]int{"invoicesIssued": n})
+	}
 }
 
 func port() string {

@@ -84,7 +84,10 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Booking, error) {
 	if len(chosen) == 0 {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "the selected items are not offered by this partner"}
 	}
-	commission := math.Round(total*0.15*100) / 100
+	// Booking partners pay Around You 10% of every booking (on top of their
+	// R200/month fee). This is the platform's booking revenue and the base for
+	// the rep's booking commission.
+	commission := math.Round(total*0.10*100) / 100
 	b := &appdb.Booking{
 		EntityType:    req.EntityType,
 		EntityID:      req.EntityID,

@@ -118,6 +118,9 @@ Each requested metric maps to the new tables (dashboard section: Admin → Analy
 
 ## 7. Proposed build phases
 
+**Status (2026-08-11): Phases 1–5 built and being deployed. Phases 6–7 remain.**
+
+
 1. **Rep hierarchy** — upline/Team-Leader structure + admin UI to assign it.
 2. **Subscriptions + pricing** — create `partner_subscription` on onboarding (Rep app + Admin), with the pricing rules.
 3. **Invoicing** — invoice generation, numbering, VAT, PDF (via the pdf skill) + Resend email, first invoice on signup.

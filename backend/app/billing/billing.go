@@ -49,3 +49,28 @@ func ListInvoices(ctx context.Context) (*ListInvoicesResponse, error) {
 	}
 	return &ListInvoicesResponse{Invoices: inv}, nil
 }
+
+type ListCommissionsResponse struct {
+	Commissions []billingcore.Commission `json:"commissions"`
+}
+
+// ListCommissions is SuperAdmin-only — the rep commission ledger.
+//
+//encore:api auth method=GET path=/billing/commissions
+func ListCommissions(ctx context.Context) (*ListCommissionsResponse, error) {
+	data := auth.FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can view commissions"}
+	}
+	c, err := billingcore.ListCommissions(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &ListCommissionsResponse{Commissions: c}, nil
+}
+
+// RunMonthlyBilling wraps the internal billing run so cmd/server can trigger it
+// without importing internal/billing directly (which shares this package name).
+func RunMonthlyBilling(ctx context.Context) (int, error) {
+	return billingcore.RunMonthlyBilling(ctx)
+}

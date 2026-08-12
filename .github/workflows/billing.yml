@@ -1,0 +1,25 @@
+name: Monthly Billing
+
+# Triggers the monthly auto-billing run on the Go backend. Runs at 02:00 UTC on
+# the 1st of every month, and can also be run manually from the Actions tab.
+#
+# Requires two repository secrets (Settings → Secrets and variables → Actions):
+#   BACKEND_URL         e.g. https://around-you-backend.fly.dev
+#   BILLING_RUN_TOKEN   a long random string; the SAME value must be set as a
+#                       Fly secret on the backend (fly secrets set BILLING_RUN_TOKEN=...)
+on:
+  schedule:
+    - cron: "0 2 1 * *"
+  workflow_dispatch: {}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger billing run
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          BILLING_RUN_TOKEN: ${{ secrets.BILLING_RUN_TOKEN }}
+        run: |
+          curl -fsS -X POST "$BACKEND_URL/billing/run" \
+            -H "X-Billing-Token: $BILLING_RUN_TOKEN"

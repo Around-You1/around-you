@@ -6,7 +6,7 @@ import "time"
 // (a restaurant/service/attraction whose accessLevel is "Booking"). The
 // selected items are snapshotted as JSON so the record stays accurate even
 // if the partner later edits their item list or prices. Total and Commission
-// are computed server-side at creation (commission = total * 0.15).
+// are computed server-side at creation (commission = total * 0.10).
 type Booking struct {
 	ID            int64        `json:"id"`
 	EntityType    string       `json:"entityType"` // "restaurant" | "service" | "attraction"

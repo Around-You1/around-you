@@ -3,6 +3,7 @@ package billing
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"backend_encore/internal/appdb"
@@ -132,6 +133,11 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 		INSERT INTO invoice_line_item (invoice_id, description, qty, unit_cents, line_cents)
 		VALUES ($1, $2, 1, $3, $3)`, invID, desc, subtotalCents); err != nil {
 		return err
+	}
+
+	// Accrue rep commissions for this invoice (30% own + 10% upline override).
+	if err := accrueCommissions(ctx, invID, partnerType, partnerID, repCode, subtotalCents, start); err != nil {
+		log.Printf("commission accrual for invoice %s failed: %v", number, err)
 	}
 
 	// Best-effort email — never block on a mail hiccup.
