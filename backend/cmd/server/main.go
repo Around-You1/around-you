@@ -24,6 +24,7 @@ import (
 	"backend_encore/app/billing"
 	"backend_encore/app/booking"
 	"backend_encore/app/editcode"
+	"backend_encore/app/events"
 	"backend_encore/app/health"
 	"backend_encore/app/rating"
 	"backend_encore/app/restaurant"
@@ -62,6 +63,9 @@ func main() {
 	// ---- Health (public) ---------------------------------------------------
 	r.public("GET /ping", httpx.Empty(health.Ping))
 
+	// ---- Behavioural events (public, best-effort analytics writes) ---------
+	r.public("POST /events", httpx.Body(events.Record))
+
 	// ---- Auth (public login — per-IP rate limited to slow brute force) ------
 	r.login("POST /auth/access-code-login", httpx.Body(auth.AccessCodeLogin))
 	r.login("POST /auth/secondary-login", httpx.Body(auth.SecondaryLogin))
@@ -75,6 +79,7 @@ func main() {
 	r.auth("GET /analytics/rep-activity", httpx.Empty(analytics.RepActivityReport))
 	r.auth("GET /analytics/reps", httpx.Empty(analytics.RepsAnalytics))
 	r.auth("GET /analytics/business", httpx.Empty(analytics.BusinessMetrics))
+	r.auth("GET /analytics/events", httpx.Empty(analytics.EventsSummary))
 
 	// ---- Accommodation (auth) ----------------------------------------------
 	r.auth("GET /accommodation", httpx.Query(accommodation.List))

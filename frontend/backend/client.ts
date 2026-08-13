@@ -184,6 +184,18 @@ export const backend = {
     repActivity: () => request("GET", "/analytics/rep-activity"),
     reps: () => request("GET", "/analytics/reps"),
     business: () => request("GET", "/analytics/business"),
+    events: () => request("GET", "/analytics/events"),
+  },
+  events: {
+    record: (req: {
+      eventType: string;
+      actorType?: string;
+      code?: string;
+      entityType?: string;
+      entityId?: number;
+      area?: string;
+      province?: string;
+    }) => request("POST", "/events", { body: req }),
   },
 
   accommodation: {

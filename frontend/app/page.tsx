@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
+import { getAuthenticatedBackend } from "@/lib/backend";
 
 // Landing / "About You" entry screen. Rendered client-only because the imported
 // component relies on browser APIs (navigation, localStorage) that must not run
@@ -27,6 +28,26 @@ export default function Page() {
 
   useEffect(() => {
     let active = true;
+
+    // QR-scan tracking: a scanned QR opens the app with ?code=… in the URL.
+    // Record it (best-effort, anonymous) so scans can be reported per partner.
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+      if (code) {
+        const role = params.get("role");
+        getAuthenticatedBackend()
+          .events.record({
+            eventType: "qr_scan",
+            actorType: "anon",
+            code,
+            entityType: role === "partner" ? "" : "accommodation",
+          })
+          .catch(() => {});
+      }
+    } catch {
+      // analytics must never break the landing page
+    }
 
     // Magic Link (free tier) always returns to "/". The session arrives in the
     // URL; detectSessionInUrl (set in lib/supabase.ts) parses it, then

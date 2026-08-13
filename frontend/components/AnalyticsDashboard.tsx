@@ -63,6 +63,16 @@ interface BusinessMetrics {
   months: MonthPoint[];
 }
 
+interface EventMonth {
+  month: string;
+  count: number;
+}
+
+interface EventsSummary {
+  byTypeThisMonth: Record<string, number>;
+  qrScanMonths: EventMonth[];
+}
+
 const TIER_ORDER = ["Tier 1", "Tier 2", "Tier 3", "Tier 4", "N/A"];
 
 const rand = (cents: number) => `R${(cents / 100).toFixed(2)}`;
@@ -71,6 +81,7 @@ export default function AnalyticsDashboard() {
   const [reps, setReps] = useState<RepActivity[]>([]);
   const [repStats, setRepStats] = useState<RepsAnalytics | null>(null);
   const [bizStats, setBizStats] = useState<BusinessMetrics | null>(null);
+  const [events, setEvents] = useState<EventsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -82,14 +93,16 @@ export default function AnalyticsDashboard() {
     setLoading(true);
     try {
       const backend = getAuthenticatedBackend();
-      const [activity, stats, biz] = await Promise.all([
+      const [activity, stats, biz, ev] = await Promise.all([
         backend.analytics.repActivity(),
         backend.analytics.reps(),
         backend.analytics.business(),
+        backend.analytics.events(),
       ]);
       setReps(activity.reps);
       setRepStats(stats);
       setBizStats(biz);
+      setEvents(ev);
     } catch (error) {
       console.error("Failed to load analytics:", error);
       toast({ title: "Error", description: "Failed to load analytics", variant: "destructive" });
@@ -162,6 +175,49 @@ export default function AnalyticsDashboard() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {events && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Engagement — QR Scans &amp; Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                {Object.entries(events.byTypeThisMonth).length === 0 ? (
+                  <p className="text-sm text-muted-foreground col-span-full">
+                    No events recorded this month yet — QR scans will appear here as people scan partner codes.
+                  </p>
+                ) : (
+                  Object.entries(events.byTypeThisMonth).map(([type, count]) => (
+                    <div key={type} className="rounded-lg border border-border p-3">
+                      <p className="text-xs text-muted-foreground">{type.replace(/_/g, " ")} (this month)</p>
+                      <p className="text-2xl font-bold">{count}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <p className="text-xs font-medium text-muted-foreground mb-2">QR scans — last 12 months</p>
+              <div className="flex items-end gap-1 h-24 overflow-x-auto pb-1">
+                {(() => {
+                  const max = Math.max(1, ...events.qrScanMonths.map((x) => x.count));
+                  return events.qrScanMonths.map((m) => (
+                    <div
+                      key={m.month}
+                      className="flex flex-col items-center justify-end shrink-0"
+                      style={{ width: 40 }}
+                      title={`${m.month}: ${m.count}`}
+                    >
+                      <span className="text-[10px] mb-1">{m.count}</span>
+                      <div className="w-full rounded-t bg-[#AEECE4]" style={{ height: `${Math.max(6, (m.count / max) * 100)}%` }} />
+                      <span className="text-[9px] text-muted-foreground mt-1">{m.month.slice(2)}</span>
+                    </div>
+                  ));
+                })()}
               </div>
             </CardContent>
           </Card>
