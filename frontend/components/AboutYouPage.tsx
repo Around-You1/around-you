@@ -178,6 +178,7 @@ export default function AboutYouPage() {
         </>
       ),
     },
+    { id: "howto", title: "How It Works", href: "/how-it-works" },
     { id: "support", title: "Contact Support", href: "mailto:support@aroundyou.co.za" },
   ];
 
