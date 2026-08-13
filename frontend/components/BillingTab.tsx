@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import ImageUpload from "../components/ImageUpload";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -113,9 +114,13 @@ function InvoiceSettingsCard() {
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : (
           <>
+            <ImageUpload
+              label="Logo"
+              imageUrl={s.logoUrl || ""}
+              onImageUploaded={(url) => set("logoUrl", url)}
+            />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {field("businessName", "Business name")}
-              {field("logoUrl", "Logo URL", "https://…/logo.png")}
               {field("address", "Address")}
               {field("contactEmail", "Contact email")}
               {field("contactPhone", "Contact phone")}
