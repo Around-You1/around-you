@@ -86,3 +86,20 @@ func List(ctx context.Context) ([]Subscription, error) {
 	}
 	return subs, rows.Err()
 }
+
+// SetSubscriptionStatus updates a subscription's lifecycle status. Setting
+// 'Cancelled' stamps cancelled_at (the basis for churn); any other status
+// clears it. A non-Active subscription is skipped by the billing run and does
+// not count toward MRR. Returns rows affected.
+func SetSubscriptionStatus(ctx context.Context, id int64, status string) (int64, error) {
+	res, err := appdb.SQLDB.ExecContext(ctx, `
+		UPDATE partner_subscription
+		SET status = $2,
+		    cancelled_at = CASE WHEN $2 = 'Cancelled' THEN now() ELSE NULL END,
+		    updated_at = now()
+		WHERE id = $1`, id, status)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}

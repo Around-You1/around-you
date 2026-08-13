@@ -144,6 +144,7 @@ func main() {
 	r.auth("GET /billing/statement", httpx.Query(billing.MonthlyStatements))
 	r.auth("POST /billing/statement/mark-paid", httpx.Body(billing.MarkPeriodPaid))
 	r.auth("POST /billing/statement/email", httpx.Body(billing.EmailStatements))
+	r.auth("POST /billing/subscription/status", httpx.Body(billing.SetSubscriptionStatus))
 	// Scheduler-triggered monthly billing run — token-protected, not user auth.
 	mux.Handle("POST /billing/run", billingRunHandler())
 

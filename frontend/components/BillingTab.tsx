@@ -113,6 +113,18 @@ export default function BillingTab() {
     }
   };
 
+  const handleSetStatus = async (id: number, status: string) => {
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.billing.setSubscriptionStatus({ id, status });
+      const s = await backend.billing.listSubscriptions();
+      setSubs(s.subscriptions || []);
+      toast({ title: "Subscription updated", description: `Set to ${status}` });
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Failed to update subscription", variant: "destructive" });
+    }
+  };
+
   const handleEmailStatements = async () => {
     setEmailing(true);
     try {
@@ -165,7 +177,17 @@ export default function BillingTab() {
                       <td className="py-2 pr-3">{s.audience || "—"}</td>
                       <td className="py-2 pr-3">{rand(s.monthlyCents)}</td>
                       <td className="py-2 pr-3 font-mono">{s.repCode || "—"}</td>
-                      <td className="py-2 pr-3">{s.status}</td>
+                      <td className="py-2 pr-3">
+                        <select
+                          className="h-8 rounded-md border border-border bg-background px-1 text-xs"
+                          value={s.status}
+                          onChange={(e) => handleSetStatus(s.id, e.target.value)}
+                        >
+                          <option value="Active">Active</option>
+                          <option value="Paused">Paused</option>
+                          <option value="Cancelled">Cancelled</option>
+                        </select>
+                      </td>
                       <td className="py-2 pr-3">{s.nextBillDate}</td>
                     </tr>
                   ))}

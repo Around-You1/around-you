@@ -158,3 +158,36 @@ func EmailStatements(ctx context.Context, req *EmailStatementsRequest) (*EmailSt
 	}
 	return &EmailStatementsResponse{Sent: n}, nil
 }
+
+type SetSubscriptionStatusRequest struct {
+	ID     int64  `json:"id"`
+	Status string `json:"status"` // "Active" | "Paused" | "Cancelled"
+}
+
+type SetSubscriptionStatusResponse struct {
+	Updated bool `json:"updated"`
+}
+
+// SetSubscriptionStatus is SuperAdmin-only — pause, cancel, or reactivate a
+// partner's subscription. Cancelling records the churn timestamp.
+//
+//encore:api auth method=POST path=/billing/subscription/status
+func SetSubscriptionStatus(ctx context.Context, req *SetSubscriptionStatusRequest) (*SetSubscriptionStatusResponse, error) {
+	data := auth.FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can change a subscription"}
+	}
+	switch req.Status {
+	case "Active", "Paused", "Cancelled":
+	default:
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "status must be Active, Paused, or Cancelled"}
+	}
+	n, err := billingcore.SetSubscriptionStatus(ctx, req.ID, req.Status)
+	if err != nil {
+		return nil, err
+	}
+	if n == 0 {
+		return nil, &errs.Error{Code: errs.NotFound, Message: "subscription not found"}
+	}
+	return &SetSubscriptionStatusResponse{Updated: true}, nil
+}

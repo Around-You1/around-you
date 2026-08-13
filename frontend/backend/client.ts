@@ -176,6 +176,8 @@ export const backend = {
       request("POST", "/billing/statement/mark-paid", { body: req }),
     emailStatements: (req: { period?: string }) =>
       request("POST", "/billing/statement/email", { body: req }),
+    setSubscriptionStatus: (req: { id: number; status: string }) =>
+      request("POST", "/billing/subscription/status", { body: req }),
   },
 
   analytics: {
