@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"backend_encore/internal/appdb"
@@ -142,8 +143,13 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 
 	// Best-effort email — never block on a mail hiccup.
 	if email != "" {
-		_ = mailer.Send(email, "Your Around You invoice "+number,
-			renderInvoiceHTML(number, name, desc, subtotalCents, start, due))
+		settings, _ := LoadInvoiceSettings(ctx) // nil is fine — render falls back to defaults
+		bizName := "Around You"
+		if settings != nil && strings.TrimSpace(settings.BusinessName) != "" {
+			bizName = settings.BusinessName
+		}
+		_ = mailer.Send(email, "Your "+bizName+" invoice "+number,
+			renderInvoiceHTML(settings, number, name, desc, subtotalCents, start, due))
 	}
 	return nil
 }
@@ -158,22 +164,77 @@ func lineDescription(plan string, tier int, start time.Time) string {
 
 func rands(cents int) string { return fmt.Sprintf("R%.2f", float64(cents)/100) }
 
-func renderInvoiceHTML(number, name, desc string, cents int, start, due time.Time) string {
+func renderInvoiceHTML(s *InvoiceSettings, number, name, desc string, cents int, start, due time.Time) string {
+	if s == nil {
+		s = &InvoiceSettings{BusinessName: "Around You", PaymentTerms: "Payment due immediately."}
+	}
+	logo := ""
+	if strings.TrimSpace(s.LogoURL) != "" {
+		logo = fmt.Sprintf(`<img src="%s" alt="%s" style="max-height:64px;margin-bottom:10px" />`, s.LogoURL, s.BusinessName)
+	}
+
+	bizLines := []string{}
+	appendIf := func(v string) {
+		if strings.TrimSpace(v) != "" {
+			bizLines = append(bizLines, v)
+		}
+	}
+	appendIf(s.Address)
+	appendIf(s.ContactEmail)
+	appendIf(s.ContactPhone)
+	if strings.TrimSpace(s.RegNumber) != "" {
+		bizLines = append(bizLines, "Reg: "+s.RegNumber)
+	}
+	if strings.TrimSpace(s.VatNumber) != "" {
+		bizLines = append(bizLines, "VAT: "+s.VatNumber)
+	}
+	biz := strings.Join(bizLines, "<br>")
+
+	bankRows := ""
+	addBank := func(label, val string) {
+		if strings.TrimSpace(val) != "" {
+			bankRows += fmt.Sprintf(`<tr><td style="color:#888;padding-right:12px">%s</td><td>%s</td></tr>`, label, val)
+		}
+	}
+	addBank("Bank", s.BankName)
+	addBank("Account name", s.AccountName)
+	addBank("Account number", s.AccountNumber)
+	addBank("Branch code", s.BranchCode)
+	ref := s.PaymentReference
+	if strings.TrimSpace(ref) == "" {
+		ref = number // default the payment reference to the invoice number
+	}
+	addBank("Reference", ref)
+	bankBlock := ""
+	if bankRows != "" {
+		bankBlock = fmt.Sprintf(`<h3 style="margin-top:20px">How to pay</h3><table cellpadding="4" style="font-size:14px">%s</table>`, bankRows)
+	}
+
+	terms := strings.TrimSpace(s.PaymentTerms)
+	if terms == "" {
+		terms = "Payment due immediately."
+	}
+
 	return fmt.Sprintf(`
-<div style="font-family:Arial,sans-serif;max-width:560px">
-  <h2>Around You — Invoice %s</h2>
-  <p>Hi %s,</p>
-  <p>Here is your invoice for the period starting %s.</p>
+<div style="font-family:Arial,sans-serif;max-width:600px">
+  %s
+  <h2 style="margin:0">%s</h2>
+  <p style="color:#888;font-size:12px;margin:2px 0 16px">%s</p>
+  <h3>Invoice %s</h3>
+  <p>Billed to: <strong>%s</strong><br>Period starting %s</p>
   <table style="width:100%%;border-collapse:collapse" cellpadding="8">
     <tr><td style="border-bottom:1px solid #ddd">%s</td>
         <td style="border-bottom:1px solid #ddd;text-align:right">%s</td></tr>
     <tr><td style="text-align:right"><strong>Total</strong></td>
         <td style="text-align:right"><strong>%s</strong></td></tr>
   </table>
-  <p>Due by %s.</p>
-  <p style="color:#888;font-size:12px">Around You is not currently VAT-registered; no VAT has been charged.</p>
+  <p>Due by %s. %s</p>
+  %s
+  <p style="color:#888;font-size:12px">%s is not currently VAT-registered; no VAT has been charged.</p>
 </div>`,
-		number, name, start.Format("2 January 2006"), desc, rands(cents), rands(cents), due.Format("2 January 2006"))
+		logo, s.BusinessName, biz, number, name,
+		start.Format("2 January 2006"), desc, rands(cents), rands(cents),
+		due.Format("2 January 2006"), terms, bankBlock, s.BusinessName)
 }
 
 // ListInvoices returns invoices newest-first — powers the admin billing view.

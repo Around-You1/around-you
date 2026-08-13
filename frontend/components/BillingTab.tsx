@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -57,6 +59,87 @@ const rand = (cents: number) => `R${(cents / 100).toFixed(2)}`;
 
 const planLabel = (s: Subscription) =>
   s.plan === "booking" ? "Booking" : `Tier ${s.tier}`;
+
+function InvoiceSettingsCard() {
+  const [s, setS] = useState<Record<string, string>>({});
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const backend = getAuthenticatedBackend();
+        const r = await backend.billing.getInvoiceSettings();
+        setS(((r as any).settings || {}) as Record<string, string>);
+      } catch {
+        // ignore — form starts blank
+      } finally {
+        setLoaded(true);
+      }
+    })();
+  }, []);
+
+  const set = (k: string, v: string) => setS((prev) => ({ ...prev, [k]: v }));
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.billing.setInvoiceSettings(s);
+      toast({ title: "Invoice settings saved", description: "They'll appear on every invoice." });
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Failed to save", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const field = (key: string, label: string, placeholder?: string) => (
+    <div className="space-y-1">
+      <Label className="text-xs">{label}</Label>
+      <Input value={s[key] || ""} onChange={(e) => set(key, e.target.value)} placeholder={placeholder} />
+    </div>
+  );
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Invoice Settings</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">These details appear on every invoice sent to your partners.</p>
+        {!loaded ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {field("businessName", "Business name")}
+              {field("logoUrl", "Logo URL", "https://…/logo.png")}
+              {field("address", "Address")}
+              {field("contactEmail", "Contact email")}
+              {field("contactPhone", "Contact phone")}
+              {field("regNumber", "Company reg number")}
+              {field("vatNumber", "VAT number (when registered)")}
+            </div>
+            <p className="text-xs font-medium text-muted-foreground pt-2">Banking — how partners pay you</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {field("bankName", "Bank")}
+              {field("accountName", "Account name")}
+              {field("accountNumber", "Account number")}
+              {field("branchCode", "Branch code")}
+              {field("paymentReference", "Payment reference (blank = invoice number)")}
+              {field("paymentTerms", "Payment terms")}
+            </div>
+            <Button onClick={save} disabled={saving} className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black">
+              {saving ? "Saving…" : "Save invoice settings"}
+            </Button>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function BillingTab() {
   const [subs, setSubs] = useState<Subscription[]>([]);
@@ -144,6 +227,7 @@ export default function BillingTab() {
 
   return (
     <div className="space-y-6">
+      <InvoiceSettingsCard />
       <Card>
         <CardHeader>
           <CardTitle>

@@ -178,6 +178,8 @@ export const backend = {
       request("POST", "/billing/statement/email", { body: req }),
     setSubscriptionStatus: (req: { id: number; status: string }) =>
       request("POST", "/billing/subscription/status", { body: req }),
+    getInvoiceSettings: () => request("GET", "/billing/invoice-settings"),
+    setInvoiceSettings: (req: any) => request("POST", "/billing/invoice-settings", { body: req }),
   },
 
   analytics: {

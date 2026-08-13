@@ -191,3 +191,40 @@ func SetSubscriptionStatus(ctx context.Context, req *SetSubscriptionStatusReques
 	}
 	return &SetSubscriptionStatusResponse{Updated: true}, nil
 }
+
+type InvoiceSettingsResponse struct {
+	Settings billingcore.InvoiceSettings `json:"settings"`
+}
+
+// GetInvoiceSettings is SuperAdmin-only — the business/bank details shown on invoices.
+//
+//encore:api auth method=GET path=/billing/invoice-settings
+func GetInvoiceSettings(ctx context.Context) (*InvoiceSettingsResponse, error) {
+	data := auth.FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can view invoice settings"}
+	}
+	s, err := billingcore.LoadInvoiceSettings(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &InvoiceSettingsResponse{Settings: *s}, nil
+}
+
+// SetInvoiceSettings is SuperAdmin-only — update the business/bank details.
+//
+//encore:api auth method=POST path=/billing/invoice-settings
+func SetInvoiceSettings(ctx context.Context, req *billingcore.InvoiceSettings) (*InvoiceSettingsResponse, error) {
+	data := auth.FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can change invoice settings"}
+	}
+	if err := billingcore.SaveInvoiceSettings(ctx, req); err != nil {
+		return nil, err
+	}
+	s, err := billingcore.LoadInvoiceSettings(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &InvoiceSettingsResponse{Settings: *s}, nil
+}
