@@ -20,7 +20,8 @@ type Booking struct {
 	Items         BookingItems `json:"items"`
 	Total         float64      `json:"total"`
 	Commission    float64      `json:"commission"`
-	Status        string       `json:"status"` // pending | confirmed | completed | cancelled
+	PartySize     int          `json:"partySize"` // restaurant table bookings: headcount (0 for item bookings)
+	Status        string       `json:"status"`    // pending | confirmed | completed | cancelled
 	CreatedAt     time.Time    `json:"createdAt"`
 	UpdatedAt     time.Time    `json:"updatedAt"`
 }

@@ -24,7 +24,8 @@ const bookingColumns = `
 	COALESCE(booking_time, '') as booking_time,
 	COALESCE(items, '[]'::jsonb) as items,
 	total, commission, status,
-	created_at, updated_at
+	created_at, updated_at,
+	COALESCE(party_size, 0) as party_size
 `
 
 type bookingScanner interface {
@@ -40,6 +41,7 @@ func scanBooking(row bookingScanner) (*appdb.Booking, error) {
 		&b.Items,
 		&b.Total, &b.Commission, &b.Status,
 		&b.CreatedAt, &b.UpdatedAt,
+		&b.PartySize,
 	)
 	if err != nil {
 		return nil, err
@@ -52,14 +54,14 @@ func (s *BookingStore) Create(ctx context.Context, in *appdb.Booking) (*appdb.Bo
 		INSERT INTO bookings (
 			entity_type, entity_id, entity_name,
 			customer_name, customer_email, customer_phone,
-			booking_date, booking_time, items, total, commission, status
+			booking_date, booking_time, items, total, commission, status, party_size
 		) VALUES (
-			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12
+			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13
 		)
 		RETURNING `+bookingColumns,
 		in.EntityType, in.EntityID, in.EntityName,
 		in.CustomerName, in.CustomerEmail, in.CustomerPhone,
-		in.BookingDate, in.BookingTime, in.Items, in.Total, in.Commission, in.Status,
+		in.BookingDate, in.BookingTime, in.Items, in.Total, in.Commission, in.Status, in.PartySize,
 	)
 	return scanBooking(row)
 }

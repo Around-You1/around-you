@@ -59,9 +59,6 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Booking, error) {
 	if strings.TrimSpace(req.BookingDate) == "" {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "a booking date is required"}
 	}
-	if len(req.Items) == 0 {
-		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "select at least one item"}
-	}
 	name, partnerEmail, accessLevel, partnerItems, err := partnerInfo(ctx, req.EntityType, req.EntityID)
 	if err != nil {
 		return nil, &errs.Error{Code: errs.NotFound, Message: "partner not found"}
@@ -69,25 +66,45 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Booking, error) {
 	if accessLevel != "Booking" {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "this partner does not take bookings"}
 	}
-	priceByName := map[string]appdb.BookingItem{}
-	for _, it := range partnerItems {
-		priceByName[strings.ToLower(strings.TrimSpace(it.Name))] = it
-	}
-	chosen := appdb.BookingItems{}
-	var total float64
-	for _, it := range req.Items {
-		if pi, ok := priceByName[strings.ToLower(strings.TrimSpace(it.Name))]; ok {
-			chosen = append(chosen, pi)
-			total += pi.Price
+
+	var (
+		chosen     appdb.BookingItems
+		total      float64
+		commission float64
+		partySize  int
+	)
+	if req.EntityType == "restaurant" {
+		// Restaurant table booking: no item bill. Around You charges the
+		// restaurant R10 per head, stored as the commission so it flows into the
+		// restaurant's monthly invoice and the rep's booking commission.
+		if !validPartySize(req.PartySize) {
+			return nil, &errs.Error{Code: errs.InvalidArgument, Message: "choose a valid table size"}
 		}
+		partySize = req.PartySize
+		commission = float64(partySize) * 10 // R10 per head
+		chosen = appdb.BookingItems{}
+	} else {
+		if len(req.Items) == 0 {
+			return nil, &errs.Error{Code: errs.InvalidArgument, Message: "select at least one item"}
+		}
+		priceByName := map[string]appdb.BookingItem{}
+		for _, it := range partnerItems {
+			priceByName[strings.ToLower(strings.TrimSpace(it.Name))] = it
+		}
+		chosen = appdb.BookingItems{}
+		for _, it := range req.Items {
+			if pi, ok := priceByName[strings.ToLower(strings.TrimSpace(it.Name))]; ok {
+				chosen = append(chosen, pi)
+				total += pi.Price
+			}
+		}
+		if len(chosen) == 0 {
+			return nil, &errs.Error{Code: errs.InvalidArgument, Message: "the selected items are not offered by this partner"}
+		}
+		// Services/attractions pay Around You 10% of every booking.
+		commission = math.Round(total*0.10*100) / 100
 	}
-	if len(chosen) == 0 {
-		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "the selected items are not offered by this partner"}
-	}
-	// Booking partners pay Around You 10% of every booking (on top of their
-	// R200/month fee). This is the platform's booking revenue and the base for
-	// the rep's booking commission.
-	commission := math.Round(total*0.10*100) / 100
+
 	b := &appdb.Booking{
 		EntityType:    req.EntityType,
 		EntityID:      req.EntityID,
@@ -100,6 +117,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Booking, error) {
 		Items:         chosen,
 		Total:         total,
 		Commission:    commission,
+		PartySize:     partySize,
 		Status:        "pending",
 	}
 	created, err := bookings.Create(ctx, b)
@@ -116,14 +134,30 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Booking, error) {
 	return created, nil
 }
 
-func bookingEmailHTML(b *appdb.Booking) string {
-	itemNames := make([]string, 0, len(b.Items))
-	for _, it := range b.Items {
-		itemNames = append(itemNames, it.Name)
+// validPartySize is the set of table sizes a restaurant booking may request.
+func validPartySize(n int) bool {
+	switch n {
+	case 1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20:
+		return true
 	}
+	return false
+}
+
+func bookingEmailHTML(b *appdb.Booking) string {
 	when := b.BookingDate
 	if b.BookingTime != "" {
 		when += " at " + b.BookingTime
+	}
+	var whatLine, totalLine string
+	if b.PartySize > 0 {
+		whatLine = fmt.Sprintf(`<li><strong>Table for:</strong> %d</li>`, b.PartySize)
+	} else {
+		itemNames := make([]string, 0, len(b.Items))
+		for _, it := range b.Items {
+			itemNames = append(itemNames, it.Name)
+		}
+		whatLine = fmt.Sprintf(`<li><strong>Items:</strong> %s</li>`, strings.Join(itemNames, ", "))
+		totalLine = fmt.Sprintf(`<li><strong>Total:</strong> R %.2f</li>`, b.Total)
 	}
 	return fmt.Sprintf(
 		`<h2>New booking request</h2>`+
@@ -131,15 +165,13 @@ func bookingEmailHTML(b *appdb.Booking) string {
 			`<ul>`+
 			`<li><strong>When:</strong> %s</li>`+
 			`<li><strong>Customer:</strong> %s%s</li>`+
-			`<li><strong>Items:</strong> %s</li>`+
-			`<li><strong>Total:</strong> R %.2f</li>`+
+			`%s%s`+
 			`</ul>`+
 			`<p>This booking is managed by the customer in the app. You cannot change or cancel it; only the customer can.</p>`,
 		b.EntityName,
 		when,
 		b.CustomerName, contactSuffix(b),
-		strings.Join(itemNames, ", "),
-		b.Total,
+		whatLine, totalLine,
 	)
 }
 

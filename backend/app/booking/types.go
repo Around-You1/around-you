@@ -11,6 +11,7 @@ type CreateRequest struct {
 	BookingDate   string              `json:"bookingDate"`
 	BookingTime   string              `json:"bookingTime,omitempty"`
 	Items         []appdb.BookingItem `json:"items"`
+	PartySize     int                 `json:"partySize,omitempty"` // restaurant table bookings: headcount
 }
 
 type MineRequest struct {

@@ -1553,6 +1553,8 @@ function BookingModal({ onClose, entityType, entityId, entityName, items }: {
   onClose: () => void; entityType: RatableType; entityId: number; entityName: string; items: BookItem[];
 }) {
   const [selected, setSelected] = useState<Record<number, boolean>>({});
+  const [partySize, setPartySize] = useState<number>(0);
+  const isRestaurant = entityType === "restaurant";
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [name, setName] = useState("");
@@ -1572,8 +1574,15 @@ function BookingModal({ onClose, entityType, entityId, entityName, items }: {
   const chosen = items.filter((_, i) => selected[i]);
   const total = chosen.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
   const submit = async () => {
-    if (chosen.length === 0 || !name.trim() || !email.trim() || !date) {
-      toast({ title: "A few details missing", description: "Pick at least one item and fill in your name, email and a date.", variant: "destructive" });
+    const missingSelection = isRestaurant ? partySize === 0 : chosen.length === 0;
+    if (missingSelection || !name.trim() || !email.trim() || !date) {
+      toast({
+        title: "A few details missing",
+        description: isRestaurant
+          ? "Choose a table size and fill in your name, email and a date."
+          : "Pick at least one item and fill in your name, email and a date.",
+        variant: "destructive",
+      });
       return;
     }
     setSaving(true);
@@ -1583,7 +1592,8 @@ function BookingModal({ onClose, entityType, entityId, entityName, items }: {
         entityType, entityId: Number(entityId),
         customerName: name.trim(), customerEmail: email.trim(), customerPhone: phone.trim(),
         bookingDate: date, bookingTime: time,
-        items: chosen.map((it) => ({ name: it.name, price: Number(it.price) || 0, duration: Number(it.duration) || 0 })),
+        items: isRestaurant ? [] : chosen.map((it) => ({ name: it.name, price: Number(it.price) || 0, duration: Number(it.duration) || 0 })),
+        partySize: isRestaurant ? partySize : undefined,
       });
       toast({ title: "Booking requested", description: `Your booking with ${entityName} has been sent.` });
       onClose();
@@ -1595,7 +1605,20 @@ function BookingModal({ onClose, entityType, entityId, entityName, items }: {
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-background rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-semibold">Book {entityName}</h3>
-        {items.length === 0 ? (
+        {isRestaurant ? (
+          <div className="space-y-2">
+            <Label className="text-sm">Table size</Label>
+            <Select value={partySize ? String(partySize) : ""} onValueChange={(v) => setPartySize(Number(v))}>
+              <SelectTrigger><SelectValue placeholder="How many people?" /></SelectTrigger>
+              <SelectContent>
+                {[1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20].map((n) => (
+                  <SelectItem key={n} value={String(n)}>{n} {n === 1 ? "person" : "people"}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">Reserve a table — no pre-payment; you settle your bill with the restaurant.</p>
+          </div>
+        ) : items.length === 0 ? (
           <p className="text-sm text-muted-foreground">This partner hasn't listed any bookable items yet.</p>
         ) : (
           <div className="space-y-2">
