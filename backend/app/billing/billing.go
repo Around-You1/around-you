@@ -211,6 +211,26 @@ func GetInvoiceSettings(ctx context.Context) (*InvoiceSettingsResponse, error) {
 	return &InvoiceSettingsResponse{Settings: *s}, nil
 }
 
+type InvoicePreviewResponse struct {
+	Html string `json:"html"`
+}
+
+// InvoicePreview is SuperAdmin-only — a sample invoice rendered with the current
+// settings, for previewing the design.
+//
+//encore:api auth method=GET path=/billing/invoice-preview
+func InvoicePreview(ctx context.Context) (*InvoicePreviewResponse, error) {
+	data := auth.FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can preview invoices"}
+	}
+	html, err := billingcore.PreviewInvoiceHTML(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &InvoicePreviewResponse{Html: html}, nil
+}
+
 // SetInvoiceSettings is SuperAdmin-only — update the business/bank details.
 //
 //encore:api auth method=POST path=/billing/invoice-settings

@@ -180,6 +180,7 @@ export const backend = {
       request("POST", "/billing/subscription/status", { body: req }),
     getInvoiceSettings: () => request("GET", "/billing/invoice-settings"),
     setInvoiceSettings: (req: any) => request("POST", "/billing/invoice-settings", { body: req }),
+    invoicePreview: () => request("GET", "/billing/invoice-preview"),
   },
 
   analytics: {

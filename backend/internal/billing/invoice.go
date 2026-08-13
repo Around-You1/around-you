@@ -237,6 +237,21 @@ func renderInvoiceHTML(s *InvoiceSettings, number, name, desc string, cents int,
 		due.Format("2 January 2006"), terms, bankBlock, s.BusinessName)
 }
 
+// PreviewInvoiceHTML renders a sample invoice using the current settings, so the
+// admin can preview the design without onboarding a partner or sending email.
+func PreviewInvoiceHTML(ctx context.Context) (string, error) {
+	s, _ := LoadInvoiceSettings(ctx) // nil is fine — renders with defaults
+	now := time.Now()
+	return renderInvoiceHTML(
+		s,
+		fmt.Sprintf("AY-%d-000123", now.Year()),
+		"Sample Partner (Pty) Ltd",
+		"Tier 3 subscription — "+now.Format("January 2006"),
+		20000, // R200 sample
+		now, now.AddDate(0, 0, 7),
+	), nil
+}
+
 // ListInvoices returns invoices newest-first — powers the admin billing view.
 func ListInvoices(ctx context.Context) ([]Invoice, error) {
 	rows, err := appdb.SQLDB.QueryContext(ctx, `

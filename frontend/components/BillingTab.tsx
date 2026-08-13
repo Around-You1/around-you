@@ -96,6 +96,23 @@ function InvoiceSettingsCard() {
     }
   };
 
+  const preview = async () => {
+    try {
+      const backend = getAuthenticatedBackend();
+      const r = await backend.billing.invoicePreview();
+      const html = ((r as any).html || "") as string;
+      const w = window.open("", "_blank");
+      if (w) {
+        w.document.write(html);
+        w.document.close();
+      } else {
+        toast({ title: "Popup blocked", description: "Allow popups for this site to preview the invoice.", variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: "Couldn't preview", description: error?.message || "Please try again.", variant: "destructive" });
+    }
+  };
+
   const field = (key: string, label: string, placeholder?: string) => (
     <div className="space-y-1">
       <Label className="text-xs">{label}</Label>
@@ -136,9 +153,13 @@ function InvoiceSettingsCard() {
               {field("paymentReference", "Payment reference (blank = invoice number)")}
               {field("paymentTerms", "Payment terms")}
             </div>
-            <Button onClick={save} disabled={saving} className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black">
-              {saving ? "Saving…" : "Save invoice settings"}
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button onClick={save} disabled={saving} className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black">
+                {saving ? "Saving…" : "Save invoice settings"}
+              </Button>
+              <Button onClick={preview} variant="outline">Preview invoice</Button>
+              <span className="text-xs text-muted-foreground">Preview opens in a new tab, using your last saved settings.</span>
+            </div>
           </>
         )}
       </CardContent>
