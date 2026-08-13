@@ -197,6 +197,12 @@ export const backend = {
       province?: string;
     }) => request("POST", "/events", { body: req }),
   },
+  redemption: {
+    start: (req: { entityType: string; entityId: number }) =>
+      request("POST", "/redemption/start", { body: req }),
+    redeem: (req: { token: string }) =>
+      request("POST", "/redemption/redeem", { body: req }),
+  },
 
   accommodation: {
     list: (req?: any) =>

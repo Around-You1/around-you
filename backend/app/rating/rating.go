@@ -76,6 +76,23 @@ func SubmitRating(ctx context.Context, req *SubmitRatingRequest) (*SubmitRatingR
 		return nil, &errs.Error{Code: errs.NotFound, Message: req.EntityType + " not found"}
 	}
 
+	// Verified-rating gate: you may rate a partner only after proving a visit —
+	// you redeemed a discount here, or you have a (non-cancelled) booking here.
+	data := auth.FromContext(ctx)
+	var proven bool
+	if err := appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT EXISTS(SELECT 1 FROM discount_redemptions
+		              WHERE entity_type = $1 AND entity_id = $2 AND voter_key = $3 AND status = 'redeemed')
+		    OR EXISTS(SELECT 1 FROM bookings
+		              WHERE entity_type = $1 AND entity_id = $2 AND lower(customer_email) = lower($4) AND status <> 'cancelled')`,
+		req.EntityType, req.EntityID, voterKey, data.User.Email,
+	).Scan(&proven); err != nil {
+		return nil, err
+	}
+	if !proven {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "you can rate this partner only after redeeming a discount or booking here"}
+	}
+
 	_, err = appdb.SQLDB.ExecContext(ctx, `
 		INSERT INTO ratings (entity_type, entity_id, voter_key, voter_type, stars)
 		VALUES ($1, $2, $3, $4, $5)
