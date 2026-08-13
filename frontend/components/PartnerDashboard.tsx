@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,6 +54,116 @@ function TagList({ items }: { items: string[] }) {
         </span>
       ))}
     </div>
+  );
+}
+
+// RedeemScanner lets partner staff redeem a guest's discount QR. It uses the
+// browser's built-in QR detector where available (Android Chrome), and always
+// offers a manual code-entry fallback so it works on every device.
+function RedeemScanner() {
+  const [token, setToken] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const activeRef = useRef(false);
+  const { toast } = useToast();
+
+  const stopCamera = () => {
+    activeRef.current = false;
+    setScanning(false);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+  };
+
+  useEffect(() => () => stopCamera(), []);
+
+  const doRedeem = async (raw: string) => {
+    const code = raw.trim();
+    if (!code || busy) return;
+    setBusy(true);
+    setResult(null);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.redemption.redeem({ token: code });
+      setResult("✓ Redeemed — the guest can now rate your business.");
+      toast({ title: "Discount redeemed", description: "The guest can now leave a rating." });
+      setToken("");
+    } catch (error: any) {
+      const msg = error?.message || "Could not redeem this code.";
+      setResult("✗ " + msg);
+      toast({ title: "Redemption failed", description: msg, variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const startScan = async () => {
+    setResult(null);
+    if (!("BarcodeDetector" in window)) {
+      toast({ title: "Scanning not supported on this device", description: "Type the guest's code below instead.", variant: "destructive" });
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      activeRef.current = true;
+      setScanning(true);
+      const detector = new (window as any).BarcodeDetector({ formats: ["qr_code"] });
+      const scan = async () => {
+        if (!activeRef.current || !videoRef.current) return;
+        try {
+          const codes = await detector.detect(videoRef.current);
+          if (codes && codes.length > 0 && codes[0].rawValue) {
+            stopCamera();
+            doRedeem(String(codes[0].rawValue));
+            return;
+          }
+        } catch {
+          // transient detect error — keep trying
+        }
+        setTimeout(scan, 400);
+      };
+      scan();
+    } catch {
+      stopCamera();
+      toast({ title: "Couldn't open the camera", description: "Type the guest's code below instead.", variant: "destructive" });
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Redeem a Guest's Discount</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          When a guest shows their discount QR code, scan it here (or type the code) to redeem it. This confirms their visit and unlocks their rating of your business.
+        </p>
+        {scanning ? (
+          <div className="space-y-2">
+            <video ref={videoRef} className="w-full rounded-lg bg-black" muted playsInline />
+            <Button variant="outline" onClick={stopCamera} className="w-full">Stop camera</Button>
+          </div>
+        ) : (
+          <Button onClick={startScan} disabled={busy} className="w-full bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black font-semibold">
+            Scan guest's QR code
+          </Button>
+        )}
+        <div className="flex gap-2">
+          <Input value={token} onChange={(ev) => setToken(ev.target.value)} placeholder="or type the guest's code" className="font-mono" />
+          <Button onClick={() => doRedeem(token)} disabled={busy || !token.trim()}>Redeem</Button>
+        </div>
+        {result && <p className={`text-sm ${result.startsWith("✓") ? "text-green-600" : "text-red-600"}`}>{result}</p>}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -249,6 +359,8 @@ export default function PartnerDashboard() {
         >
           Edit Profile
         </Button>
+
+        <RedeemScanner />
 
         {showGate && (
           <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowGate(false)}>

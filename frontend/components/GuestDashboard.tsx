@@ -61,6 +61,9 @@ export default function GuestDashboard() {
   const [bookingFor, setBookingFor] = useState<
     { entityType: RatableType; entityId: number; entityName: string; items: BookItem[] } | null
   >(null);
+  const [redeemFor, setRedeemFor] = useState<
+    { entityType: RatableType; entityId: number; entityName: string; discount?: string } | null
+  >(null);
   const [showMyBookings, setShowMyBookings] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [showAccInfo, setShowAccInfo] = useState(false);
@@ -713,6 +716,16 @@ export default function GuestDashboard() {
                                 onClick={() => setBookingFor({ entityType: "restaurant", entityId: Number(restaurant.id), entityName: restaurant.name, items: (restaurant.bookingItems || []) as BookItem[] })}
                               >
                                 Click here to book at this establishment.
+                              </Button>
+                            )}
+                            {restaurant.discountOffered && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full sm:w-auto border-[#AEECE4] text-[#AEECE4]"
+                                onClick={() => setRedeemFor({ entityType: "restaurant", entityId: Number(restaurant.id), entityName: restaurant.name, discount: restaurant.discountOffered })}
+                              >
+                                Redeem discount
                               </Button>
                             )}
                             <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => toggleCard("restaurant:" + restaurant.id)}>
@@ -1450,6 +1463,15 @@ export default function GuestDashboard() {
             items={bookingFor.items}
           />
         )}
+        {redeemFor && (
+          <RedeemModal
+            onClose={() => setRedeemFor(null)}
+            entityType={redeemFor.entityType}
+            entityId={redeemFor.entityId}
+            entityName={redeemFor.entityName}
+            discount={redeemFor.discount}
+          />
+        )}
         {showMyBookings && <MyBookingsModal onClose={() => setShowMyBookings(false)} />}
         <SwipeIndicator show={filteredRestaurants.length > 0 || filteredServices.length > 0 || filteredAttractions.length > 0} />
       </div>
@@ -1657,6 +1679,53 @@ function BookingModal({ onClose, entityType, entityId, entityName, items }: {
           <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black">{saving ? "Sending…" : "Confirm Booking"}</Button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function RedeemModal({ onClose, entityType, entityId, entityName, discount }: {
+  onClose: () => void; entityType: RatableType; entityId: number; entityName: string; discount?: string;
+}) {
+  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  useEffect(() => {
+    (async () => {
+      try {
+        const backend = getAuthenticatedBackend();
+        const r = await backend.redemption.start({ entityType, entityId });
+        setToken((r as { token: string }).token);
+      } catch (error: any) {
+        toast({ title: "Couldn't start redemption", description: error?.message || "Please try again.", variant: "destructive" });
+        onClose();
+      } finally {
+        setLoading(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entityType, entityId]);
+  const qrUrl = token
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(token)}&bgcolor=000000&color=39FF14&margin=10`
+    : "";
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-background rounded-lg shadow-lg max-w-sm w-full p-5 space-y-4 text-center" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-lg font-semibold">Redeem at {entityName}</h3>
+        {discount && <p className="text-sm text-[#AEECE4] font-medium">{discount}</p>}
+        {loading ? (
+          <p className="text-sm text-muted-foreground">Preparing your code…</p>
+        ) : token ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={qrUrl} alt="Your discount QR code" className="mx-auto rounded-lg" width={280} height={280} />
+            <p className="text-xs text-muted-foreground">
+              Show this to the restaurant so they can scan it. Once redeemed, you'll be able to rate your experience.
+            </p>
+            <p className="text-xs font-mono break-all text-muted-foreground">Code: {token}</p>
+          </>
+        ) : null}
+        <Button variant="outline" onClick={onClose} className="w-full">Close</Button>
       </div>
     </div>
   );
