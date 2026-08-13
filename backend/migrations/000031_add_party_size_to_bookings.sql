@@ -4,5 +4,18 @@
 -- head (stored as the booking's commission, so it flows into the restaurant's
 -- monthly invoice and the rep's commission exactly like the 10% does). party_size
 -- holds the headcount; it is null/0 for the item-based service/attraction flow.
+--
+-- NOTE: the `bookings` table was created directly in Supabase, not by this
+-- migrations folder, so it is absent from a fresh CI database. Guard the ALTER
+-- so this migration applies in production (where bookings exists) and is a
+-- harmless no-op where it doesn't.
 
-alter table bookings add column if not exists party_size int;
+do $$
+begin
+  if exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = 'bookings'
+  ) then
+    alter table bookings add column if not exists party_size int;
+  end if;
+end $$;
