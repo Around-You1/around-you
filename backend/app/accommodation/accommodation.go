@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"backend_encore/app/auth"
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/billing"
 	"backend_encore/internal/errs"
@@ -20,13 +21,26 @@ import (
 
 var accommodations = store.NewStore()
 
+// publicize strips internal Official-Use / duplicate fields from accommodation
+// reads unless the caller is an internal (privileged) role — same treatment as
+// restaurant/service/attraction. Guest-facing fields are kept.
+func publicize(ctx context.Context, items []appdb.Accommodation) []appdb.Accommodation {
+	if auth.IsPrivileged(ctx) {
+		return items
+	}
+	for i := range items {
+		items[i].StripSensitive()
+	}
+	return items
+}
+
 //encore:api auth method=GET path=/accommodation
 func List(ctx context.Context, req *ListRequest) (*ListResponse, error) {
 	items, err := accommodations.List(ctx, req.SortBy, req.SortOrder)
 	if err != nil {
 		return nil, err
 	}
-	return &ListResponse{Accommodations: items}, nil
+	return &ListResponse{Accommodations: publicize(ctx, items)}, nil
 }
 
 //encore:api auth method=GET path=/accommodation/get
@@ -37,6 +51,9 @@ func Get(ctx context.Context, req *GetRequest) (*appdb.Accommodation, error) {
 			return nil, &errs.Error{Code: errs.NotFound, Message: "accommodation not found"}
 		}
 		return nil, err
+	}
+	if !auth.IsPrivileged(ctx) {
+		a.StripSensitive()
 	}
 	return a, nil
 }

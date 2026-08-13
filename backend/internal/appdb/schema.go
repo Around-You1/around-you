@@ -404,6 +404,23 @@ func (a *AttractionData) StripSensitive() {
 	a.CompanyVatNumber = ""
 }
 
+// StripSensitive blanks the internal Official-Use / duplicate fields on an
+// accommodation for non-internal callers. Guest-facing fields (wifi, check-in,
+// emergency contacts, etc.) are deliberately kept — guests need them.
+func (ac *Accommodation) StripSensitive() {
+	ac.ProfileReferenceCode = ""
+	ac.IsDuplicate = false
+	ac.DuplicateReason = ""
+	ac.OfficialHoldingCompany = ""
+	ac.OfficialContactName = ""
+	ac.OfficialContactNumber = ""
+	ac.OfficialEmail = ""
+	ac.OfficialRepCode = ""
+	ac.OfficialRepName = ""
+	ac.CompanyRegNumber = ""
+	ac.CompanyVatNumber = ""
+}
+
 // User matches the `user` object LoginPage.tsx / AccessCodeResolver.tsx store
 // in localStorage and that GuestDashboard.tsx / PartnerDashboard.tsx read back
 // (role, profileType, email, accommodationId, area/municipality, entityType,
