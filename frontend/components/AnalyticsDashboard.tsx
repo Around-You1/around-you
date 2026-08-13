@@ -39,6 +39,30 @@ interface RepsAnalytics {
   totalCommissionCents: number;
 }
 
+interface MonthPoint {
+  month: string;
+  newPartners: number;
+  churned: number;
+  invoicedCents: number;
+  invoices: number;
+}
+
+interface BusinessMetrics {
+  mrrCents: number;
+  activePartners: number;
+  arpuCents: number;
+  newThisMonth: number;
+  churnedThisMonth: number;
+  churnRatePct: number;
+  ltvCents: number;
+  activeReps: number;
+  teamLeaders: number;
+  bookingGmvCentsMonth: number;
+  bookingRevenueCentsMonth: number;
+  tierMix: Record<string, number>;
+  months: MonthPoint[];
+}
+
 const TIER_ORDER = ["Tier 1", "Tier 2", "Tier 3", "Tier 4", "N/A"];
 
 const rand = (cents: number) => `R${(cents / 100).toFixed(2)}`;
@@ -46,6 +70,7 @@ const rand = (cents: number) => `R${(cents / 100).toFixed(2)}`;
 export default function AnalyticsDashboard() {
   const [reps, setReps] = useState<RepActivity[]>([]);
   const [repStats, setRepStats] = useState<RepsAnalytics | null>(null);
+  const [bizStats, setBizStats] = useState<BusinessMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -57,12 +82,14 @@ export default function AnalyticsDashboard() {
     setLoading(true);
     try {
       const backend = getAuthenticatedBackend();
-      const [activity, stats] = await Promise.all([
+      const [activity, stats, biz] = await Promise.all([
         backend.analytics.repActivity(),
         backend.analytics.reps(),
+        backend.analytics.business(),
       ]);
       setReps(activity.reps);
       setRepStats(stats);
+      setBizStats(biz);
     } catch (error) {
       console.error("Failed to load analytics:", error);
       toast({ title: "Error", description: "Failed to load analytics", variant: "destructive" });
@@ -75,6 +102,70 @@ export default function AnalyticsDashboard() {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         <h1 className="text-4xl font-bold text-foreground">Analytics Dashboard</h1>
+
+        {bizStats && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Business Metrics</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                {([
+                  ["Monthly Recurring (MRR)", rand(bizStats.mrrCents)],
+                  ["Active Partners", String(bizStats.activePartners)],
+                  ["ARPU / partner", rand(bizStats.arpuCents)],
+                  ["Est. LTV / partner", bizStats.ltvCents ? rand(bizStats.ltvCents) : "—"],
+                  ["New this month", String(bizStats.newThisMonth)],
+                  ["Churned this month", String(bizStats.churnedThisMonth)],
+                  ["Monthly churn", `${bizStats.churnRatePct.toFixed(1)}%`],
+                  ["Booking GMV (this month)", rand(bizStats.bookingGmvCentsMonth)],
+                ] as [string, string][]).map(([label, value]) => (
+                  <div key={label} className="rounded-lg border border-border p-3">
+                    <p className="text-xs text-muted-foreground">{label}</p>
+                    <p className="text-2xl font-bold">{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mb-6">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Active partners by plan</p>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(bizStats.tierMix).map(([k, v]) => (
+                    <span key={k} className="text-xs px-2 py-1 rounded border bg-muted/40 border-border">
+                      {k}: <span className="font-semibold">{v}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <p className="text-xs font-medium text-muted-foreground mb-2">Last 12 months</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-muted-foreground border-b border-border">
+                      <th className="py-2 pr-3">Month</th>
+                      <th className="py-2 pr-3">New</th>
+                      <th className="py-2 pr-3">Churned</th>
+                      <th className="py-2 pr-3">Invoiced revenue</th>
+                      <th className="py-2 pr-3">Invoices</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bizStats.months.map((m) => (
+                      <tr key={m.month} className="border-b border-border/50">
+                        <td className="py-2 pr-3">{m.month}</td>
+                        <td className="py-2 pr-3">{m.newPartners}</td>
+                        <td className="py-2 pr-3">{m.churned}</td>
+                        <td className="py-2 pr-3">{rand(m.invoicedCents)}</td>
+                        <td className="py-2 pr-3">{m.invoices}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {repStats && (
           <Card>
