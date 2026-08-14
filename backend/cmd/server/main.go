@@ -77,6 +77,8 @@ func main() {
 	r.auth("POST /auth/create-rep", httpx.Body(auth.CreateRep))
 	r.auth("GET /auth/reps", httpx.Empty(auth.ListReps))
 	r.auth("POST /auth/rep/update", httpx.Body(auth.UpdateRep))
+	r.auth("POST /auth/acc-code/set", httpx.Body(auth.SetAccCode))
+	r.auth("GET /auth/acc-code/status", httpx.Empty(auth.AccCodeStatus))
 	r.auth("GET /analytics/rep-activity", httpx.Empty(analytics.RepActivityReport))
 	r.auth("GET /analytics/reps", httpx.Empty(analytics.RepsAnalytics))
 	r.auth("GET /analytics/business", httpx.Empty(analytics.BusinessMetrics))

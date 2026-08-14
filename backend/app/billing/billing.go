@@ -337,7 +337,8 @@ type CommissionRollupResponse struct {
 	Rollup billingcore.CommissionRollup `json:"rollup"`
 }
 
-// AccountsCommissions is the per-rep commission roll-up. Accountant or SuperAdmin.
+// AccountsCommissions is the per-rep commission roll-up. SuperAdmin only —
+// the accountant must not see how much the business earns or pays out.
 //
 //encore:api auth method=GET path=/accounts/commissions
 func AccountsCommissions(ctx context.Context) (*CommissionRollupResponse, error) {
@@ -355,7 +356,8 @@ type BookingLedgerResponse struct {
 	Ledger billingcore.BookingLedger `json:"ledger"`
 }
 
-// AccountsBookings is the bookings ledger (value + platform commission). Accountant or SuperAdmin.
+// AccountsBookings is the bookings ledger (value + platform commission). SuperAdmin only —
+// hidden from the accountant so revenue/commission totals aren't exposed.
 //
 //encore:api auth method=GET path=/accounts/bookings
 func AccountsBookings(ctx context.Context) (*BookingLedgerResponse, error) {

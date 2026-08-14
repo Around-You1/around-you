@@ -56,6 +56,39 @@ interface RepStatement {
   accruedCents: number;
 }
 
+interface CommissionRollup {
+  totalCents: number;
+  totalPaidCents: number;
+  totalAccruedCents: number;
+  byRep: RepStatement[];
+}
+
+interface BookingRow {
+  id: number;
+  entityType: string;
+  entityName: string;
+  customerName: string;
+  bookingDate: string;
+  totalCents: number;
+  commissionCents: number;
+  status: string;
+  createdAt: string;
+}
+
+interface BookingLedger {
+  rows: BookingRow[];
+  count: number;
+  totalValueCents: number;
+  totalCommissionCents: number;
+}
+
+interface AccCodeStatus {
+  isSet: boolean;
+  source: string; // "in-app" | "fly-secret" | "none"
+  updatedAt: string;
+  updatedBy: string;
+}
+
 const rand = (cents: number) => `R${(cents / 100).toFixed(2)}`;
 
 const planLabel = (s: Subscription) =>
@@ -175,7 +208,67 @@ export default function BillingTab() {
   const [statements, setStatements] = useState<RepStatement[]>([]);
   const [paying, setPaying] = useState(false);
   const [emailing, setEmailing] = useState(false);
+  const [commRollup, setCommRollup] = useState<CommissionRollup | null>(null);
+  const [bookingLedger, setBookingLedger] = useState<BookingLedger | null>(null);
+  const [accStatus, setAccStatus] = useState<AccCodeStatus | null>(null);
+  const [newAccCode, setNewAccCode] = useState("");
+  const [savingAcc, setSavingAcc] = useState(false);
   const { toast } = useToast();
+
+  const loadAccStatus = async () => {
+    try {
+      const backend = getAuthenticatedBackend();
+      const st = await backend.auth.accCodeStatus();
+      setAccStatus(st as AccCodeStatus);
+    } catch {
+      // ignore — admin-only extra
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const backend = getAuthenticatedBackend();
+        const [cr, bl] = await Promise.all([backend.accounts.commissions(), backend.accounts.bookings()]);
+        setCommRollup(((cr as any).rollup || null) as CommissionRollup | null);
+        setBookingLedger(((bl as any).ledger || null) as BookingLedger | null);
+      } catch {
+        // ignore — these are admin-only extras
+      }
+    })();
+    loadAccStatus();
+  }, []);
+
+  const generateAccCode = () => {
+    // 32 hex chars from the browser's CSPRNG — no ambiguous characters, easy to copy.
+    const bytes = new Uint8Array(16);
+    (window.crypto || (window as any).msCrypto).getRandomValues(bytes);
+    const code = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    setNewAccCode(code);
+  };
+
+  const saveAccCode = async () => {
+    const code = newAccCode.trim();
+    if (code.length < 12) {
+      toast({ title: "Code too short", description: "Use at least 12 characters.", variant: "destructive" });
+      return;
+    }
+    setSavingAcc(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.auth.setAccCode({ code });
+      toast({
+        title: "Accountant code saved",
+        description: "Copy it now — it's stored hashed and can't be shown again.",
+      });
+      setNewAccCode("");
+      await loadAccStatus();
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Failed to save code", variant: "destructive" });
+    } finally {
+      setSavingAcc(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -253,6 +346,53 @@ export default function BillingTab() {
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Accountant Access Code</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            This is the code your accountant types to sign in to the Accountant Portal. Set or
+            rotate it here — it&apos;s stored hashed (never shown again), so copy it before you leave
+            this page and hand it to your accountant privately.
+          </p>
+          <div className="text-sm">
+            {!accStatus ? (
+              <span className="text-muted-foreground">Checking status…</span>
+            ) : accStatus.source === "in-app" ? (
+              <span className="text-green-600">
+                A code is set (in-app){accStatus.updatedAt ? ` — last changed ${accStatus.updatedAt}` : ""}
+                {accStatus.updatedBy ? ` by ${accStatus.updatedBy}` : ""}.
+              </span>
+            ) : accStatus.source === "fly-secret" ? (
+              <span className="text-amber-600">
+                Using the Fly secret (ACC_ACCESS_CODE). Set a code here to manage it in-app instead.
+              </span>
+            ) : (
+              <span className="text-red-600">No accountant code is configured yet.</span>
+            )}
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input
+              value={newAccCode}
+              onChange={(e) => setNewAccCode(e.target.value)}
+              placeholder="Enter or generate a code (min 12 characters)"
+              className="font-mono"
+            />
+            <Button type="button" variant="outline" onClick={generateAccCode}>
+              Generate
+            </Button>
+            <Button type="button" onClick={saveAccCode} disabled={savingAcc}>
+              {savingAcc ? "Saving…" : "Save code"}
+            </Button>
+          </div>
+          {newAccCode && (
+            <p className="text-xs text-muted-foreground">
+              Copy this code now — after you save it, it can&apos;t be displayed again (only replaced).
+            </p>
+          )}
+        </CardContent>
+      </Card>
       <InvoiceSettingsCard />
       <Card>
         <CardHeader>
@@ -452,6 +592,124 @@ export default function BillingTab() {
                 </tbody>
               </table>
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Rep Commissions (roll-up)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {!commRollup ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs text-muted-foreground">Total commission</p>
+                  <p className="text-lg font-semibold">{rand(commRollup.totalCents)}</p>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs text-muted-foreground">Paid out</p>
+                  <p className="text-lg font-semibold">{rand(commRollup.totalPaidCents)}</p>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs text-muted-foreground">Accrued (owed)</p>
+                  <p className="text-lg font-semibold">{rand(commRollup.totalAccruedCents)}</p>
+                </div>
+              </div>
+              {commRollup.byRep.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No rep commissions yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-muted-foreground border-b border-border">
+                        <th className="py-2 pr-3">Rep</th>
+                        <th className="py-2 pr-3">Own (30%)</th>
+                        <th className="py-2 pr-3">Override (10%)</th>
+                        <th className="py-2 pr-3">Total</th>
+                        <th className="py-2 pr-3">Paid</th>
+                        <th className="py-2 pr-3">Accrued</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {commRollup.byRep.map((r) => (
+                        <tr key={r.repCode} className="border-b border-border/50">
+                          <td className="py-2 pr-3 font-mono">{r.repCode}</td>
+                          <td className="py-2 pr-3">{rand(r.ownCents)}</td>
+                          <td className="py-2 pr-3">{rand(r.overrideCents)}</td>
+                          <td className="py-2 pr-3 font-medium">{rand(r.totalCents)}</td>
+                          <td className="py-2 pr-3">{rand(r.paidCents)}</td>
+                          <td className="py-2 pr-3">{rand(r.accruedCents)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Bookings Ledger</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {!bookingLedger ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs text-muted-foreground">Bookings</p>
+                  <p className="text-lg font-semibold">{bookingLedger.count}</p>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs text-muted-foreground">Total value</p>
+                  <p className="text-lg font-semibold">{rand(bookingLedger.totalValueCents)}</p>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs text-muted-foreground">Total commission</p>
+                  <p className="text-lg font-semibold">{rand(bookingLedger.totalCommissionCents)}</p>
+                </div>
+              </div>
+              {bookingLedger.rows.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No bookings yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-muted-foreground border-b border-border">
+                        <th className="py-2 pr-3">Partner</th>
+                        <th className="py-2 pr-3">Type</th>
+                        <th className="py-2 pr-3">Customer</th>
+                        <th className="py-2 pr-3">Date</th>
+                        <th className="py-2 pr-3">Value</th>
+                        <th className="py-2 pr-3">Commission</th>
+                        <th className="py-2 pr-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bookingLedger.rows.map((b) => (
+                        <tr key={b.id} className="border-b border-border/50">
+                          <td className="py-2 pr-3">{b.entityName}</td>
+                          <td className="py-2 pr-3">{b.entityType}</td>
+                          <td className="py-2 pr-3">{b.customerName}</td>
+                          <td className="py-2 pr-3">{b.bookingDate}</td>
+                          <td className="py-2 pr-3">{rand(b.totalCents)}</td>
+                          <td className="py-2 pr-3">{rand(b.commissionCents)}</td>
+                          <td className="py-2 pr-3">{b.status}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

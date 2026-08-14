@@ -483,10 +483,11 @@ func RepLogin(ctx context.Context, req *RepLoginRequest) (*LoginResponse, error)
 	return issueSession(ctx, &u)
 }
 
-// AccLoginRequest is the accountant sign-in: a single shared access code,
-// checked against the ACC_ACCESS_CODE env var (a Fly secret). No self-service
-// signup and no per-person accounts yet — this is the shell the accounting
-// analytics will hang off later.
+// AccLoginRequest is the accountant sign-in: a single shared access code.
+// The code is checked against the bcrypt hash a SuperAdmin sets in the Admin
+// Billing tab (stored in the accountant_access table). If no code has been set
+// there, it falls back to the ACC_ACCESS_CODE env var (a Fly secret) so the
+// portal keeps working during the transition. No per-person accounts yet.
 type AccLoginRequest struct {
 	AccessCode string `json:"accessCode"`
 }
@@ -497,19 +498,35 @@ func AccLogin(ctx context.Context, req *AccLoginRequest) (*LoginResponse, error)
 	if code == "" {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "access code is required"}
 	}
-	expected := strings.TrimSpace(os.Getenv("ACC_ACCESS_CODE"))
-	if expected == "" {
-		return nil, &errs.Error{Code: errs.Unauthenticated, Message: "accountant access is not configured"}
+
+	// Prefer the in-app code (bcrypt hash in accountant_access). A blank/absent
+	// hash means no admin has set one yet, so we fall back to the env secret.
+	var hash string
+	err := appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT code_hash FROM accountant_access WHERE id = 1`,
+	).Scan(&hash)
+	if err != nil && !isNoRows(err) {
+		return nil, err
 	}
-	if !strings.EqualFold(code, expected) {
-		return nil, &errs.Error{Code: errs.Unauthenticated, Message: "invalid access code"}
+	if strings.TrimSpace(hash) != "" {
+		if bcrypt.CompareHashAndPassword([]byte(hash), []byte(code)) != nil {
+			return nil, &errs.Error{Code: errs.Unauthenticated, Message: "invalid access code"}
+		}
+	} else {
+		expected := strings.TrimSpace(os.Getenv("ACC_ACCESS_CODE"))
+		if expected == "" {
+			return nil, &errs.Error{Code: errs.Unauthenticated, Message: "accountant access is not configured"}
+		}
+		if !strings.EqualFold(code, expected) {
+			return nil, &errs.Error{Code: errs.Unauthenticated, Message: "invalid access code"}
+		}
 	}
 
 	// Reuse a single accountant user row across logins rather than creating a
 	// new one every time (same idea as the LocalGuest dedupe).
 	const accEmail = "accountant@aroundyou.co.za"
 	var u appdb.User
-	err := appdb.SQLDB.QueryRowContext(ctx,
+	err = appdb.SQLDB.QueryRowContext(ctx,
 		`SELECT id, email, role FROM users WHERE role = 'Accountant' AND lower(email) = lower($1)`, accEmail,
 	).Scan(&u.ID, &u.Email, &u.Role)
 	if err != nil {
@@ -519,6 +536,81 @@ func AccLogin(ctx context.Context, req *AccLoginRequest) (*LoginResponse, error)
 		return nil, err
 	}
 	return issueSession(ctx, &u)
+}
+
+// SetAccCodeRequest carries a new accountant sign-in code from the Admin
+// Billing tab. The plaintext code is hashed here and never stored as-is.
+type SetAccCodeRequest struct {
+	Code string `json:"code"`
+}
+
+type SetAccCodeResponse struct {
+	OK bool `json:"ok"`
+}
+
+// SetAccCode lets a SuperAdmin set/rotate the accountant access code. Stores a
+// bcrypt hash in accountant_access (single row). SuperAdmin only.
+//
+//encore:api auth method=POST path=/auth/acc-code/set
+func SetAccCode(ctx context.Context, req *SetAccCodeRequest) (*SetAccCodeResponse, error) {
+	data := FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can set the accountant code"}
+	}
+	code := strings.TrimSpace(req.Code)
+	if len(code) < 12 {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "the access code must be at least 12 characters"}
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(code), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := appdb.SQLDB.ExecContext(ctx, `
+		INSERT INTO accountant_access (id, code_hash, updated_at, updated_by)
+		VALUES (1, $1, now(), $2)
+		ON CONFLICT (id) DO UPDATE
+		SET code_hash = excluded.code_hash, updated_at = now(), updated_by = excluded.updated_by`,
+		string(hash), data.User.Email,
+	); err != nil {
+		return nil, err
+	}
+	return &SetAccCodeResponse{OK: true}, nil
+}
+
+// AccCodeStatusResponse describes whether an accountant code is configured,
+// without ever revealing the code. "source" is "in-app" when a SuperAdmin has
+// set one here, "fly-secret" when only the ACC_ACCESS_CODE env var is set, or
+// "none" when neither is configured.
+type AccCodeStatusResponse struct {
+	IsSet     bool   `json:"isSet"`
+	Source    string `json:"source"`
+	UpdatedAt string `json:"updatedAt"`
+	UpdatedBy string `json:"updatedBy"`
+}
+
+// AccCodeStatus reports whether the accountant code is configured. SuperAdmin only.
+//
+//encore:api auth method=GET path=/auth/acc-code/status
+func AccCodeStatus(ctx context.Context) (*AccCodeStatusResponse, error) {
+	data := FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can view the accountant code status"}
+	}
+	var hash, updatedBy string
+	var updatedAt string
+	err := appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT code_hash, COALESCE(to_char(updated_at, 'YYYY-MM-DD'), ''), updated_by FROM accountant_access WHERE id = 1`,
+	).Scan(&hash, &updatedAt, &updatedBy)
+	if err != nil && !isNoRows(err) {
+		return nil, err
+	}
+	if strings.TrimSpace(hash) != "" {
+		return &AccCodeStatusResponse{IsSet: true, Source: "in-app", UpdatedAt: updatedAt, UpdatedBy: updatedBy}, nil
+	}
+	if strings.TrimSpace(os.Getenv("ACC_ACCESS_CODE")) != "" {
+		return &AccCodeStatusResponse{IsSet: true, Source: "fly-secret"}, nil
+	}
+	return &AccCodeStatusResponse{IsSet: false, Source: "none"}, nil
 }
 
 type CreateRepRequest struct {
