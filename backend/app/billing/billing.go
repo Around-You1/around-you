@@ -248,3 +248,78 @@ func SetInvoiceSettings(ctx context.Context, req *billingcore.InvoiceSettings) (
 	}
 	return &InvoiceSettingsResponse{Settings: *s}, nil
 }
+
+// canSeeAccounts allows the Accountant role as well as SuperAdmin.
+func canSeeAccounts(ctx context.Context) bool {
+	data := auth.FromContext(ctx)
+	return data != nil && data.User != nil &&
+		(data.User.Role == "SuperAdmin" || data.User.Role == "Accountant")
+}
+
+type AccountsInvoicesResponse struct {
+	Invoices []billingcore.Invoice `json:"invoices"`
+}
+
+// AccountsInvoices lists every invoice for the accountant (number, company,
+// amount, status, due/paid). Accountant or SuperAdmin.
+//
+//encore:api auth method=GET path=/accounts/invoices
+func AccountsInvoices(ctx context.Context) (*AccountsInvoicesResponse, error) {
+	if !canSeeAccounts(ctx) {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "accountant or admin access required"}
+	}
+	inv, err := billingcore.ListInvoices(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &AccountsInvoicesResponse{Invoices: inv}, nil
+}
+
+type AccountsSummaryResponse struct {
+	Summary billingcore.AccountsSummary `json:"summary"`
+}
+
+// AccountsSummaryReport is the invoice roll-up (invoiced/paid/outstanding/overdue).
+//
+//encore:api auth method=GET path=/accounts/summary
+func AccountsSummaryReport(ctx context.Context) (*AccountsSummaryResponse, error) {
+	if !canSeeAccounts(ctx) {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "accountant or admin access required"}
+	}
+	s, err := billingcore.LoadAccountsSummary(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &AccountsSummaryResponse{Summary: *s}, nil
+}
+
+type SetInvoiceStatusRequest struct {
+	ID     int64  `json:"id"`
+	Status string `json:"status"` // Issued | Paid | Overdue | Void
+}
+
+type SetInvoiceStatusResponse struct {
+	Updated bool `json:"updated"`
+}
+
+// SetInvoiceStatus marks an invoice Paid/Issued/Overdue/Void. Accountant or SuperAdmin.
+//
+//encore:api auth method=POST path=/accounts/invoice-status
+func SetInvoiceStatus(ctx context.Context, req *SetInvoiceStatusRequest) (*SetInvoiceStatusResponse, error) {
+	if !canSeeAccounts(ctx) {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "accountant or admin access required"}
+	}
+	switch req.Status {
+	case "Issued", "Paid", "Overdue", "Void":
+	default:
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "status must be Issued, Paid, Overdue or Void"}
+	}
+	n, err := billingcore.SetInvoiceStatus(ctx, req.ID, req.Status)
+	if err != nil {
+		return nil, err
+	}
+	if n == 0 {
+		return nil, &errs.Error{Code: errs.NotFound, Message: "invoice not found"}
+	}
+	return &SetInvoiceStatusResponse{Updated: true}, nil
+}

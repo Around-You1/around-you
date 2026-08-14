@@ -155,6 +155,11 @@ func main() {
 	r.auth("GET /billing/invoice-settings", httpx.Empty(billing.GetInvoiceSettings))
 	r.auth("POST /billing/invoice-settings", httpx.Body(billing.SetInvoiceSettings))
 	r.auth("GET /billing/invoice-preview", httpx.Empty(billing.InvoicePreview))
+
+	// ---- Accountant portal (Accountant or SuperAdmin) ----------------------
+	r.auth("GET /accounts/invoices", httpx.Empty(billing.AccountsInvoices))
+	r.auth("GET /accounts/summary", httpx.Empty(billing.AccountsSummaryReport))
+	r.auth("POST /accounts/invoice-status", httpx.Body(billing.SetInvoiceStatus))
 	// Scheduler-triggered monthly billing run — token-protected, not user auth.
 	mux.Handle("POST /billing/run", billingRunHandler())
 

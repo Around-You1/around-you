@@ -209,6 +209,12 @@ export const backend = {
     redeem: (req: { token: string }) =>
       request("POST", "/redemption/redeem", { body: req }),
   },
+  accounts: {
+    invoices: () => request("GET", "/accounts/invoices"),
+    summary: () => request("GET", "/accounts/summary"),
+    setInvoiceStatus: (req: { id: number; status: string }) =>
+      request("POST", "/accounts/invoice-status", { body: req }),
+  },
 
   accommodation: {
     list: (req?: any) =>

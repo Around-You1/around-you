@@ -24,6 +24,8 @@ type Invoice struct {
 	TotalCents    int    `json:"totalCents"`
 	Status        string `json:"status"`
 	IssuedAt      string `json:"issuedAt"`
+	DueAt         string `json:"dueAt"`
+	PaidAt        string `json:"paidAt"`
 }
 
 // partnerTable maps a partner_type to its table name. The set is a fixed
@@ -258,7 +260,8 @@ func ListInvoices(ctx context.Context) ([]Invoice, error) {
 		SELECT id, invoice_number, partner_type, partner_id,
 		       COALESCE(bill_name,''), COALESCE(bill_rep_code,''),
 		       to_char(period_start,'YYYY-MM-DD'), to_char(period_end,'YYYY-MM-DD'),
-		       total_cents, status, to_char(issued_at,'YYYY-MM-DD')
+		       total_cents, status, to_char(issued_at,'YYYY-MM-DD'),
+		       COALESCE(to_char(due_at,'YYYY-MM-DD'),''), COALESCE(to_char(paid_at,'YYYY-MM-DD'),'')
 		FROM invoice ORDER BY issued_at DESC, id DESC`)
 	if err != nil {
 		return nil, err
@@ -270,7 +273,7 @@ func ListInvoices(ctx context.Context) ([]Invoice, error) {
 		var v Invoice
 		if err := rows.Scan(&v.ID, &v.InvoiceNumber, &v.PartnerType, &v.PartnerID,
 			&v.BillName, &v.RepCode, &v.PeriodStart, &v.PeriodEnd,
-			&v.TotalCents, &v.Status, &v.IssuedAt); err != nil {
+			&v.TotalCents, &v.Status, &v.IssuedAt, &v.DueAt, &v.PaidAt); err != nil {
 			return nil, err
 		}
 		out = append(out, v)
