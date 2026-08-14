@@ -67,13 +67,27 @@ export default function GuestDashboard() {
   const [showMyBookings, setShowMyBookings] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [showAccInfo, setShowAccInfo] = useState(false);
-  const toggleCard = (key: string) =>
+  const fireEvent = (eventType: string, extra?: { entityType?: string; entityId?: number }) => {
+    try {
+      getAuthenticatedBackend()
+        .events.record({ eventType, entityType: extra?.entityType, entityId: extra?.entityId })
+        .catch(() => {});
+    } catch {
+      // analytics is best-effort — never disrupt the UI
+    }
+  };
+  const toggleCard = (key: string) => {
+    if (!expandedCards.has(key)) {
+      const [entityType, id] = key.split(":");
+      fireEvent("listing_view", { entityType, entityId: Number(id) });
+    }
     setExpandedCards((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
       return next;
     });
+  };
   const { toast } = useToast();
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -178,6 +192,19 @@ export default function GuestDashboard() {
     setFilteredServices(applyAll("service", services, (s) => s.serviceCategories || []));
     setFilteredAttractions(applyAll("attraction", attractions, (a) => a.attractionType || []));
   }, [searchQuery, restaurants, services, attractions, ratings, minRating, discountsOnly]);
+
+  // Best-effort search analytics: fire a (debounced) search event when the user
+  // searches, distinguishing zero-result searches. Query text is not sent.
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) return;
+    const t = setTimeout(() => {
+      const results = filteredRestaurants.length + filteredServices.length + filteredAttractions.length;
+      fireEvent(results === 0 ? "search_zero_result" : "search");
+    }, 900);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, filteredRestaurants, filteredServices, filteredAttractions]);
 
   // Fetches every rating summary for the three lists in three round trips
   // (one per entity type) rather than one per card. Deliberately silent on

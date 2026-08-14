@@ -383,6 +383,17 @@ func issueSession(ctx context.Context, u *appdb.User) (*LoginResponse, error) {
 		return nil, err
 	}
 
+	// Best-effort login-event analytics for guests/locals — never blocks login.
+	if u.Role == "Guest" || u.Role == "LocalGuest" {
+		actorType := "holiday_guest"
+		if u.Role == "LocalGuest" {
+			actorType = "local_guest"
+		}
+		_, _ = appdb.SQLDB.ExecContext(ctx, `
+			INSERT INTO events (event_type, actor_type, area)
+			VALUES ('login', $1, NULLIF($2, ''))`, actorType, u.Area)
+	}
+
 	return &LoginResponse{Token: token, User: u}, nil
 }
 
