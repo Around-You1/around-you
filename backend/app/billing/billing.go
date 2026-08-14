@@ -249,11 +249,20 @@ func SetInvoiceSettings(ctx context.Context, req *billingcore.InvoiceSettings) (
 	return &InvoiceSettingsResponse{Settings: *s}, nil
 }
 
-// canSeeAccounts allows the Accountant role as well as SuperAdmin.
+// canSeeAccounts allows the Accountant role as well as SuperAdmin — used for the
+// invoice list + mark-paid, which the accountant needs to reconcile payments.
 func canSeeAccounts(ctx context.Context) bool {
 	data := auth.FromContext(ctx)
 	return data != nil && data.User != nil &&
 		(data.User.Role == "SuperAdmin" || data.User.Role == "Accountant")
+}
+
+// isSuperAdmin gates the business-level roll-ups (totals, commissions, bookings)
+// so the accountant can reconcile invoices without seeing overall revenue,
+// commission structure, or margins.
+func isSuperAdmin(ctx context.Context) bool {
+	data := auth.FromContext(ctx)
+	return data != nil && data.User != nil && data.User.Role == "SuperAdmin"
 }
 
 type AccountsInvoicesResponse struct {
@@ -283,8 +292,8 @@ type AccountsSummaryResponse struct {
 //
 //encore:api auth method=GET path=/accounts/summary
 func AccountsSummaryReport(ctx context.Context) (*AccountsSummaryResponse, error) {
-	if !canSeeAccounts(ctx) {
-		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "accountant or admin access required"}
+	if !isSuperAdmin(ctx) {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can view business totals"}
 	}
 	s, err := billingcore.LoadAccountsSummary(ctx)
 	if err != nil {
@@ -332,8 +341,8 @@ type CommissionRollupResponse struct {
 //
 //encore:api auth method=GET path=/accounts/commissions
 func AccountsCommissions(ctx context.Context) (*CommissionRollupResponse, error) {
-	if !canSeeAccounts(ctx) {
-		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "accountant or admin access required"}
+	if !isSuperAdmin(ctx) {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can view commissions"}
 	}
 	r, err := billingcore.LoadCommissionRollup(ctx)
 	if err != nil {
@@ -350,8 +359,8 @@ type BookingLedgerResponse struct {
 //
 //encore:api auth method=GET path=/accounts/bookings
 func AccountsBookings(ctx context.Context) (*BookingLedgerResponse, error) {
-	if !canSeeAccounts(ctx) {
-		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "accountant or admin access required"}
+	if !isSuperAdmin(ctx) {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can view the bookings ledger"}
 	}
 	l, err := billingcore.LoadBookingLedger(ctx)
 	if err != nil {
