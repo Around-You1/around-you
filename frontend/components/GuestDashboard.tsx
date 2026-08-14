@@ -1131,6 +1131,16 @@ export default function GuestDashboard() {
                                 Click here to book at this establishment.
                               </Button>
                             )}
+                            {service.discountOffered && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full sm:w-auto border-[#AEECE4] text-[#AEECE4]"
+                                onClick={() => setRedeemFor({ entityType: "service", entityId: Number(service.id), entityName: service.name, discount: service.discountOffered })}
+                              >
+                                Redeem discount
+                              </Button>
+                            )}
                             <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => toggleCard("service:" + service.id)}>
                               {expandedCards.has("service:" + service.id) ? "Less info" : "More info"}
                             </Button>
@@ -1323,6 +1333,16 @@ export default function GuestDashboard() {
                                 onClick={() => setBookingFor({ entityType: "attraction", entityId: Number(attraction.id), entityName: attraction.name, items: (attraction.bookingItems || []) as BookItem[] })}
                               >
                                 Click here to book at this establishment.
+                              </Button>
+                            )}
+                            {attraction.discountOffered && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full sm:w-auto border-[#AEECE4] text-[#AEECE4]"
+                                onClick={() => setRedeemFor({ entityType: "attraction", entityId: Number(attraction.id), entityName: attraction.name, discount: attraction.discountOffered })}
+                              >
+                                Redeem discount
                               </Button>
                             )}
                             <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => toggleCard("attraction:" + attraction.id)}>
@@ -1747,7 +1767,7 @@ function RedeemModal({ onClose, entityType, entityId, entityName, discount }: {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={qrUrl} alt="Your discount QR code" className="mx-auto rounded-lg" width={280} height={280} />
             <p className="text-xs text-muted-foreground">
-              Show this to the restaurant so they can scan it. Once redeemed, you'll be able to rate your experience.
+              Show this to the venue so they can scan it. Once redeemed, you'll be able to rate your experience.
             </p>
             <p className="text-xs font-mono break-all text-muted-foreground">Code: {token}</p>
           </>
