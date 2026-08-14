@@ -323,3 +323,39 @@ func SetInvoiceStatus(ctx context.Context, req *SetInvoiceStatusRequest) (*SetIn
 	}
 	return &SetInvoiceStatusResponse{Updated: true}, nil
 }
+
+type CommissionRollupResponse struct {
+	Rollup billingcore.CommissionRollup `json:"rollup"`
+}
+
+// AccountsCommissions is the per-rep commission roll-up. Accountant or SuperAdmin.
+//
+//encore:api auth method=GET path=/accounts/commissions
+func AccountsCommissions(ctx context.Context) (*CommissionRollupResponse, error) {
+	if !canSeeAccounts(ctx) {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "accountant or admin access required"}
+	}
+	r, err := billingcore.LoadCommissionRollup(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &CommissionRollupResponse{Rollup: *r}, nil
+}
+
+type BookingLedgerResponse struct {
+	Ledger billingcore.BookingLedger `json:"ledger"`
+}
+
+// AccountsBookings is the bookings ledger (value + platform commission). Accountant or SuperAdmin.
+//
+//encore:api auth method=GET path=/accounts/bookings
+func AccountsBookings(ctx context.Context) (*BookingLedgerResponse, error) {
+	if !canSeeAccounts(ctx) {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "accountant or admin access required"}
+	}
+	l, err := billingcore.LoadBookingLedger(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &BookingLedgerResponse{Ledger: *l}, nil
+}

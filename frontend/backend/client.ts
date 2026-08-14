@@ -214,6 +214,8 @@ export const backend = {
     summary: () => request("GET", "/accounts/summary"),
     setInvoiceStatus: (req: { id: number; status: string }) =>
       request("POST", "/accounts/invoice-status", { body: req }),
+    commissions: () => request("GET", "/accounts/commissions"),
+    bookings: () => request("GET", "/accounts/bookings"),
   },
 
   accommodation: {

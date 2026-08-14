@@ -160,6 +160,8 @@ func main() {
 	r.auth("GET /accounts/invoices", httpx.Empty(billing.AccountsInvoices))
 	r.auth("GET /accounts/summary", httpx.Empty(billing.AccountsSummaryReport))
 	r.auth("POST /accounts/invoice-status", httpx.Body(billing.SetInvoiceStatus))
+	r.auth("GET /accounts/commissions", httpx.Empty(billing.AccountsCommissions))
+	r.auth("GET /accounts/bookings", httpx.Empty(billing.AccountsBookings))
 	// Scheduler-triggered monthly billing run — token-protected, not user auth.
 	mux.Handle("POST /billing/run", billingRunHandler())
 
