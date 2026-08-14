@@ -67,10 +67,10 @@ export default function GuestDashboard() {
   const [showMyBookings, setShowMyBookings] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [showAccInfo, setShowAccInfo] = useState(false);
-  const fireEvent = (eventType: string, extra?: { entityType?: string; entityId?: number }) => {
+  const fireEvent = (eventType: string, extra?: { entityType?: string; entityId?: number; searchTerm?: string }) => {
     try {
       getAuthenticatedBackend()
-        .events.record({ eventType, entityType: extra?.entityType, entityId: extra?.entityId })
+        .events.record({ eventType, entityType: extra?.entityType, entityId: extra?.entityId, searchTerm: extra?.searchTerm })
         .catch(() => {});
     } catch {
       // analytics is best-effort — never disrupt the UI
@@ -200,7 +200,7 @@ export default function GuestDashboard() {
     if (!q) return;
     const t = setTimeout(() => {
       const results = filteredRestaurants.length + filteredServices.length + filteredAttractions.length;
-      fireEvent(results === 0 ? "search_zero_result" : "search");
+      fireEvent(results === 0 ? "search_zero_result" : "search", { searchTerm: q });
     }, 900);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps

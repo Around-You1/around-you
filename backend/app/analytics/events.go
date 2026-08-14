@@ -14,9 +14,15 @@ type MonthCount struct {
 	Count int    `json:"count"`
 }
 
+type SearchCount struct {
+	Term  string `json:"term"`
+	Count int    `json:"count"`
+}
+
 type EventsSummaryResponse struct {
 	ByTypeThisMonth map[string]int `json:"byTypeThisMonth"`
 	QrScanMonths    []MonthCount   `json:"qrScanMonths"` // last 12 months, oldest first
+	TopSearches     []SearchCount  `json:"topSearches"`  // this month, by term
 }
 
 // EventsSummary is SuperAdmin-only — behavioural-event counts. Right now that's
@@ -68,5 +74,65 @@ func EventsSummary(ctx context.Context) (*EventsSummaryResponse, error) {
 		resp.QrScanMonths = append(resp.QrScanMonths, MonthCount{Month: key, Count: scanByMonth[key]})
 	}
 
+	// Top searches this month (by term).
+	sr, err := appdb.SQLDB.QueryContext(ctx, `
+		SELECT lower(search_term), COUNT(*)
+		FROM events
+		WHERE event_type IN ('search', 'search_zero_result')
+		  AND search_term IS NOT NULL AND search_term <> ''
+		  AND date_trunc('month', created_at) = date_trunc('month', now())
+		GROUP BY 1 ORDER BY COUNT(*) DESC LIMIT 15`)
+	if err != nil {
+		return nil, err
+	}
+	for sr.Next() {
+		var sc SearchCount
+		if err := sr.Scan(&sc.Term, &sc.Count); err != nil {
+			sr.Close()
+			return nil, err
+		}
+		resp.TopSearches = append(resp.TopSearches, sc)
+	}
+	sr.Close()
+	if err := sr.Err(); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+type ListingViewsRequest struct {
+	EntityType string `query:"entityType"`
+	EntityID   int64  `query:"entityId"`
+}
+
+type ListingViewsResponse struct {
+	ThisMonth int `json:"thisMonth"`
+	AllTime   int `json:"allTime"`
+}
+
+// ListingViews returns how many times a partner's listing has been viewed (this
+// month and all-time). Any signed-in caller may read it — a partner sees their
+// own ROI number; counts are not sensitive.
+//
+//encore:api auth method=GET path=/analytics/listing-views
+func ListingViews(ctx context.Context, req *ListingViewsRequest) (*ListingViewsResponse, error) {
+	if data := auth.FromContext(ctx); data == nil || data.User == nil {
+		return nil, &errs.Error{Code: errs.Unauthenticated, Message: "sign in required"}
+	}
+	if req.EntityType == "" || req.EntityID == 0 {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "entityType and entityId are required"}
+	}
+	resp := &ListingViewsResponse{}
+	if err := appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT
+		  COALESCE(COUNT(*) FILTER (WHERE date_trunc('month', created_at) = date_trunc('month', now())), 0),
+		  COUNT(*)
+		FROM events
+		WHERE event_type = 'listing_view' AND entity_type = $1 AND entity_id = $2`,
+		req.EntityType, req.EntityID,
+	).Scan(&resp.ThisMonth, &resp.AllTime); err != nil {
+		return nil, err
+	}
 	return resp, nil
 }

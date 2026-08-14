@@ -20,6 +20,7 @@ type RecordRequest struct {
 	EntityID   int64  `json:"entityId"`
 	Area       string `json:"area"`
 	Province   string `json:"province"`
+	SearchTerm string `json:"searchTerm"`
 }
 
 type RecordResponse struct {
@@ -40,11 +41,12 @@ func Record(ctx context.Context, req *RecordRequest) (*RecordResponse, error) {
 		et = et[:40]
 	}
 	if _, err := appdb.SQLDB.ExecContext(ctx, `
-		INSERT INTO events (event_type, actor_type, code, entity_type, entity_id, area, province)
-		VALUES ($1, NULLIF($2,''), NULLIF($3,''), NULLIF($4,''), NULLIF($5,0), NULLIF($6,''), NULLIF($7,''))`,
+		INSERT INTO events (event_type, actor_type, code, entity_type, entity_id, area, province, search_term)
+		VALUES ($1, NULLIF($2,''), NULLIF($3,''), NULLIF($4,''), NULLIF($5,0), NULLIF($6,''), NULLIF($7,''), NULLIF($8,''))`,
 		et, strings.TrimSpace(req.ActorType), strings.TrimSpace(req.Code),
 		strings.TrimSpace(req.EntityType), req.EntityID,
 		strings.TrimSpace(req.Area), strings.TrimSpace(req.Province),
+		strings.TrimSpace(req.SearchTerm),
 	); err != nil {
 		log.Printf("events: record %q failed: %v", et, err)
 	}

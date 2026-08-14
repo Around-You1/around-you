@@ -81,6 +81,7 @@ func main() {
 	r.auth("GET /analytics/reps", httpx.Empty(analytics.RepsAnalytics))
 	r.auth("GET /analytics/business", httpx.Empty(analytics.BusinessMetrics))
 	r.auth("GET /analytics/events", httpx.Empty(analytics.EventsSummary))
+	r.auth("GET /analytics/listing-views", httpx.Query(analytics.ListingViews))
 
 	// ---- Accommodation (auth) ----------------------------------------------
 	r.auth("GET /accommodation", httpx.Query(accommodation.List))

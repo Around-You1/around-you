@@ -188,6 +188,8 @@ export const backend = {
     reps: () => request("GET", "/analytics/reps"),
     business: () => request("GET", "/analytics/business"),
     events: () => request("GET", "/analytics/events"),
+    listingViews: (req: { entityType: string; entityId: number }) =>
+      request("GET", "/analytics/listing-views", { query: req }),
   },
   events: {
     record: (req: {
@@ -198,6 +200,7 @@ export const backend = {
       entityId?: number;
       area?: string;
       province?: string;
+      searchTerm?: string;
     }) => request("POST", "/events", { body: req }),
   },
   redemption: {

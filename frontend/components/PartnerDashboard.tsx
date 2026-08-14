@@ -172,6 +172,7 @@ export default function PartnerDashboard() {
   const [entityType, setEntityType] = useState<"restaurant" | "service" | "attraction" | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState<any[]>([]);
+  const [views, setViews] = useState<{ thisMonth: number; allTime: number } | null>(null);
   const [editing, setEditing] = useState(false);
   const [showGate, setShowGate] = useState(false);
   const [editCodeInput, setEditCodeInput] = useState("");
@@ -218,6 +219,12 @@ export default function PartnerDashboard() {
         setBookings((bk as { bookings?: any[] }).bookings || []);
       } catch (bkErr) {
         console.error("Failed to load bookings:", bkErr);
+      }
+      try {
+        const v = await backend.analytics.listingViews({ entityType: user.entityType, entityId: user.entityId });
+        setViews(v as { thisMonth: number; allTime: number });
+      } catch (vErr) {
+        console.error("Failed to load views:", vErr);
       }
     } catch (error) {
       console.error("Failed to load entity details:", error);
@@ -361,6 +368,21 @@ export default function PartnerDashboard() {
         </Button>
 
         <RedeemScanner />
+
+        {views && (
+          <Card>
+            <CardContent className="p-4 flex items-center justify-around text-center">
+              <div>
+                <p className="text-xs text-muted-foreground">Listing views this month</p>
+                <p className="text-2xl font-bold text-[#AEECE4]">{views.thisMonth}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">All time</p>
+                <p className="text-2xl font-bold text-[#AEECE4]">{views.allTime}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {showGate && (
           <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowGate(false)}>

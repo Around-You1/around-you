@@ -73,9 +73,15 @@ interface EventMonth {
   count: number;
 }
 
+interface SearchCount {
+  term: string;
+  count: number;
+}
+
 interface EventsSummary {
   byTypeThisMonth: Record<string, number>;
   qrScanMonths: EventMonth[];
+  topSearches: SearchCount[];
 }
 
 const TIER_ORDER = ["Tier 1", "Tier 2", "Tier 3", "Tier 4", "N/A"];
@@ -250,6 +256,19 @@ export default function AnalyticsDashboard() {
                 ));
               })()}
             </div>
+
+            {events.topSearches && events.topSearches.length > 0 && (
+              <div className="mt-6">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Top searches this month</p>
+                <div className="flex flex-wrap gap-2">
+                  {events.topSearches.map((sc) => (
+                    <span key={sc.term} className="text-xs px-2 py-1 rounded border bg-muted/40 border-border">
+                      {sc.term}: <span className="font-semibold">{sc.count}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </Section>
         )}
 
