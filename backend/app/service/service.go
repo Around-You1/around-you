@@ -186,9 +186,9 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.ServiceData, error)
 		return nil, err
 	}
 	if err := moderation.BlockError(
-		moderation.NamedField{Name: "name", Value: req.Name},
-		moderation.NamedField{Name: "description", Value: req.Description},
-		moderation.NamedField{Name: "discountOffered", Value: req.DiscountOffered},
+		moderation.PtrField("name", req.Name),
+		moderation.PtrField("description", req.Description),
+		moderation.PtrField("discountOffered", req.DiscountOffered),
 	); err != nil {
 		return nil, err
 	}

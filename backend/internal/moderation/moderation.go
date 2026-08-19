@@ -172,6 +172,20 @@ type NamedField struct {
 	Value string
 }
 
+// Deref safely dereferences a *string (nil -> "").
+func Deref(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+// PtrField builds a NamedField from a possibly-nil *string — used by Update
+// handlers whose request fields are pointers (partial-update semantics).
+func PtrField(name string, v *string) NamedField {
+	return NamedField{Name: name, Value: Deref(v)}
+}
+
 // ScanAndFlag screens each field and records a moderation flag per hit. It never
 // blocks — on any DB error it logs and returns. When entityID > 0 it first
 // clears prior OPEN flags for that (source, entityType, entityID) so that

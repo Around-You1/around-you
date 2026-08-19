@@ -139,8 +139,8 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Accommodation, erro
 //encore:api auth method=PUT path=/accommodation
 func Update(ctx context.Context, req *UpdateRequest) (*appdb.Accommodation, error) {
 	if err := moderation.BlockError(
-		moderation.NamedField{Name: "name", Value: req.Name},
-		moderation.NamedField{Name: "description", Value: req.Description},
+		moderation.PtrField("name", req.Name),
+		moderation.PtrField("description", req.Description),
 	); err != nil {
 		return nil, err
 	}
