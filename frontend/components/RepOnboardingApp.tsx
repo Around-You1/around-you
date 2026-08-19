@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getAuthenticatedBackend } from "../lib/backend";
-import EstateAgencyForm from "./EstateAgencyForm";
+import EstateRepFlow from "./EstateRepFlow";
 
 const colors = {
   background: "#000000",
@@ -851,11 +851,10 @@ export default function RepOnboardingApp() {
             >
               ← Change Partner Type (Real Estate & Rentals)
             </button>
-            <EstateAgencyForm
-              onClose={reset}
-              onSaved={reset}
-              defaultRepCode={repSession.repCode}
-              defaultRepName={repSession.repName}
+            <EstateRepFlow
+              repCode={repSession.repCode}
+              repName={repSession.repName}
+              onDone={reset}
             />
           </>
         ) : (
