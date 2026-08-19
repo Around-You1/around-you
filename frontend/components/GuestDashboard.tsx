@@ -50,7 +50,7 @@ export default function GuestDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [minRating, setMinRating] = useState(0); // 0 = Any; else 3 / 4 / 4.5
   const [discountsOnly, setDiscountsOnly] = useState(false);
-  const [radiusKm, setRadiusKm] = useState([150]);
+  const [radiusKm, setRadiusKm] = useState([10]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>("restaurants");
 
@@ -365,15 +365,15 @@ export default function GuestDashboard() {
             </div>
             <Card>
               <CardContent className="p-4">
-                <div className="mb-4">
+                <div className="mb-4 mx-auto w-full max-w-xl">
                   <ImageCarousel
                     images={[
                       ...(accommodation!.imageUrl ? [accommodation!.imageUrl] : []),
                       ...(accommodation!.imageUrls || []),
                     ]}
                     alt={accommodation!.name}
-                    className="w-full h-48 md:h-64 object-cover"
-                    placeholderClassName="w-full h-48 md:h-64"
+                    className="w-full aspect-[3/2] object-cover"
+                    placeholderClassName="w-full aspect-[3/2]"
                     intervalMs={3000}
                   />
                 </div>

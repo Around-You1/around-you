@@ -925,7 +925,19 @@ export default function RepOnboardingApp() {
 
                 {!booking && (
                   <>
-                    <CheckboxGroup label="Show profile to" options={["Guest", "Local", "Both"]} selected={visibility} onChange={setVisibility} />
+                    <CheckboxGroup
+                      label="Show profile to"
+                      options={["Guest", "Local", "Both"]}
+                      selected={visibility}
+                      onChange={(next) => {
+                        setVisibility(next);
+                        // "Both" audiences (or Guest + Local together) = the top
+                        // tier, so auto-select Tier 4 for the rep.
+                        const isBoth =
+                          next.includes("Both") || (next.includes("Guest") && next.includes("Local"));
+                        if (isBoth) setTier(4);
+                      }}
+                    />
 
                     <div
                       style={{
