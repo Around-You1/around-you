@@ -19,8 +19,10 @@ import (
 	"log"
 	"regexp"
 	"strings"
+	"time"
 
 	"backend_encore/internal/appdb"
+	"backend_encore/internal/errs"
 )
 
 // Category names as stored on each flag.
@@ -109,6 +111,31 @@ type Hit struct {
 	Snippet  string
 }
 
+// blockCategories HARD-BLOCK a save (the handler rejects it). Profanity is not
+// blocked — it saves and is flagged for review. Hate/discrimination and
+// abuse/threats are blocked.
+var blockCategories = map[string]bool{
+	CatDiscrimination: true,
+	CatAbuse:          true,
+}
+
+// BlockError screens the fields and returns a user-facing *errs.Error if any hit
+// falls in a hard-block category, or nil if the content is allowed to save.
+// Call this BEFORE writing to the database.
+func BlockError(fields ...NamedField) error {
+	for _, f := range fields {
+		for _, h := range Scan(f.Value) {
+			if blockCategories[h.Category] {
+				if h.Category == CatDiscrimination {
+					return &errs.Error{Code: errs.InvalidArgument, Message: "This submission contains hate speech or discriminatory language and can't be saved. Please remove it and try again."}
+				}
+				return &errs.Error{Code: errs.InvalidArgument, Message: "This submission contains threats or abusive language and can't be saved. Please remove it and try again."}
+			}
+		}
+	}
+	return nil
+}
+
 // Scan returns every flagged term found in text (deduplicated by term).
 func Scan(text string) []Hit {
 	if strings.TrimSpace(text) == "" {
@@ -151,22 +178,6 @@ type NamedField struct {
 // editing to remove the content also clears its alerts, and re-saving refreshes
 // them. actor (who submitted) is supplied by the caller (see auth.ActorLabel).
 func ScanAndFlag(ctx context.Context, source, entityType string, entityID int64, subject, actor string, fields ...NamedField) {
-	var rows []struct {
-		field string
-		hit   Hit
-	}
-	for _, f := range fields {
-		for _, h := range Scan(f.Value) {
-			rows = append(rows, struct {
-				field string
-				hit   Hit
-			}{f.Name, h})
-		}
-	}
-	if len(rows) == 0 && entityID <= 0 {
-		return
-	}
-
 	if entityID > 0 {
 		if _, err := appdb.SQLDB.ExecContext(ctx,
 			`DELETE FROM moderation_flags WHERE source = $1 AND entity_type = $2 AND entity_id = $3 AND status = 'open'`,
@@ -176,14 +187,45 @@ func ScanAndFlag(ctx context.Context, source, entityType string, entityID int64,
 		}
 	}
 
-	for _, r := range rows {
-		if _, err := appdb.SQLDB.ExecContext(ctx, `
-			INSERT INTO moderation_flags
-				(source, entity_type, entity_id, subject, field, category, matched_term, snippet, actor, status)
-			VALUES ($1, $2, NULLIF($3, 0), $4, $5, $6, $7, $8, $9, 'open')`,
-			source, entityType, entityID, subject, r.field, r.hit.Category, r.hit.Term, r.hit.Snippet, actor,
-		); err != nil {
-			log.Printf("moderation: inserting flag failed (%s.%s): %v", source, r.field, err)
+	// Word-list pass — synchronous, fast, deterministic.
+	for _, f := range fields {
+		for _, h := range Scan(f.Value) {
+			insertFlag(ctx, source, entityType, entityID, subject, f.Name, h, actor)
 		}
+	}
+
+	// AI nuance pass — only if configured. Runs in the background on a detached
+	// context so it never slows the save; any hits land in the review queue when
+	// Claude responds.
+	if AIEnabled() {
+		var b strings.Builder
+		for _, f := range fields {
+			if strings.TrimSpace(f.Value) != "" {
+				b.WriteString(f.Value)
+				b.WriteString("\n")
+			}
+		}
+		text := b.String()
+		if strings.TrimSpace(text) != "" {
+			go func() {
+				bg, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+				defer cancel()
+				for _, h := range aiScreen(bg, text) {
+					insertFlag(bg, source, entityType, entityID, subject, "ai", h, actor)
+				}
+			}()
+		}
+	}
+}
+
+// insertFlag records one moderation flag. Best-effort: logs on error.
+func insertFlag(ctx context.Context, source, entityType string, entityID int64, subject, field string, h Hit, actor string) {
+	if _, err := appdb.SQLDB.ExecContext(ctx, `
+		INSERT INTO moderation_flags
+			(source, entity_type, entity_id, subject, field, category, matched_term, snippet, actor, status)
+		VALUES ($1, $2, NULLIF($3, 0), $4, $5, $6, $7, $8, $9, 'open')`,
+		source, entityType, entityID, subject, field, h.Category, h.Term, h.Snippet, actor,
+	); err != nil {
+		log.Printf("moderation: inserting flag failed (%s.%s): %v", source, field, err)
 	}
 }

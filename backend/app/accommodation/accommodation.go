@@ -15,6 +15,7 @@ import (
 	"backend_encore/app/auth"
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/billing"
+	"backend_encore/internal/dedupe"
 	"backend_encore/internal/errs"
 	"backend_encore/internal/moderation"
 	"backend_encore/store"
@@ -66,6 +67,12 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Accommodation, erro
 	}
 	if req.Province == "" {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "province is required"}
+	}
+	if err := moderation.BlockError(
+		moderation.NamedField{Name: "name", Value: req.Name},
+		moderation.NamedField{Name: "description", Value: req.Description},
+	); err != nil {
+		return nil, err
 	}
 
 	in := &appdb.Accommodation{
@@ -124,11 +131,19 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Accommodation, erro
 		moderation.NamedField{Name: "name", Value: created.Name},
 		moderation.NamedField{Name: "description", Value: created.Description},
 	)
+	dedupe.CheckOnCreate(ctx, "accommodations", "contact", "accommodation", created.ID,
+		created.Name, created.Contact, created.Address, created.OfficialRepCode, auth.ActorLabel(ctx))
 	return created, nil
 }
 
 //encore:api auth method=PUT path=/accommodation
 func Update(ctx context.Context, req *UpdateRequest) (*appdb.Accommodation, error) {
+	if err := moderation.BlockError(
+		moderation.NamedField{Name: "name", Value: req.Name},
+		moderation.NamedField{Name: "description", Value: req.Description},
+	); err != nil {
+		return nil, err
+	}
 	patch := store.Patch{
 		Name:                  req.Name,
 		Address:               req.Address,

@@ -119,8 +119,8 @@ export default function AdminDashboard() {
           >
             <ShieldAlert className="w-5 h-5 text-red-600 shrink-0" />
             <span className="text-sm text-foreground">
-              <strong>{modOpenCount}</strong> flagged {modOpenCount === 1 ? "submission needs" : "submissions need"} review
-              (possible profanity, abuse, or discrimination). Click to review.
+              <strong>{modOpenCount}</strong> flagged {modOpenCount === 1 ? "item needs" : "items need"} review
+              (profanity, hate/abuse, AI-detected content, or duplicate profiles). Click to review.
             </span>
           </button>
         )}

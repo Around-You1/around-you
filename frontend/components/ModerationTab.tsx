@@ -23,12 +23,19 @@ interface Flag {
 }
 
 const sourceLabel = (s: string) =>
-  s === "rep_onboarding" ? "Rep onboarding" : "Partner profile";
+  s === "rep_onboarding" ? "Rep onboarding" : s === "duplicate" ? "Duplicate check" : "Partner profile";
 
-const catClass = (cat: string) =>
-  cat === "discrimination" || cat === "abuse"
-    ? "text-red-600 font-semibold"
-    : "text-amber-600 font-medium";
+const baseCat = (c: string) => c.replace(/^ai:/, "");
+const isAI = (c: string) => c.startsWith("ai:");
+
+const catClass = (cat: string) => {
+  const b = baseCat(cat);
+  if (b === "discrimination" || b === "abuse") return "text-red-600 font-semibold";
+  if (cat === "duplicate") return "text-blue-600 font-medium";
+  return "text-amber-600 font-medium";
+};
+
+const catLabel = (cat: string) => (isAI(cat) ? "AI · " : "") + baseCat(cat);
 
 export default function ModerationTab({
   onCountChange,
@@ -81,10 +88,11 @@ export default function ModerationTab({
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          Submissions that contain flagged language are saved but listed here for review. Nothing is
-          blocked automatically — mark each one <strong>reviewed</strong> (you&apos;ve checked it and it&apos;s
-          fine or you&apos;ve fixed it) or <strong>dismissed</strong> (not a real problem). Fixing the
-          content and re-saving clears its open flags automatically.
+          Flagged submissions and duplicate profiles are listed here for review. Hate speech and
+          threats are hard-blocked at submission; profanity, AI-detected nuance, and duplicates are
+          saved and flagged. Mark each one <strong>reviewed</strong> (checked/fixed) or
+          <strong> dismissed</strong> (not a real problem). Duplicates are kept until you remove them —
+          the original always stays. Fixing content and re-saving clears its open flags automatically.
         </p>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={showResolved} onChange={(e) => setShowResolved(e.target.checked)} />
@@ -125,7 +133,7 @@ export default function ModerationTab({
                       {f.entityType ? <span className="text-muted-foreground"> · {f.entityType}</span> : null}
                     </td>
                     <td className="py-2 pr-3">{f.field}</td>
-                    <td className={`py-2 pr-3 capitalize ${catClass(f.category)}`}>{f.category}</td>
+                    <td className={`py-2 pr-3 capitalize ${catClass(f.category)}`}>{catLabel(f.category)}</td>
                     <td className="py-2 pr-3 font-mono">{f.matchedTerm}</td>
                     <td className="py-2 pr-3 max-w-[240px] truncate" title={f.snippet}>{f.snippet}</td>
                     <td className="py-2 pr-3 text-muted-foreground">{f.actor || "—"}</td>

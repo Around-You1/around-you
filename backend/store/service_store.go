@@ -99,15 +99,7 @@ func scanService(row serviceScanner) (*appdb.ServiceData, error) {
 }
 
 func (s *ServiceStore) List(ctx context.Context, sortBy, sortOrder string) ([]appdb.ServiceData, error) {
-	order := "created_at"
-	if sortBy == "name" {
-		order = "name"
-	}
-	dir := "DESC"
-	if sortOrder == "asc" {
-		dir = "ASC"
-	}
-	rows, err := appdb.SQLDB.QueryContext(ctx, "SELECT "+serviceColumns+" FROM services ORDER BY "+order+" "+dir)
+	rows, err := appdb.SQLDB.QueryContext(ctx, "SELECT "+serviceColumns+" FROM services ORDER BY "+sortColumn(sortBy, sortOrder))
 	if err != nil {
 		return nil, err
 	}

@@ -11,6 +11,7 @@ import (
 	"backend_encore/app/auth"
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/billing"
+	"backend_encore/internal/dedupe"
 	"backend_encore/internal/errs"
 	"backend_encore/internal/moderation"
 	"backend_encore/store"
@@ -94,6 +95,13 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.ServiceData, error)
 	if strings.TrimSpace(req.Name) == "" {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "name is required"}
 	}
+	if err := moderation.BlockError(
+		moderation.NamedField{Name: "name", Value: req.Name},
+		moderation.NamedField{Name: "description", Value: req.Description},
+		moderation.NamedField{Name: "discountOffered", Value: req.DiscountOffered},
+	); err != nil {
+		return nil, err
+	}
 	in := &appdb.ServiceData{
 		Name:                   req.Name,
 		Address:                req.Address,
@@ -166,6 +174,8 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.ServiceData, error)
 		moderation.NamedField{Name: "description", Value: created.Description},
 		moderation.NamedField{Name: "discountOffered", Value: created.DiscountOffered},
 	)
+	dedupe.CheckOnCreate(ctx, "services", "contact_number", "service", created.ID,
+		created.Name, created.ContactNumber, created.Address, created.OfficialRepCode, auth.ActorLabel(ctx))
 	return created, nil
 }
 
@@ -173,6 +183,13 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.ServiceData, error)
 func Update(ctx context.Context, req *UpdateRequest) (*appdb.ServiceData, error) {
 	id, err := lookup(req.ServiceID)
 	if err != nil {
+		return nil, err
+	}
+	if err := moderation.BlockError(
+		moderation.NamedField{Name: "name", Value: req.Name},
+		moderation.NamedField{Name: "description", Value: req.Description},
+		moderation.NamedField{Name: "discountOffered", Value: req.DiscountOffered},
+	); err != nil {
 		return nil, err
 	}
 	patch := store.ServicePatch{

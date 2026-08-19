@@ -111,15 +111,7 @@ func scanRestaurant(row restaurantScanner) (*appdb.Restaurant, error) {
 }
 
 func (s *RestaurantStore) List(ctx context.Context, sortBy, sortOrder string) ([]appdb.Restaurant, error) {
-	order := "created_at"
-	if sortBy == "name" {
-		order = "name"
-	}
-	dir := "DESC"
-	if sortOrder == "asc" {
-		dir = "ASC"
-	}
-	rows, err := appdb.SQLDB.QueryContext(ctx, "SELECT "+restaurantColumns+" FROM restaurants ORDER BY "+order+" "+dir)
+	rows, err := appdb.SQLDB.QueryContext(ctx, "SELECT "+restaurantColumns+" FROM restaurants ORDER BY "+sortColumn(sortBy, sortOrder))
 	if err != nil {
 		return nil, err
 	}

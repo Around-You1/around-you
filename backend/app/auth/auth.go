@@ -658,6 +658,12 @@ func CreateRep(ctx context.Context, req *CreateRepRequest) (*CreateRepResponse, 
 	if fullName == "" {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "full name is required"}
 	}
+	if err := moderation.BlockError(
+		moderation.NamedField{Name: "fullName", Value: fullName},
+		moderation.NamedField{Name: "email", Value: req.Email},
+	); err != nil {
+		return nil, err
+	}
 
 	repCode, err := nextRepCode(ctx)
 	if err != nil {

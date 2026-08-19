@@ -124,13 +124,30 @@ func nonNilSlice(s []string) []string {
 // string-concatenated into an ORDER BY clause — never interpolate a raw
 // caller-supplied string directly, even after type validation upstream.
 func sortColumn(sortBy, sortOrder string) string {
+	// Whitelist only — the result is concatenated into ORDER BY, so an
+	// unknown/spoofed sortBy must fall through to the safe default rather than
+	// reach the query. These columns exist on all four partner tables.
 	col := "created_at"
-	if sortBy == "name" {
+	switch sortBy {
+	case "name":
 		col = "name"
+	case "is_active":
+		col = "is_active"
+	case "province":
+		col = "province"
+	case "is_duplicate":
+		col = "is_duplicate"
+	case "created_at":
+		col = "created_at"
 	}
 	dir := "DESC"
 	if sortOrder == "asc" {
 		dir = "ASC"
+	}
+	// Stable secondary key so rows with equal primary values (e.g. every
+	// is_duplicate = false) return in a deterministic, useful order.
+	if col != "name" {
+		return col + " " + dir + ", name ASC"
 	}
 	return col + " " + dir
 }

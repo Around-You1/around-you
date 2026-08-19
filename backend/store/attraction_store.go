@@ -104,15 +104,7 @@ func scanAttraction(row attractionScanner) (*appdb.AttractionData, error) {
 }
 
 func (s *AttractionStore) List(ctx context.Context, sortBy, sortOrder string) ([]appdb.AttractionData, error) {
-	order := "created_at"
-	if sortBy == "name" {
-		order = "name"
-	}
-	dir := "DESC"
-	if sortOrder == "asc" {
-		dir = "ASC"
-	}
-	rows, err := appdb.SQLDB.QueryContext(ctx, "SELECT "+attractionColumns+" FROM attractions ORDER BY "+order+" "+dir)
+	rows, err := appdb.SQLDB.QueryContext(ctx, "SELECT "+attractionColumns+" FROM attractions ORDER BY "+sortColumn(sortBy, sortOrder))
 	if err != nil {
 		return nil, err
 	}
