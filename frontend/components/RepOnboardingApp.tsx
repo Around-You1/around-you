@@ -232,9 +232,16 @@ function TextField({ label, value, onChange, area }: { label?: any; value?: any;
   );
 }
 
-function CheckboxGroup({ label, options, selected = [], onChange }) {
+function CheckboxGroup({ label, options, selected = [], onChange, single = false }) {
   const toggle = (opt) => {
-    const next = selected.includes(opt) ? selected.filter((o) => o !== opt) : [...selected, opt];
+    let next;
+    if (single) {
+      // Radio-style: picking an option replaces the previous one; re-clicking
+      // the selected one clears it.
+      next = selected.includes(opt) ? [] : [opt];
+    } else {
+      next = selected.includes(opt) ? selected.filter((o) => o !== opt) : [...selected, opt];
+    }
     onChange(next);
   };
   return (
@@ -929,13 +936,11 @@ export default function RepOnboardingApp() {
                       label="Show profile to"
                       options={["Guest", "Local", "Both"]}
                       selected={visibility}
+                      single
                       onChange={(next) => {
                         setVisibility(next);
-                        // "Both" audiences (or Guest + Local together) = the top
-                        // tier, so auto-select Tier 4 for the rep.
-                        const isBoth =
-                          next.includes("Both") || (next.includes("Guest") && next.includes("Local"));
-                        if (isBoth) setTier(4);
+                        // Choosing "Both" = the top tier, so auto-select Tier 4.
+                        if (next.includes("Both")) setTier(4);
                       }}
                     />
 
