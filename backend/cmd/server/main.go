@@ -25,6 +25,7 @@ import (
 	"backend_encore/app/billing"
 	"backend_encore/app/booking"
 	"backend_encore/app/editcode"
+	"backend_encore/app/estate"
 	"backend_encore/app/events"
 	"backend_encore/app/health"
 	"backend_encore/app/moderation"
@@ -88,6 +89,28 @@ func main() {
 	r.auth("GET /admin/archived", httpx.Empty(admin.ListArchived))
 	r.auth("POST /admin/reinstate", httpx.Body(admin.Reinstate))
 	r.auth("POST /admin/purge", httpx.Body(admin.PurgeArchived))
+
+	// Real Estate & Rentals (isolated category)
+	r.auth("POST /estate/agency", httpx.Body(estate.CreateAgency))
+	r.auth("PUT /estate/agency", httpx.Body(estate.UpdateAgency))
+	r.auth("GET /estate/agencies", httpx.Empty(estate.ListAgencies))
+	r.auth("GET /estate/agency/get", httpx.Query(estate.GetAgency))
+	r.auth("POST /estate/agency/active", httpx.Body(estate.SetAgencyActive))
+	r.auth("DELETE /estate/agency", httpx.Body(estate.DeleteAgency))
+	r.auth("POST /estate/agent", httpx.Body(estate.CreateAgent))
+	r.auth("PUT /estate/agent", httpx.Body(estate.UpdateAgent))
+	r.auth("GET /estate/agents", httpx.Query(estate.ListAgents))
+	r.auth("POST /estate/agent/active", httpx.Body(estate.SetAgentActive))
+	r.auth("DELETE /estate/agent", httpx.Body(estate.DeleteAgent))
+	r.auth("POST /estate/property", httpx.Body(estate.CreateProperty))
+	r.auth("PUT /estate/property", httpx.Body(estate.UpdateProperty))
+	r.auth("GET /estate/properties", httpx.Query(estate.ListProperties))
+	r.auth("POST /estate/property/active", httpx.Body(estate.SetPropertyActive))
+	r.auth("DELETE /estate/property", httpx.Body(estate.DeleteProperty))
+	r.auth("GET /estate/public/agencies", httpx.Empty(estate.PublicAgencies))
+	r.auth("GET /estate/public/agency", httpx.Query(estate.PublicAgency))
+	r.auth("GET /estate/public/agent", httpx.Query(estate.PublicAgent))
+	r.auth("GET /estate/public/property", httpx.Query(estate.PublicProperty))
 	r.auth("GET /analytics/rep-activity", httpx.Empty(analytics.RepActivityReport))
 	r.auth("GET /analytics/reps", httpx.Empty(analytics.RepsAnalytics))
 	r.auth("GET /analytics/business", httpx.Empty(analytics.BusinessMetrics))

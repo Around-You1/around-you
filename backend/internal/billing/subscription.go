@@ -60,6 +60,19 @@ func EnsureSubscription(ctx context.Context, partnerType string, partnerID int64
 	return err
 }
 
+// SetStatusByPartner sets a subscription's lifecycle status by (partner_type,
+// partner_id). Used by the real-estate flow to cancel billing when a page is
+// deactivated/deleted and reactivate it when re-enabled. No-op if none exists.
+func SetStatusByPartner(ctx context.Context, partnerType string, partnerID int64, status string) error {
+	_, err := appdb.SQLDB.ExecContext(ctx, `
+		UPDATE partner_subscription
+		SET status = $3,
+		    cancelled_at = CASE WHEN $3 = 'Cancelled' THEN now() ELSE NULL END,
+		    updated_at = now()
+		WHERE partner_type = $1 AND partner_id = $2`, partnerType, partnerID, status)
+	return err
+}
+
 // List returns all subscriptions, newest first — powers admin/analytics views.
 func List(ctx context.Context) ([]Subscription, error) {
 	rows, err := appdb.SQLDB.QueryContext(ctx, `

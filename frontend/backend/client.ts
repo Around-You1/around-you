@@ -232,6 +232,32 @@ export const backend = {
     purge: (req: { archiveId: number }) =>
       request("POST", "/admin/purge", { body: req }),
   },
+  estate: {
+    // Real Estate & Rentals (isolated category). Writes are SuperAdmin/Admin/Rep.
+    createAgency: (req: any) => request("POST", "/estate/agency", { body: req }),
+    updateAgency: (req: any) => request("PUT", "/estate/agency", { body: req }),
+    listAgencies: () => request("GET", "/estate/agencies"),
+    getAgency: (req: { id: number }) => request("GET", "/estate/agency/get", { query: req }),
+    setAgencyActive: (req: { id: number; active: boolean }) =>
+      request("POST", "/estate/agency/active", { body: req }),
+    deleteAgency: (req: { id: number }) => request("DELETE", "/estate/agency", { body: req }),
+    createAgent: (req: any) => request("POST", "/estate/agent", { body: req }),
+    updateAgent: (req: any) => request("PUT", "/estate/agent", { body: req }),
+    listAgents: (req: { agencyId: number }) => request("GET", "/estate/agents", { query: req }),
+    setAgentActive: (req: { id: number; active: boolean }) =>
+      request("POST", "/estate/agent/active", { body: req }),
+    deleteAgent: (req: { id: number }) => request("DELETE", "/estate/agent", { body: req }),
+    createProperty: (req: any) => request("POST", "/estate/property", { body: req }),
+    updateProperty: (req: any) => request("PUT", "/estate/property", { body: req }),
+    listProperties: (req: { agencyId: number }) => request("GET", "/estate/properties", { query: req }),
+    setPropertyActive: (req: { id: number; active: boolean }) =>
+      request("POST", "/estate/property/active", { body: req }),
+    deleteProperty: (req: { id: number }) => request("DELETE", "/estate/property", { body: req }),
+    publicAgencies: () => request("GET", "/estate/public/agencies"),
+    publicAgency: (req: { code: string }) => request("GET", "/estate/public/agency", { query: req }),
+    publicAgent: (req: { code: string }) => request("GET", "/estate/public/agent", { query: req }),
+    publicProperty: (req: { id: number }) => request("GET", "/estate/public/property", { query: req }),
+  },
   accounts: {
     invoices: () => request("GET", "/accounts/invoices"),
     summary: () => request("GET", "/accounts/summary"),
