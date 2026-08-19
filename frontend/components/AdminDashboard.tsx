@@ -17,6 +17,7 @@ import RepsTab from "../components/RepsTab";
 import BillingTab from "../components/BillingTab";
 import ModerationTab from "../components/ModerationTab";
 import ArchivedTab from "../components/ArchivedTab";
+import EstateTab from "../components/EstateTab";
 import { ShieldAlert } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -132,7 +133,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <Tabs value={tab} onValueChange={setTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-8 min-h-[48px]">
+              <TabsList className="grid w-full grid-cols-9 min-h-[48px]">
                 <TabsTrigger value="accommodations" className="min-h-[44px] touch-manipulation">Accommodations</TabsTrigger>
                 <TabsTrigger value="restaurants" className="min-h-[44px] touch-manipulation">Restaurants</TabsTrigger>
                 <TabsTrigger value="services" className="min-h-[44px] touch-manipulation">Services</TabsTrigger>
@@ -148,6 +149,7 @@ export default function AdminDashboard() {
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="archived" className="min-h-[44px] touch-manipulation">Archived</TabsTrigger>
+                <TabsTrigger value="realestate" className="min-h-[44px] touch-manipulation">Real Estate</TabsTrigger>
               </TabsList>
 
               <TabsContent value="accommodations">
@@ -180,6 +182,10 @@ export default function AdminDashboard() {
 
               <TabsContent value="archived">
                 <ArchivedTab />
+              </TabsContent>
+
+              <TabsContent value="realestate">
+                <EstateTab />
               </TabsContent>
             </Tabs>
           </CardContent>
