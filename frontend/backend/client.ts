@@ -214,6 +214,12 @@ export const backend = {
     redeem: (req: { token: string }) =>
       request("POST", "/redemption/redeem", { body: req }),
   },
+  moderation: {
+    // SuperAdmin content-moderation review queue.
+    flags: () => request("GET", "/moderation/flags"),
+    setFlagStatus: (req: { id: number; status: string }) =>
+      request("POST", "/moderation/flag-status", { body: req }),
+  },
   accounts: {
     invoices: () => request("GET", "/accounts/invoices"),
     summary: () => request("GET", "/accounts/summary"),

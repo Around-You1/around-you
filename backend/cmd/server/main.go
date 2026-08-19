@@ -26,6 +26,7 @@ import (
 	"backend_encore/app/editcode"
 	"backend_encore/app/events"
 	"backend_encore/app/health"
+	"backend_encore/app/moderation"
 	"backend_encore/app/rating"
 	"backend_encore/app/redemption"
 	"backend_encore/app/restaurant"
@@ -79,6 +80,8 @@ func main() {
 	r.auth("POST /auth/rep/update", httpx.Body(auth.UpdateRep))
 	r.auth("POST /auth/acc-code/set", httpx.Body(auth.SetAccCode))
 	r.auth("GET /auth/acc-code/status", httpx.Empty(auth.AccCodeStatus))
+	r.auth("GET /moderation/flags", httpx.Empty(moderation.ListFlags))
+	r.auth("POST /moderation/flag-status", httpx.Body(moderation.SetFlagStatus))
 	r.auth("GET /analytics/rep-activity", httpx.Empty(analytics.RepActivityReport))
 	r.auth("GET /analytics/reps", httpx.Empty(analytics.RepsAnalytics))
 	r.auth("GET /analytics/business", httpx.Empty(analytics.BusinessMetrics))

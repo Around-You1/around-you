@@ -22,6 +22,7 @@ import (
 
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/errs"
+	"backend_encore/internal/moderation"
 )
 
 // isNoRows reports whether err is the "no matching row" sentinel from a
@@ -73,6 +74,24 @@ func IsPrivileged(ctx context.Context) bool {
 		return true
 	}
 	return false
+}
+
+// ActorLabel returns a short "email (Role)" label for the authenticated caller,
+// or "" if none. Used to record who submitted flagged content, without other
+// packages needing to reach into the auth context internals.
+func ActorLabel(ctx context.Context) string {
+	d := FromContext(ctx)
+	if d == nil || d.User == nil {
+		return ""
+	}
+	label := d.User.Email
+	if d.User.Role != "" {
+		if label != "" {
+			label += " "
+		}
+		label += "(" + d.User.Role + ")"
+	}
+	return label
 }
 
 // Validate resolves a bearer token to the signed-in user, or returns an
@@ -658,6 +677,14 @@ func CreateRep(ctx context.Context, req *CreateRepRequest) (*CreateRepResponse, 
 	); err != nil {
 		return nil, err
 	}
+
+	// Screen the rep-onboarding text for profanity/abuse/discrimination. Never
+	// blocks — hits become alerts on the Admin Dashboard. entityID 0: reps have
+	// no stable numeric entity here, so we key the flag by rep code in subject.
+	moderation.ScanAndFlag(ctx, "rep_onboarding", "rep", 0, fullName+" ("+repCode+")", ActorLabel(ctx),
+		moderation.NamedField{Name: "fullName", Value: fullName},
+		moderation.NamedField{Name: "email", Value: strings.TrimSpace(req.Email)},
+	)
 
 	return &CreateRepResponse{FullName: fullName, RepCode: repCode}, nil
 }

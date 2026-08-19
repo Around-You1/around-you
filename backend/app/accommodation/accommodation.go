@@ -16,6 +16,7 @@ import (
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/billing"
 	"backend_encore/internal/errs"
+	"backend_encore/internal/moderation"
 	"backend_encore/store"
 )
 
@@ -119,6 +120,10 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Accommodation, erro
 	if subErr := billing.OnPartnerOnboarded(ctx, "accommodation", created.ID, created.AccessLevel, created.GuestType, created.OfficialRepCode); subErr != nil {
 		log.Printf("accommodation %d created but subscription upsert failed: %v", created.ID, subErr)
 	}
+	moderation.ScanAndFlag(ctx, "partner_profile", "accommodation", created.ID, created.Name, auth.ActorLabel(ctx),
+		moderation.NamedField{Name: "name", Value: created.Name},
+		moderation.NamedField{Name: "description", Value: created.Description},
+	)
 	return created, nil
 }
 
@@ -172,6 +177,10 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.Accommodation, erro
 		}
 		return nil, err
 	}
+	moderation.ScanAndFlag(ctx, "partner_profile", "accommodation", a.ID, a.Name, auth.ActorLabel(ctx),
+		moderation.NamedField{Name: "name", Value: a.Name},
+		moderation.NamedField{Name: "description", Value: a.Description},
+	)
 	return a, nil
 }
 

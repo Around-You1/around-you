@@ -15,6 +15,8 @@ import ServiceTab from "../components/ServiceTab";
 import AttractionTab from "../components/AttractionTab";
 import RepsTab from "../components/RepsTab";
 import BillingTab from "../components/BillingTab";
+import ModerationTab from "../components/ModerationTab";
+import { ShieldAlert } from "lucide-react";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -33,10 +35,23 @@ export default function AdminDashboard() {
   });
 
   const { toast } = useToast();
+  const [tab, setTab] = useState("accommodations");
+  const [modOpenCount, setModOpenCount] = useState(0);
 
   useEffect(() => {
     loadStats();
+    loadModCount();
   }, []);
+
+  const loadModCount = async () => {
+    try {
+      const backend = getAuthenticatedBackend();
+      const res = await backend.moderation.flags();
+      setModOpenCount(Number((res as any).openCount || 0));
+    } catch {
+      // non-fatal — the moderation tab will surface any real error
+    }
+  };
 
   const loadStats = async () => {
     try {
@@ -97,19 +112,40 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {modOpenCount > 0 && (
+          <button
+            onClick={() => setTab("moderation")}
+            className="w-full flex items-center gap-3 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-left hover:bg-red-500/15 transition-colors"
+          >
+            <ShieldAlert className="w-5 h-5 text-red-600 shrink-0" />
+            <span className="text-sm text-foreground">
+              <strong>{modOpenCount}</strong> flagged {modOpenCount === 1 ? "submission needs" : "submissions need"} review
+              (possible profanity, abuse, or discrimination). Click to review.
+            </span>
+          </button>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>Manage Content</CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="accommodations" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-6 min-h-[48px]">
+            <Tabs value={tab} onValueChange={setTab} className="space-y-6">
+              <TabsList className="grid w-full grid-cols-7 min-h-[48px]">
                 <TabsTrigger value="accommodations" className="min-h-[44px] touch-manipulation">Accommodations</TabsTrigger>
                 <TabsTrigger value="restaurants" className="min-h-[44px] touch-manipulation">Restaurants</TabsTrigger>
                 <TabsTrigger value="services" className="min-h-[44px] touch-manipulation">Services</TabsTrigger>
                 <TabsTrigger value="attractions" className="min-h-[44px] touch-manipulation">Attractions</TabsTrigger>
                 <TabsTrigger value="reps" className="min-h-[44px] touch-manipulation">Reps</TabsTrigger>
                 <TabsTrigger value="billing" className="min-h-[44px] touch-manipulation">Billing</TabsTrigger>
+                <TabsTrigger value="moderation" className="min-h-[44px] touch-manipulation">
+                  Moderation
+                  {modOpenCount > 0 && (
+                    <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold h-4 min-w-[16px] px-1">
+                      {modOpenCount}
+                    </span>
+                  )}
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="accommodations">
@@ -134,6 +170,10 @@ export default function AdminDashboard() {
 
               <TabsContent value="billing">
                 <BillingTab />
+              </TabsContent>
+
+              <TabsContent value="moderation">
+                <ModerationTab onCountChange={setModOpenCount} />
               </TabsContent>
             </Tabs>
           </CardContent>
