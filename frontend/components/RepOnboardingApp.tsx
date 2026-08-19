@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getAuthenticatedBackend } from "../lib/backend";
+import EstateAgencyForm from "./EstateAgencyForm";
 
 const colors = {
   background: "#000000",
@@ -828,7 +829,7 @@ export default function RepOnboardingApp() {
         {/* Step 1: Partner type — big finger-friendly buttons */}
         {!partnerType ? (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {["Accommodations", "Restaurants", "Services", "Attractions"].map((type) => (
+            {["Accommodations", "Restaurants", "Services", "Attractions", "Real Estate & Rentals"].map((type) => (
               <button
                 key={type}
                 onClick={() => setPartnerType(type)}
@@ -836,12 +837,28 @@ export default function RepOnboardingApp() {
                   padding: "28px 8px", borderRadius: 16, background: colors.surface,
                   border: `2px solid ${colors.primary}`, color: colors.primary,
                   fontWeight: 800, fontSize: 15, cursor: "pointer",
+                  gridColumn: type === "Real Estate & Rentals" ? "1 / -1" : undefined,
                 }}
               >
                 {type}
               </button>
             ))}
           </div>
+        ) : partnerType === "Real Estate & Rentals" ? (
+          <>
+            <button
+              onClick={reset}
+              style={{ background: "transparent", border: `1px solid ${colors.border}`, color: colors.textSecondary, borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer", marginBottom: 14 }}
+            >
+              ← Change Partner Type (Real Estate & Rentals)
+            </button>
+            <EstateAgencyForm
+              onClose={reset}
+              onSaved={reset}
+              defaultRepCode={repSession.repCode}
+              defaultRepName={repSession.repName}
+            />
+          </>
         ) : (
           <>
             <button

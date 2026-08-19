@@ -69,10 +69,14 @@ export default function EstateAgencyForm({
   agencyId,
   onClose,
   onSaved,
+  defaultRepCode,
+  defaultRepName,
 }: {
   agencyId?: number;
   onClose: () => void;
   onSaved: () => void;
+  defaultRepCode?: string;
+  defaultRepName?: string;
 }) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(!!agencyId);
@@ -83,7 +87,11 @@ export default function EstateAgencyForm({
     contactNumber: "", email: "", latitude: "", longitude: "", imageUrls: [] as string[],
     createAgentPages: false, isActive: true,
   });
-  const [official, setOfficial] = useState<OfficialUseData>(emptyOfficial());
+  const [official, setOfficial] = useState<OfficialUseData>(() => ({
+    ...emptyOfficial(),
+    officialRepCode: defaultRepCode || "",
+    officialRepName: defaultRepName || "",
+  }));
   const [properties, setProperties] = useState<PropertyRow[]>([]);
   const [agents, setAgents] = useState<AgentRow[]>([]);
   const [deletedProps, setDeletedProps] = useState<number[]>([]);
