@@ -14,6 +14,7 @@ import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 import { useSwipe } from "../lib/useSwipe";
 import ImageCarousel from "../components/ImageCarousel";
+import { EstateAgenciesBrowse } from "../components/EstatePublic";
 import SwipeIndicator from "../components/SwipeIndicator";
 import type { Accommodation } from "~backend/accommodation/types";
 import type { Restaurant } from "~backend/restaurant/types";
@@ -697,11 +698,16 @@ export default function GuestDashboard() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 min-h-[48px]">
+            <TabsList className="grid w-full grid-cols-4 min-h-[48px]">
               <TabsTrigger value="restaurants" className="min-h-[44px] touch-manipulation">Restaurants ({filteredRestaurants.length})</TabsTrigger>
               <TabsTrigger value="services" className="min-h-[44px] touch-manipulation">Services ({filteredServices.length})</TabsTrigger>
               <TabsTrigger value="attractions" className="min-h-[44px] touch-manipulation">Attractions ({filteredAttractions.length})</TabsTrigger>
+              <TabsTrigger value="realestate" className="min-h-[44px] touch-manipulation">Real Estate</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="realestate" className="space-y-3 mt-6">
+              <EstateAgenciesBrowse />
+            </TabsContent>
 
             <TabsContent value="restaurants" className="space-y-3 mt-6" {...swipeHandlers}>
               {filteredRestaurants.length === 0 ? (
