@@ -23,9 +23,10 @@ import (
 )
 
 var (
-	restaurants = store.NewRestaurantStore()
-	services    = store.NewServiceStore()
-	attractions = store.NewAttractionStore()
+	restaurants    = store.NewRestaurantStore()
+	services       = store.NewServiceStore()
+	attractions    = store.NewAttractionStore()
+	accommodations = store.NewStore()
 )
 
 type GetRequest struct {
@@ -60,6 +61,8 @@ func getCode(ctx context.Context, entityType string, id int64) (string, error) {
 		return services.GetEditCode(ctx, id)
 	case "attraction":
 		return attractions.GetEditCode(ctx, id)
+	case "accommodation":
+		return accommodations.GetEditCode(ctx, id)
 	default:
 		return "", &errs.Error{Code: errs.InvalidArgument, Message: "invalid entityType"}
 	}
@@ -73,6 +76,8 @@ func regenCode(ctx context.Context, entityType string, id int64, newCode string)
 		return services.RegenerateEditCode(ctx, id, newCode)
 	case "attraction":
 		return attractions.RegenerateEditCode(ctx, id, newCode)
+	case "accommodation":
+		return accommodations.RegenerateEditCode(ctx, id, newCode)
 	default:
 		return "", &errs.Error{Code: errs.InvalidArgument, Message: "invalid entityType"}
 	}
@@ -95,7 +100,8 @@ func privileged(ctx context.Context) bool {
 func mapNotFound(err error) error {
 	if errors.Is(err, store.ErrRestaurantNotFound) ||
 		errors.Is(err, store.ErrServiceNotFound) ||
-		errors.Is(err, store.ErrAttractionNotFound) {
+		errors.Is(err, store.ErrAttractionNotFound) ||
+		errors.Is(err, store.ErrNotFound) {
 		return &errs.Error{Code: errs.NotFound, Message: "partner not found"}
 	}
 	return err

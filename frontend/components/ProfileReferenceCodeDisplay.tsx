@@ -34,11 +34,14 @@ export default function ProfileReferenceCodeDisplay({
 
   const displayCode = currentCode || "";
 
-  // The partner "edit code" applies to the three partner entity types, not to
-  // accommodations. It is fetched separately (it is never part of the entity
-  // JSON, to avoid leaking it to guests).
+  // The partner "edit code" applies to all four partner entity types. It is
+  // fetched separately (it is never part of the entity JSON, to avoid leaking
+  // it to guests).
   const supportsEditCode =
-    entityType === "restaurant" || entityType === "service" || entityType === "attraction";
+    entityType === "restaurant" ||
+    entityType === "service" ||
+    entityType === "attraction" ||
+    entityType === "accommodation";
   const [editCode, setEditCode] = useState<string | null>(null);
   const [editCopied, setEditCopied] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
