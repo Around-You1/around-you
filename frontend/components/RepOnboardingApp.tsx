@@ -99,7 +99,6 @@ const CATEGORY_GROUPS = [
       "Home Security",
       "Interior Design & Décor",
       "Pest Control",
-      "Real Estate & Rentals",
     ],
   },
   {

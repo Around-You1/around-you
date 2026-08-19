@@ -96,7 +96,6 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
       "Home Security",
       "Interior Design & Décor",
       "Pest Control",
-      "Real Estate & Rentals",
     ],
   },
   {
