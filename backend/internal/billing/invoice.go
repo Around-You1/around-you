@@ -4,12 +4,40 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/mailer"
 )
+
+// isTestRep reports whether a rep code is flagged as a TEST rep, whose onboarded
+// partners must NOT generate any billing/commission records. Rep00000001 is a
+// test rep by default; more can be added via the TEST_REP_CODES env var
+// (comma-separated, case-insensitive), e.g. "Rep00000001,Rep00000007".
+func isTestRep(code string) bool {
+	code = strings.ToLower(strings.TrimSpace(code))
+	if code == "" {
+		return false
+	}
+	for _, t := range testRepCodes() {
+		if code == t {
+			return true
+		}
+	}
+	return false
+}
+
+func testRepCodes() []string {
+	codes := []string{"rep00000001"} // default test rep
+	for _, c := range strings.Split(os.Getenv("TEST_REP_CODES"), ",") {
+		if c = strings.ToLower(strings.TrimSpace(c)); c != "" {
+			codes = append(codes, c)
+		}
+	}
+	return codes
+}
 
 // Invoice mirrors an invoice row for read APIs.
 type Invoice struct {
@@ -49,6 +77,12 @@ func partnerTable(partnerType string) string {
 // ensures the billing subscription exists and issues the first invoice. Both
 // steps are idempotent, so a re-save reconciles rather than duplicates.
 func OnPartnerOnboarded(ctx context.Context, partnerType string, partnerID int64, accessLevel, guestType, repCode string) error {
+	// Test reps (e.g. Rep00000001) create real profiles for testing, but must
+	// not generate any subscription/invoice/commission noise in the live books.
+	if isTestRep(repCode) {
+		log.Printf("billing: skipping subscription+invoice for test rep %q (%s %d)", repCode, partnerType, partnerID)
+		return nil
+	}
 	if err := EnsureSubscription(ctx, partnerType, partnerID, accessLevel, guestType, repCode); err != nil {
 		return err
 	}
