@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"backend_encore/app/accommodation"
+	"backend_encore/app/admin"
 	"backend_encore/app/analytics"
 	"backend_encore/app/attraction"
 	"backend_encore/app/auth"
@@ -82,6 +83,11 @@ func main() {
 	r.auth("GET /auth/acc-code/status", httpx.Empty(auth.AccCodeStatus))
 	r.auth("GET /moderation/flags", httpx.Empty(moderation.ListFlags))
 	r.auth("POST /moderation/flag-status", httpx.Body(moderation.SetFlagStatus))
+	r.auth("POST /admin/bulk-set-active", httpx.Body(admin.BulkSetActive))
+	r.auth("POST /admin/bulk-delete", httpx.Body(admin.BulkDelete))
+	r.auth("GET /admin/archived", httpx.Empty(admin.ListArchived))
+	r.auth("POST /admin/reinstate", httpx.Body(admin.Reinstate))
+	r.auth("POST /admin/purge", httpx.Body(admin.PurgeArchived))
 	r.auth("GET /analytics/rep-activity", httpx.Empty(analytics.RepActivityReport))
 	r.auth("GET /analytics/reps", httpx.Empty(analytics.RepsAnalytics))
 	r.auth("GET /analytics/business", httpx.Empty(analytics.BusinessMetrics))

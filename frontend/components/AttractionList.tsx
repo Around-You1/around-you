@@ -65,6 +65,53 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
   const [openIds, setOpenIds] = useState<Set<string>>(new Set());
   const [ratings, setRatings] = useState<Record<number, { averageRating: number; ratingCount: number }>>({});
   const { toast } = useToast();
+  const isAdmin = (JSON.parse(localStorage.getItem("user") || "{}").role) === "SuperAdmin";
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  const toggleSel = (id: number) =>
+    setSelected((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  const clearSel = () => setSelected(new Set());
+
+  const bulkActive = async (active: boolean) => {
+    setBulkBusy(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.admin.bulkSetActive({ entityType: "attraction", ids: Array.from(selected), active });
+      toast({
+        title: active ? "Set Active" : "Set Non-Active",
+        description: `${selected.size} updated. ${active ? "New access & edit codes issued." : "Access & edit codes disabled."}`,
+      });
+      clearSel();
+      loadAttractions();
+      onUpdate?.();
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Bulk update failed", variant: "destructive" });
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const bulkDelete = async () => {
+    if (!confirm(`Delete ${selected.size} selected attraction(s)? They'll be archived and can be reinstated later from the Archived tab.`)) return;
+    setBulkBusy(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.admin.bulkDelete({ entityType: "attraction", ids: Array.from(selected) });
+      toast({ title: "Deleted", description: `${selected.size} attraction(s) archived.` });
+      clearSel();
+      loadAttractions();
+      onUpdate?.();
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Bulk delete failed", variant: "destructive" });
+    } finally {
+      setBulkBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (attractions.length === 0) return;
@@ -186,6 +233,15 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
 
   return (
     <div className="space-y-1">
+      {isAdmin && selected.size > 0 && (
+        <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 rounded-md border border-border bg-background/95 backdrop-blur p-2 shadow-sm">
+          <span className="text-sm font-medium">{selected.size} selected</span>
+          <Button size="sm" variant="outline" onClick={() => bulkActive(false)} disabled={bulkBusy}>Set Non-Active</Button>
+          <Button size="sm" variant="outline" onClick={() => bulkActive(true)} disabled={bulkBusy}>Set Active</Button>
+          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={bulkDelete} disabled={bulkBusy}>Delete</Button>
+          <Button size="sm" variant="ghost" onClick={clearSel} disabled={bulkBusy}>Clear</Button>
+        </div>
+      )}
       {filteredAttractions.map((attraction) => {
         const isOpen = openIds.has(attraction.attractionId);
         return (
@@ -193,6 +249,16 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
             <Card>
               <CardContent className="p-2">
                 <div className="flex items-center justify-between gap-2">
+                  {isAdmin && (
+                    <input
+                      type="checkbox"
+                      checked={selected.has(attraction.id)}
+                      onChange={() => toggleSel(attraction.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-4 h-4 shrink-0 accent-green-600"
+                      title="Select for bulk action"
+                    />
+                  )}
                   <CollapsibleTrigger asChild>
                     <button className="flex items-center gap-2 flex-1 min-w-0 text-left">
                       {isOpen ? <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />}

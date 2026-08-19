@@ -442,3 +442,61 @@ func (s *Store) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
+// --- Profile code lifecycle (mirrors RestaurantStore) --------------------------
+// Accommodations' "Profile Access Code" is profile_reference_code, with an
+// active flag (profile_reference_code_active). The "Edit Code" is edit_code.
+// These small queries deliberately sit outside scanAccommodation so the codes
+// never leak into guest-facing JSON.
+
+func (s *Store) GetEditCode(ctx context.Context, id int64) (string, error) {
+	var code string
+	err := appdb.SQLDB.QueryRowContext(ctx,
+		"SELECT COALESCE(edit_code, '') FROM accommodations WHERE id = $1", id,
+	).Scan(&code)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrNotFound
+	}
+	return code, err
+}
+
+func (s *Store) RegenerateEditCode(ctx context.Context, id int64, newCode string) (string, error) {
+	var code string
+	err := appdb.SQLDB.QueryRowContext(ctx,
+		"UPDATE accommodations SET edit_code = $1, updated_at = now() WHERE id = $2 RETURNING edit_code",
+		newCode, id,
+	).Scan(&code)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrNotFound
+	}
+	return code, err
+}
+
+func (s *Store) GetAccessCode(ctx context.Context, id int64) (code string, active bool, err error) {
+	err = appdb.SQLDB.QueryRowContext(ctx,
+		"SELECT COALESCE(profile_reference_code, ''), profile_reference_code_active FROM accommodations WHERE id = $1", id,
+	).Scan(&code, &active)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", false, ErrNotFound
+	}
+	return code, active, err
+}
+
+func (s *Store) RegenerateAccessCode(ctx context.Context, id int64, newCode string) (code string, active bool, err error) {
+	err = appdb.SQLDB.QueryRowContext(ctx, `
+		UPDATE accommodations SET profile_reference_code = $1, profile_reference_code_active = true, updated_at = now()
+		WHERE id = $2
+		RETURNING profile_reference_code, profile_reference_code_active`,
+		newCode, id,
+	).Scan(&code, &active)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", false, ErrNotFound
+	}
+	return code, active, err
+}
+
+func (s *Store) ToggleAccessCode(ctx context.Context, id int64, active bool) error {
+	_, err := appdb.SQLDB.ExecContext(ctx,
+		"UPDATE accommodations SET profile_reference_code_active = $1, updated_at = now() WHERE id = $2", active, id)
+	return err
+}
+

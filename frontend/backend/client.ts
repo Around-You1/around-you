@@ -220,6 +220,18 @@ export const backend = {
     setFlagStatus: (req: { id: number; status: string }) =>
       request("POST", "/moderation/flag-status", { body: req }),
   },
+  admin: {
+    // SuperAdmin bulk profile operations + archive (recycle bin).
+    bulkSetActive: (req: { entityType: string; ids: number[]; active: boolean }) =>
+      request("POST", "/admin/bulk-set-active", { body: req }),
+    bulkDelete: (req: { entityType: string; ids: number[] }) =>
+      request("POST", "/admin/bulk-delete", { body: req }),
+    archived: () => request("GET", "/admin/archived"),
+    reinstate: (req: { archiveId: number }) =>
+      request("POST", "/admin/reinstate", { body: req }),
+    purge: (req: { archiveId: number }) =>
+      request("POST", "/admin/purge", { body: req }),
+  },
   accounts: {
     invoices: () => request("GET", "/accounts/invoices"),
     summary: () => request("GET", "/accounts/summary"),

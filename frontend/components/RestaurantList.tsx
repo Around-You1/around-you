@@ -58,10 +58,55 @@ function FieldRow({ label, value }: { label: string; value: string | number | bo
 export default function RestaurantList({ restaurants, onEdit, onUpdate }: RestaurantListProps) {
   const { toast } = useToast();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const isAdmin = user.role === "SuperAdmin";
   const [gettingDirections, setGettingDirections] = useState<number | null>(null);
   const [toggling, setToggling] = useState<number | null>(null);
   const [openIds, setOpenIds] = useState<Set<number>>(new Set());
   const [ratings, setRatings] = useState<Record<number, { averageRating: number; ratingCount: number }>>({});
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  const toggleSel = (id: number) =>
+    setSelected((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  const clearSel = () => setSelected(new Set());
+
+  const bulkActive = async (active: boolean) => {
+    setBulkBusy(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.admin.bulkSetActive({ entityType: "restaurant", ids: Array.from(selected), active });
+      toast({
+        title: active ? "Set Active" : "Set Non-Active",
+        description: `${selected.size} updated. ${active ? "New access & edit codes issued." : "Access & edit codes disabled."}`,
+      });
+      clearSel();
+      onUpdate();
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Bulk update failed", variant: "destructive" });
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const bulkDelete = async () => {
+    if (!confirm(`Delete ${selected.size} selected restaurant(s)? They'll be archived and can be reinstated later from the Archived tab.`)) return;
+    setBulkBusy(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.admin.bulkDelete({ entityType: "restaurant", ids: Array.from(selected) });
+      toast({ title: "Deleted", description: `${selected.size} restaurant(s) archived.` });
+      clearSel();
+      onUpdate();
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Bulk delete failed", variant: "destructive" });
+    } finally {
+      setBulkBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (restaurants.length === 0) return;
@@ -152,6 +197,15 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
 
   return (
     <div className="space-y-1">
+      {isAdmin && selected.size > 0 && (
+        <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 rounded-md border border-border bg-background/95 backdrop-blur p-2 shadow-sm">
+          <span className="text-sm font-medium">{selected.size} selected</span>
+          <Button size="sm" variant="outline" onClick={() => bulkActive(false)} disabled={bulkBusy}>Set Non-Active</Button>
+          <Button size="sm" variant="outline" onClick={() => bulkActive(true)} disabled={bulkBusy}>Set Active</Button>
+          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={bulkDelete} disabled={bulkBusy}>Delete</Button>
+          <Button size="sm" variant="ghost" onClick={clearSel} disabled={bulkBusy}>Clear</Button>
+        </div>
+      )}
       {restaurants.map((restaurant) => {
         const isOpen = openIds.has(restaurant.id);
         return (
@@ -159,6 +213,16 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
             <Card className="shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="p-2">
                 <div className="flex items-center justify-between gap-2">
+                  {isAdmin && (
+                    <input
+                      type="checkbox"
+                      checked={selected.has(restaurant.id)}
+                      onChange={() => toggleSel(restaurant.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-4 h-4 shrink-0 accent-green-600"
+                      title="Select for bulk action"
+                    />
+                  )}
                   <CollapsibleTrigger asChild>
                     <button className="flex items-center gap-2 flex-1 min-w-0 text-left">
                       {isOpen ? <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />}
