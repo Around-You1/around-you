@@ -12,6 +12,7 @@ const (
 	Tier4Cents   = 30000 // R300
 	BothCents    = 45000 // R450 — audience "Both" forces Tier 4 at this price
 	BookingBase  = 20000 // R200/month base for Booking partners (+10% of bookings added per billing period)
+	RealEstateCents = 30000 // R300 — flat per real-estate page (agency or agent), no tiers
 )
 
 // Plan is the computed billing arrangement for a partner.
@@ -32,6 +33,10 @@ type Plan struct {
 // per period during billing, not here). Unknown/blank tier defaults to Tier 1
 // (Free) — deliberately the safe direction (never over-charge on bad data).
 func PriceFor(partnerType, accessLevel, guestType string) Plan {
+	// Real estate pages (agency + each agent) are a flat R300/month, no tiers.
+	if partnerType == "estate_agency" || partnerType == "estate_agent" {
+		return Plan{Plan: "realestate", MonthlyCents: RealEstateCents}
+	}
 	if partnerType == "accommodation" {
 		return Plan{Plan: "tier", Tier: 4, MonthlyCents: Tier4Cents}
 	}

@@ -68,6 +68,10 @@ func partnerTable(partnerType string) string {
 		return "services"
 	case "attraction":
 		return "attractions"
+	case "estate_agency":
+		return "estate_agencies"
+	case "estate_agent":
+		return "estate_agents"
 	default:
 		return ""
 	}
