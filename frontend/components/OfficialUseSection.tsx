@@ -84,7 +84,11 @@ export default function OfficialUseSection({ data, onChange, showTierFields = tr
               name="officialGuestType"
               options={GUEST_TYPE_OPTIONS}
               value={data.guestType}
-              onChange={(val) => onChange({ ...data, guestType: val })}
+              onChange={(val) =>
+                // Choosing "Both" audiences auto-selects the top tier (Tier 4),
+                // matching the Rep Onboarding app.
+                onChange({ ...data, guestType: val, ...(val === "Both" ? { accessLevel: "Tier 4" } : {}) })
+              }
             />
             <RadioGroup
               label="Access Level"

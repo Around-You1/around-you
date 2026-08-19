@@ -29,6 +29,14 @@ export default function Page() {
   useEffect(() => {
     let active = true;
 
+    // Only a FRESH auth return (e.g. a Local Guest completing a magic link,
+    // which arrives with tokens in the URL hash) should skip the landing and go
+    // straight to /portal. A plain visit to aroundyou.co.za — even with a
+    // lingering session — must show the Landing page.
+    const authReturn =
+      typeof window !== "undefined" &&
+      (window.location.hash.includes("access_token") || window.location.hash.includes("type="));
+
     // QR-scan tracking: a scanned QR opens the app with ?code=… in the URL.
     // Record it (best-effort, anonymous) so scans can be reported per partner.
     try {
@@ -54,18 +62,18 @@ export default function Page() {
     // getSession() returns it.
     supabase.auth.getSession().then(({ data }) => {
       if (!active) return;
-      if (data.session) {
-        router.replace("/portal"); // session found -> go to access-code entry
+      if (data.session && authReturn) {
+        router.replace("/portal"); // fresh magic-link login -> access-code entry
       } else {
-        setChecking(false); // no session -> show the landing page
+        setChecking(false); // otherwise always show the Landing page
       }
     });
 
     // The Magic Link session can land a moment after mount while the URL hash is
-    // still being parsed; catch that case too.
+    // still being parsed; catch that case too — but only for a fresh auth return.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
-      if (session) router.replace("/portal");
+      if (session && authReturn) router.replace("/portal");
     });
 
     return () => {
