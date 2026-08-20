@@ -567,7 +567,7 @@ export default function GuestDashboard() {
                       Emergency Numbers
                     </CollapsibleTrigger>
                     <CollapsibleContent className={`${contentClass} space-y-2`}>
-                      {accommodation!.primaryContact || accommodation!.policeContact || accommodation!.doctorContact || accommodation!.ambulanceContact || accommodation!.hospitalContact || accommodation!.fireDepartmentContact ? (
+                      {accommodation!.primaryContact || accommodation!.policeContact || accommodation!.doctorContact || accommodation!.ambulanceContact || accommodation!.hospitalContact || accommodation!.fireDepartmentContact || accommodation!.snakeCatchersContact || accommodation!.nsriContact || accommodation!.vetContact || accommodation!.communityWatchContact || accommodation!.localSecurityContact ? (
                         <>
                           {accommodation!.primaryContact && (
                             <div className="flex items-center justify-between text-sm">
@@ -615,6 +615,36 @@ export default function GuestDashboard() {
                               <a href={`tel:${accommodation!.fireDepartmentContact}`} className="font-medium text-purple-600 hover:underline">
                                 {accommodation!.fireDepartmentContact}
                               </a>
+                            </div>
+                          )}
+                          {accommodation!.snakeCatchersContact && (
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Snake Catchers:</span>
+                              <a href={`tel:${accommodation!.snakeCatchersContact}`} className="font-medium text-purple-600 hover:underline">{accommodation!.snakeCatchersContact}</a>
+                            </div>
+                          )}
+                          {accommodation!.nsriContact && (
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">NSRI:</span>
+                              <a href={`tel:${accommodation!.nsriContact}`} className="font-medium text-purple-600 hover:underline">{accommodation!.nsriContact}</a>
+                            </div>
+                          )}
+                          {accommodation!.vetContact && (
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Vet:</span>
+                              <a href={`tel:${accommodation!.vetContact}`} className="font-medium text-purple-600 hover:underline">{accommodation!.vetContact}</a>
+                            </div>
+                          )}
+                          {accommodation!.communityWatchContact && (
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Community Watch:</span>
+                              <a href={`tel:${accommodation!.communityWatchContact}`} className="font-medium text-purple-600 hover:underline">{accommodation!.communityWatchContact}</a>
+                            </div>
+                          )}
+                          {accommodation!.localSecurityContact && (
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Local Security:</span>
+                              <a href={`tel:${accommodation!.localSecurityContact}`} className="font-medium text-purple-600 hover:underline">{accommodation!.localSecurityContact}</a>
                             </div>
                           )}
                         </>

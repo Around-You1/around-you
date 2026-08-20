@@ -57,6 +57,11 @@ type CreateRequest struct {
 	AmbulanceContact      string `json:"ambulanceContact,omitempty"`
 	HospitalContact       string `json:"hospitalContact,omitempty"`
 	FireDepartmentContact string `json:"fireDepartmentContact,omitempty"`
+	SnakeCatchersContact  string `json:"snakeCatchersContact,omitempty"`
+	NsriContact           string `json:"nsriContact,omitempty"`
+	VetContact            string `json:"vetContact,omitempty"`
+	CommunityWatchContact string `json:"communityWatchContact,omitempty"`
+	LocalSecurityContact  string `json:"localSecurityContact,omitempty"`
 
 	Facilities []string `json:"facilities,omitempty"`
 	IsActive   bool     `json:"isActive"`
@@ -113,6 +118,11 @@ type UpdateRequest struct {
 	AmbulanceContact      *string `json:"ambulanceContact,omitempty"`
 	HospitalContact       *string `json:"hospitalContact,omitempty"`
 	FireDepartmentContact *string `json:"fireDepartmentContact,omitempty"`
+	SnakeCatchersContact  *string `json:"snakeCatchersContact,omitempty"`
+	NsriContact           *string `json:"nsriContact,omitempty"`
+	VetContact            *string `json:"vetContact,omitempty"`
+	CommunityWatchContact *string `json:"communityWatchContact,omitempty"`
+	LocalSecurityContact  *string `json:"localSecurityContact,omitempty"`
 
 	Facilities []string `json:"facilities,omitempty"`
 	IsActive   *bool    `json:"isActive,omitempty"`

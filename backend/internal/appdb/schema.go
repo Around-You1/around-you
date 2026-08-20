@@ -162,6 +162,11 @@ type Accommodation struct {
 	AmbulanceContact      string `json:"ambulanceContact,omitempty"`
 	HospitalContact       string `json:"hospitalContact,omitempty"`
 	FireDepartmentContact string `json:"fireDepartmentContact,omitempty"`
+	SnakeCatchersContact  string `json:"snakeCatchersContact,omitempty"`
+	NsriContact           string `json:"nsriContact,omitempty"`
+	VetContact            string `json:"vetContact,omitempty"`
+	CommunityWatchContact string `json:"communityWatchContact,omitempty"`
+	LocalSecurityContact  string `json:"localSecurityContact,omitempty"`
 
 	EmergencyContacts []EmergencyContact `json:"emergencyContacts,omitempty"`
 

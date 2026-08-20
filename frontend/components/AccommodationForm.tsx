@@ -78,6 +78,11 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
     ambulanceContact: accommodation?.ambulanceContact || "",
     hospitalContact: accommodation?.hospitalContact || "",
     fireDepartmentContact: accommodation?.fireDepartmentContact || "",
+    snakeCatchersContact: accommodation?.snakeCatchersContact || "",
+    nsriContact: accommodation?.nsriContact || "",
+    vetContact: accommodation?.vetContact || "",
+    communityWatchContact: accommodation?.communityWatchContact || "",
+    localSecurityContact: accommodation?.localSecurityContact || "",
     facilities: (accommodation?.facilities || []) as string[],
     isActive: accommodation?.isActive ?? false,
   }));
@@ -126,6 +131,11 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
         ambulanceContact: accommodation.ambulanceContact || "",
         hospitalContact: accommodation.hospitalContact || "",
         fireDepartmentContact: accommodation.fireDepartmentContact || "",
+        snakeCatchersContact: accommodation.snakeCatchersContact || "",
+        nsriContact: accommodation.nsriContact || "",
+        vetContact: accommodation.vetContact || "",
+        communityWatchContact: accommodation.communityWatchContact || "",
+        localSecurityContact: accommodation.localSecurityContact || "",
         facilities: accommodation.facilities || [],
         isActive: accommodation.isActive,
       });
@@ -505,6 +515,41 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
                 inputMode="tel"
                 enterKeyHint="next"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="snakeCatchersContact">Snake Catchers</Label>
+              <Input id="snakeCatchersContact" value={formData.snakeCatchersContact}
+                onChange={(e) => setFormData({ ...formData, snakeCatchersContact: e.target.value })}
+                type="tel" inputMode="tel" enterKeyHint="next" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nsriContact">NSRI</Label>
+              <Input id="nsriContact" value={formData.nsriContact}
+                onChange={(e) => setFormData({ ...formData, nsriContact: e.target.value })}
+                type="tel" inputMode="tel" enterKeyHint="next" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="vetContact">Vet</Label>
+              <Input id="vetContact" value={formData.vetContact}
+                onChange={(e) => setFormData({ ...formData, vetContact: e.target.value })}
+                type="tel" inputMode="tel" enterKeyHint="next" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="communityWatchContact">Community Watch</Label>
+              <Input id="communityWatchContact" value={formData.communityWatchContact}
+                onChange={(e) => setFormData({ ...formData, communityWatchContact: e.target.value })}
+                type="tel" inputMode="tel" enterKeyHint="next" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="localSecurityContact">Local Security</Label>
+              <Input id="localSecurityContact" value={formData.localSecurityContact}
+                onChange={(e) => setFormData({ ...formData, localSecurityContact: e.target.value })}
+                type="tel" inputMode="tel" enterKeyHint="next" />
             </div>
           </div>
 

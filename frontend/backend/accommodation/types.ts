@@ -45,6 +45,11 @@ export interface Accommodation {
   ambulanceContact?: string;
   hospitalContact?: string;
   fireDepartmentContact?: string;
+  snakeCatchersContact?: string;
+  nsriContact?: string;
+  vetContact?: string;
+  communityWatchContact?: string;
+  localSecurityContact?: string;
 
   emergencyContacts?: EmergencyContact[];
 

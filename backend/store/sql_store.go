@@ -59,6 +59,11 @@ const accommodationColumns = `
 	COALESCE(ambulance_contact, '') as ambulance_contact,
 	COALESCE(hospital_contact, '') as hospital_contact,
 	COALESCE(fire_department_contact, '') as fire_department_contact,
+	COALESCE(snake_catchers_contact, '') as snake_catchers_contact,
+	COALESCE(nsri_contact, '') as nsri_contact,
+	COALESCE(vet_contact, '') as vet_contact,
+	COALESCE(community_watch_contact, '') as community_watch_contact,
+	COALESCE(local_security_contact, '') as local_security_contact,
 	emergency_contacts,
 	COALESCE(image_url, '') as image_url,
 	image_urls, is_active,
@@ -92,7 +97,9 @@ func scanAccommodation(row scanner) (*appdb.Accommodation, error) {
 		&a.ParkingAvailability, pq.Array(&a.Facilities), &a.WifiName, &a.WifiPassword, &a.WifiCredentials,
 		&a.CheckInInstructions, &a.CheckOutInstructions, &a.Amenities, &a.Guidelines,
 		&a.PrimaryContact, &a.PoliceContact, &a.DoctorContact, &a.AmbulanceContact,
-		&a.HospitalContact, &a.FireDepartmentContact, &emergencyContactsJSON, &a.ImageUrl,
+		&a.HospitalContact, &a.FireDepartmentContact,
+		&a.SnakeCatchersContact, &a.NsriContact, &a.VetContact, &a.CommunityWatchContact, &a.LocalSecurityContact,
+		&emergencyContactsJSON, &a.ImageUrl,
 		pq.Array(&a.ImageUrls), &a.IsActive, &a.OfficialHoldingCompany, &a.OfficialContactName,
 		&a.OfficialContactNumber, &a.OfficialEmail, &a.OfficialRepCode,
 		&a.OfficialRepName, &a.CompanyRegNumber, &a.CompanyVatNumber, &a.GuestType, &a.AccessLevel,
@@ -208,11 +215,12 @@ func (s *Store) Create(ctx context.Context, in *appdb.Accommodation) (*appdb.Acc
 			image_urls, is_active, official_holding_company, official_contact_name,
 			official_contact_number, official_email, official_rep_code,
 			official_rep_name, company_reg_number, company_vat_number,
-			guest_type, access_level
+			guest_type, access_level,
+			snake_catchers_contact, nsri_contact, vet_contact, community_watch_contact, local_security_contact
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
 			$19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34,
-			$35, $36, $37, $38, $39
+			$35, $36, $37, $38, $39, $40, $41, $42, $43, $44
 		)
 		RETURNING`+accommodationColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -225,6 +233,7 @@ func (s *Store) Create(ctx context.Context, in *appdb.Accommodation) (*appdb.Acc
 		in.OfficialContactNumber, in.OfficialEmail, in.OfficialRepCode,
 		in.OfficialRepName, in.CompanyRegNumber, in.CompanyVatNumber,
 		in.GuestType, in.AccessLevel,
+		in.SnakeCatchersContact, in.NsriContact, in.VetContact, in.CommunityWatchContact, in.LocalSecurityContact,
 	)
 
 	return scanAccommodation(row)
@@ -269,6 +278,11 @@ type Patch struct {
 	AmbulanceContact      *string
 	HospitalContact       *string
 	FireDepartmentContact *string
+	SnakeCatchersContact  *string
+	NsriContact           *string
+	VetContact            *string
+	CommunityWatchContact *string
+	LocalSecurityContact  *string
 
 	Facilities []string // non-nil (even empty) means "replace"
 	IsActive   *bool
@@ -372,6 +386,21 @@ func (s *Store) Update(ctx context.Context, id int64, patch Patch) (*appdb.Accom
 	}
 	if patch.FireDepartmentContact != nil {
 		sets = append(sets, "fire_department_contact = "+arg(*patch.FireDepartmentContact))
+	}
+	if patch.SnakeCatchersContact != nil {
+		sets = append(sets, "snake_catchers_contact = "+arg(*patch.SnakeCatchersContact))
+	}
+	if patch.NsriContact != nil {
+		sets = append(sets, "nsri_contact = "+arg(*patch.NsriContact))
+	}
+	if patch.VetContact != nil {
+		sets = append(sets, "vet_contact = "+arg(*patch.VetContact))
+	}
+	if patch.CommunityWatchContact != nil {
+		sets = append(sets, "community_watch_contact = "+arg(*patch.CommunityWatchContact))
+	}
+	if patch.LocalSecurityContact != nil {
+		sets = append(sets, "local_security_contact = "+arg(*patch.LocalSecurityContact))
 	}
 	if patch.Facilities != nil {
 		sets = append(sets, "facilities = "+arg(pq.Array(patch.Facilities)))
