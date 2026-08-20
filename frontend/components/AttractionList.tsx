@@ -325,63 +325,6 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
 
                 <CollapsibleContent>
                   <div className="mt-3 pt-3 border-t border-border space-y-4">
-                    <div>
-                      <p className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">Basic Information</p>
-                      <FieldRow label="Name" value={attraction.name} />
-                      <FieldRow label="Address" value={attraction.address} />
-                      <FieldRow label="Country" value={attraction.country} />
-                      <FieldRow label="Province" value={attraction.province} />
-                      <FieldRow label="Area" value={attraction.area} />
-                      <FieldRow label="Postal Code" value={attraction.postalCode} />
-                      <FieldRow label="Contact Number" value={attraction.contactNumber} />
-                      <FieldRow label="Description" value={attraction.description} />
-                      <FieldRow label="Profile Reference Code" value={attraction.profileReferenceCode} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">Location</p>
-                      <FieldRow label="Latitude" value={attraction.latitude} />
-                      <FieldRow label="Longitude" value={attraction.longitude} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">Type & Approvals</p>
-                      <FieldRow
-                        label="Attraction Type"
-                        value={Array.isArray(attraction.attractionType) && attraction.attractionType.length > 0 ? attraction.attractionType.join(", ") : null}
-                      />
-                      <FieldRow label="Little Explorer Approved" value={attraction.littleExplorerApproved} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">Payment Methods</p>
-                      <FieldRow label="Card" value={attraction.paymentCard} />
-                      <FieldRow label="Cash" value={attraction.paymentCash} />
-                      <FieldRow label="Mobile" value={attraction.paymentMobile} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">Accessibility & Facilities</p>
-                      <FieldRow label="Wheelchair Access" value={attraction.wheelchairAccess} />
-                      <FieldRow label="Parking Availability" value={attraction.parkingAvailability} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">Discounts</p>
-                      <FieldRow label="Discount Offered" value={attraction.discountOffered} />
-                      <FieldRow label="Discount Code" value={attraction.discountCode} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">Image</p>
-                      {attraction.imageUrl ? (
-                        <a href={attraction.imageUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 underline break-all">
-                          {attraction.imageUrl}
-                        </a>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic">{FALLBACK}</span>
-                      )}
-                    </div>
 
                     {attraction.profileReferenceCode && (
                       <div>

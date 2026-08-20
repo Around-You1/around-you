@@ -324,61 +324,6 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortBy
 
                 <CollapsibleContent>
                   <div className="mt-3 pt-3 border-t border-border space-y-4">
-                    <div>
-                      <p className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">Basic Information</p>
-                      <FieldRow label="Name" value={service.name} />
-                      <FieldRow label="Address" value={service.address} />
-                      <FieldRow label="Country" value={service.country} />
-                      <FieldRow label="Province" value={service.province} />
-                      <FieldRow label="Area" value={service.area} />
-                      <FieldRow label="Postal Code" value={service.postalCode} />
-                      <FieldRow label="Contact Number" value={service.contactNumber} />
-                      <FieldRow label="Description" value={service.description} />
-                      <FieldRow label="Profile Reference Code" value={service.profileReferenceCode} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">Location</p>
-                      <FieldRow label="Latitude" value={service.latitude} />
-                      <FieldRow label="Longitude" value={service.longitude} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">Categories & Approvals</p>
-                      <FieldRow label="Service Categories" value={service.serviceCategories.length > 0 ? service.serviceCategories.join(", ") : null} />
-                      <FieldRow label="Little Explorer Approved" value={service.littleExplorerApproved} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">Payment Methods</p>
-                      <FieldRow label="Card" value={service.paymentCard} />
-                      <FieldRow label="Cash" value={service.paymentCash} />
-                      <FieldRow label="Mobile" value={service.paymentMobile} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">Accessibility & Facilities</p>
-                      <FieldRow label="Wheelchair Access" value={service.wheelchairAccess} />
-                      <FieldRow label="Parking Availability" value={service.parkingAvailability} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">Discounts</p>
-                      <FieldRow label="Discount Offered" value={service.discountOffered} />
-                      <FieldRow label="Discount Code" value={service.discountCode} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">Image</p>
-                      {service.imageUrl ? (
-                        <a href={service.imageUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 underline break-all">
-                          {service.imageUrl}
-                        </a>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic">{FALLBACK}</span>
-                      )}
-                    </div>
-
                     {service.profileReferenceCode && (
                       <div>
                         <p className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">Profile QR Code</p>
