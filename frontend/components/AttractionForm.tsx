@@ -367,7 +367,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="space-y-2" style={{ display: tierNum >= 3 ? undefined : "none" }}>
+          <div className="space-y-2" style={{ display: tierNum >= 4 ? undefined : "none" }}>
             <Label>Attraction Categories (Select all that apply)</Label>
             <div className="grid grid-cols-2 gap-2 p-4 border rounded-md max-h-48 overflow-y-auto">
               {ATTRACTION_CATEGORIES.map((category) => (
@@ -792,7 +792,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           )}
 
           <div className="flex flex-col gap-4">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2" style={{ display: tierNum >= 3 ? undefined : "none" }}>
               <Switch
                 id="littleExplorerApproved"
                 checked={formData.littleExplorerApproved}

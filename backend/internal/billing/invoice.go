@@ -113,7 +113,7 @@ func IssueFirstInvoice(ctx context.Context, partnerType string, partnerID int64)
 	}
 	start := time.Now()
 	end := start.AddDate(0, 1, 0)
-	due := start.AddDate(0, 0, 7)
+	due := start.AddDate(0, 0, 3)
 	return GenerateInvoice(ctx, subID, partnerType, partnerID, plan, tier, int(monthly), start, end, due, true)
 }
 
@@ -431,7 +431,7 @@ func PreviewInvoiceHTML(ctx context.Context) (string, error) {
 	return renderInvoiceHTML(s, invoiceView{
 		Number:            fmt.Sprintf("AY-%d-000123", now.Year()),
 		Date:              now,
-		Due:               now.AddDate(0, 0, 7),
+		Due:               now.AddDate(0, 0, 3),
 		ItemCode:          "ResT3L",
 		ItemDesc:          "Restaurant Tier 3 Local",
 		Cents:             20000,

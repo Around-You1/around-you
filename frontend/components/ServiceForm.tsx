@@ -566,7 +566,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
             </div>
           </div>
 
-          <div className="space-y-3" style={{ display: tierNum >= 3 ? undefined : "none" }}>
+          <div className="space-y-3" style={{ display: tierNum >= 4 ? undefined : "none" }}>
             <Label>Service Categories</Label>
             <div className="space-y-2">
               {CATEGORY_GROUPS.map((group) => {
@@ -885,7 +885,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
           )}
 
           <div className="flex flex-col gap-4">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2" style={{ display: tierNum >= 3 ? undefined : "none" }}>
               <Switch
                 id="littleExplorerApproved"
                 checked={formData.littleExplorerApproved}

@@ -24,6 +24,12 @@ import AppLogo from "../components/AppLogo";
 
 const FALLBACK = "The company has opted not to make this information visible.";
 
+// Tier gating for guest/local visibility. accessLevel is "Tier 1".."Tier 4"
+// ("Both" is stored as Tier 4). Anything without a digit (e.g. "Booking") is
+// treated as full access. Address shows at Tier 2+, Directions at Tier 4+.
+const tierOf = (accessLevel?: string) =>
+  parseInt((accessLevel || "").replace(/[^0-9]/g, ""), 10) || 4;
+
 // Mirrors backend/app/rating/types.go Summary. myRating is 0/absent until
 // this guest has voted; averageRating/ratingCount cover everyone's votes.
 interface RatingSummary {
@@ -1051,16 +1057,20 @@ export default function GuestDashboard() {
                               </CollapsibleContent>
                             </Collapsible>
 
-                            <AddressDropdown
-                              address={restaurant.address}
-                              province={restaurant.province}
-                              postalCode={restaurant.postalCode}
-                              country={restaurant.country}
-                            />
-                            <DirectionsDropdown
-                              latitude={restaurant.latitude}
-                              longitude={restaurant.longitude}
-                            />
+                            {tierOf(restaurant.accessLevel) >= 2 && (
+                              <AddressDropdown
+                                address={restaurant.address}
+                                province={restaurant.province}
+                                postalCode={restaurant.postalCode}
+                                country={restaurant.country}
+                              />
+                            )}
+                            {tierOf(restaurant.accessLevel) >= 4 && (
+                              <DirectionsDropdown
+                                latitude={restaurant.latitude}
+                                longitude={restaurant.longitude}
+                              />
+                            )}
 
 
                             <Collapsible>
@@ -1311,16 +1321,20 @@ export default function GuestDashboard() {
                               </CollapsibleContent>
                             </Collapsible>
 
-                            <AddressDropdown
-                              address={service.address}
-                              province={service.province}
-                              postalCode={service.postalCode}
-                              country={service.country}
-                            />
-                            <DirectionsDropdown
-                              latitude={service.latitude}
-                              longitude={service.longitude}
-                            />
+                            {tierOf(service.accessLevel) >= 2 && (
+                              <AddressDropdown
+                                address={service.address}
+                                province={service.province}
+                                postalCode={service.postalCode}
+                                country={service.country}
+                              />
+                            )}
+                            {tierOf(service.accessLevel) >= 4 && (
+                              <DirectionsDropdown
+                                latitude={service.latitude}
+                                longitude={service.longitude}
+                              />
+                            )}
                               </>
                             )}
                           </div>
@@ -1515,16 +1529,20 @@ export default function GuestDashboard() {
                               </CollapsibleContent>
                             </Collapsible>
 
-                            <AddressDropdown
-                              address={attraction.address}
-                              province={attraction.province}
-                              postalCode={attraction.postalCode}
-                              country={attraction.country}
-                            />
-                            <DirectionsDropdown
-                              latitude={attraction.latitude}
-                              longitude={attraction.longitude}
-                            />
+                            {tierOf(attraction.accessLevel) >= 2 && (
+                              <AddressDropdown
+                                address={attraction.address}
+                                province={attraction.province}
+                                postalCode={attraction.postalCode}
+                                country={attraction.country}
+                              />
+                            )}
+                            {tierOf(attraction.accessLevel) >= 4 && (
+                              <DirectionsDropdown
+                                latitude={attraction.latitude}
+                                longitude={attraction.longitude}
+                              />
+                            )}
                               </>
                             )}
                           </div>

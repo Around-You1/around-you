@@ -787,7 +787,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
           )}
 
           <div className="flex flex-col gap-4">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2" style={{ display: tierNum >= 3 ? undefined : "none" }}>
               <Switch
                 id="littleExplorerApproved"
                 checked={formData.littleExplorerApproved}

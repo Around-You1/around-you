@@ -47,7 +47,7 @@ func RunMonthlyBilling(ctx context.Context) (int, error) {
 	for _, d := range list {
 		start := d.nextBill
 		end := start.AddDate(0, 1, 0)
-		dueDate := start.AddDate(0, 0, 7)
+		dueDate := start.AddDate(0, 0, 3)
 
 		subtotal := d.monthlyCents
 		if d.plan == "booking" {
