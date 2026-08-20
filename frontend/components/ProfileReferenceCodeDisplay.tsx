@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 interface ProfileReferenceCodeDisplayProps {
-  entityType: "accommodation" | "restaurant" | "service" | "attraction";
+  entityType: "accommodation" | "restaurant" | "service" | "attraction" | "estate_agency" | "estate_agent";
   entityId: number;
   entityStringId?: string;
   currentCode?: string | null;
@@ -41,7 +41,9 @@ export default function ProfileReferenceCodeDisplay({
     entityType === "restaurant" ||
     entityType === "service" ||
     entityType === "attraction" ||
-    entityType === "accommodation";
+    entityType === "accommodation" ||
+    entityType === "estate_agency" ||
+    entityType === "estate_agent";
   const [editCode, setEditCode] = useState<string | null>(null);
   const [editCopied, setEditCopied] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);

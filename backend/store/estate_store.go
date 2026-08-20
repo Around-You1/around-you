@@ -160,6 +160,26 @@ func (s *EstateAgencyStore) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
+func (s *EstateAgencyStore) GetEditCode(ctx context.Context, id int64) (string, error) {
+	var code string
+	err := appdb.SQLDB.QueryRowContext(ctx, "SELECT COALESCE(edit_code, '') FROM estate_agencies WHERE id = $1", id).Scan(&code)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrEstateAgencyNotFound
+	}
+	return code, err
+}
+
+func (s *EstateAgencyStore) RegenerateEditCode(ctx context.Context, id int64, newCode string) (string, error) {
+	var code string
+	err := appdb.SQLDB.QueryRowContext(ctx,
+		"UPDATE estate_agencies SET edit_code = $1, updated_at = now() WHERE id = $2 RETURNING edit_code", newCode, id,
+	).Scan(&code)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrEstateAgencyNotFound
+	}
+	return code, err
+}
+
 // ---------- Estate Agents ----------
 
 type EstateAgentStore struct{}
@@ -278,6 +298,26 @@ func (s *EstateAgentStore) Delete(ctx context.Context, id int64) error {
 		return ErrEstateAgentNotFound
 	}
 	return nil
+}
+
+func (s *EstateAgentStore) GetEditCode(ctx context.Context, id int64) (string, error) {
+	var code string
+	err := appdb.SQLDB.QueryRowContext(ctx, "SELECT COALESCE(edit_code, '') FROM estate_agents WHERE id = $1", id).Scan(&code)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrEstateAgentNotFound
+	}
+	return code, err
+}
+
+func (s *EstateAgentStore) RegenerateEditCode(ctx context.Context, id int64, newCode string) (string, error) {
+	var code string
+	err := appdb.SQLDB.QueryRowContext(ctx,
+		"UPDATE estate_agents SET edit_code = $1, updated_at = now() WHERE id = $2 RETURNING edit_code", newCode, id,
+	).Scan(&code)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrEstateAgentNotFound
+	}
+	return code, err
 }
 
 // ---------- Estate Properties ----------

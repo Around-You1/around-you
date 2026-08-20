@@ -12,6 +12,7 @@ import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 import MultiImageUpload from "./MultiImageUpload";
 import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
+import ProfileReferenceCodeDisplay from "./ProfileReferenceCodeDisplay";
 
 const PROPERTY_TYPES = ["House", "Apartment", "Townhouse", "Plot", "Farm", "Commercial", "Land", "Industrial"];
 const FEATURES = ["Pool", "Tennis Court", "Garden", "Security Estate", "Double Garage", "Borehole", "Solar", "Fibre", "Sea View", "Mountain View", "Pet Friendly", "Fireplace", "Staff Quarters", "Backup Power"];
@@ -54,6 +55,7 @@ interface AgentRow {
   officialRepCode: string;
   officialRepName: string;
   isActive: boolean;
+  profileReferenceCode?: string;
 }
 
 const newProperty = (): PropertyRow => ({
@@ -85,7 +87,7 @@ export default function EstateAgencyForm({
   const [agency, setAgency] = useState({
     name: "", description: "", address: "", province: "", country: "South Africa", postalCode: "",
     contactNumber: "", email: "", latitude: "", longitude: "", imageUrls: [] as string[],
-    createAgentPages: false, isActive: true,
+    createAgentPages: false, isActive: true, profileReferenceCode: "",
   });
   const [official, setOfficial] = useState<OfficialUseData>(() => ({
     ...emptyOfficial(),
@@ -108,6 +110,7 @@ export default function EstateAgencyForm({
           country: a.country || "South Africa", postalCode: a.postalCode || "", contactNumber: a.contactNumber || "",
           email: a.email || "", latitude: a.latitude != null ? String(a.latitude) : "", longitude: a.longitude != null ? String(a.longitude) : "",
           imageUrls: a.imageUrls || [], createAgentPages: !!a.createAgentPages, isActive: a.isActive !== false,
+          profileReferenceCode: a.profileReferenceCode || "",
         });
         setOfficial({
           officialHoldingCompany: a.officialHoldingCompany || "", officialContactName: a.officialContactName || "",
@@ -119,7 +122,7 @@ export default function EstateAgencyForm({
         const agentList: AgentRow[] = (ag.agents || []).map((x: any) => ({
           id: x.id, name: x.name || "", photoUrl: x.photoUrl || "", contactNumber: x.contactNumber || "",
           email: x.email || "", bio: x.bio || "", officialRepCode: x.officialRepCode || "", officialRepName: x.officialRepName || "",
-          isActive: x.isActive !== false,
+          isActive: x.isActive !== false, profileReferenceCode: x.profileReferenceCode || "",
         }));
         setAgents(agentList);
         const pr: any = await backend.estate.listProperties({ agencyId });
@@ -269,6 +272,10 @@ export default function EstateAgencyForm({
 
         <MultiImageUpload label="Agency Images" images={agency.imageUrls} maxImages={10} onChange={(urls) => setAgency({ ...agency, imageUrls: urls })} />
 
+        {agencyId && (
+          <ProfileReferenceCodeDisplay entityType="estate_agency" entityId={agencyId} currentCode={agency.profileReferenceCode} />
+        )}
+
         <div className="flex items-center gap-2">
           <Switch checked={agency.isActive} onCheckedChange={(v) => setAgency({ ...agency, isActive: v })} />
           <Label>Active</Label>
@@ -378,6 +385,9 @@ export default function EstateAgencyForm({
                   </div>
                   <div className="space-y-1"><Label className="text-xs">Bio</Label><Textarea rows={2} value={a.bio} onChange={(e) => setAg(i, { bio: e.target.value })} /></div>
                   <MultiImageUpload label="Agent Photo" images={a.photoUrl ? [a.photoUrl] : []} maxImages={1} onChange={(urls) => setAg(i, { photoUrl: urls[0] || "" })} />
+                  {a.id && (
+                    <ProfileReferenceCodeDisplay entityType="estate_agent" entityId={a.id} currentCode={a.profileReferenceCode} />
+                  )}
                   <div className="flex items-center gap-2"><Switch checked={a.isActive} onCheckedChange={(v) => setAg(i, { isActive: v })} /><Label className="text-xs">Active (billed R300)</Label></div>
                 </CardContent>
               </Card>
