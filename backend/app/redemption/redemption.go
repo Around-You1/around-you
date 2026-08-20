@@ -17,8 +17,8 @@ import (
 var validEntities = map[string]bool{"restaurant": true, "service": true, "attraction": true}
 
 // localAlreadyRedeemedThisMonth reports whether a Local has already redeemed this
-// partner's discount within the current calendar month. Locals are limited to
-// one redemption per partner per month cycle (holiday guests are unrestricted).
+// partner's discount in the current calendar month. Locals are limited to one
+// redemption per partner per calendar month; holiday guests are unrestricted.
 func localAlreadyRedeemedThisMonth(ctx context.Context, voterKey, entityType string, entityID int64) (bool, error) {
 	var cnt int
 	err := appdb.SQLDB.QueryRowContext(ctx, `
