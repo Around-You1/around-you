@@ -59,7 +59,7 @@ func RunMonthlyBilling(ctx context.Context) (int, error) {
 			subtotal += bc
 		}
 
-		if err := GenerateInvoice(ctx, d.subID, d.partnerType, d.partnerID, d.plan, d.tier, subtotal, start, end, dueDate); err != nil {
+		if err := GenerateInvoice(ctx, d.subID, d.partnerType, d.partnerID, d.plan, d.tier, subtotal, start, end, dueDate, false); err != nil {
 			log.Printf("billing run: invoice for sub %d failed: %v", d.subID, err)
 			continue
 		}

@@ -3,7 +3,9 @@ package billing
 import (
 	"context"
 	"fmt"
+	htmlPkg "html"
 	"log"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -111,7 +113,7 @@ func IssueFirstInvoice(ctx context.Context, partnerType string, partnerID int64)
 	start := time.Now()
 	end := start.AddDate(0, 1, 0)
 	due := start.AddDate(0, 0, 7)
-	return GenerateInvoice(ctx, subID, partnerType, partnerID, plan, tier, int(monthly), start, end, due)
+	return GenerateInvoice(ctx, subID, partnerType, partnerID, plan, tier, int(monthly), start, end, due, true)
 }
 
 // GenerateInvoice creates one invoice (+ a line item) for a subscription's
@@ -119,7 +121,10 @@ func IssueFirstInvoice(ctx context.Context, partnerType string, partnerID int64)
 // (subscription, period_start) — the idempotency the monthly run relies on.
 // subtotalCents is the fixed monthly amount; the monthly run adds any 10%
 // booking portion for Booking partners on top (Phase 4).
-func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partnerID int64, plan string, tier, subtotalCents int, start, end, due time.Time) error {
+// withCodes is true only for the FIRST (onboarding) invoice — when set, the
+// email also includes the partner's Access Code, Partner Edit Code and Profile
+// QR Code. The monthly billing run passes false so those go out only once.
+func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partnerID int64, plan string, tier, subtotalCents int, start, end, due time.Time, withCodes bool) error {
 	var exists bool
 	if err := appdb.SQLDB.QueryRowContext(ctx,
 		`SELECT EXISTS(SELECT 1 FROM invoice WHERE subscription_id = $1 AND period_start = $2)`,
@@ -188,10 +193,72 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 		if settings != nil && strings.TrimSpace(settings.BusinessName) != "" {
 			bizName = settings.BusinessName
 		}
-		_ = mailer.Send(email, "Your "+bizName+" invoice "+number,
-			renderInvoiceHTML(settings, number, name, desc, subtotalCents, start, due))
+		html := renderInvoiceHTML(settings, number, name, desc, subtotalCents, start, due)
+		if withCodes {
+			html += onboardingCodesHTML(ctx, partnerType, partnerID)
+		}
+		_ = mailer.Send(email, "Your "+bizName+" invoice "+number, html)
 	}
 	return nil
+}
+
+// onboardingCodesHTML builds the "welcome" block appended to the FIRST invoice
+// email only: the partner's Access Code, Partner Edit Code and Profile QR Code.
+func onboardingCodesHTML(ctx context.Context, partnerType string, partnerID int64) string {
+	tbl := partnerTable(partnerType)
+	if tbl == "" {
+		return ""
+	}
+	var editCode, profileRef string
+	_ = appdb.SQLDB.QueryRowContext(ctx,
+		"SELECT COALESCE(edit_code,''), COALESCE(profile_reference_code,'') FROM "+tbl+" WHERE id = $1", partnerID,
+	).Scan(&editCode, &profileRef)
+
+	// Access Code = partner_code for the three partner-login categories; for
+	// accommodation and estate pages it's the profile_reference_code.
+	access := profileRef
+	if partnerType == "restaurant" || partnerType == "service" || partnerType == "attraction" {
+		_ = appdb.SQLDB.QueryRowContext(ctx,
+			"SELECT COALESCE(partner_code,'') FROM "+tbl+" WHERE id = $1", partnerID,
+		).Scan(&access)
+	}
+	if access == "" && editCode == "" && profileRef == "" {
+		return ""
+	}
+
+	qr := ""
+	if profileRef != "" {
+		loginURL := profileURL(partnerType, profileRef)
+		qrSrc := "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + url.QueryEscape(loginURL)
+		qr = fmt.Sprintf(
+			`<p style="margin:16px 0 4px;font-weight:bold">Your Profile QR Code</p>`+
+				`<img src="%s" alt="Profile QR Code" width="200" height="200" style="border:1px solid #ddd;border-radius:6px"/>`+
+				`<p style="font-size:12px;color:#666;margin:4px 0 0">Print or share this — guests scan it to open your profile.</p>`,
+			qrSrc)
+	}
+
+	return fmt.Sprintf(
+		`<hr style="margin:24px 0;border:none;border-top:1px solid #e5e7eb"/>`+
+			`<h3 style="margin:0 0 10px">Welcome to Around You — your profile codes</h3>`+
+			`<p style="margin:2px 0"><strong>Profile Access Code:</strong> %s</p>`+
+			`<p style="margin:2px 0"><strong>Partner Edit Code:</strong> %s</p>`+
+			`<p style="font-size:12px;color:#666;margin:8px 0 0">Please keep these confidential. The Access Code logs you in; the Edit Code unlocks editing of your own profile.</p>`+
+			`%s`,
+		htmlPkg.EscapeString(access), htmlPkg.EscapeString(editCode), qr)
+}
+
+// profileURL is the link the QR encodes for each partner type.
+func profileURL(partnerType, code string) string {
+	switch partnerType {
+	case "accommodation":
+		return "https://aroundyou.co.za/?code=" + url.QueryEscape(code)
+	case "estate_agency":
+		return "https://aroundyou.co.za/estate/agency/" + url.PathEscape(code)
+	case "estate_agent":
+		return "https://aroundyou.co.za/estate/agent/" + url.PathEscape(code)
+	default: // restaurant | service | attraction
+		return "https://aroundyou.co.za/?code=" + url.QueryEscape(code) + "&role=partner"
+	}
 }
 
 func lineDescription(plan string, tier int, start time.Time) string {
