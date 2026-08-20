@@ -226,6 +226,7 @@ export default function AboutYouPage() {
                     minHeight: 0,
                     lineHeight: 1.25,
                     textDecoration: "none",
+                    gridColumnStart: section.id === "support" ? 2 : undefined,
                   }}
                   className="touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39FF14] focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
                   onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.filter = "brightness(1.2)"; }}
