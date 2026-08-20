@@ -1,10 +1,14 @@
 "use client";
 
-import { useState, useEffect, ReactNode } from "react";
+import { useState, useEffect, ReactNode, createContext, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ArrowLeft } from "lucide-react";
+import { ChevronDown, ArrowLeft, Download } from "lucide-react";
+
+// When true (during "Download PDF"), every Section renders its content open so
+// the whole dashboard is captured, not just the sections the user expanded.
+const PrintContext = createContext(false);
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -100,6 +104,8 @@ function Section({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const forceOpen = useContext(PrintContext);
+  const isOpen = open || forceOpen;
   return (
     <Card>
       <button
@@ -108,9 +114,9 @@ function Section({
         className="w-full flex items-center justify-between px-6 py-4 text-left"
       >
         <span className="text-lg font-semibold">{title}</span>
-        <ChevronDown className={`w-5 h-5 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`w-5 h-5 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
-      {open && <CardContent className="pt-0">{children}</CardContent>}
+      {isOpen && <CardContent className="pt-0">{children}</CardContent>}
     </Card>
   );
 }
@@ -122,11 +128,26 @@ export default function AnalyticsDashboard() {
   const [bizStats, setBizStats] = useState<BusinessMetrics | null>(null);
   const [events, setEvents] = useState<EventsSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [printMode, setPrintMode] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     load();
   }, []);
+
+  // Reset print mode once the browser's print/save dialog closes.
+  useEffect(() => {
+    const after = () => setPrintMode(false);
+    window.addEventListener("afterprint", after);
+    return () => window.removeEventListener("afterprint", after);
+  }, []);
+
+  // Force every section open, let it render, then open the browser's
+  // print-to-PDF dialog so the full dashboard downloads as a .pdf.
+  const downloadPdf = () => {
+    setPrintMode(true);
+    setTimeout(() => window.print(), 350);
+  };
 
   const load = async () => {
     setLoading(true);
@@ -152,11 +173,16 @@ export default function AnalyticsDashboard() {
 
   return (
     <div className="min-h-screen bg-background p-6">
+      <PrintContext.Provider value={printMode}>
       <div className="max-w-7xl mx-auto space-y-6">
-        <div>
+        <div className="flex items-center justify-between gap-2 print:hidden">
           <Button variant="outline" size="sm" onClick={() => router.push("/admin-dashboard")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Admin Dashboard
+          </Button>
+          <Button variant="outline" size="sm" onClick={downloadPdf} disabled={loading}>
+            <Download className="w-4 h-4 mr-2" />
+            Download PDF
           </Button>
         </div>
 
@@ -420,6 +446,7 @@ export default function AnalyticsDashboard() {
           )}
         </Section>
       </div>
+      </PrintContext.Provider>
     </div>
   );
 }
