@@ -77,6 +77,7 @@ const accommodationColumns = `
 	COALESCE(company_vat_number, '') as company_vat_number,
 	COALESCE(guest_type, '') as guest_type,
 	COALESCE(access_level, '') as access_level,
+	COALESCE(units, 1) as units,
 	created_at, updated_at
 `
 
@@ -103,6 +104,7 @@ func scanAccommodation(row scanner) (*appdb.Accommodation, error) {
 		pq.Array(&a.ImageUrls), &a.IsActive, &a.OfficialHoldingCompany, &a.OfficialContactName,
 		&a.OfficialContactNumber, &a.OfficialEmail, &a.OfficialRepCode,
 		&a.OfficialRepName, &a.CompanyRegNumber, &a.CompanyVatNumber, &a.GuestType, &a.AccessLevel,
+		&a.Units,
 		&a.CreatedAt, &a.UpdatedAt,
 	)
 	if err != nil {
@@ -116,6 +118,14 @@ func scanAccommodation(row scanner) (*appdb.Accommodation, error) {
 	}
 
 	return &a, nil
+}
+
+// unitsOrDefault keeps the accommodation unit count at a sane minimum of 1.
+func unitsOrDefault(u int) int {
+	if u < 1 {
+		return 1
+	}
+	return u
 }
 
 // nonNilSlice avoids passing a nil []string to pq.Array, which some driver
@@ -216,11 +226,12 @@ func (s *Store) Create(ctx context.Context, in *appdb.Accommodation) (*appdb.Acc
 			official_contact_number, official_email, official_rep_code,
 			official_rep_name, company_reg_number, company_vat_number,
 			guest_type, access_level,
-			snake_catchers_contact, nsri_contact, vet_contact, community_watch_contact, local_security_contact
+			snake_catchers_contact, nsri_contact, vet_contact, community_watch_contact, local_security_contact,
+			units
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
 			$19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34,
-			$35, $36, $37, $38, $39, $40, $41, $42, $43, $44
+			$35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45
 		)
 		RETURNING`+accommodationColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -234,6 +245,7 @@ func (s *Store) Create(ctx context.Context, in *appdb.Accommodation) (*appdb.Acc
 		in.OfficialRepName, in.CompanyRegNumber, in.CompanyVatNumber,
 		in.GuestType, in.AccessLevel,
 		in.SnakeCatchersContact, in.NsriContact, in.VetContact, in.CommunityWatchContact, in.LocalSecurityContact,
+		unitsOrDefault(in.Units),
 	)
 
 	return scanAccommodation(row)
@@ -286,6 +298,7 @@ type Patch struct {
 
 	Facilities []string // non-nil (even empty) means "replace"
 	IsActive   *bool
+	Units      *int
 
 	OfficialHoldingCompany *string
 	OfficialContactName    *string
@@ -407,6 +420,9 @@ func (s *Store) Update(ctx context.Context, id int64, patch Patch) (*appdb.Accom
 	}
 	if patch.IsActive != nil {
 		sets = append(sets, "is_active = "+arg(*patch.IsActive))
+	}
+	if patch.Units != nil {
+		sets = append(sets, "units = "+arg(unitsOrDefault(*patch.Units)))
 	}
 	if patch.OfficialHoldingCompany != nil {
 		sets = append(sets, "official_holding_company = "+arg(*patch.OfficialHoldingCompany))

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -142,16 +143,27 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 	if tbl == "" {
 		return fmt.Errorf("billing: unknown partner type %q", partnerType)
 	}
-	var name, holding, reg, vat, repName, repCode, email string
+	var name, holding, reg, vat, repName, repCode, email, contactName, contactNumber string
 	if err := appdb.SQLDB.QueryRowContext(ctx, `
 		SELECT COALESCE(name,''), COALESCE(official_holding_company,''),
 		       COALESCE(company_reg_number,''), COALESCE(company_vat_number,''),
 		       COALESCE(official_rep_name,''), COALESCE(official_rep_code,''),
-		       COALESCE(official_email,'')
+		       COALESCE(official_email,''), COALESCE(official_contact_name,''),
+		       COALESCE(official_contact_number,'')
 		FROM `+tbl+` WHERE id = $1`, partnerID,
-	).Scan(&name, &holding, &reg, &vat, &repName, &repCode, &email); err != nil {
+	).Scan(&name, &holding, &reg, &vat, &repName, &repCode, &email, &contactName, &contactNumber); err != nil {
 		return err
 	}
+
+	// Item code + description from the subscription's tier/audience and (for
+	// accommodation) unit count — e.g. AccT4G, Acc6-10, Agency.
+	var audience string
+	_ = appdb.SQLDB.QueryRowContext(ctx, `SELECT COALESCE(audience,'') FROM partner_subscription WHERE id = $1`, subID).Scan(&audience)
+	units := 1
+	if partnerType == "accommodation" {
+		_ = appdb.SQLDB.QueryRowContext(ctx, `SELECT COALESCE(units,1) FROM accommodations WHERE id = $1`, partnerID).Scan(&units)
+	}
+	itemCode, itemDesc := InvoiceItem(partnerType, tier, audience, units)
 
 	var seq int64
 	if err := appdb.SQLDB.QueryRowContext(ctx, `SELECT nextval('invoice_number_seq')`).Scan(&seq); err != nil {
@@ -174,10 +186,9 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 		return err
 	}
 
-	desc := lineDescription(plan, tier, start)
 	if _, err := appdb.SQLDB.ExecContext(ctx, `
 		INSERT INTO invoice_line_item (invoice_id, description, qty, unit_cents, line_cents)
-		VALUES ($1, $2, 1, $3, $3)`, invID, desc, subtotalCents); err != nil {
+		VALUES ($1, $2, 1, $3, $3)`, invID, itemDesc, subtotalCents); err != nil {
 		return err
 	}
 
@@ -193,7 +204,13 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 		if settings != nil && strings.TrimSpace(settings.BusinessName) != "" {
 			bizName = settings.BusinessName
 		}
-		html := renderInvoiceHTML(settings, number, name, desc, subtotalCents, start, due)
+		view := invoiceView{
+			Number: number, Date: start, Due: due,
+			ItemCode: itemCode, ItemDesc: itemDesc, Cents: subtotalCents,
+			BillName: firstNonEmpty(holding, name), BillReg: reg, BillVat: vat,
+			BillContactName: contactName, BillContactNumber: contactNumber, BillEmail: email,
+		}
+		html := renderInvoiceHTML(settings, view)
 		if withCodes {
 			html += onboardingCodesHTML(ctx, partnerType, partnerID)
 		}
@@ -271,77 +288,139 @@ func lineDescription(plan string, tier int, start time.Time) string {
 
 func rands(cents int) string { return fmt.Sprintf("R%.2f", float64(cents)/100) }
 
-func renderInvoiceHTML(s *InvoiceSettings, number, name, desc string, cents int, start, due time.Time) string {
+// invoiceView is the data the redesigned invoice template renders.
+type invoiceView struct {
+	Number             string
+	Date, Due          time.Time
+	ItemCode, ItemDesc string
+	Cents              int
+	// Bill-to (pulled from the partner's Official Use).
+	BillName, BillReg, BillVat, BillContactName, BillContactNumber, BillEmail string
+}
+
+func firstNonEmpty(a, b string) string {
+	if strings.TrimSpace(a) != "" {
+		return a
+	}
+	return b
+}
+
+// money formats ZAR cents as "R1,875.00" with thousands separators.
+func money(cents int) string {
+	neg := cents < 0
+	if neg {
+		cents = -cents
+	}
+	digits := strconv.Itoa(cents / 100)
+	var b strings.Builder
+	n := len(digits)
+	for i, c := range digits {
+		if i > 0 && (n-i)%3 == 0 {
+			b.WriteByte(',')
+		}
+		b.WriteRune(c)
+	}
+	out := fmt.Sprintf("R%s.%02d", b.String(), cents%100)
+	if neg {
+		out = "-" + out
+	}
+	return out
+}
+
+// renderInvoiceHTML builds the branded invoice (Invoice-Ninja-style layout):
+// logo + Around You details + address on top, invoice meta + Official-Use
+// bill-to below, an item table, then bank details and totals.
+func renderInvoiceHTML(s *InvoiceSettings, v invoiceView) string {
 	if s == nil {
 		s = &InvoiceSettings{BusinessName: "Around You", PaymentTerms: "Payment due immediately."}
 	}
+	esc := htmlPkg.EscapeString
+	bizName := firstNonEmpty(s.BusinessName, "Around You")
+	total := money(v.Cents)
+
 	logo := ""
 	if strings.TrimSpace(s.LogoURL) != "" {
-		logo = fmt.Sprintf(`<img src="%s" alt="%s" style="max-height:64px;margin-bottom:10px" />`, s.LogoURL, s.BusinessName)
+		logo = fmt.Sprintf(`<img src="%s" alt="%s" style="max-height:96px" />`, s.LogoURL, esc(bizName))
 	}
+	addrRight := strings.ReplaceAll(esc(strings.TrimSpace(s.Address)), "\n", "<br>")
 
-	bizLines := []string{}
-	appendIf := func(v string) {
-		if strings.TrimSpace(v) != "" {
-			bizLines = append(bizLines, v)
+	var b strings.Builder
+	b.WriteString(`<div style="font-family:Arial,Helvetica,sans-serif;max-width:780px;color:#111;font-size:13px">`)
+
+	// --- Top: logo | Around You | address ---
+	b.WriteString(`<table width="100%" cellpadding="0" cellspacing="0"><tr>`)
+	b.WriteString(`<td valign="top" width="34%">` + logo + `</td>`)
+	b.WriteString(`<td valign="top" width="33%"><div style="color:#2f80ed;font-weight:bold;font-size:15px">` + esc(bizName) + `</div>`)
+	if s.ContactEmail != "" {
+		b.WriteString(`<div>` + esc(s.ContactEmail) + `</div>`)
+	}
+	if s.ContactPhone != "" {
+		b.WriteString(`<div>` + esc(s.ContactPhone) + `</div>`)
+	}
+	b.WriteString(`</td><td valign="top" width="33%" align="right">` + addrRight + `</td></tr></table>`)
+
+	b.WriteString(`<div style="color:#2f80ed;font-weight:bold;margin:18px 0 6px">TAX INVOICE</div>`)
+	b.WriteString(`<hr style="border:none;border-top:1px solid #e5e7eb">`)
+
+	// --- Second level: meta (left) | bill-to from Official Use (right) ---
+	b.WriteString(`<table width="100%" cellpadding="0" cellspacing="0"><tr><td valign="top" width="50%"><table cellpadding="2">`)
+	row := func(k, val string) {
+		b.WriteString(`<tr><td style="color:#555;padding-right:16px">` + k + `</td><td>` + val + `</td></tr>`)
+	}
+	row("Invoice Number", esc(v.Number))
+	row("Invoice Date", v.Date.Format("02/Jan/2006"))
+	row("Due Date", v.Due.Format("02/Jan/2006"))
+	row("Invoice Total", total)
+	row("Balance Due", total)
+	b.WriteString(`</table></td><td valign="top" width="50%">`)
+	b.WriteString(`<div style="font-weight:bold">` + esc(firstNonEmpty(v.BillName, "Partner")) + `</div>`)
+	addBill := func(val string) {
+		if strings.TrimSpace(val) != "" {
+			b.WriteString(`<div>` + esc(val) + `</div>`)
 		}
 	}
-	appendIf(s.Address)
-	appendIf(s.ContactEmail)
-	appendIf(s.ContactPhone)
-	if strings.TrimSpace(s.RegNumber) != "" {
-		bizLines = append(bizLines, "Reg: "+s.RegNumber)
-	}
-	if strings.TrimSpace(s.VatNumber) != "" {
-		bizLines = append(bizLines, "VAT: "+s.VatNumber)
-	}
-	biz := strings.Join(bizLines, "<br>")
+	addBill(v.BillReg)
+	addBill(v.BillVat)
+	addBill(v.BillContactName)
+	addBill(v.BillContactNumber)
+	addBill(v.BillEmail)
+	b.WriteString(`</td></tr></table>`)
 
-	bankRows := ""
+	// --- Item table ---
+	b.WriteString(`<table width="100%" cellpadding="8" cellspacing="0" style="margin-top:22px;border-collapse:collapse">`)
+	b.WriteString(`<tr style="border-bottom:1px solid #ccc;text-align:left"><th>Item</th><th>Description</th>` +
+		`<th style="text-align:right">Unit Cost</th><th style="text-align:right">Quantity</th><th style="text-align:right">Line Total</th></tr>`)
+	b.WriteString(`<tr style="border-bottom:1px solid #eee"><td style="color:#2f80ed">` + esc(v.ItemCode) + `</td>` +
+		`<td>` + esc(v.ItemDesc) + `</td><td style="text-align:right">` + total + `</td>` +
+		`<td style="text-align:right">1</td><td style="text-align:right">` + total + `</td></tr></table>`)
+
+	// --- Bottom: bank (left) | totals without Paid to Date (right) ---
+	bank := ""
 	addBank := func(label, val string) {
 		if strings.TrimSpace(val) != "" {
-			bankRows += fmt.Sprintf(`<tr><td style="color:#888;padding-right:12px">%s</td><td>%s</td></tr>`, label, val)
+			bank += `<div>` + label + ": " + esc(val) + `</div>`
 		}
 	}
 	addBank("Bank", s.BankName)
-	addBank("Account name", s.AccountName)
-	addBank("Account number", s.AccountNumber)
-	addBank("Branch code", s.BranchCode)
-	ref := s.PaymentReference
-	if strings.TrimSpace(ref) == "" {
-		ref = number // default the payment reference to the invoice number
-	}
-	addBank("Reference", ref)
-	bankBlock := ""
-	if bankRows != "" {
-		bankBlock = fmt.Sprintf(`<h3 style="margin-top:20px">How to pay</h3><table cellpadding="4" style="font-size:14px">%s</table>`, bankRows)
-	}
+	addBank("Account No.", s.AccountNumber)
+	addBank("Branch Code", s.BranchCode)
 
-	terms := strings.TrimSpace(s.PaymentTerms)
-	if terms == "" {
-		terms = "Payment due immediately."
+	b.WriteString(`<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:22px"><tr>`)
+	b.WriteString(`<td valign="top" width="55%" style="line-height:1.9">` + bank + `</td>`)
+	b.WriteString(`<td valign="top" width="45%"><table width="100%" cellpadding="3">`)
+	trow := func(k, val string) {
+		b.WriteString(`<tr><td style="color:#555">` + k + `</td><td style="text-align:right">` + val + `</td></tr>`)
 	}
+	trow("Net", total)
+	trow("Subtotal", total)
+	trow("Total", total)
+	trow("Balance Due", total)
+	b.WriteString(`</table></td></tr></table>`)
 
-	return fmt.Sprintf(`
-<div style="font-family:Arial,sans-serif;max-width:600px">
-  %s
-  <h2 style="margin:0">%s</h2>
-  <p style="color:#888;font-size:12px;margin:2px 0 16px">%s</p>
-  <h3>Invoice %s</h3>
-  <p>Billed to: <strong>%s</strong><br>Period starting %s</p>
-  <table style="width:100%%;border-collapse:collapse" cellpadding="8">
-    <tr><td style="border-bottom:1px solid #ddd">%s</td>
-        <td style="border-bottom:1px solid #ddd;text-align:right">%s</td></tr>
-    <tr><td style="text-align:right"><strong>Total</strong></td>
-        <td style="text-align:right"><strong>%s</strong></td></tr>
-  </table>
-  <p>Due by %s. %s</p>
-  %s
-  <p style="color:#888;font-size:12px">%s is not currently VAT-registered; no VAT has been charged.</p>
-</div>`,
-		logo, s.BusinessName, biz, number, name,
-		start.Format("2 January 2006"), desc, rands(cents), rands(cents),
-		due.Format("2 January 2006"), terms, bankBlock, s.BusinessName)
+	terms := firstNonEmpty(strings.TrimSpace(s.PaymentTerms), "Payment due immediately.")
+	b.WriteString(`<p style="color:#888;font-size:11px;margin-top:18px">` + esc(bizName) +
+		` is not currently VAT-registered; no VAT has been charged. ` + esc(terms) + `</p></div>`)
+	return b.String()
 }
 
 // PreviewInvoiceHTML renders a sample invoice using the current settings, so the
@@ -349,14 +428,20 @@ func renderInvoiceHTML(s *InvoiceSettings, number, name, desc string, cents int,
 func PreviewInvoiceHTML(ctx context.Context) (string, error) {
 	s, _ := LoadInvoiceSettings(ctx) // nil is fine — renders with defaults
 	now := time.Now()
-	return renderInvoiceHTML(
-		s,
-		fmt.Sprintf("AY-%d-000123", now.Year()),
-		"Sample Partner (Pty) Ltd",
-		"Tier 3 subscription — "+now.Format("January 2006"),
-		20000, // R200 sample
-		now, now.AddDate(0, 0, 7),
-	), nil
+	return renderInvoiceHTML(s, invoiceView{
+		Number:            fmt.Sprintf("AY-%d-000123", now.Year()),
+		Date:              now,
+		Due:               now.AddDate(0, 0, 7),
+		ItemCode:          "ResT3L",
+		ItemDesc:          "Restaurant Tier 3 Local",
+		Cents:             20000,
+		BillName:          "Sample Partner (Pty) Ltd",
+		BillReg:           "2020/123456/07",
+		BillVat:           "4001234567",
+		BillContactName:   "Jane Doe",
+		BillContactNumber: "+27 21 000 0000",
+		BillEmail:         "billing@sample.co.za",
+	}), nil
 }
 
 // ListInvoices returns invoices newest-first — powers the admin billing view.

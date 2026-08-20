@@ -175,6 +175,8 @@ type Accommodation struct {
 
 	IsActive bool `json:"isActive"`
 
+	Units int `json:"units,omitempty"` // number of units/rooms — drives Option A banded pricing
+
 	OfficialUse
 
 	CreatedAt time.Time `json:"createdAt"`

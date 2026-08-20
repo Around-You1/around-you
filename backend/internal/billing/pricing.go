@@ -4,15 +4,23 @@
 // All money is integer ZAR cents to avoid floating-point rounding.
 package billing
 
+import "fmt"
+
 // Monthly prices in ZAR cents.
 const (
 	Tier1Cents   = 0     // Tier 1 — Free
 	Tier2Cents   = 10000 // R100
 	Tier3Cents   = 20000 // R200
 	Tier4Cents   = 30000 // R300
-	BothCents    = 45000 // R450 — audience "Both" forces Tier 4 at this price
+	BothCents    = 40000 // R400 — audience "Both" (forces Tier 4) at this flat price
 	BookingBase  = 20000 // R200/month base for Booking partners (+10% of bookings added per billing period)
 	RealEstateCents = 30000 // R300 — flat per real-estate page (agency or agent), no tiers
+
+	// Accommodation Option-A unit bands (6+ units); 1–5 units use tier pricing.
+	AccUnits6to10Cents  = 50000  // R500
+	AccUnits11to20Cents = 80000  // R800
+	AccUnits21to40Cents = 120000 // R1,200
+	// 40+ units = Custom Quote (0 here; billed manually).
 )
 
 // Plan is the computed billing arrangement for a partner.
@@ -33,12 +41,25 @@ type Plan struct {
 // per period during billing, not here). Unknown/blank tier defaults to Tier 1
 // (Free) — deliberately the safe direction (never over-charge on bad data).
 func PriceFor(partnerType, accessLevel, guestType string) Plan {
+	return PriceForUnits(partnerType, accessLevel, guestType, 1)
+}
+
+// PriceForUnits is PriceFor plus the accommodation unit count (Option A). units
+// only affects accommodations; pass 1 for everything else.
+func PriceForUnits(partnerType, accessLevel, guestType string, units int) Plan {
 	// Real estate pages (agency + each agent) are a flat R300/month, no tiers.
 	if partnerType == "estate_agency" || partnerType == "estate_agent" {
 		return Plan{Plan: "realestate", MonthlyCents: RealEstateCents}
 	}
 	if partnerType == "accommodation" {
-		return Plan{Plan: "tier", Tier: 4, MonthlyCents: Tier4Cents}
+		if units >= 6 {
+			return accommodationUnitBand(units)
+		}
+		// 1–5 units: accommodations are Tier 4, audience-priced.
+		if guestType == "Both" {
+			return Plan{Plan: "tier", Tier: 4, Audience: "Both", MonthlyCents: BothCents}
+		}
+		return Plan{Plan: "tier", Tier: 4, Audience: guestType, MonthlyCents: Tier4Cents}
 	}
 	if accessLevel == "Booking" {
 		return Plan{Plan: "booking", Tier: 0, Audience: guestType, MonthlyCents: BookingBase}
@@ -48,6 +69,65 @@ func PriceFor(partnerType, accessLevel, guestType string) Plan {
 	}
 	tier := tierNumber(accessLevel)
 	return Plan{Plan: "tier", Tier: tier, Audience: guestType, MonthlyCents: tierCents(tier)}
+}
+
+func accommodationUnitBand(units int) Plan {
+	switch {
+	case units <= 10:
+		return Plan{Plan: "units", MonthlyCents: AccUnits6to10Cents}
+	case units <= 20:
+		return Plan{Plan: "units", MonthlyCents: AccUnits11to20Cents}
+	case units <= 40:
+		return Plan{Plan: "units", MonthlyCents: AccUnits21to40Cents}
+	default:
+		return Plan{Plan: "units", MonthlyCents: 0} // 40+ = custom quote, billed manually
+	}
+}
+
+// InvoiceItem returns the invoice line's item code and description from the
+// partner's type, tier, audience and (for accommodation) unit count — e.g.
+// ("AccT2G", "Accommodation Tier 2 Guest"), ("Acc6-10", "Accommodation 6–10
+// Units"), ("Agency", "Estate Agency").
+func InvoiceItem(partnerType string, tier int, audience string, units int) (code, description string) {
+	switch partnerType {
+	case "estate_agency":
+		return "Agency", "Estate Agency"
+	case "estate_agent":
+		return "Agent", "Estate Agent"
+	}
+	if partnerType == "accommodation" && units >= 6 {
+		switch {
+		case units <= 10:
+			return "Acc6-10", "Accommodation 6–10 Units"
+		case units <= 20:
+			return "Acc11-20", "Accommodation 11–20 Units"
+		case units <= 40:
+			return "Acc21-40", "Accommodation 21–40 Units"
+		default:
+			return "Acc40+", "Accommodation 40+ Units (Custom Quote)"
+		}
+	}
+	prefix, typeName := "Res", "Restaurant"
+	switch partnerType {
+	case "accommodation":
+		prefix, typeName = "Acc", "Accommodation"
+	case "service":
+		prefix, typeName = "Ser", "Service"
+	case "attraction":
+		prefix, typeName = "Att", "Attraction"
+	}
+	if tier < 1 {
+		tier = 1
+	}
+	audLetter, audWord := "G", "Guest"
+	switch audience {
+	case "Both":
+		audLetter, audWord = "B", "Both"
+	case "Local":
+		audLetter, audWord = "L", "Local"
+	}
+	return fmt.Sprintf("%sT%d%s", prefix, tier, audLetter),
+		fmt.Sprintf("%s Tier %d %s", typeName, tier, audWord)
 }
 
 func tierNumber(accessLevel string) int {

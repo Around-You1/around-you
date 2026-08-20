@@ -83,6 +83,7 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
     vetContact: accommodation?.vetContact || "",
     communityWatchContact: accommodation?.communityWatchContact || "",
     localSecurityContact: accommodation?.localSecurityContact || "",
+    units: accommodation?.units || 1,
     facilities: (accommodation?.facilities || []) as string[],
     isActive: accommodation?.isActive ?? false,
   }));
@@ -136,6 +137,7 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
         vetContact: accommodation.vetContact || "",
         communityWatchContact: accommodation.communityWatchContact || "",
         localSecurityContact: accommodation.localSecurityContact || "",
+        units: accommodation.units || 1,
         facilities: accommodation.facilities || [],
         isActive: accommodation.isActive,
       });
@@ -337,6 +339,18 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
                 placeholder="Contact number"
                 enterKeyHint="next"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="units">Number of Units / Rooms</Label>
+              <Input
+                id="units"
+                type="number"
+                min={1}
+                value={formData.units}
+                onChange={(e) => setFormData({ ...formData, units: Math.max(1, Number(e.target.value) || 1) })}
+                placeholder="e.g. 1"
+              />
+              <p className="text-xs text-muted-foreground">Drives pricing: 1–5 = tier price, 6–10 = R500, 11–20 = R800, 21–40 = R1,200, 40+ = custom quote.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>

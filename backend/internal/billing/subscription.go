@@ -28,7 +28,12 @@ type Subscription struct {
 // (partner_type, partner_id) constraint, so re-onboarding or editing a partner
 // keeps the subscription in sync rather than duplicating it.
 func EnsureSubscription(ctx context.Context, partnerType string, partnerID int64, accessLevel, guestType, repCode string) error {
-	p := PriceFor(partnerType, accessLevel, guestType)
+	units := 1
+	if partnerType == "accommodation" {
+		_ = appdb.SQLDB.QueryRowContext(ctx,
+			"SELECT COALESCE(units, 1) FROM accommodations WHERE id = $1", partnerID).Scan(&units)
+	}
+	p := PriceForUnits(partnerType, accessLevel, guestType, units)
 
 	var tierArg interface{}
 	if p.Tier > 0 {

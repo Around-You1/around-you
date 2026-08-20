@@ -50,6 +50,7 @@ export interface Accommodation {
   vetContact?: string;
   communityWatchContact?: string;
   localSecurityContact?: string;
+  units?: number;
 
   emergencyContacts?: EmergencyContact[];
 

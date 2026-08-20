@@ -65,6 +65,7 @@ type CreateRequest struct {
 
 	Facilities []string `json:"facilities,omitempty"`
 	IsActive   bool     `json:"isActive"`
+	Units      int      `json:"units,omitempty"`
 
 	OfficialHoldingCompany string `json:"officialHoldingCompany,omitempty"`
 	OfficialContactName    string `json:"officialContactName,omitempty"`
@@ -126,6 +127,7 @@ type UpdateRequest struct {
 
 	Facilities []string `json:"facilities,omitempty"`
 	IsActive   *bool    `json:"isActive,omitempty"`
+	Units      *int     `json:"units,omitempty"`
 
 	OfficialHoldingCompany *string `json:"officialHoldingCompany,omitempty"`
 	OfficialContactName    *string `json:"officialContactName,omitempty"`
