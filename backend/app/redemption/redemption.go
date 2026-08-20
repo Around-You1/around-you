@@ -16,6 +16,22 @@ import (
 
 var validEntities = map[string]bool{"restaurant": true, "service": true, "attraction": true}
 
+// localAlreadyRedeemedThisMonth reports whether a Local has already redeemed this
+// partner's discount within the current calendar month. Locals are limited to
+// one redemption per partner per month cycle (holiday guests are unrestricted).
+func localAlreadyRedeemedThisMonth(ctx context.Context, voterKey, entityType string, entityID int64) (bool, error) {
+	var cnt int
+	err := appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM discount_redemptions
+		WHERE voter_key = $1 AND voter_type = 'local_guest'
+		  AND entity_type = $2 AND entity_id = $3
+		  AND status = 'redeemed'
+		  AND date_trunc('month', redeemed_at) = date_trunc('month', now())`,
+		voterKey, entityType, entityID,
+	).Scan(&cnt)
+	return cnt > 0, err
+}
+
 // voterIdentity returns the caller's stable rating identity (matches
 // ratings.voter_key) and rejects non-guest callers.
 func voterIdentity(ctx context.Context) (voterKey, voterType string, err error) {
@@ -55,6 +71,16 @@ func Start(ctx context.Context, req *StartRequest) (*StartResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Locals may redeem each partner's discount only once per calendar month.
+	if voterType == "local_guest" {
+		used, err := localAlreadyRedeemedThisMonth(ctx, voterKey, req.EntityType, req.EntityID)
+		if err != nil {
+			return nil, err
+		}
+		if used {
+			return nil, &errs.Error{Code: errs.AlreadyExists, Message: "You've already used this partner's discount this month. Locals can redeem each partner's discount once per calendar month."}
+		}
+	}
 	token := appdb.RandomCode(24)
 	if _, err := appdb.SQLDB.ExecContext(ctx, `
 		INSERT INTO discount_redemptions (token, entity_type, entity_id, voter_key, voter_type, status)
@@ -88,14 +114,25 @@ func Redeem(ctx context.Context, req *RedeemRequest) (*RedeemResponse, error) {
 	}
 	var entityType string
 	var entityID int64
-	var status string
+	var status, voterKey, voterType string
 	if err := appdb.SQLDB.QueryRowContext(ctx,
-		`SELECT entity_type, entity_id, status FROM discount_redemptions WHERE token = $1`, token,
-	).Scan(&entityType, &entityID, &status); err != nil {
+		`SELECT entity_type, entity_id, status, voter_key, voter_type FROM discount_redemptions WHERE token = $1`, token,
+	).Scan(&entityType, &entityID, &status, &voterKey, &voterType); err != nil {
 		return nil, &errs.Error{Code: errs.NotFound, Message: "this code is not valid"}
 	}
 	if status == "redeemed" {
 		return nil, &errs.Error{Code: errs.AlreadyExists, Message: "this discount has already been redeemed"}
+	}
+	// Enforce the Local monthly cap at scan time too (guards against a Local who
+	// generated a token before already redeeming this partner this month).
+	if voterType == "local_guest" {
+		used, err := localAlreadyRedeemedThisMonth(ctx, voterKey, entityType, entityID)
+		if err != nil {
+			return nil, err
+		}
+		if used {
+			return nil, &errs.Error{Code: errs.AlreadyExists, Message: "This local has already redeemed this partner's discount this month."}
+		}
 	}
 	if _, err := appdb.SQLDB.ExecContext(ctx,
 		`UPDATE discount_redemptions SET status = 'redeemed', redeemed_at = now() WHERE token = $1 AND status = 'pending'`, token,
