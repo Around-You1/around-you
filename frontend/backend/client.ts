@@ -250,7 +250,7 @@ export const backend = {
     deleteAgent: (req: { id: number }) => request("DELETE", "/estate/agent", { body: req }),
     createProperty: (req: any) => request("POST", "/estate/property", { body: req }),
     updateProperty: (req: any) => request("PUT", "/estate/property", { body: req }),
-    listProperties: (req: { agencyId: number }) => request("GET", "/estate/properties", { query: req }),
+    listProperties: (req: { agencyId?: number; agentId?: number }) => request("GET", "/estate/properties", { query: req }),
     setPropertyActive: (req: { id: number; active: boolean }) =>
       request("POST", "/estate/property/active", { body: req }),
     deleteProperty: (req: { id: number }) => request("DELETE", "/estate/property", { body: req }),

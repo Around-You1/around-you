@@ -15,6 +15,21 @@ import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
 import ProfileReferenceCodeDisplay from "./ProfileReferenceCodeDisplay";
 
 const SA_PROVINCES = ["Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal", "Limpopo", "Mpumalanga", "North West", "Northern Cape", "Western Cape"];
+const PROPERTY_TYPES = ["House", "Apartment", "Townhouse", "Plot", "Farm", "Commercial", "Land", "Industrial"];
+const FEATURES = ["Pool", "Tennis Court", "Garden", "Security Estate", "Double Garage", "Borehole", "Solar", "Fibre", "Sea View", "Mountain View", "Pet Friendly", "Fireplace", "Staff Quarters", "Backup Power"];
+
+interface PropertyRow {
+  id?: number;
+  title: string; propertyType: string; listingType: string; priceRand: string;
+  plotSizeM2: string; houseSizeM2: string; bedrooms: string; bathrooms: string; garages: string;
+  features: string[]; address: string; province: string; postalCode: string; description: string;
+  imageUrls: string[]; isActive: boolean;
+}
+const newProperty = (): PropertyRow => ({
+  title: "", propertyType: "House", listingType: "sale", priceRand: "", plotSizeM2: "", houseSizeM2: "",
+  bedrooms: "", bathrooms: "", garages: "", features: [], address: "", province: "", postalCode: "",
+  description: "", imageUrls: [], isActive: true,
+});
 
 const emptyOfficial = (): OfficialUseData => ({
   officialHoldingCompany: "", officialContactName: "", officialContactNumber: "", officialEmail: "",
@@ -50,6 +65,16 @@ export default function EstateAgentForm({
     officialRepCode: defaultRepCode || "",
     officialRepName: defaultRepName || "",
   }));
+  const [properties, setProperties] = useState<PropertyRow[]>([]);
+  const [deletedProps, setDeletedProps] = useState<number[]>([]);
+
+  const setProp = (i: number, patch: Partial<PropertyRow>) =>
+    setProperties((prev) => prev.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
+  const removeProperty = (i: number) => {
+    const p = properties[i];
+    if (p.id) setDeletedProps((d) => [...d, p.id!]);
+    setProperties((prev) => prev.filter((_, idx) => idx !== i));
+  };
 
   useEffect(() => {
     if (!agentId) return;
@@ -73,6 +98,15 @@ export default function EstateAgentForm({
             companyRegNumber: a.companyRegNumber || "", companyVatNumber: a.companyVatNumber || "", guestType: "", accessLevel: "",
           });
         }
+        const pr: any = await backend.estate.listProperties({ agentId });
+        setProperties((pr.properties || []).map((p: any) => ({
+          id: p.id, title: p.title || "", propertyType: p.propertyType || "House", listingType: p.listingType || "sale",
+          priceRand: p.priceCents ? String(p.priceCents / 100) : "", plotSizeM2: p.plotSizeM2 ? String(p.plotSizeM2) : "",
+          houseSizeM2: p.houseSizeM2 ? String(p.houseSizeM2) : "", bedrooms: p.bedrooms ? String(p.bedrooms) : "",
+          bathrooms: p.bathrooms ? String(p.bathrooms) : "", garages: p.garages ? String(p.garages) : "",
+          features: p.features || [], address: p.address || "", province: p.province || "", postalCode: p.postalCode || "",
+          description: p.description || "", imageUrls: p.imageUrls || [], isActive: p.isActive !== false,
+        })));
       } catch (error: any) {
         toast({ title: "Couldn't load agent", description: error?.message || "Please try again.", variant: "destructive" });
       } finally {
@@ -100,8 +134,24 @@ export default function EstateAgentForm({
         companyRegNumber: official.companyRegNumber, companyVatNumber: official.companyVatNumber,
         isActive: agent.isActive,
       };
-      if (agentId) await backend.estate.updateAgent(payload);
-      else await backend.estate.createAgent(payload);
+      const saved: any = agentId ? await backend.estate.updateAgent(payload) : await backend.estate.createAgent(payload);
+      const newAgentId = saved.id;
+
+      for (const id of deletedProps) await backend.estate.deleteProperty({ id });
+      for (const p of properties) {
+        const propPayload = {
+          ...(p.id ? { id: p.id } : {}), agentId: newAgentId,
+          title: p.title, propertyType: p.propertyType, listingType: p.listingType,
+          priceCents: p.priceRand.trim() ? Math.round(Number(p.priceRand) * 100) : 0,
+          plotSizeM2: num(p.plotSizeM2), houseSizeM2: num(p.houseSizeM2),
+          bedrooms: num(p.bedrooms), bathrooms: num(p.bathrooms), garages: num(p.garages),
+          features: p.features, address: p.address, province: p.province, country: "South Africa", postalCode: p.postalCode,
+          description: p.description, imageUrl: p.imageUrls[0] || "", imageUrls: p.imageUrls, isActive: p.isActive,
+        };
+        if (p.id) await backend.estate.updateProperty(propPayload);
+        else await backend.estate.createProperty(propPayload);
+      }
+
       toast({ title: "Saved", description: `${agent.name} saved. Billing: R300/mo.` });
       onSaved();
     } catch (error: any) {
@@ -145,6 +195,71 @@ export default function EstateAgentForm({
         {agentId && (
           <ProfileReferenceCodeDisplay entityType="estate_agent" entityId={agentId} currentCode={agent.profileReferenceCode} />
         )}
+
+        {/* Properties listed by this agent */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label className="text-base font-semibold">Properties ({properties.length})</Label>
+            <Button type="button" variant="outline" size="sm" onClick={() => setProperties((p) => [...p, newProperty()])}>+ Add Property</Button>
+          </div>
+          {properties.map((p, i) => (
+            <Card key={i} className="border-border/60">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Property {i + 1}</span>
+                  <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => removeProperty(i)}>Remove</Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1 md:col-span-2"><Label className="text-xs">Title *</Label><Input value={p.title} onChange={(e) => setProp(i, { title: e.target.value })} /></div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Type</Label>
+                    <Select value={p.propertyType} onValueChange={(v) => setProp(i, { propertyType: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>{PROPERTY_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">For Sale / Rent</Label>
+                    <Select value={p.listingType} onValueChange={(v) => setProp(i, { listingType: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent><SelectItem value="sale">For Sale</SelectItem><SelectItem value="rent">For Rent</SelectItem></SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1"><Label className="text-xs">Price (R)</Label><Input type="number" value={p.priceRand} onChange={(e) => setProp(i, { priceRand: e.target.value })} /></div>
+                  <div className="space-y-1"><Label className="text-xs">Plot Size (m²)</Label><Input type="number" value={p.plotSizeM2} onChange={(e) => setProp(i, { plotSizeM2: e.target.value })} /></div>
+                  <div className="space-y-1"><Label className="text-xs">House Size (m²)</Label><Input type="number" value={p.houseSizeM2} onChange={(e) => setProp(i, { houseSizeM2: e.target.value })} /></div>
+                  <div className="space-y-1"><Label className="text-xs">Bedrooms</Label><Input type="number" value={p.bedrooms} onChange={(e) => setProp(i, { bedrooms: e.target.value })} /></div>
+                  <div className="space-y-1"><Label className="text-xs">Bathrooms</Label><Input type="number" value={p.bathrooms} onChange={(e) => setProp(i, { bathrooms: e.target.value })} /></div>
+                  <div className="space-y-1"><Label className="text-xs">Garages</Label><Input type="number" value={p.garages} onChange={(e) => setProp(i, { garages: e.target.value })} /></div>
+                  <div className="space-y-1"><Label className="text-xs">Address</Label><Input value={p.address} onChange={(e) => setProp(i, { address: e.target.value })} /></div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Province</Label>
+                    <Select value={p.province} onValueChange={(v) => setProp(i, { province: v })}>
+                      <SelectTrigger><SelectValue placeholder="Province" /></SelectTrigger>
+                      <SelectContent>{SA_PROVINCES.map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1"><Label className="text-xs">Postal Code</Label><Input value={p.postalCode} onChange={(e) => setProp(i, { postalCode: e.target.value })} /></div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Features</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {FEATURES.map((f) => (
+                      <label key={f} className="flex items-center gap-2 text-sm">
+                        <input type="checkbox" className="accent-green-600" checked={p.features.includes(f)}
+                          onChange={() => setProp(i, { features: p.features.includes(f) ? p.features.filter((x) => x !== f) : [...p.features, f] })} />
+                        {f}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-1"><Label className="text-xs">Description</Label><Textarea rows={3} value={p.description} onChange={(e) => setProp(i, { description: e.target.value })} /></div>
+                <MultiImageUpload label="Property Images" images={p.imageUrls} maxImages={10} onChange={(urls) => setProp(i, { imageUrls: urls })} />
+                <div className="flex items-center gap-2"><Switch checked={p.isActive} onCheckedChange={(v) => setProp(i, { isActive: v })} /><Label className="text-xs">Active</Label></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
         <div className="flex items-center gap-2">
           <Switch checked={agent.isActive} onCheckedChange={(v) => setAgent({ ...agent, isActive: v })} />

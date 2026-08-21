@@ -375,7 +375,7 @@ type EstatePropertyStore struct{}
 func NewEstatePropertyStore() *EstatePropertyStore { return &EstatePropertyStore{} }
 
 const propertyCols = `
-	id, agency_id, agent_id, title, property_type,
+	id, COALESCE(agency_id,0), agent_id, title, property_type,
 	COALESCE(plot_size_m2, 0), COALESCE(house_size_m2, 0),
 	COALESCE(bedrooms, 0), COALESCE(bathrooms, 0), COALESCE(garages, 0),
 	features, price_cents, listing_type,
@@ -419,7 +419,7 @@ func (s *EstatePropertyStore) Create(ctx context.Context, in *appdb.EstateProper
 		   description, image_url, image_urls, is_active)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
 		RETURNING id`,
-		in.AgencyID, in.AgentID, in.Title, in.PropertyType, in.PlotSizeM2, in.HouseSizeM2, in.Bedrooms, in.Bathrooms, in.Garages,
+		agencyIDOrNull(in.AgencyID), in.AgentID, in.Title, in.PropertyType, in.PlotSizeM2, in.HouseSizeM2, in.Bedrooms, in.Bathrooms, in.Garages,
 		pq.Array(nonNilSlice(in.Features)), in.PriceCents, normListing(in.ListingType), in.Address, in.Province, in.Country, in.PostalCode,
 		in.Latitude, in.Longitude, in.Description, in.ImageURL, pq.Array(nonNilSlice(in.ImageURLs)), in.IsActive,
 	).Scan(&id)

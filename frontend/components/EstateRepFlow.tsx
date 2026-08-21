@@ -237,12 +237,25 @@ export default function EstateRepFlow({ repCode, repName, onDone }: { repCode: s
       setStatus("Uploading photo…");
       const photoUrls = await uploadPreviews(agentPhoto);
       setStatus("Creating agent…");
-      await backend.estate.createAgent({
+      const savedAgent: any = await backend.estate.createAgent({
         name: agentData.name, agencyName: agentData.agencyName, address: agentData.address, province: agentData.province,
         postalCode: agentData.postalCode, latitude: num(agentData.latitude), longitude: num(agentData.longitude),
         contactNumber: agentData.contactNumber, email: agentData.email, bio: agentData.bio,
         photoUrl: photoUrls[0] || "", officialRepCode: repCode, officialRepName: repName, isActive: true,
       });
+      const agentId = savedAgent.id;
+      for (let i = 0; i < properties.length; i++) {
+        const p = properties[i];
+        setStatus(`Uploading property ${i + 1} images…`);
+        const urls = await uploadPreviews(p.images);
+        await backend.estate.createProperty({
+          agentId, title: p.title, propertyType: p.propertyType, plotSizeM2: num(p.plotSizeM2), houseSizeM2: num(p.houseSizeM2),
+          bedrooms: num(p.bedrooms), bathrooms: num(p.bathrooms), garages: num(p.garages), features: p.features,
+          priceCents: p.priceRand.trim() ? Math.round(Number(p.priceRand) * 100) : 0, listingType: p.listingType,
+          address: p.address, province: p.province, country: "South Africa", postalCode: p.postalCode,
+          description: p.description, imageUrl: urls[0] || "", imageUrls: urls, isActive: true,
+        });
+      }
       setDone(true);
     } catch (e: any) {
       alert(e?.message || "Failed to save. Please try again.");
@@ -291,6 +304,33 @@ export default function EstateRepFlow({ repCode, repName, onDone }: { repCode: s
         <Field label="Email" value={agentData.email} onChange={(v) => setAd({ email: v })} />
         <Field label="Bio" area value={agentData.bio} onChange={(v) => setAd({ bio: v })} />
         <ImgUpload label="Agent Photo" images={agentPhoto} onChange={setAgentPhoto} max={1} />
+
+        <Section>Properties ({properties.length})</Section>
+        {properties.map((p, i) => (
+          <div key={i} style={{ border: `1px solid ${colors.border}`, borderRadius: 12, padding: 12, marginBottom: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <span style={{ color: colors.textPrimary, fontSize: 13, fontWeight: 700 }}>Property {i + 1}</span>
+              <Btn kind="ghost" onClick={() => setProperties((prev) => prev.filter((_, idx) => idx !== i))}>Remove</Btn>
+            </div>
+            <Field label="Title *" value={p.title} onChange={(v) => setProp(i, { title: v })} />
+            <Dropdown label="Type" value={p.propertyType} options={PROPERTY_TYPES.map((t) => ({ v: t, l: t }))} onChange={(v) => setProp(i, { propertyType: v })} />
+            <Dropdown label="For Sale / Rent" value={p.listingType} options={[{ v: "sale", l: "For Sale" }, { v: "rent", l: "For Rent" }]} onChange={(v) => setProp(i, { listingType: v })} />
+            <Field label="Price (R)" type="number" value={p.priceRand} onChange={(v) => setProp(i, { priceRand: v })} />
+            <Field label="Plot Size (m²)" type="number" value={p.plotSizeM2} onChange={(v) => setProp(i, { plotSizeM2: v })} />
+            <Field label="House Size (m²)" type="number" value={p.houseSizeM2} onChange={(v) => setProp(i, { houseSizeM2: v })} />
+            <Field label="Bedrooms" type="number" value={p.bedrooms} onChange={(v) => setProp(i, { bedrooms: v })} />
+            <Field label="Bathrooms" type="number" value={p.bathrooms} onChange={(v) => setProp(i, { bathrooms: v })} />
+            <Field label="Garages" type="number" value={p.garages} onChange={(v) => setProp(i, { garages: v })} />
+            <Pills label="Features" options={FEATURES} selected={p.features} onToggle={(f) => setProp(i, { features: p.features.includes(f) ? p.features.filter((x) => x !== f) : [...p.features, f] })} />
+            <Field label="Address" value={p.address} onChange={(v) => setProp(i, { address: v })} />
+            <Dropdown label="Province" value={p.province} options={[{ v: "", l: "Select province" }, ...SA_PROVINCES.map((x) => ({ v: x, l: x }))]} onChange={(v) => setProp(i, { province: v })} />
+            <Field label="Postal Code" value={p.postalCode} onChange={(v) => setProp(i, { postalCode: v })} />
+            <Field label="Description" area value={p.description} onChange={(v) => setProp(i, { description: v })} />
+            <ImgUpload label="Property Images" images={p.images} onChange={(next) => setProp(i, { images: next })} max={10} />
+          </div>
+        ))}
+        <Btn onClick={() => setProperties((p) => [...p, newProperty()])}>+ Add Property</Btn>
+
         <div style={{ margin: "18px 0", background: colors.surface2, border: `1px solid ${colors.accent}`, borderRadius: 10, padding: 12, color: colors.textPrimary, fontSize: 13 }}>
           <b>Billing:</b> R300/month for this agent profile.
         </div>

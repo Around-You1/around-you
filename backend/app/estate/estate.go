@@ -43,6 +43,7 @@ type codeReq struct {
 }
 type agencyIDReq struct {
 	AgencyID int64 `json:"agencyId" query:"agencyId"`
+	AgentID  int64 `json:"agentId" query:"agentId"`
 }
 type activeReq struct {
 	ID     int64 `json:"id"`
@@ -287,8 +288,8 @@ func CreateProperty(ctx context.Context, req *appdb.EstateProperty) (*appdb.Esta
 	if err := requirePrivileged(ctx); err != nil {
 		return nil, err
 	}
-	if req.AgencyID == 0 {
-		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "agencyId is required"}
+	if req.AgencyID == 0 && (req.AgentID == nil || *req.AgentID == 0) {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "property must belong to an agency or an agent"}
 	}
 	if strings.TrimSpace(req.Title) == "" {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "property title is required"}
@@ -333,7 +334,13 @@ func ListProperties(ctx context.Context, req *agencyIDReq) (*PropertiesResponse,
 	if err := requirePrivileged(ctx); err != nil {
 		return nil, err
 	}
-	list, err := properties.ListByAgency(ctx, req.AgencyID, false)
+	var list []appdb.EstateProperty
+	var err error
+	if req.AgentID > 0 {
+		list, err = properties.ListByAgent(ctx, req.AgentID, false)
+	} else {
+		list, err = properties.ListByAgency(ctx, req.AgencyID, false)
+	}
 	if err != nil {
 		return nil, err
 	}
