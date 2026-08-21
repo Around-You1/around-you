@@ -186,7 +186,7 @@ export default function RepLoginPage() {
                 <Field label="Branch Code" value={app.bankBranchCode} onChange={setA("bankBranchCode")} />
               </div>
 
-              <Field label="Recruiting Rep Code (optional)" value={app.uplineRepCode} onChange={setA("uplineRepCode")} placeholder="e.g. Rep00000001" />
+              <Field label="The Rep Code of the rep (Team Leader) who recruited you" value={app.uplineRepCode} onChange={setA("uplineRepCode")} placeholder="e.g. Rep00000001" />
 
               <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12, color: "#bcd", cursor: "pointer" }}>
                 <input type="checkbox" checked={app.popiaConsent} onChange={(e) => setA("popiaConsent")(e.target.checked)} style={{ accentColor: LUMO, marginTop: 2 }} />
