@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Home, UtensilsCrossed, Scissors, Camera, BarChart3 } from "lucide-react";
+import { Home, UtensilsCrossed, Scissors, Camera, BarChart3, Building2, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
@@ -36,6 +36,9 @@ export default function AdminDashboard() {
     attractionStats: { totalCount: 0, activeCount: 0, inactiveCount: 0 },
   });
 
+  const zero = { totalCount: 0, activeCount: 0, inactiveCount: 0 };
+  const [estateStats, setEstateStats] = useState({ agencies: zero, agents: zero });
+
   const { toast } = useToast();
   const [tab, setTab] = useState("accommodations");
   const [modOpenCount, setModOpenCount] = useState(0);
@@ -43,7 +46,22 @@ export default function AdminDashboard() {
   useEffect(() => {
     loadStats();
     loadModCount();
+    loadEstate();
   }, []);
+
+  const loadEstate = async () => {
+    try {
+      const backend = getAuthenticatedBackend();
+      const [ag, agn]: any = await Promise.all([backend.estate.listAgencies(), backend.estate.listAllAgents()]);
+      const roll = (arr: any[]) => {
+        const active = arr.filter((x) => x.isActive !== false).length;
+        return { totalCount: arr.length, activeCount: active, inactiveCount: arr.length - active };
+      };
+      setEstateStats({ agencies: roll(ag.agencies || []), agents: roll(agn.agents || []) });
+    } catch {
+      // non-fatal
+    }
+  };
 
   const loadModCount = async () => {
     try {
@@ -110,6 +128,18 @@ export default function AdminDashboard() {
               icon={Camera}
               color="#FFD60A"
               stats={stats.attractionStats}
+            />
+            <PartnerCategoryMetrics
+              title="Estate Agencies"
+              icon={Building2}
+              color="#AF52DE"
+              stats={estateStats.agencies}
+            />
+            <PartnerCategoryMetrics
+              title="Estate Agents"
+              icon={UserRound}
+              color="#00C7BE"
+              stats={estateStats.agents}
             />
           </div>
         </div>

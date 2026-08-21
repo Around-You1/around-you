@@ -74,7 +74,7 @@ export function AgentCard({ a }: { a: any }) {
         {a.photoUrl ? <img src={a.photoUrl} alt={a.name} className="w-12 h-12 rounded-full object-cover" /> : <div className="w-12 h-12 rounded-full bg-muted" />}
         <div className="min-w-0">
           <p className="text-sm font-semibold truncate">{a.name}</p>
-          <p className="text-xs text-muted-foreground truncate">{a.contactNumber || a.email || "Estate Agent"}</p>
+          <p className="text-xs text-muted-foreground truncate">{a.agencyName || a.contactNumber || a.email || "Estate Agent"}</p>
         </div>
       </CardContent>
     </Card>
@@ -83,35 +83,155 @@ export function AgentCard({ a }: { a: any }) {
 
 // ---------- Guest browse (list of agencies) ----------
 
+const EP_TYPES = ["House", "Apartment", "Townhouse", "Plot", "Farm", "Commercial", "Land", "Industrial"];
+const EP_PROVINCES = ["Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal", "Limpopo", "Mpumalanga", "North West", "Northern Cape", "Western Cape"];
+const EP_FEATURES = ["Pool", "Tennis Court", "Garden", "Security Estate", "Double Garage", "Borehole", "Solar", "Fibre", "Sea View", "Mountain View", "Pet Friendly", "Fireplace", "Staff Quarters", "Backup Power"];
+
+const epSelect = "w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm";
+
 export function EstateAgenciesBrowse() {
   const router = useRouter();
+  const [properties, setProperties] = useState<any[]>([]);
   const [agencies, setAgencies] = useState<any[]>([]);
+  const [agents, setAgents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // search / filter state
+  const [q, setQ] = useState("");
+  const [type, setType] = useState("");
+  const [listing, setListing] = useState("");
+  const [province, setProvince] = useState("");
+  const [postal, setPostal] = useState("");
+  const [minBeds, setMinBeds] = useState("");
+  const [minBaths, setMinBaths] = useState("");
+  const [minHouse, setMinHouse] = useState("");
+  const [features, setFeatures] = useState<string[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
+
   useEffect(() => {
     (async () => {
       try {
-        const res: any = await getAuthenticatedBackend().estate.publicAgencies();
-        setAgencies(res.agencies || []);
+        const backend = getAuthenticatedBackend();
+        const [pr, ag, agn]: any = await Promise.all([
+          backend.estate.publicProperties(),
+          backend.estate.publicAgencies(),
+          backend.estate.publicAgents(),
+        ]);
+        setProperties(pr.properties || []);
+        setAgencies(ag.agencies || []);
+        setAgents(agn.agents || []);
       } catch {
-        setAgencies([]);
+        setProperties([]); setAgencies([]); setAgents([]);
       } finally {
         setLoading(false);
       }
     })();
   }, []);
+
+  const toggleFeature = (f: string) =>
+    setFeatures((prev) => (prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f]));
+
+  const term = q.trim().toLowerCase();
+  const filtered = properties.filter((p) => {
+    if (term && !`${p.title} ${p.address} ${p.province} ${p.postalCode} ${p.propertyType}`.toLowerCase().includes(term)) return false;
+    if (type && p.propertyType !== type) return false;
+    if (listing && p.listingType !== listing) return false;
+    if (province && p.province !== province) return false;
+    if (postal && !String(p.postalCode || "").includes(postal.trim())) return false;
+    if (minBeds && (p.bedrooms || 0) < Number(minBeds)) return false;
+    if (minBaths && (p.bathrooms || 0) < Number(minBaths)) return false;
+    if (minHouse && (p.houseSizeM2 || 0) < Number(minHouse)) return false;
+    if (features.length && !features.every((f) => (p.features || []).includes(f))) return false;
+    return true;
+  });
+
   if (loading) return <p className="text-sm text-muted-foreground py-6 text-center">Loading…</p>;
-  if (agencies.length === 0) return <p className="text-sm text-muted-foreground py-6 text-center">No estate agencies listed yet.</p>;
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {agencies.map((a) => (
-        <Card key={a.id} className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow" onClick={() => a.profileReferenceCode && router.push(`/estate/agency/${a.profileReferenceCode}`)}>
-          <ImageCarousel images={[...(a.imageUrl ? [a.imageUrl] : []), ...(a.imageUrls || [])]} alt={a.name} className="w-full h-36 object-cover" placeholderClassName="w-full h-36" />
-          <CardContent className="p-3">
-            <p className="font-semibold text-sm truncate">{a.name}</p>
-            <p className="text-xs text-muted-foreground truncate">{a.province || "Estate Agency"}</p>
-          </CardContent>
-        </Card>
-      ))}
+    <div className="space-y-5">
+      {/* Search bar */}
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <MapPin className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search properties by title, area, type…" className={`${epSelect} pl-8`} />
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setShowFilters((s) => !s)}>{showFilters ? "Hide" : "Filters"}</Button>
+        </div>
+
+        {showFilters && (
+          <div className="rounded-lg border border-border p-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <select className={epSelect} value={type} onChange={(e) => setType(e.target.value)}>
+              <option value="">Any type</option>
+              {EP_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <select className={epSelect} value={listing} onChange={(e) => setListing(e.target.value)}>
+              <option value="">Sale or Rent</option>
+              <option value="sale">For Sale</option>
+              <option value="rent">For Rent</option>
+            </select>
+            <select className={epSelect} value={province} onChange={(e) => setProvince(e.target.value)}>
+              <option value="">Any province</option>
+              {EP_PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
+            <input className={epSelect} value={postal} onChange={(e) => setPostal(e.target.value)} placeholder="Postal code" />
+            <input className={epSelect} type="number" min={0} value={minBeds} onChange={(e) => setMinBeds(e.target.value)} placeholder="Min beds" />
+            <input className={epSelect} type="number" min={0} value={minBaths} onChange={(e) => setMinBaths(e.target.value)} placeholder="Min baths" />
+            <input className={epSelect} type="number" min={0} value={minHouse} onChange={(e) => setMinHouse(e.target.value)} placeholder="Min house m²" />
+            <div className="col-span-2 sm:col-span-3">
+              <p className="text-xs text-muted-foreground mb-1">Features</p>
+              <div className="flex flex-wrap gap-1.5">
+                {EP_FEATURES.map((f) => (
+                  <button key={f} type="button" onClick={() => toggleFeature(f)}
+                    className={`text-xs rounded-full px-2.5 py-1 border ${features.includes(f) ? "border-green-600 text-green-600 bg-green-600/10" : "border-border text-muted-foreground"}`}>
+                    {f}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Property results */}
+      <div className="space-y-2">
+        <p className="text-sm font-semibold">Properties ({filtered.length})</p>
+        {filtered.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No properties match your search.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {filtered.map((p) => <PropertyCard key={p.id} p={p} />)}
+          </div>
+        )}
+      </div>
+
+      {/* Agencies */}
+      {agencies.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-semibold">Estate Agencies ({agencies.length})</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {agencies.map((a) => (
+              <Card key={a.id} className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow" onClick={() => a.profileReferenceCode && router.push(`/estate/agency/${a.profileReferenceCode}`)}>
+                <ImageCarousel images={[...(a.imageUrl ? [a.imageUrl] : []), ...(a.imageUrls || [])]} alt={a.name} className="w-full h-36 object-cover" placeholderClassName="w-full h-36" />
+                <CardContent className="p-3">
+                  <p className="font-semibold text-sm truncate">{a.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{a.province || "Estate Agency"}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Standalone Agents */}
+      {agents.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-semibold">Estate Agents ({agents.length})</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {agents.map((a) => <AgentCard key={a.id} a={a} />)}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -206,9 +326,13 @@ export function EstateAgentView({ code }: { code: string }) {
             <div className="flex flex-wrap gap-2 mt-2">
               <CallButton number={a.contactNumber} />
               {a.email && <Button variant="outline" size="sm" onClick={() => window.open(`mailto:${a.email}`)}>Email</Button>}
+              <DirectionsButton lat={a.latitude} lng={a.longitude} />
             </div>
           </div>
         </div>
+        {(a.agencyName || a.address) && (
+          <p className="text-sm text-muted-foreground">{[a.agencyName, a.address].filter(Boolean).join(" · ")}</p>
+        )}
         {a.bio && <p className="text-sm text-muted-foreground">{a.bio}</p>}
         {data.properties?.length > 0 && (
           <div className="space-y-3">

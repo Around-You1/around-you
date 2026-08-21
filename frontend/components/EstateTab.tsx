@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 import EstateAgencyForm from "./EstateAgencyForm";
+import EstateAgentForm from "./EstateAgentForm";
 
 interface Agency {
   id: number;
@@ -17,30 +18,42 @@ interface Agency {
   createAgentPages: boolean;
 }
 
+interface Agent {
+  id: number;
+  name: string;
+  agencyName?: string;
+  province?: string;
+  isActive: boolean;
+}
+
 export default function EstateTab() {
   const { toast } = useToast();
   const [agencies, setAgencies] = useState<Agency[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | undefined>(undefined);
+  const [showAgentForm, setShowAgentForm] = useState(false);
+  const [editingAgentId, setEditingAgentId] = useState<number | undefined>(undefined);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const backend = getAuthenticatedBackend();
-      const res: any = await backend.estate.listAgencies();
-      setAgencies((res.agencies || []) as Agency[]);
+      const [ag, agn]: any = await Promise.all([backend.estate.listAgencies(), backend.estate.listAllAgents()]);
+      setAgencies((ag.agencies || []) as Agency[]);
+      setAgents((agn.agents || []) as Agent[]);
     } catch (error: any) {
-      toast({ title: "Couldn't load agencies", description: error?.message || "Please try again.", variant: "destructive" });
+      toast({ title: "Couldn't load", description: error?.message || "Please try again.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   }, [toast]);
 
   useEffect(() => {
-    if (!showForm) load();
-  }, [showForm, load]);
+    if (!showForm && !showAgentForm) load();
+  }, [showForm, showAgentForm, load]);
 
   const toggleActive = async (a: Agency) => {
     try {
@@ -64,51 +77,107 @@ export default function EstateTab() {
     }
   };
 
+  const toggleAgentActive = async (a: Agent) => {
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.estate.setAgentActive({ id: a.id, active: !a.isActive });
+      setAgents((prev) => prev.map((x) => (x.id === a.id ? { ...x, isActive: !a.isActive } : x)));
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Failed", variant: "destructive" });
+    }
+  };
+
+  const removeAgent = async (a: Agent) => {
+    if (!confirm(`Delete agent "${a.name}"? This also cancels their billing.`)) return;
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.estate.deleteAgent({ id: a.id });
+      toast({ title: "Deleted", description: `${a.name} removed.` });
+      setAgents((prev) => prev.filter((x) => x.id !== a.id));
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Failed to delete", variant: "destructive" });
+    }
+  };
+
   if (showForm) {
-    return (
-      <EstateAgencyForm
-        agencyId={editingId}
-        onClose={() => setShowForm(false)}
-        onSaved={() => setShowForm(false)}
-      />
-    );
+    return <EstateAgencyForm agencyId={editingId} onClose={() => setShowForm(false)} onSaved={() => setShowForm(false)} />;
+  }
+  if (showAgentForm) {
+    return <EstateAgentForm agentId={editingAgentId} onClose={() => setShowAgentForm(false)} onSaved={() => setShowAgentForm(false)} />;
   }
 
   const q = query.trim().toLowerCase();
-  const filtered = q ? agencies.filter((a) => a.name.toLowerCase().includes(q)) : agencies;
+  const filteredAgencies = q ? agencies.filter((a) => a.name.toLowerCase().includes(q)) : agencies;
+  const filteredAgents = q ? agents.filter((a) => a.name.toLowerCase().includes(q) || (a.agencyName || "").toLowerCase().includes(q)) : agents;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-        <Input placeholder="Search agencies…" value={query} onChange={(e) => setQuery(e.target.value)} className="sm:max-w-xs" />
-        <Button className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black" onClick={() => { setEditingId(undefined); setShowForm(true); }}>
-          + Add Estate Agency
-        </Button>
+        <Input placeholder="Search agencies or agents…" value={query} onChange={(e) => setQuery(e.target.value)} className="sm:max-w-xs" />
+        <div className="flex gap-2">
+          <Button className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black" onClick={() => { setEditingId(undefined); setShowForm(true); }}>
+            + Add Estate Agency
+          </Button>
+          <Button variant="outline" className="border-[#AEECE4] text-foreground" onClick={() => { setEditingAgentId(undefined); setShowAgentForm(true); }}>
+            + Add Estate Agent
+          </Button>
+        </div>
       </div>
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
-      ) : filtered.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{agencies.length === 0 ? "No estate agencies yet." : "No agencies match your search."}</p>
       ) : (
-        <div className="space-y-2">
-          {filtered.map((a) => (
-            <Card key={a.id}>
-              <CardContent className="p-3 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-semibold text-sm truncate">{a.name}</p>
-                  <p className="text-xs text-muted-foreground">{a.province || "—"}{a.createAgentPages ? " · has agent pages" : ""}</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Switch checked={a.isActive} onCheckedChange={() => toggleActive(a)} className="data-[state=checked]:bg-green-600" />
-                  <span className="text-xs text-muted-foreground">{a.isActive ? "Active" : "Disabled"}</span>
-                  <Button variant="outline" size="sm" onClick={() => { setEditingId(a.id); setShowForm(true); }}>Edit</Button>
-                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => remove(a)}>Delete</Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <>
+          {/* Agencies */}
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">Estate Agencies ({filteredAgencies.length})</p>
+            {filteredAgencies.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{agencies.length === 0 ? "No estate agencies yet." : "No agencies match your search."}</p>
+            ) : (
+              filteredAgencies.map((a) => (
+                <Card key={a.id}>
+                  <CardContent className="p-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm truncate">{a.name}</p>
+                      <p className="text-xs text-muted-foreground">{a.province || "—"}{a.createAgentPages ? " · has agent pages" : ""}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Switch checked={a.isActive} onCheckedChange={() => toggleActive(a)} className="data-[state=checked]:bg-green-600" />
+                      <span className="text-xs text-muted-foreground">{a.isActive ? "Active" : "Disabled"}</span>
+                      <Button variant="outline" size="sm" onClick={() => { setEditingId(a.id); setShowForm(true); }}>Edit</Button>
+                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => remove(a)}>Delete</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+
+          {/* Standalone Agents */}
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">Estate Agents ({filteredAgents.length})</p>
+            {filteredAgents.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{agents.length === 0 ? "No estate agents yet." : "No agents match your search."}</p>
+            ) : (
+              filteredAgents.map((a) => (
+                <Card key={a.id}>
+                  <CardContent className="p-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm truncate">{a.name}</p>
+                      <p className="text-xs text-muted-foreground">{a.agencyName || "Independent"}{a.province ? ` · ${a.province}` : ""}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Switch checked={a.isActive} onCheckedChange={() => toggleAgentActive(a)} className="data-[state=checked]:bg-green-600" />
+                      <span className="text-xs text-muted-foreground">{a.isActive ? "Active" : "Disabled"}</span>
+                      <Button variant="outline" size="sm" onClick={() => { setEditingAgentId(a.id); setShowAgentForm(true); }}>Edit</Button>
+                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => removeAgent(a)}>Delete</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </>
       )}
     </div>
   );

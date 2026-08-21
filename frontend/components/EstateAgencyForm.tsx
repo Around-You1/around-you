@@ -325,18 +325,6 @@ export default function EstateAgencyForm({
                     </Select>
                   </div>
                   <div className="space-y-1"><Label className="text-xs">Postal Code</Label><Input value={p.postalCode} onChange={(e) => setProp(i, { postalCode: e.target.value })} /></div>
-                  {agency.createAgentPages && agents.length > 0 && (
-                    <div className="space-y-1">
-                      <Label className="text-xs">Assign to Agent</Label>
-                      <Select value={String(p.agentRef)} onValueChange={(v) => setProp(i, { agentRef: Number(v) })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="-1">Unassigned</SelectItem>
-                          {agents.map((a, ai) => <SelectItem key={ai} value={String(ai)}>{a.name || `Agent ${ai + 1}`}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Features</Label>
@@ -358,45 +346,12 @@ export default function EstateAgencyForm({
           ))}
         </div>
 
-        {/* Agents */}
-        <div className="flex items-center gap-2">
-          <Switch checked={agency.createAgentPages} onCheckedChange={(v) => setAgency({ ...agency, createAgentPages: v })} />
-          <Label>Create individual Estate Agent pages (R300 each)</Label>
-        </div>
-
-        {agency.createAgentPages && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-base font-semibold">Estate Agents ({agents.length})</Label>
-              <Button type="button" variant="outline" size="sm" onClick={() => setAgents((a) => [...a, newAgent()])}>+ Add Agent</Button>
-            </div>
-            {agents.map((a, i) => (
-              <Card key={i} className="border-border/60">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Agent {i + 1}</span>
-                    <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => removeAgent(i)}>Remove</Button>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-1"><Label className="text-xs">Agent Name *</Label><Input value={a.name} onChange={(e) => setAg(i, { name: e.target.value })} /></div>
-                    <div className="space-y-1"><Label className="text-xs">Contact Number</Label><Input value={a.contactNumber} onChange={(e) => setAg(i, { contactNumber: e.target.value })} /></div>
-                    <div className="space-y-1"><Label className="text-xs">Email</Label><Input value={a.email} onChange={(e) => setAg(i, { email: e.target.value })} /></div>
-                    <div className="space-y-1"><Label className="text-xs">Rep Code (billing)</Label><Input value={a.officialRepCode} onChange={(e) => setAg(i, { officialRepCode: e.target.value })} placeholder="defaults to agency rep" /></div>
-                  </div>
-                  <div className="space-y-1"><Label className="text-xs">Bio</Label><Textarea rows={2} value={a.bio} onChange={(e) => setAg(i, { bio: e.target.value })} /></div>
-                  <MultiImageUpload label="Agent Photo" images={a.photoUrl ? [a.photoUrl] : []} maxImages={1} onChange={(urls) => setAg(i, { photoUrl: urls[0] || "" })} />
-                  {a.id && (
-                    <ProfileReferenceCodeDisplay entityType="estate_agent" entityId={a.id} currentCode={a.profileReferenceCode} />
-                  )}
-                  <div className="flex items-center gap-2"><Switch checked={a.isActive} onCheckedChange={(v) => setAg(i, { isActive: v })} /><Label className="text-xs">Active (billed R300)</Label></div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+        <p className="text-xs text-muted-foreground">
+          Estate Agents are now added separately via the <strong>+ Add Estate Agent</strong> button on the Real Estate tab.
+        </p>
 
         <div className="rounded-lg border border-[#AEECE4] bg-[#AEECE4]/10 p-3 text-sm">
-          <strong>Billing:</strong> R300 agency{activeAgentCount > 0 ? ` + R300 × ${activeAgentCount} agent${activeAgentCount === 1 ? "" : "s"}` : ""} = <strong>R{monthly}/month</strong>
+          <strong>Billing:</strong> R300/month for this agency.
         </div>
 
         <div className="flex gap-3">

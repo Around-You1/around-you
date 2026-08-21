@@ -163,6 +163,13 @@ export default function EstateRepFlow({ repCode, repName, onDone }: { repCode: s
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState("");
   const [done, setDone] = useState(false);
+  const [mode, setMode] = useState<"agency" | "agent">("agency");
+  const [agentData, setAgentData] = useState({
+    name: "", agencyName: "", address: "", province: "", postalCode: "",
+    latitude: "", longitude: "", contactNumber: "", email: "", bio: "",
+  });
+  const [agentPhoto, setAgentPhoto] = useState<Preview[]>([]);
+  const setAd = (patch: Partial<typeof agentData>) => setAgentData((a) => ({ ...a, ...patch }));
 
   const setA = (patch: Partial<typeof agency>) => setAgency((a) => ({ ...a, ...patch }));
   const setProp = (i: number, patch: Partial<PropertyRow>) => setProperties((prev) => prev.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
@@ -222,21 +229,83 @@ export default function EstateRepFlow({ repCode, repName, onDone }: { repCode: s
     }
   };
 
+  const submitAgent = async () => {
+    if (!agentData.name.trim()) { alert("Agent name is required."); return; }
+    setSubmitting(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      setStatus("Uploading photo…");
+      const photoUrls = await uploadPreviews(agentPhoto);
+      setStatus("Creating agent…");
+      await backend.estate.createAgent({
+        name: agentData.name, agencyName: agentData.agencyName, address: agentData.address, province: agentData.province,
+        postalCode: agentData.postalCode, latitude: num(agentData.latitude), longitude: num(agentData.longitude),
+        contactNumber: agentData.contactNumber, email: agentData.email, bio: agentData.bio,
+        photoUrl: photoUrls[0] || "", officialRepCode: repCode, officialRepName: repName, isActive: true,
+      });
+      setDone(true);
+    } catch (e: any) {
+      alert(e?.message || "Failed to save. Please try again.");
+    } finally {
+      setSubmitting(false);
+      setStatus("");
+    }
+  };
+
+  const ModeSwitch = (
+    <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+      <button type="button" onClick={() => setMode("agency")} style={{ flex: 1, borderRadius: 10, padding: "10px", fontSize: 13, fontWeight: 700, cursor: "pointer", background: mode === "agency" ? colors.primary : "transparent", color: mode === "agency" ? "#000" : colors.primary, border: `1px solid ${colors.primary}` }}>Estate Agency</button>
+      <button type="button" onClick={() => setMode("agent")} style={{ flex: 1, borderRadius: 10, padding: "10px", fontSize: 13, fontWeight: 700, cursor: "pointer", background: mode === "agent" ? colors.primary : "transparent", color: mode === "agent" ? "#000" : colors.primary, border: `1px solid ${colors.primary}` }}>Estate Agent</button>
+    </div>
+  );
+
   if (done) {
     return (
       <div style={{ background: colors.surface, border: `1px solid ${colors.primary}`, borderRadius: 16, padding: 24, textAlign: "center" }}>
         <div style={{ fontSize: 40, marginBottom: 10 }}>✅</div>
         <p style={{ color: colors.textPrimary, fontSize: 15 }}>
-          <b>{agency.name}</b> created with {properties.length} propert{properties.length === 1 ? "y" : "ies"}
-          {agents.length > 0 ? ` and ${agents.length} agent${agents.length === 1 ? "" : "s"}` : ""}. Billing: <b>R{monthly}/mo</b>.
+          {mode === "agent" ? (
+            <><b>{agentData.name}</b> created. Billing: <b>R300/mo</b>.</>
+          ) : (
+            <><b>{agency.name}</b> created with {properties.length} propert{properties.length === 1 ? "y" : "ies"}. Billing: <b>R300/mo</b>.</>
+          )}
         </p>
         <div style={{ marginTop: 16 }}><Btn kind="solid" onClick={onDone}>Onboard Another Partner</Btn></div>
       </div>
     );
   }
 
+  if (mode === "agent") {
+    return (
+      <div>
+        {ModeSwitch}
+        <Section>Estate Agent</Section>
+        <Field label="Agent Name *" value={agentData.name} onChange={(v) => setAd({ name: v })} />
+        <Field label="Agency Name" value={agentData.agencyName} onChange={(v) => setAd({ agencyName: v })} />
+        <Field label="Address" value={agentData.address} onChange={(v) => setAd({ address: v })} />
+        <Dropdown label="Province" value={agentData.province} options={[{ v: "", l: "Select province" }, ...SA_PROVINCES.map((p) => ({ v: p, l: p }))]} onChange={(v) => setAd({ province: v })} />
+        <Field label="Postal Code" value={agentData.postalCode} onChange={(v) => setAd({ postalCode: v })} />
+        <Field label="Latitude" type="number" value={agentData.latitude} onChange={(v) => setAd({ latitude: v })} />
+        <Field label="Longitude" type="number" value={agentData.longitude} onChange={(v) => setAd({ longitude: v })} />
+        <Field label="Contact Number" value={agentData.contactNumber} onChange={(v) => setAd({ contactNumber: v })} />
+        <Field label="Email" value={agentData.email} onChange={(v) => setAd({ email: v })} />
+        <Field label="Bio" area value={agentData.bio} onChange={(v) => setAd({ bio: v })} />
+        <ImgUpload label="Agent Photo" images={agentPhoto} onChange={setAgentPhoto} max={1} />
+        <div style={{ margin: "18px 0", background: colors.surface2, border: `1px solid ${colors.accent}`, borderRadius: 10, padding: 12, color: colors.textPrimary, fontSize: 13 }}>
+          <b>Billing:</b> R300/month for this agent profile.
+        </div>
+        {status && <p style={{ color: colors.accent, fontSize: 12, marginBottom: 8 }}>{status}</p>}
+        <button type="button" disabled={submitting} onClick={submitAgent}
+          style={{ width: "100%", background: colors.primary, color: "#000", border: "none", borderRadius: 10, padding: 14, fontWeight: 800, fontSize: 15, cursor: submitting ? "default" : "pointer", opacity: submitting ? 0.6 : 1 }}>
+          {submitting ? "Saving…" : "Submit Estate Agent"}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div>
+      {ModeSwitch}
       <Section>Estate Agency</Section>
       <Field label="Agency Name *" value={agency.name} onChange={(v) => setA({ name: v })} />
       <Field label="Description" area value={agency.description} onChange={(v) => setA({ description: v })} />
@@ -269,48 +338,14 @@ export default function EstateRepFlow({ repCode, repName, onDone }: { repCode: s
           <Field label="Address" value={p.address} onChange={(v) => setProp(i, { address: v })} />
           <Dropdown label="Province" value={p.province} options={[{ v: "", l: "Select province" }, ...SA_PROVINCES.map((x) => ({ v: x, l: x }))]} onChange={(v) => setProp(i, { province: v })} />
           <Field label="Postal Code" value={p.postalCode} onChange={(v) => setProp(i, { postalCode: v })} />
-          {agency.createAgentPages && agents.length > 0 && (
-            <Dropdown label="Assign to Agent" value={String(p.agentRef)}
-              options={[{ v: "-1", l: "Unassigned" }, ...agents.map((a, ai) => ({ v: String(ai), l: a.name || `Agent ${ai + 1}` }))]}
-              onChange={(v) => setProp(i, { agentRef: Number(v) })} />
-          )}
           <Field label="Description" area value={p.description} onChange={(v) => setProp(i, { description: v })} />
           <ImgUpload label="Property Images" images={p.images} onChange={(next) => setProp(i, { images: next })} max={10} />
         </div>
       ))}
       <Btn onClick={() => setProperties((p) => [...p, newProperty()])}>+ Add Property</Btn>
 
-      <div style={{ margin: "18px 0 8px", display: "flex", alignItems: "center", gap: 8 }}>
-        <input type="checkbox" checked={agency.createAgentPages} onChange={(e) => setA({ createAgentPages: e.target.checked })} style={{ accentColor: colors.primary, width: 18, height: 18 }} />
-        <span style={{ color: colors.textPrimary, fontSize: 14 }}>Create individual Estate Agent pages (R300 each)</span>
-      </div>
-
-      {agency.createAgentPages && (
-        <>
-          <Section>Estate Agents ({agents.length})</Section>
-          {agents.map((a, i) => (
-            <div key={i} style={{ border: `1px solid ${colors.border}`, borderRadius: 12, padding: 12, marginBottom: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <span style={{ color: colors.textPrimary, fontSize: 13, fontWeight: 700 }}>Agent {i + 1}</span>
-                <Btn kind="ghost" onClick={() => {
-                  setProperties((prev) => prev.map((p) => (p.agentRef === i ? { ...p, agentRef: -1 } : (p.agentRef > i ? { ...p, agentRef: p.agentRef - 1 } : p))));
-                  setAgents((prev) => prev.filter((_, idx) => idx !== i));
-                }}>Remove</Btn>
-              </div>
-              <Field label="Agent Name *" value={a.name} onChange={(v) => setAg(i, { name: v })} />
-              <Field label="Contact Number" value={a.contactNumber} onChange={(v) => setAg(i, { contactNumber: v })} />
-              <Field label="Email" value={a.email} onChange={(v) => setAg(i, { email: v })} />
-              <Field label="Rep Code (billing, optional)" value={a.officialRepCode} onChange={(v) => setAg(i, { officialRepCode: v })} />
-              <Field label="Bio" area value={a.bio} onChange={(v) => setAg(i, { bio: v })} />
-              <ImgUpload label="Agent Photo" images={a.photo} onChange={(next) => setAg(i, { photo: next })} max={1} />
-            </div>
-          ))}
-          <Btn onClick={() => setAgents((a) => [...a, newAgent()])}>+ Add Agent</Btn>
-        </>
-      )}
-
       <div style={{ margin: "18px 0", background: colors.surface2, border: `1px solid ${colors.accent}`, borderRadius: 10, padding: 12, color: colors.textPrimary, fontSize: 13 }}>
-        <b>Billing:</b> R300 agency{activeAgents > 0 ? ` + R300 × ${activeAgents} agent${activeAgents === 1 ? "" : "s"}` : ""} = <b>R{monthly}/month</b>
+        <b>Billing:</b> R300/month for this agency. (Estate Agents are onboarded separately — choose "Estate Agent" at the top.)
       </div>
 
       {status && <p style={{ color: colors.accent, fontSize: 12, marginBottom: 8 }}>{status}</p>}

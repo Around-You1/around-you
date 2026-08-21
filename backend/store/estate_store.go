@@ -187,22 +187,43 @@ type EstateAgentStore struct{}
 func NewEstateAgentStore() *EstateAgentStore { return &EstateAgentStore{} }
 
 const agentCols = `
-	id, agency_id, name, photo_url, contact_number, email, bio,
+	id, COALESCE(agency_id,0), name,
+	COALESCE(agency_name,''), COALESCE(address,''), COALESCE(province,''), COALESCE(postal_code,''), latitude, longitude,
+	photo_url, contact_number, email, bio,
 	COALESCE(profile_reference_code, ''), is_active,
 	official_holding_company, official_contact_name, official_contact_number, official_email,
 	official_rep_code, official_rep_name, company_reg_number, company_vat_number`
 
 func scanAgent(s scannable) (*appdb.EstateAgent, error) {
 	var a appdb.EstateAgent
+	var lat, lng sql.NullFloat64
 	if err := s.Scan(
-		&a.ID, &a.AgencyID, &a.Name, &a.PhotoURL, &a.ContactNumber, &a.Email, &a.Bio,
+		&a.ID, &a.AgencyID, &a.Name,
+		&a.AgencyName, &a.Address, &a.Province, &a.PostalCode, &lat, &lng,
+		&a.PhotoURL, &a.ContactNumber, &a.Email, &a.Bio,
 		&a.ProfileReferenceCode, &a.IsActive,
 		&a.OfficialHoldingCompany, &a.OfficialContactName, &a.OfficialContactNumber, &a.OfficialEmail,
 		&a.OfficialRepCode, &a.OfficialRepName, &a.CompanyRegNumber, &a.CompanyVatNumber,
 	); err != nil {
 		return nil, err
 	}
+	if lat.Valid {
+		v := lat.Float64
+		a.Latitude = &v
+	}
+	if lng.Valid {
+		v := lng.Float64
+		a.Longitude = &v
+	}
 	return &a, nil
+}
+
+// agencyIDOrNull maps a 0 agency id to SQL NULL (standalone agents).
+func agencyIDOrNull(id int64) any {
+	if id == 0 {
+		return nil
+	}
+	return id
 }
 
 func (s *EstateAgentStore) Create(ctx context.Context, in *appdb.EstateAgent) (*appdb.EstateAgent, error) {
@@ -210,12 +231,14 @@ func (s *EstateAgentStore) Create(ctx context.Context, in *appdb.EstateAgent) (*
 	var id int64
 	err := appdb.SQLDB.QueryRowContext(ctx, `
 		INSERT INTO estate_agents
-		  (agency_id, name, photo_url, contact_number, email, bio, profile_reference_code,
+		  (agency_id, name, agency_name, address, province, postal_code, latitude, longitude,
+		   photo_url, contact_number, email, bio, profile_reference_code,
 		   official_holding_company, official_contact_name, official_contact_number, official_email,
 		   official_rep_code, official_rep_name, company_reg_number, company_vat_number, is_active)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
 		RETURNING id`,
-		in.AgencyID, in.Name, in.PhotoURL, in.ContactNumber, in.Email, in.Bio, code,
+		agencyIDOrNull(in.AgencyID), in.Name, in.AgencyName, in.Address, in.Province, in.PostalCode, in.Latitude, in.Longitude,
+		in.PhotoURL, in.ContactNumber, in.Email, in.Bio, code,
 		in.OfficialHoldingCompany, in.OfficialContactName, in.OfficialContactNumber, in.OfficialEmail,
 		in.OfficialRepCode, in.OfficialRepName, in.CompanyRegNumber, in.CompanyVatNumber, in.IsActive,
 	).Scan(&id)
@@ -263,15 +286,40 @@ func (s *EstateAgentStore) ListByAgency(ctx context.Context, agencyID int64, act
 	return out, rows.Err()
 }
 
+// ListAll returns every agent (admin view). activeOnly filters to live pages.
+func (s *EstateAgentStore) ListAll(ctx context.Context, activeOnly bool) ([]appdb.EstateAgent, error) {
+	q := "SELECT " + agentCols + " FROM estate_agents"
+	if activeOnly {
+		q += " WHERE is_active = true"
+	}
+	q += " ORDER BY name ASC"
+	rows, err := appdb.SQLDB.QueryContext(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []appdb.EstateAgent{}
+	for rows.Next() {
+		a, err := scanAgent(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *a)
+	}
+	return out, rows.Err()
+}
+
 func (s *EstateAgentStore) Update(ctx context.Context, id int64, in *appdb.EstateAgent) (*appdb.EstateAgent, error) {
 	res, err := appdb.SQLDB.ExecContext(ctx, `
 		UPDATE estate_agents SET
-		  name=$2, photo_url=$3, contact_number=$4, email=$5, bio=$6,
-		  official_holding_company=$7, official_contact_name=$8, official_contact_number=$9, official_email=$10,
-		  official_rep_code=$11, official_rep_name=$12, company_reg_number=$13, company_vat_number=$14,
-		  is_active=$15, updated_at=now()
+		  name=$2, agency_name=$3, address=$4, province=$5, postal_code=$6, latitude=$7, longitude=$8,
+		  photo_url=$9, contact_number=$10, email=$11, bio=$12,
+		  official_holding_company=$13, official_contact_name=$14, official_contact_number=$15, official_email=$16,
+		  official_rep_code=$17, official_rep_name=$18, company_reg_number=$19, company_vat_number=$20,
+		  is_active=$21, updated_at=now()
 		WHERE id=$1`,
-		id, in.Name, in.PhotoURL, in.ContactNumber, in.Email, in.Bio,
+		id, in.Name, in.AgencyName, in.Address, in.Province, in.PostalCode, in.Latitude, in.Longitude,
+		in.PhotoURL, in.ContactNumber, in.Email, in.Bio,
 		in.OfficialHoldingCompany, in.OfficialContactName, in.OfficialContactNumber, in.OfficialEmail,
 		in.OfficialRepCode, in.OfficialRepName, in.CompanyRegNumber, in.CompanyVatNumber, in.IsActive,
 	)
@@ -395,6 +443,24 @@ func (s *EstatePropertyStore) ListByAgency(ctx context.Context, agencyID int64, 
 
 func (s *EstatePropertyStore) ListByAgent(ctx context.Context, agentID int64, activeOnly bool) ([]appdb.EstateProperty, error) {
 	return s.listWhere(ctx, "agent_id = $1", agentID, activeOnly)
+}
+
+// ListAllActive returns every live property listing (guest/local global search).
+func (s *EstatePropertyStore) ListAllActive(ctx context.Context) ([]appdb.EstateProperty, error) {
+	rows, err := appdb.SQLDB.QueryContext(ctx, "SELECT "+propertyCols+" FROM estate_properties WHERE is_active = true ORDER BY created_at DESC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []appdb.EstateProperty{}
+	for rows.Next() {
+		p, err := scanProperty(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *p)
+	}
+	return out, rows.Err()
 }
 
 func (s *EstatePropertyStore) listWhere(ctx context.Context, where string, arg interface{}, activeOnly bool) ([]appdb.EstateProperty, error) {

@@ -53,9 +53,18 @@ func (a *EstateAgency) StripSensitive() {
 
 // EstateAgent is an individual agent page under an agency (billed R300 each).
 type EstateAgent struct {
-	ID            int64  `json:"id"`
-	AgencyID      int64  `json:"agencyId"`
-	Name          string `json:"name"`
+	ID       int64  `json:"id"`
+	AgencyID int64  `json:"agencyId,omitempty"` // 0 = standalone (no linked agency record)
+	Name     string `json:"name"`
+
+	// Standalone agents capture their own agency identity + location.
+	AgencyName string   `json:"agencyName,omitempty"`
+	Address    string   `json:"address,omitempty"`
+	Province   string   `json:"province,omitempty"`
+	PostalCode string   `json:"postalCode,omitempty"`
+	Latitude   *float64 `json:"latitude,omitempty"`
+	Longitude  *float64 `json:"longitude,omitempty"`
+
 	PhotoURL      string `json:"photoUrl,omitempty"`
 	ContactNumber string `json:"contactNumber,omitempty"`
 	Email         string `json:"email,omitempty"`

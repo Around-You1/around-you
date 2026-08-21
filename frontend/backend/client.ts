@@ -244,6 +244,7 @@ export const backend = {
     createAgent: (req: any) => request("POST", "/estate/agent", { body: req }),
     updateAgent: (req: any) => request("PUT", "/estate/agent", { body: req }),
     listAgents: (req: { agencyId: number }) => request("GET", "/estate/agents", { query: req }),
+    listAllAgents: () => request("GET", "/estate/agents/all"),
     setAgentActive: (req: { id: number; active: boolean }) =>
       request("POST", "/estate/agent/active", { body: req }),
     deleteAgent: (req: { id: number }) => request("DELETE", "/estate/agent", { body: req }),
@@ -254,6 +255,8 @@ export const backend = {
       request("POST", "/estate/property/active", { body: req }),
     deleteProperty: (req: { id: number }) => request("DELETE", "/estate/property", { body: req }),
     publicAgencies: () => request("GET", "/estate/public/agencies"),
+    publicAgents: () => request("GET", "/estate/public/agents"),
+    publicProperties: () => request("GET", "/estate/public/properties"),
     publicAgency: (req: { code: string }) => request("GET", "/estate/public/agency", { query: req }),
     publicAgent: (req: { code: string }) => request("GET", "/estate/public/agent", { query: req }),
     publicProperty: (req: { id: number }) => request("GET", "/estate/public/property", { query: req }),

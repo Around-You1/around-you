@@ -184,9 +184,7 @@ func CreateAgent(ctx context.Context, req *appdb.EstateAgent) (*appdb.EstateAgen
 	if err := requirePrivileged(ctx); err != nil {
 		return nil, err
 	}
-	if req.AgencyID == 0 {
-		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "agencyId is required"}
-	}
+	// Agents are now standalone, self-paying profiles: no agency link required.
 	if strings.TrimSpace(req.Name) == "" {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "agent name is required"}
 	}
@@ -235,6 +233,18 @@ func ListAgents(ctx context.Context, req *agencyIDReq) (*AgentsResponse, error) 
 		return nil, err
 	}
 	list, err := agents.ListByAgency(ctx, req.AgencyID, false)
+	if err != nil {
+		return nil, err
+	}
+	return &AgentsResponse{Agents: list}, nil
+}
+
+//encore:api auth method=GET path=/estate/agents/all
+func ListAllAgents(ctx context.Context) (*AgentsResponse, error) {
+	if err := requirePrivileged(ctx); err != nil {
+		return nil, err
+	}
+	list, err := agents.ListAll(ctx, false)
 	if err != nil {
 		return nil, err
 	}
@@ -380,6 +390,27 @@ func PublicAgencies(ctx context.Context) (*AgenciesResponse, error) {
 		list[i].StripSensitive()
 	}
 	return &AgenciesResponse{Agencies: list}, nil
+}
+
+//encore:api auth method=GET path=/estate/public/agents
+func PublicAgents(ctx context.Context) (*AgentsResponse, error) {
+	list, err := agents.ListAll(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+	for i := range list {
+		list[i].StripSensitive()
+	}
+	return &AgentsResponse{Agents: list}, nil
+}
+
+//encore:api auth method=GET path=/estate/public/properties
+func PublicProperties(ctx context.Context) (*PropertiesResponse, error) {
+	list, err := properties.ListAllActive(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &PropertiesResponse{Properties: list}, nil
 }
 
 //encore:api auth method=GET path=/estate/public/agency
