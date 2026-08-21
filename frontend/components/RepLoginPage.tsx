@@ -99,7 +99,7 @@ export default function RepLoginPage() {
               <div className="text-xs uppercase tracking-widest" style={{ color: "#888" }}>Rep Code</div>
               <div style={{ color: LUMO, fontWeight: 800, fontSize: 22, letterSpacing: "0.04em" }}>{newCode}</div>
             </div>
-            <p className="text-xs" style={{ color: "#888" }}>Use your full name and this Rep Code to sign in.</p>
+            <p className="text-xs" style={{ color: "#f0c040" }}>Your application is <b>pending approval</b>. Once it's activated you'll be able to sign in with your full name and this Rep Code.</p>
             <button
               onClick={() => { setNewCode(null); setApp({ ...emptyApp }); setMode("signin"); }}
               style={{ background: `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`, color: "#000", border: "none", borderRadius: 10, padding: "14px 0", width: "100%", fontWeight: 700, fontSize: "1rem", cursor: "pointer", minHeight: 48 }}

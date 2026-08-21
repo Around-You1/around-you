@@ -486,12 +486,13 @@ func RepLogin(ctx context.Context, req *RepLoginRequest) (*LoginResponse, error)
 	}
 
 	var u appdb.User
+	var repStatus string
 	err := appdb.SQLDB.QueryRowContext(ctx, `
-		SELECT id, email, role, full_name, rep_code
+		SELECT id, email, role, full_name, rep_code, COALESCE(NULLIF(rep_status,''),'Active')
 		FROM users
 		WHERE role = 'Rep' AND lower(full_name) = lower($1) AND lower(rep_code) = lower($2)`,
 		fullName, repCode,
-	).Scan(&u.ID, &u.Email, &u.Role, &u.FullName, &u.RepCode)
+	).Scan(&u.ID, &u.Email, &u.Role, &u.FullName, &u.RepCode, &repStatus)
 	if err != nil {
 		if isNoRows(err) {
 			// Same generic message either way — don't reveal which part
@@ -499,6 +500,12 @@ func RepLogin(ctx context.Context, req *RepLoginRequest) (*LoginResponse, error)
 			return nil, &errs.Error{Code: errs.Unauthenticated, Message: "invalid full name or rep code"}
 		}
 		return nil, err
+	}
+
+	// Approval gate: applications land as "Inactive" (pending) and cannot sign
+	// in until a SuperAdmin activates them on the Reps tab.
+	if !strings.EqualFold(repStatus, "Active") {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "Your rep application is pending approval. You'll be able to sign in once it's activated."}
 	}
 
 	return issueSession(ctx, &u)
@@ -779,9 +786,11 @@ func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*Rep
 	}
 	loginEmail := strings.ToLower(repCode) + "@reps.aroundyou.internal"
 
+	// New applications are created Inactive (pending). A SuperAdmin activates
+	// them on the Reps tab before the applicant can sign in.
 	if _, err := appdb.SQLDB.ExecContext(ctx, `
-		INSERT INTO users (email, role, full_name, rep_code, rep_email, upline_rep_code)
-		VALUES ($1, 'Rep', $2, $3, NULLIF($4,''), NULLIF($5,''))`,
+		INSERT INTO users (email, role, full_name, rep_code, rep_email, upline_rep_code, rep_status)
+		VALUES ($1, 'Rep', $2, $3, NULLIF($4,''), NULLIF($5,''), 'Inactive')`,
 		loginEmail, fullName, repCode, strings.TrimSpace(req.Email), strings.TrimSpace(req.UplineRepCode),
 	); err != nil {
 		return nil, err
