@@ -76,6 +76,7 @@ func main() {
 	r.login("POST /auth/local-guest-login", httpx.Body(auth.LocalGuestLogin))
 	r.login("POST /auth/login", httpx.Body(auth.Login))
 	r.login("POST /auth/rep-login", httpx.Body(auth.RepLogin))
+	r.login("POST /auth/rep-application", httpx.Body(auth.SubmitRepApplication))
 	r.login("POST /auth/acc-login", httpx.Body(auth.AccLogin))
 	r.auth("POST /auth/create-rep", httpx.Body(auth.CreateRep))
 	r.auth("GET /auth/reps", httpx.Empty(auth.ListReps))

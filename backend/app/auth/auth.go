@@ -14,6 +14,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	htmlpkg "html"
 	"os"
 	"strconv"
 	"strings"
@@ -22,6 +23,7 @@ import (
 
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/errs"
+	"backend_encore/internal/mailer"
 	"backend_encore/internal/moderation"
 )
 
@@ -718,6 +720,125 @@ func nextRepCode(ctx context.Context) (string, error) {
 	}
 	n++
 	return "Rep" + fmt.Sprintf("%08d", n), nil
+}
+
+// ---- Self-service Rep Application (public, from the Rep Sign In page) --------
+
+// Where completed applications are emailed for your records. Change if needed.
+const repApplicationRecipient = "accounts@aroundyou.co.za"
+
+type RepApplicationRequest struct {
+	FullName           string `json:"fullName"`
+	IDNumber           string `json:"idNumber"`
+	DateOfBirth        string `json:"dateOfBirth"`
+	Phone              string `json:"phone"`
+	Email              string `json:"email"`
+	ResidentialAddress string `json:"residentialAddress"`
+	PostalAddress      string `json:"postalAddress"`
+	TaxNumber          string `json:"taxNumber"`
+	VatNumber          string `json:"vatNumber"`
+	BankAccountName    string `json:"bankAccountName"`
+	BankName           string `json:"bankName"`
+	BankAccountNumber  string `json:"bankAccountNumber"`
+	BankBranchCode     string `json:"bankBranchCode"`
+	BankAccountType    string `json:"bankAccountType"`
+	UplineRepCode      string `json:"uplineRepCode"`
+	PopiaConsent       bool   `json:"popiaConsent"`
+	AgreementConsent   bool   `json:"agreementConsent"`
+	SignatureName      string `json:"signatureName"`
+}
+
+type RepApplicationResponse struct {
+	FullName string `json:"fullName"`
+	RepCode  string `json:"repCode"`
+}
+
+// SubmitRepApplication is public (reached from the Rep Sign In page). It
+// generates the next Rep Code, creates the Rep account so the applicant can
+// immediately sign in, and emails the full application to the administrator
+// to keep on file. Individuals only — no company fields.
+//
+//encore:api method=POST path=/auth/rep-application
+func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*RepApplicationResponse, error) {
+	fullName := strings.TrimSpace(req.FullName)
+	if fullName == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "full name is required"}
+	}
+	if !req.PopiaConsent || !req.AgreementConsent {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "please accept the POPIA consent and the commission agreement to apply"}
+	}
+	if err := moderation.BlockError(
+		moderation.NamedField{Name: "fullName", Value: fullName},
+	); err != nil {
+		return nil, err
+	}
+
+	repCode, err := nextRepCode(ctx)
+	if err != nil {
+		return nil, err
+	}
+	loginEmail := strings.ToLower(repCode) + "@reps.aroundyou.internal"
+
+	if _, err := appdb.SQLDB.ExecContext(ctx, `
+		INSERT INTO users (email, role, full_name, rep_code, rep_email, upline_rep_code)
+		VALUES ($1, 'Rep', $2, $3, NULLIF($4,''), NULLIF($5,''))`,
+		loginEmail, fullName, repCode, strings.TrimSpace(req.Email), strings.TrimSpace(req.UplineRepCode),
+	); err != nil {
+		return nil, err
+	}
+
+	// Email the completed application (kept on file). Non-blocking.
+	go func() {
+		_ = mailer.Send(repApplicationRecipient, "New Rep Application — "+fullName+" ("+repCode+")", renderRepApplicationHTML(req, repCode))
+	}()
+
+	moderation.ScanAndFlag(ctx, "rep_onboarding", "rep", 0, fullName+" ("+repCode+")", "Rep Application",
+		moderation.NamedField{Name: "fullName", Value: fullName},
+	)
+
+	return &RepApplicationResponse{FullName: fullName, RepCode: repCode}, nil
+}
+
+func renderRepApplicationHTML(r *RepApplicationRequest, repCode string) string {
+	esc := htmlpkg.EscapeString
+	row := func(k, v string) string {
+		if strings.TrimSpace(v) == "" {
+			v = "—"
+		}
+		return `<tr><td style="padding:5px 12px;color:#555;border-bottom:1px solid #eee;">` + esc(k) +
+			`</td><td style="padding:5px 12px;border-bottom:1px solid #eee;"><b>` + esc(v) + `</b></td></tr>`
+	}
+	yesno := func(b bool) string {
+		if b {
+			return "Yes"
+		}
+		return "No"
+	}
+	return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:640px;color:#1a1f2e;">` +
+		`<h2 style="margin:0 0 6px;">New Rep Application</h2>` +
+		`<p style="margin:0 0 14px;">Generated Rep Code: <b style="font-size:18px;color:#159a53;">` + esc(repCode) + `</b></p>` +
+		`<table style="border-collapse:collapse;font-size:14px;width:100%;">` +
+		row("Full name", r.FullName) +
+		row("ID number", r.IDNumber) +
+		row("Date of birth", r.DateOfBirth) +
+		row("Mobile", r.Phone) +
+		row("Email", r.Email) +
+		row("Residential address", r.ResidentialAddress) +
+		row("Postal address", r.PostalAddress) +
+		row("SARS tax number", r.TaxNumber) +
+		row("VAT number", r.VatNumber) +
+		row("Bank account holder", r.BankAccountName) +
+		row("Bank", r.BankName) +
+		row("Account number", r.BankAccountNumber) +
+		row("Branch code", r.BankBranchCode) +
+		row("Account type", r.BankAccountType) +
+		row("Recruiting rep (upline)", r.UplineRepCode) +
+		row("POPIA consent", yesno(r.PopiaConsent)) +
+		row("Commission agreement accepted", yesno(r.AgreementConsent)) +
+		row("Signature (typed)", r.SignatureName) +
+		`</table>` +
+		`<p style="color:#777;font-size:12px;margin-top:14px;">Individual commission-only applicant. Verify ID, tax and banking details before first payout.</p>` +
+		`</div>`
 }
 
 type Rep struct {

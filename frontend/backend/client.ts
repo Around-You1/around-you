@@ -151,6 +151,7 @@ export const backend = {
     login: (req: any) => request("POST", "/auth/login", { body: req }),
     repLogin: (req: { fullName: string; repCode: string }) =>
       request("POST", "/auth/rep-login", { body: req }),
+    repApplication: (req: any) => request("POST", "/auth/rep-application", { body: req }),
     accLogin: (req: { accessCode: string }) =>
       request("POST", "/auth/acc-login", { body: req }),
     createRep: (req: { fullName: string; email?: string }) =>
