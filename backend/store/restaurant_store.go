@@ -39,6 +39,8 @@ const restaurantColumns = `
 	COALESCE(duplicate_reason, '') as duplicate_reason,
 	cuisine_types,
 	restaurant_type,
+	COALESCE(atmosphere, '{}') as atmosphere,
+	COALESCE(features, '{}') as features,
 	COALESCE(menu_link, '') as menu_link,
 	service_dine_in, service_takeaway, service_delivery, little_explorer_approved,
 	payment_card, payment_cash, payment_mobile,
@@ -88,6 +90,8 @@ func scanRestaurant(row restaurantScanner) (*appdb.Restaurant, error) {
 		&r.ProfileReferenceCode, &r.IsDuplicate, &r.DuplicateReason,
 		pq.Array(&r.CuisineTypes),
 		pq.Array(&r.RestaurantType),
+		pq.Array(&r.Atmosphere),
+		pq.Array(&r.Features),
 		&r.MenuLink, &r.ServiceDineIn, &r.ServiceTakeaway, &r.ServiceDelivery, &r.LittleExplorerApproved,
 		&r.PaymentCard, &r.PaymentCash, &r.PaymentMobile,
 		&r.PaymentGaap, &r.PaymentSnapScan, &r.PaymentYoco, &r.PaymentZapper,
@@ -194,10 +198,11 @@ func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*ap
 			image_url, image_urls, is_active,
 			official_holding_company, official_contact_name, official_contact_number, official_email, official_rep_code,
 			official_rep_name, company_reg_number, company_vat_number,
-			guest_type, access_level, partner_code, partner_code_active, booking_items, restaurant_type
+			guest_type, access_level, partner_code, partner_code_active, booking_items, restaurant_type,
+			atmosphere, features
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,
-			$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55
+			$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,$56,$57
 		)
 		RETURNING `+restaurantColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -214,6 +219,7 @@ func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*ap
 		in.OfficialRepName, in.CompanyRegNumber, in.CompanyVatNumber,
 		in.GuestType, in.AccessLevel, in.PartnerCode.Code, in.PartnerCode.Active,
 		in.BookingItems, pq.Array(nonNilSlice(in.RestaurantType)),
+		pq.Array(nonNilSlice(in.Atmosphere)), pq.Array(nonNilSlice(in.Features)),
 	)
 	return scanRestaurant(row)
 }
@@ -236,6 +242,8 @@ type RestaurantPatch struct {
 
 	CuisineTypes           []string
 	RestaurantType         []string
+	Atmosphere             []string
+	Features               []string
 	MenuLink               *string
 	ServiceDineIn          *bool
 	ServiceTakeaway        *bool
@@ -329,6 +337,12 @@ func (s *RestaurantStore) Update(ctx context.Context, id int64, patch Restaurant
 	}
 	if patch.RestaurantType != nil {
 		sets = append(sets, "restaurant_type = "+arg(pq.Array(patch.RestaurantType)))
+	}
+	if patch.Atmosphere != nil {
+		sets = append(sets, "atmosphere = "+arg(pq.Array(patch.Atmosphere)))
+	}
+	if patch.Features != nil {
+		sets = append(sets, "features = "+arg(pq.Array(patch.Features)))
 	}
 	if patch.MenuLink != nil {
 		sets = append(sets, "menu_link = "+arg(*patch.MenuLink))

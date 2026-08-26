@@ -64,6 +64,13 @@ const CUISINE_TYPES = [
 ];
 
 const RESTAURANT_TYPES = ["Food Truck", "Home Meals", "Take Away", "Pop Up", "Restaurant"];
+const ATMOSPHERE_OPTIONS = ["Family-friendly", "Romantic", "Trendy / Modern", "Quiet", "Lively", "Outdoor Seating", "Sea View", "Mountain View", "Rooftop", "Garden"];
+const RESTAURANT_FEATURES = ["Walk-ins Welcome", "Live Music", "Free Wi-Fi"];
+const DEFAULT_TABLE_ITEMS: { name: string; price: number; duration: number }[] = [
+  ["Table for 1", 10], ["Table for 2", 20], ["Table for 4", 40], ["Table for 6", 60],
+  ["Table for 8", 80], ["Table for 10", 100], ["Table for 12", 120], ["Table for 14", 140],
+  ["Table for 16", 160], ["Table for 20", 180], ["Table for 20+", 250],
+].map(([name, price]) => ({ name: name as string, price: price as number, duration: 0 }));
 
 export default function RestaurantForm({ restaurantId, onClose, partnerEdit = false }: RestaurantFormProps) {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -92,6 +99,8 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
     contactNumber: "",
     cuisineTypes: [] as string[],
     restaurantType: [] as string[],
+    atmosphere: [] as string[],
+    features: [] as string[],
     menuLink: "",
     imageUrl: "",
     imageUrls: [] as string[],
@@ -172,6 +181,8 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
         contactNumber: data.contactNumber || "",
         cuisineTypes: data.cuisineTypes,
         restaurantType: data.restaurantType || [],
+        atmosphere: data.atmosphere || [],
+        features: data.features || [],
         menuLink: data.menuLink || "",
         imageUrl: data.imageUrl || "",
         imageUrls: data.imageUrls || [],
@@ -523,6 +534,32 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
           </div>
 
           <div className="space-y-2" style={{ display: tierNum >= 3 ? undefined : "none" }}>
+            <Label>Atmosphere / Vibe</Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {ATMOSPHERE_OPTIONS.map((a) => (
+                <div key={a} className="flex items-center space-x-2">
+                  <Checkbox id={`atm-${a}`} checked={formData.atmosphere.includes(a)}
+                    onCheckedChange={() => setFormData({ ...formData, atmosphere: formData.atmosphere.includes(a) ? formData.atmosphere.filter((x) => x !== a) : [...formData.atmosphere, a] })} />
+                  <Label htmlFor={`atm-${a}`} className="cursor-pointer font-normal">{a}</Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2" style={{ display: tierNum >= 3 ? undefined : "none" }}>
+            <Label>Features</Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {RESTAURANT_FEATURES.map((f) => (
+                <div key={f} className="flex items-center space-x-2">
+                  <Checkbox id={`feat-${f}`} checked={formData.features.includes(f)}
+                    onCheckedChange={() => setFormData({ ...formData, features: formData.features.includes(f) ? formData.features.filter((x) => x !== f) : [...formData.features, f] })} />
+                  <Label htmlFor={`feat-${f}`} className="cursor-pointer font-normal">{f}</Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2" style={{ display: tierNum >= 3 ? undefined : "none" }}>
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
@@ -695,12 +732,12 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
           </div>
 
           <div className="space-y-4" style={{ display: tierNum >= 4 ? undefined : "none" }}>
-            <Label className="text-base font-semibold">Bookable Items</Label>
+            <Label className="text-base font-semibold">Bookable Items (Restaurants)</Label>
             <p className="text-sm text-muted-foreground">
-              Products or services a guest can select when booking (name, price in Rand, duration in minutes).
+              Tables a guest can book (name and price in Rand). Booking partners pay R200/month plus R10 per cover.
             </p>
             {formData.bookingItems.map((item, i) => (
-              <div key={i} className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_auto] gap-2 items-end">
+              <div key={i} className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_auto] gap-2 items-end">
                 <div className="space-y-1">
                   <Label className="text-xs">Item</Label>
                   <Input value={item.name}
@@ -711,21 +748,22 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
                   <Input type="number" step="any" value={item.price}
                     onChange={(e) => setFormData({ ...formData, bookingItems: formData.bookingItems.map((r, idx) => (idx === i ? { ...r, price: parseFloat(e.target.value) || 0 } : r)) })} />
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Duration (min)</Label>
-                  <Input type="number" step="1" value={item.duration}
-                    onChange={(e) => setFormData({ ...formData, bookingItems: formData.bookingItems.map((r, idx) => (idx === i ? { ...r, duration: parseInt(e.target.value) || 0 } : r)) })} />
-                </div>
                 <Button type="button" variant="outline"
                   onClick={() => setFormData({ ...formData, bookingItems: formData.bookingItems.filter((_, idx) => idx !== i) })}>
                   Remove
                 </Button>
               </div>
             ))}
-            <Button type="button" variant="outline"
-              onClick={() => setFormData({ ...formData, bookingItems: [...formData.bookingItems, { name: "", price: 0, duration: 0 }] })}>
-              + Add Item
-            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline"
+                onClick={() => setFormData({ ...formData, bookingItems: [...formData.bookingItems, { name: "", price: 0, duration: 0 }] })}>
+                + Add Item
+              </Button>
+              <Button type="button" variant="outline"
+                onClick={() => setFormData({ ...formData, bookingItems: DEFAULT_TABLE_ITEMS.map((x) => ({ ...x })) })}>
+                Load default tables
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-4" style={{ display: tierNum >= 4 ? undefined : "none" }}>

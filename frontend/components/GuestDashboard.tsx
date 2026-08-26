@@ -833,6 +833,38 @@ export default function GuestDashboard() {
                               </CollapsibleContent>
                             </Collapsible>
 
+                            {restaurant.atmosphere && restaurant.atmosphere.length > 0 && (
+                              <Collapsible>
+                                <CollapsibleTrigger className={triggerClass}>
+                                  <ChevronDown className="h-4 w-4" />
+                                  Atmosphere / Vibe
+                                </CollapsibleTrigger>
+                                <CollapsibleContent className={contentClass}>
+                                  <div className="flex flex-wrap gap-2">
+                                    {restaurant.atmosphere.map((a: string) => (
+                                      <span key={a} className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs">{a}</span>
+                                    ))}
+                                  </div>
+                                </CollapsibleContent>
+                              </Collapsible>
+                            )}
+
+                            {restaurant.features && restaurant.features.length > 0 && (
+                              <Collapsible>
+                                <CollapsibleTrigger className={triggerClass}>
+                                  <ChevronDown className="h-4 w-4" />
+                                  Features
+                                </CollapsibleTrigger>
+                                <CollapsibleContent className={contentClass}>
+                                  <div className="flex flex-wrap gap-2">
+                                    {restaurant.features.map((f: string) => (
+                                      <span key={f} className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs">{f}</span>
+                                    ))}
+                                  </div>
+                                </CollapsibleContent>
+                              </Collapsible>
+                            )}
+
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />

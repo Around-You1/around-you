@@ -7,6 +7,13 @@ import EstateRepFlow from "./EstateRepFlow";
 import { saveCharity } from "../lib/charity";
 
 const CHARITY_OPTIONS = ["Adults", "Children", "Animals", "Health", "Homes", "Food"];
+const ATMOSPHERE_OPTIONS = ["Family-friendly", "Romantic", "Trendy / Modern", "Quiet", "Lively", "Outdoor Seating", "Sea View", "Mountain View", "Rooftop", "Garden"];
+const RESTAURANT_FEATURES = ["Walk-ins Welcome", "Live Music", "Free Wi-Fi"];
+const DEFAULT_TABLE_ITEMS = [
+  ["Table for 1", "10"], ["Table for 2", "20"], ["Table for 4", "40"], ["Table for 6", "60"],
+  ["Table for 8", "80"], ["Table for 10", "100"], ["Table for 12", "120"], ["Table for 14", "140"],
+  ["Table for 16", "160"], ["Table for 20", "180"], ["Table for 20+", "250"],
+].map(([name, price]) => ({ name, price, duration: "" }));
 const CHARITY_KEY: Record<string, string> = {
   Accommodations: "accommodation",
   Restaurants: "restaurant",
@@ -601,6 +608,8 @@ export default function RepOnboardingApp() {
           description: data.description || "",
           cuisineTypes: data.cuisineTypes || [],
           restaurantType: data.restaurantType || [],
+          atmosphere: data.atmosphere || [],
+          features: data.features || [],
           menuLink: data.menuLink || "",
           serviceDineIn: true,
           serviceTakeaway: true,
@@ -912,7 +921,14 @@ export default function RepOnboardingApp() {
 
                 <button
                   type="button"
-                  onClick={() => { if (visibility.length === 0) setBooking((b) => !b); }}
+                  onClick={() => {
+                    if (visibility.length > 0) return;
+                    const turningOn = !booking;
+                    setBooking(turningOn);
+                    if (turningOn && isRestaurant && bookingItems.length === 0) {
+                      setBookingItems(DEFAULT_TABLE_ITEMS.map((x) => ({ ...x })));
+                    }
+                  }}
                   disabled={visibility.length > 0}
                   style={{
                     width: "100%", textAlign: "left", padding: "14px 16px", borderRadius: 12,
@@ -927,14 +943,14 @@ export default function RepOnboardingApp() {
                   {booking ? "✓ Booking Partner" : "Booking"}
                 </button>
                 <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: 0, marginBottom: 12 }}>
-                  Booking partners are shown to both Guests and Locals and pay 15% commission per booking instead of a monthly tier. Turning this on hides the Tier and Guest/Local/Both options.
+                  Booking Partners are shown to both guest and locals and pay R200 per month with a R10 charge per cover. Turning this on hides the Tier and Guest/Local/Both options.
                 </p>
 
                 {booking && (
                   <div style={{ marginBottom: 12 }}>
-                    <SectionTitle>Bookable Items</SectionTitle>
+                    <SectionTitle>{isRestaurant ? "Bookable Items (Restaurants)" : "Bookable Items"}</SectionTitle>
                     <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: -4, marginBottom: 8 }}>
-                      Products or services a guest can select when booking. Price in Rand, duration in minutes.
+                      {isRestaurant ? "Tables a guest can book. Price in Rand." : "Products or services a guest can select when booking. Price in Rand."}
                     </p>
                     {bookingItems.map((it, i) => (
                       <div key={i} style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center" }}>
@@ -944,9 +960,11 @@ export default function RepOnboardingApp() {
                         <input placeholder="Price" inputMode="decimal" value={it.price}
                           onChange={(e) => setBookingItems((rows) => rows.map((r, idx) => (idx === i ? { ...r, price: e.target.value } : r)))}
                           style={{ ...inputStyle, marginBottom: 0, flex: 1 }} />
-                        <input placeholder="Mins" inputMode="numeric" value={it.duration}
-                          onChange={(e) => setBookingItems((rows) => rows.map((r, idx) => (idx === i ? { ...r, duration: e.target.value } : r)))}
-                          style={{ ...inputStyle, marginBottom: 0, width: 70 }} />
+                        {!isRestaurant && (
+                          <input placeholder="Mins" inputMode="numeric" value={it.duration}
+                            onChange={(e) => setBookingItems((rows) => rows.map((r, idx) => (idx === i ? { ...r, duration: e.target.value } : r)))}
+                            style={{ ...inputStyle, marginBottom: 0, width: 70 }} />
+                        )}
                         <button type="button"
                           onClick={() => setBookingItems((rows) => rows.filter((_, idx) => idx !== i))}
                           style={{ background: colors.error, color: "#000", border: "none", borderRadius: 8, width: 32, height: 40, cursor: "pointer", fontSize: 14, flexShrink: 0 }}>✗</button>
@@ -1050,6 +1068,12 @@ export default function RepOnboardingApp() {
                 )}
                 {isRestaurant && (
                   <CheckboxGroup label="Restaurant Type" options={RESTAURANT_TYPES} selected={data.restaurantType || []} onChange={set("restaurantType")} />
+                )}
+                {isRestaurant && (
+                  <CheckboxGroup label="Atmosphere / Vibe" options={ATMOSPHERE_OPTIONS} selected={data.atmosphere || []} onChange={set("atmosphere")} />
+                )}
+                {isRestaurant && (
+                  <CheckboxGroup label="Features" options={RESTAURANT_FEATURES} selected={data.features || []} onChange={set("features")} />
                 )}
                 {isService && (
                   <>
