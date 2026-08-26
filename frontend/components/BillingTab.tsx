@@ -210,6 +210,7 @@ export default function BillingTab() {
   const [emailing, setEmailing] = useState(false);
   const [commRollup, setCommRollup] = useState<CommissionRollup | null>(null);
   const [bookingLedger, setBookingLedger] = useState<BookingLedger | null>(null);
+  const [emailLog, setEmailLog] = useState<any[]>([]);
   const [accStatus, setAccStatus] = useState<AccCodeStatus | null>(null);
   const [newAccCode, setNewAccCode] = useState("");
   const [savingAcc, setSavingAcc] = useState(false);
@@ -274,16 +275,18 @@ export default function BillingTab() {
     (async () => {
       try {
         const backend = getAuthenticatedBackend();
-        const [s, i, c, st] = await Promise.all([
+        const [s, i, c, st, el] = await Promise.all([
           backend.billing.listSubscriptions(),
           backend.billing.listInvoices(),
           backend.billing.listCommissions(),
           backend.billing.statement({ period }),
+          backend.billing.emailLog().catch(() => ({ entries: [] })),
         ]);
         setSubs(s.subscriptions || []);
         setInvoices(i.invoices || []);
         setCommissions(c.commissions || []);
         setStatements(st.statements || []);
+        setEmailLog((el as any).entries || []);
       } catch (error) {
         console.error("Failed to load billing:", error);
         toast({ title: "Error", description: "Failed to load billing data", variant: "destructive" });
@@ -443,6 +446,53 @@ export default function BillingTab() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Email Delivery ({emailLog.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {emailLog.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No email attempts logged yet. Invoices, codes and statements will appear here once they're sent.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {emailLog.filter((e) => e.status !== "sent").length > 0 && (
+                <p className="text-sm text-red-600">
+                  {emailLog.filter((e) => e.status !== "sent").length} of the last {emailLog.length} emails did not send. Check the recipient's Official Use → Email and your Resend sender domain.
+                </p>
+              )}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-muted-foreground border-b border-border">
+                      <th className="py-2 pr-3">When</th>
+                      <th className="py-2 pr-3">To</th>
+                      <th className="py-2 pr-3">Subject</th>
+                      <th className="py-2 pr-3">Status</th>
+                      <th className="py-2 pr-3">Detail</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {emailLog.map((e, i) => (
+                      <tr key={i} className="border-b border-border/50">
+                        <td className="py-2 pr-3 whitespace-nowrap text-muted-foreground">{e.createdAt ? new Date(e.createdAt).toLocaleString() : "—"}</td>
+                        <td className="py-2 pr-3 whitespace-nowrap">{e.toAddr || "—"}</td>
+                        <td className="py-2 pr-3 max-w-[220px] truncate">{e.subject}</td>
+                        <td className="py-2 pr-3">
+                          <span className={e.status === "sent" ? "text-green-600" : e.status === "skipped" ? "text-amber-600" : "text-red-600"}>
+                            {e.status}
+                          </span>
+                        </td>
+                        <td className="py-2 pr-3 max-w-[280px] truncate text-muted-foreground" title={e.detail}>{e.detail || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </CardContent>

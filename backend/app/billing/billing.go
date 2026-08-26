@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"backend_encore/app/auth"
+	"backend_encore/internal/appdb"
 	billingcore "backend_encore/internal/billing"
 	"backend_encore/internal/errs"
 )
@@ -247,6 +248,44 @@ func SetInvoiceSettings(ctx context.Context, req *billingcore.InvoiceSettings) (
 		return nil, err
 	}
 	return &InvoiceSettingsResponse{Settings: *s}, nil
+}
+
+type EmailLogRow struct {
+	ToAddr    string    `json:"toAddr"`
+	Subject   string    `json:"subject"`
+	Status    string    `json:"status"`
+	Detail    string    `json:"detail"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+type EmailLogResponse struct {
+	Entries []EmailLogRow `json:"entries"`
+}
+
+// EmailLog lists the most recent transactional-email attempts (sent / failed /
+// skipped) so a SuperAdmin can see whether invoices, codes and statements are
+// actually being delivered. SuperAdmin-only.
+//
+//encore:api auth method=GET path=/billing/email-log
+func EmailLog(ctx context.Context) (*EmailLogResponse, error) {
+	if !isSuperAdmin(ctx) {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can view the email log"}
+	}
+	rows, err := appdb.SQLDB.QueryContext(ctx, `
+		SELECT to_addr, subject, status, detail, created_at
+		FROM email_log ORDER BY created_at DESC LIMIT 50`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []EmailLogRow{}
+	for rows.Next() {
+		var r EmailLogRow
+		if err := rows.Scan(&r.ToAddr, &r.Subject, &r.Status, &r.Detail, &r.CreatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, r)
+	}
+	return &EmailLogResponse{Entries: out}, rows.Err()
 }
 
 // canSeeAccounts allows the Accountant role as well as SuperAdmin — used for the

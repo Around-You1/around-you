@@ -187,6 +187,7 @@ export const backend = {
     getInvoiceSettings: () => request("GET", "/billing/invoice-settings"),
     setInvoiceSettings: (req: any) => request("POST", "/billing/invoice-settings", { body: req }),
     invoicePreview: () => request("GET", "/billing/invoice-preview"),
+    emailLog: () => request("GET", "/billing/email-log"),
   },
 
   analytics: {
