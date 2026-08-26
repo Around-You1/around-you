@@ -4,6 +4,15 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getAuthenticatedBackend } from "../lib/backend";
 import EstateRepFlow from "./EstateRepFlow";
+import { saveCharity } from "../lib/charity";
+
+const CHARITY_OPTIONS = ["Adults", "Children", "Animals", "Health", "Homes", "Food"];
+const CHARITY_KEY: Record<string, string> = {
+  Accommodations: "accommodation",
+  Restaurants: "restaurant",
+  Services: "service",
+  Attractions: "attraction",
+};
 
 const colors = {
   background: "#000000",
@@ -452,6 +461,7 @@ export default function RepOnboardingApp() {
   const [data, setData] = useState<Record<string, any>>({});
   const [emergency, setEmergency] = useState<Record<string, string>>({});
   const [images, setImages] = useState([]);
+  const [charity, setCharity] = useState<string[]>([]);
   const [autoSaveStatus, setAutoSaveStatus] = useState("");
   const [submitted, setSubmitted] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -480,7 +490,7 @@ export default function RepOnboardingApp() {
 
   const reset = () => {
     setPartnerType(null); setTier(0); setVisibility([]); setBooking(false); setBookingItems([]); setCountry([]); setProvince([]);
-    setData({}); setEmergency({}); setImages([]); setSubmitted(null);
+    setData({}); setEmergency({}); setImages([]); setCharity([]); setSubmitted(null);
   };
 
   // Maps the onboarding form's multi-checkbox "visibility" selection to the
@@ -748,6 +758,10 @@ export default function RepOnboardingApp() {
         });
       }
 
+      if (created?.id && CHARITY_KEY[partnerType]) {
+        await saveCharity(CHARITY_KEY[partnerType], created.id, charity);
+      }
+
       setSubmitted({
         companyName: data.name || data.companyName,
         partnerType,
@@ -878,6 +892,7 @@ export default function RepOnboardingApp() {
             <TextField label="Company VAT Number" value={data.companyVatNumber} onChange={set("companyVatNumber")} />
             <TextField label="Rep Name (auto-filled)" value={repSession.repName} onChange={() => {}} />
             <TextField label="Rep Code (auto-filled)" value={repSession.repCode} onChange={() => {}} />
+            <CheckboxGroup label="Charity" options={CHARITY_OPTIONS} selected={charity} onChange={setCharity} />
             <CheckboxGroup label="Country" options={COUNTRY_OPTIONS} selected={country} onChange={setCountry} />
             {country.includes("South Africa") && (
               <CheckboxGroup label="Province" options={PROVINCE_OPTIONS} selected={province} onChange={setProvince} />

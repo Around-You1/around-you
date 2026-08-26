@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import ProfileReferenceCodeDisplay from "./ProfileReferenceCodeDisplay";
 import MultiImageUpload from "./MultiImageUpload";
 import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
+import { loadCharity, saveCharity } from "../lib/charity";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 import type { ServiceData, ServiceCategory } from "~backend/service/types";
@@ -238,6 +239,9 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
         guestType: data.guestType || "",
         accessLevel: data.accessLevel || "",
       });
+      loadCharity("service", data.id).then((cats) =>
+        setOfficialUse((o) => ({ ...o, charity: cats })),
+      );
 
       setFormData({
         name: data.name,
@@ -356,12 +360,13 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
           accessLevel: officialUse.accessLevel || undefined,
           bookingItems: formData.bookingItems,
         });
+        await saveCharity("service", serviceData?.id, officialUse.charity || []);
         toast({
           title: "Success",
           description: "Service updated successfully",
         });
       } else {
-        await backend.service.create({
+        const createdSvc: any = await backend.service.create({
           name: formData.name,
           address: formData.address,
           latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
@@ -409,6 +414,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
           accessLevel: officialUse.accessLevel || undefined,
           bookingItems: formData.bookingItems,
         });
+        await saveCharity("service", createdSvc.id, officialUse.charity || []);
         toast({
           title: "Success",
           description: "Service created successfully",

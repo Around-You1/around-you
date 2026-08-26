@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/use-toast";
 import MultiImageUpload from "./MultiImageUpload";
 import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
 import ProfileReferenceCodeDisplay from "./ProfileReferenceCodeDisplay";
+import { loadCharity, saveCharity } from "../lib/charity";
 
 const PROPERTY_TYPES = ["House", "Apartment", "Townhouse", "Plot", "Farm", "Commercial", "Land", "Industrial"];
 const FEATURES = ["Pool", "Tennis Court", "Garden", "Security Estate", "Double Garage", "Borehole", "Solar", "Fibre", "Sea View", "Mountain View", "Pet Friendly", "Fireplace", "Staff Quarters", "Backup Power"];
@@ -118,6 +119,8 @@ export default function EstateAgencyForm({
           officialRepCode: a.officialRepCode || "", officialRepName: a.officialRepName || "",
           companyRegNumber: a.companyRegNumber || "", companyVatNumber: a.companyVatNumber || "", guestType: "", accessLevel: "",
         });
+        const cats = await loadCharity("estate_agency", agencyId);
+        setOfficial((o) => ({ ...o, charity: cats }));
         const ag: any = await backend.estate.listAgents({ agencyId });
         const agentList: AgentRow[] = (ag.agents || []).map((x: any) => ({
           id: x.id, name: x.name || "", photoUrl: x.photoUrl || "", contactNumber: x.contactNumber || "",
@@ -191,6 +194,7 @@ export default function EstateAgencyForm({
         ? await backend.estate.updateAgency(agencyPayload)
         : await backend.estate.createAgency(agencyPayload);
       const newAgencyId = savedAgency.id;
+      await saveCharity("estate_agency", newAgencyId, official.charity || []);
 
       // Delete removed agents/properties.
       for (const id of deletedAgents) await backend.estate.deleteAgent({ id });

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import MultiImageUpload from "./MultiImageUpload";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
+import { loadCharity, saveCharity } from "../lib/charity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -105,6 +106,9 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
         guestType: accommodation.guestType || "",
         accessLevel: accommodation.accessLevel || "",
       });
+      loadCharity("accommodation", accommodation.id).then((cats) =>
+        setOfficialUse((o) => ({ ...o, charity: cats })),
+      );
       setFormData({
         name: accommodation.name,
         address: accommodation.address,
@@ -179,12 +183,13 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
           guestType: officialUse.guestType || undefined,
           accessLevel: officialUse.accessLevel || undefined,
         });
+        await saveCharity("accommodation", accommodation.id, officialUse.charity || []);
         toast({
           title: "Success",
           description: "Accommodation updated successfully",
         });
       } else {
-        await backend.accommodation.create({
+        const createdAcc: any = await backend.accommodation.create({
           ...formData,
           latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
           longitude: formData.longitude ? parseFloat(formData.longitude) : undefined,
@@ -200,6 +205,7 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
           guestType: officialUse.guestType || undefined,
           accessLevel: officialUse.accessLevel || undefined,
         });
+        await saveCharity("accommodation", createdAcc.id, officialUse.charity || []);
         toast({
           title: "Accommodation Created",
           description: "Accommodation has been created successfully.",

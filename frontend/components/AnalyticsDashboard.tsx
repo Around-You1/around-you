@@ -129,6 +129,8 @@ export default function AnalyticsDashboard() {
   const [events, setEvents] = useState<EventsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [printMode, setPrintMode] = useState(false);
+  const [charityTally, setCharityTally] = useState<{ category: string; thisMonth: number; allTime: number }[]>([]);
+  const [charityMonth, setCharityMonth] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -153,16 +155,19 @@ export default function AnalyticsDashboard() {
     setLoading(true);
     try {
       const backend = getAuthenticatedBackend();
-      const [activity, stats, biz, ev] = await Promise.all([
+      const [activity, stats, biz, ev, charity] = await Promise.all([
         backend.analytics.repActivity(),
         backend.analytics.reps(),
         backend.analytics.business(),
         backend.analytics.events(),
+        backend.charity.tally().catch(() => ({ rows: [], month: "" })),
       ]);
       setReps(activity.reps);
       setRepStats(stats);
       setBizStats(biz);
       setEvents(ev);
+      setCharityTally((charity as any).rows || []);
+      setCharityMonth((charity as any).month || "");
     } catch (error) {
       console.error("Failed to load analytics:", error);
       toast({ title: "Error", description: "Failed to load analytics", variant: "destructive" });
@@ -187,6 +192,26 @@ export default function AnalyticsDashboard() {
         </div>
 
         <h1 className="text-4xl font-bold text-foreground">Analytics Dashboard</h1>
+
+        {charityTally.length > 0 && (
+          <Section title="Charity Support" defaultOpen>
+            <p className="text-xs text-muted-foreground mb-3">
+              Charities partners chose to support in the Official Use section. "This month" counts new selections in {charityMonth || "the current month"}.
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {charityTally.map((c) => (
+                <div key={c.category} className="rounded-lg border border-border p-3">
+                  <p className="text-sm font-semibold">{c.category}</p>
+                  <div className="flex items-baseline justify-between mt-1">
+                    <span className="text-2xl font-bold">{c.thisMonth}</span>
+                    <span className="text-xs text-muted-foreground">this month</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">All time: <span className="font-semibold text-foreground">{c.allTime}</span></p>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
 
         {bizStats && (
           <Section title="Business Metrics" defaultOpen>

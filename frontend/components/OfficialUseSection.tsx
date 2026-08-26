@@ -14,7 +14,11 @@ export interface OfficialUseData {
   companyVatNumber: string;
   guestType: string;
   accessLevel: string;
+  charity?: string[];
 }
+
+const CHARITY_ROW1 = ["Adults", "Children", "Animals"] as const;
+const CHARITY_ROW2 = ["Health", "Homes", "Food"] as const;
 
 interface OfficialUseSectionProps {
   data: OfficialUseData;
@@ -67,6 +71,21 @@ function RadioGroup({
 export default function OfficialUseSection({ data, onChange, showTierFields = true }: OfficialUseSectionProps) {
   const set = (field: keyof OfficialUseData) => (e: React.ChangeEvent<HTMLInputElement>) =>
     onChange({ ...data, [field]: e.target.value });
+
+  const charity = data.charity || [];
+  const toggleCharity = (c: string) =>
+    onChange({ ...data, charity: charity.includes(c) ? charity.filter((x) => x !== c) : [...charity, c] });
+
+  const CharityRow = ({ options }: { options: readonly string[] }) => (
+    <div className="flex flex-wrap gap-4">
+      {options.map((c) => (
+        <label key={c} className="flex items-center gap-2 cursor-pointer text-sm">
+          <input type="checkbox" checked={charity.includes(c)} onChange={() => toggleCharity(c)} className="accent-amber-600" />
+          {c}
+        </label>
+      ))}
+    </div>
+  );
 
   return (
     <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20">
@@ -175,6 +194,12 @@ export default function OfficialUseSection({ data, onChange, showTierFields = tr
               placeholder="Rep's full name"
             />
           </div>
+        </div>
+
+        <div className="space-y-2 pt-2 border-t border-amber-200/60 dark:border-amber-800/60">
+          <Label className="text-sm font-semibold text-amber-800 dark:text-amber-400">Charity</Label>
+          <CharityRow options={CHARITY_ROW1} />
+          <CharityRow options={CHARITY_ROW2} />
         </div>
       </CardContent>
     </Card>

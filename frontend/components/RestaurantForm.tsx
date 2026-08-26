@@ -11,6 +11,7 @@ import ProfileReferenceCodeDisplay from "./ProfileReferenceCodeDisplay";
 import MultiImageUpload from "./MultiImageUpload";
 import MultiPdfUpload from "./MultiPdfUpload";
 import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
+import { loadCharity, saveCharity } from "../lib/charity";
 import { getAuthenticatedBackend } from "../lib/backend";
 import type { Restaurant } from "~backend/restaurant/types";
 import { useToast } from "@/components/ui/use-toast";
@@ -155,6 +156,9 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
         guestType: data.guestType || "",
         accessLevel: data.accessLevel || "",
       });
+      loadCharity("restaurant", restaurantId).then((cats) =>
+        setOfficialUse((o) => ({ ...o, charity: cats })),
+      );
 
       setFormData({
         name: data.name,
@@ -252,12 +256,13 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
           guestType: officialUse.guestType || undefined,
           accessLevel: officialUse.accessLevel || undefined,
         });
+        await saveCharity("restaurant", restaurantId, officialUse.charity || []);
         toast({
           title: "Success",
           description: "Restaurant updated successfully",
         });
       } else {
-        await backend.restaurant.create({
+        const createdRest: any = await backend.restaurant.create({
           ...formData,
           latitude: formData.latitude ? parseFloat(String(formData.latitude)) : undefined,
           longitude: formData.longitude ? parseFloat(String(formData.longitude)) : undefined,
@@ -274,6 +279,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
           guestType: officialUse.guestType || undefined,
           accessLevel: officialUse.accessLevel || undefined,
         });
+        await saveCharity("restaurant", createdRest.id, officialUse.charity || []);
         toast({
           title: "Success",
           description: "Restaurant created successfully",

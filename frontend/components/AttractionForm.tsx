@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import ProfileReferenceCodeDisplay from "./ProfileReferenceCodeDisplay";
 import MultiImageUpload from "./MultiImageUpload";
 import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
+import { loadCharity, saveCharity } from "../lib/charity";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 import type { AttractionData } from "~backend/attraction/types";
@@ -125,6 +126,9 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
         guestType: data.guestType || "",
         accessLevel: data.accessLevel || "",
       });
+      loadCharity("attraction", data.id).then((cats) =>
+        setOfficialUse((o) => ({ ...o, charity: cats })),
+      );
 
       setFormData({
         name: data.name,
@@ -253,12 +257,13 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           accessLevel: officialUse.accessLevel || undefined,
           bookingItems: formData.bookingItems,
         });
+        await saveCharity("attraction", attractionData?.id, officialUse.charity || []);
         toast({
           title: "Success",
           description: "Attraction updated successfully",
         });
       } else {
-        await backend.attraction.create({
+        const createdAtt: any = await backend.attraction.create({
           name: formData.name,
           address: formData.address,
           latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
@@ -311,6 +316,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           accessLevel: officialUse.accessLevel || undefined,
           bookingItems: formData.bookingItems,
         });
+        await saveCharity("attraction", createdAtt.id, officialUse.charity || []);
         toast({
           title: "Success",
           description: "Attraction created successfully",

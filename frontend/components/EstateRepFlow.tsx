@@ -2,6 +2,9 @@
 
 import React, { useRef, useState } from "react";
 import { getAuthenticatedBackend } from "../lib/backend";
+import { saveCharity } from "../lib/charity";
+
+const CHARITY_OPTIONS = ["Adults", "Children", "Animals", "Health", "Homes", "Food"];
 
 // Real Estate onboarding for the Rep app — styled to match the black/green
 // tap screen (mirrors the palette/primitives in RepOnboardingApp.tsx).
@@ -164,6 +167,8 @@ export default function EstateRepFlow({ repCode, repName, onDone }: { repCode: s
   const [status, setStatus] = useState("");
   const [done, setDone] = useState(false);
   const [mode, setMode] = useState<"agency" | "agent">("agency");
+  const [charity, setCharity] = useState<string[]>([]);
+  const toggleCharity = (c: string) => setCharity((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
   const [agentData, setAgentData] = useState({
     name: "", agencyName: "", address: "", province: "", postalCode: "",
     latitude: "", longitude: "", contactNumber: "", email: "", bio: "",
@@ -194,6 +199,7 @@ export default function EstateRepFlow({ repCode, repName, onDone }: { repCode: s
         officialRepCode: repCode, officialRepName: repName, isActive: true,
       });
       const agencyId = savedAgency.id;
+      await saveCharity("estate_agency", agencyId, charity);
 
       const agentIdByIndex: (number | null)[] = [];
       for (let i = 0; i < agents.length; i++) {
@@ -244,6 +250,7 @@ export default function EstateRepFlow({ repCode, repName, onDone }: { repCode: s
         photoUrl: photoUrls[0] || "", officialRepCode: repCode, officialRepName: repName, isActive: true,
       });
       const agentId = savedAgent.id;
+      await saveCharity("estate_agent", agentId, charity);
       for (let i = 0; i < properties.length; i++) {
         const p = properties[i];
         setStatus(`Uploading property ${i + 1} images…`);
@@ -304,6 +311,7 @@ export default function EstateRepFlow({ repCode, repName, onDone }: { repCode: s
         <Field label="Email" value={agentData.email} onChange={(v) => setAd({ email: v })} />
         <Field label="Bio" area value={agentData.bio} onChange={(v) => setAd({ bio: v })} />
         <ImgUpload label="Agent Photo" images={agentPhoto} onChange={setAgentPhoto} max={1} />
+        <Pills label="Charity" options={CHARITY_OPTIONS} selected={charity} onToggle={toggleCharity} />
 
         <Section>Properties ({properties.length})</Section>
         {properties.map((p, i) => (
@@ -357,6 +365,7 @@ export default function EstateRepFlow({ repCode, repName, onDone }: { repCode: s
       <Field label="Latitude" type="number" value={agency.latitude} onChange={(v) => setA({ latitude: v })} />
       <Field label="Longitude" type="number" value={agency.longitude} onChange={(v) => setA({ longitude: v })} />
       <ImgUpload label="Agency Images" images={agencyImages} onChange={setAgencyImages} max={10} />
+      <Pills label="Charity" options={CHARITY_OPTIONS} selected={charity} onToggle={toggleCharity} />
 
       <Section>Properties ({properties.length})</Section>
       {properties.map((p, i) => (

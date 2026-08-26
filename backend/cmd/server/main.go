@@ -25,6 +25,7 @@ import (
 	"backend_encore/app/billing"
 	"backend_encore/app/booking"
 	"backend_encore/app/editcode"
+	"backend_encore/app/charity"
 	"backend_encore/app/estate"
 	"backend_encore/app/events"
 	"backend_encore/app/health"
@@ -102,6 +103,9 @@ func main() {
 	r.auth("PUT /estate/agent", httpx.Body(estate.UpdateAgent))
 	r.auth("GET /estate/agents", httpx.Query(estate.ListAgents))
 	r.auth("GET /estate/agents/all", httpx.Empty(estate.ListAllAgents))
+	r.auth("POST /charity/set", httpx.Body(charity.Set))
+	r.auth("GET /charity/get", httpx.Query(charity.Get))
+	r.auth("GET /charity/tally", httpx.Query(charity.Tally))
 	r.auth("POST /estate/agent/active", httpx.Body(estate.SetAgentActive))
 	r.auth("DELETE /estate/agent", httpx.Body(estate.DeleteAgent))
 	r.auth("POST /estate/property", httpx.Body(estate.CreateProperty))

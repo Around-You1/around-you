@@ -234,6 +234,13 @@ export const backend = {
     purge: (req: { archiveId: number }) =>
       request("POST", "/admin/purge", { body: req }),
   },
+  charity: {
+    set: (req: { partnerType: string; partnerId: number; categories: string[] }) =>
+      request("POST", "/charity/set", { body: req }),
+    get: (req: { partnerType: string; partnerId: number }) =>
+      request("GET", "/charity/get", { query: req }),
+    tally: (req?: { month?: string }) => request("GET", "/charity/tally", { query: req || {} }),
+  },
   estate: {
     // Real Estate & Rentals (isolated category). Writes are SuperAdmin/Admin/Rep.
     createAgency: (req: any) => request("POST", "/estate/agency", { body: req }),
