@@ -166,7 +166,7 @@ export default function EstateTab() {
                             <div key={ag.id} className="flex items-center justify-between gap-3 rounded-md border border-border/60 p-2">
                               <div className="min-w-0">
                                 <p className="text-sm truncate">{ag.name}</p>
-                                <p className="text-xs text-muted-foreground truncate">{ag.province || "—"}</p>
+                                <p className="text-xs text-muted-foreground truncate">{[ag.agencyName, ag.province].filter(Boolean).join(" · ") || "—"}</p>
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
                                 <Switch checked={ag.isActive} onCheckedChange={() => toggleAgentActive(ag)} className="data-[state=checked]:bg-green-600" />
