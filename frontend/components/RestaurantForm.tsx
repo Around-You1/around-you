@@ -458,7 +458,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
             onChange={(urls) => setFormData({ ...formData, imageUrls: urls, imageUrl: urls[0] || "" })}
           />
 
-          {tierNum >= 4 && (
+          {tierNum >= 2 && (
             <MultiPdfUpload
               label="Menu PDF(s)"
               pdfs={formData.menuPdfUrls}
@@ -466,7 +466,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
             />
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <div className="space-y-2">
               <Label htmlFor="menuLink">Menu Link</Label>
               <Input
@@ -497,7 +497,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="space-y-2" style={{ display: tierNum >= 3 ? undefined : "none" }}>
+          <div className="space-y-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label>Cuisine Types</Label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {CUISINE_TYPES.map((cuisine) => (
@@ -515,7 +515,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="space-y-2" style={{ display: tierNum >= 3 ? undefined : "none" }}>
+          <div className="space-y-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label>Restaurant Type</Label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {RESTAURANT_TYPES.map((rt) => (
@@ -533,7 +533,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="space-y-2" style={{ display: tierNum >= 3 ? undefined : "none" }}>
+          <div className="space-y-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label>Atmosphere / Vibe</Label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {ATMOSPHERE_OPTIONS.map((a) => (
@@ -546,7 +546,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="space-y-2" style={{ display: tierNum >= 3 ? undefined : "none" }}>
+          <div className="space-y-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label>Features</Label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {RESTAURANT_FEATURES.map((f) => (
@@ -559,7 +559,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="space-y-2" style={{ display: tierNum >= 3 ? undefined : "none" }}>
+          <div className="space-y-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
@@ -569,7 +569,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
             />
           </div>
 
-          <div className="space-y-4" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Payment Options</Label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex items-center space-x-2">
@@ -631,7 +631,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="space-y-4" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Service Options</Label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex items-center space-x-2">
@@ -683,7 +683,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <div className="space-y-2">
               <Label htmlFor="wifiNetwork">WiFi Network</Label>
               <Input
@@ -706,7 +706,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="space-y-4" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Bookings</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -731,7 +731,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="space-y-4" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Bookable Items (Restaurants)</Label>
             <p className="text-sm text-muted-foreground">
               Tables a guest can book (name and price in Rand). Booking partners pay R200/month plus R10 per cover.
@@ -766,7 +766,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="space-y-4" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Social Media</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -831,7 +831,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
           )}
 
           <div className="flex flex-col gap-4">
-            <div className="flex items-center space-x-2" style={{ display: tierNum >= 3 ? undefined : "none" }}>
+            <div className="flex items-center space-x-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
               <Switch
                 id="littleExplorerApproved"
                 checked={formData.littleExplorerApproved}

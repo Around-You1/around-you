@@ -6,13 +6,12 @@ package billing
 
 import "fmt"
 
-// Monthly prices in ZAR cents.
+// Monthly prices in ZAR cents. Two-tier model (Aug 2026): Tier 1 R200,
+// Tier 2 R300, audience "Both" R400.
 const (
-	Tier1Cents   = 0     // Tier 1 — Free
-	Tier2Cents   = 10000 // R100
-	Tier3Cents   = 20000 // R200
-	Tier4Cents   = 30000 // R300
-	BothCents    = 40000 // R400 — audience "Both" (forces Tier 4) at this flat price
+	Tier1Cents   = 20000 // R200 — Tier 1
+	Tier2Cents   = 30000 // R300 — Tier 2 (the former top tier)
+	BothCents    = 40000 // R400 — audience "Both" (forces Tier 2) at this flat price
 	BookingBase  = 20000 // R200/month base for Booking partners (+ per-cover/per-booking charge added per billing period: restaurants R10/cover, services/attractions 10%)
 	RealEstateCents = 30000 // R300 — flat per real-estate page (agency or agent), no tiers
 
@@ -33,11 +32,12 @@ type Plan struct {
 
 // PriceFor derives a partner's billing plan from its stored tier/audience.
 //   partnerType: "accommodation" | "restaurant" | "service" | "attraction"
-//   accessLevel: "Tier 1".."Tier 4" or "Booking" (empty for accommodation)
+//   accessLevel: "Tier 1" | "Tier 2" or "Booking" (empty for accommodation)
 //   guestType:   "Guest Only" | "Local" | "Both" (empty for accommodation)
 //
-// Rules (confirmed): accommodations are Tier 4 only; audience "Both" forces
-// Tier 4 at R450; the Booking plan is R200/month + a per-booking charge
+// Rules: two tiers (Tier 1 R200, Tier 2 R300); audience "Both" forces
+// Tier 2 at R400; accommodations sit on Tier 2 (unit pricing for 6+ units);
+// the Booking plan is R200/month + a per-booking charge
 // (restaurants R10/cover, services/attractions 10%), applied per period during
 // billing, not here. Unknown/blank tier defaults to Tier 1
 // (Free) — deliberately the safe direction (never over-charge on bad data).
@@ -56,17 +56,17 @@ func PriceForUnits(partnerType, accessLevel, guestType string, units int) Plan {
 		if units >= 6 {
 			return accommodationUnitBand(units)
 		}
-		// 1–5 units: accommodations are Tier 4, audience-priced.
+		// 1–5 units: accommodations sit on Tier 2, audience-priced.
 		if guestType == "Both" {
-			return Plan{Plan: "tier", Tier: 4, Audience: "Both", MonthlyCents: BothCents}
+			return Plan{Plan: "tier", Tier: 2, Audience: "Both", MonthlyCents: BothCents}
 		}
-		return Plan{Plan: "tier", Tier: 4, Audience: guestType, MonthlyCents: Tier4Cents}
+		return Plan{Plan: "tier", Tier: 2, Audience: guestType, MonthlyCents: Tier2Cents}
 	}
 	if accessLevel == "Booking" {
 		return Plan{Plan: "booking", Tier: 0, Audience: guestType, MonthlyCents: BookingBase}
 	}
 	if guestType == "Both" {
-		return Plan{Plan: "tier", Tier: 4, Audience: "Both", MonthlyCents: BothCents}
+		return Plan{Plan: "tier", Tier: 2, Audience: "Both", MonthlyCents: BothCents}
 	}
 	tier := tierNumber(accessLevel)
 	return Plan{Plan: "tier", Tier: tier, Audience: guestType, MonthlyCents: tierCents(tier)}
@@ -131,28 +131,21 @@ func InvoiceItem(partnerType string, tier int, audience string, units int) (code
 		fmt.Sprintf("%s Tier %d %s", typeName, tier, audWord)
 }
 
+// tierNumber maps a stored accessLevel to the 2-tier model. Legacy values map
+// by price: old "Tier 4" (R300) → 2, old "Tier 3" (R200) → 1, so pre-migration
+// billing stays correct.
 func tierNumber(accessLevel string) int {
 	switch accessLevel {
-	case "Tier 2":
+	case "Tier 2", "Tier 4":
 		return 2
-	case "Tier 3":
-		return 3
-	case "Tier 4":
-		return 4
-	default: // "Tier 1", "", or anything unexpected
+	default: // "Tier 1", "Tier 3", "", or anything unexpected → Tier 1
 		return 1
 	}
 }
 
 func tierCents(tier int) int {
-	switch tier {
-	case 2:
+	if tier >= 2 {
 		return Tier2Cents
-	case 3:
-		return Tier3Cents
-	case 4:
-		return Tier4Cents
-	default:
-		return Tier1Cents
 	}
+	return Tier1Cents
 }

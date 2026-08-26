@@ -433,7 +433,7 @@ function ImageUpload({ images, setImages }) {
 function TierButtons({ tier, setTier }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 6 }}>
-      {[1, 2, 3, 4].map((t) => (
+      {[1, 2].map((t) => (
         <button
           key={t}
           type="button"
@@ -987,8 +987,8 @@ export default function RepOnboardingApp() {
                       single
                       onChange={(next) => {
                         setVisibility(next);
-                        // Choosing "Both" = the top tier, so auto-select Tier 4.
-                        if (next.includes("Both")) setTier(4);
+                        // Choosing "Both" = the top tier, so auto-select Tier 2.
+                        if (next.includes("Both")) setTier(2);
                       }}
                     />
 
@@ -1060,9 +1060,9 @@ export default function RepOnboardingApp() {
               </>
             )}
 
-            {!isAccommodation && (booking || tier >= 3) && (
+            {!isAccommodation && (booking || tier >= 2) && (
               <>
-                <SectionTitle>{booking ? "Categories & Description" : "Tier 3"}</SectionTitle>
+                <SectionTitle>{booking ? "Categories & Description" : "Tier 2 — Details"}</SectionTitle>
                 {isRestaurant && (
                   <CheckboxGroup label="Cuisine Types" options={CUISINE_TYPES} selected={data.cuisineTypes || []} onChange={set("cuisineTypes")} />
                 )}
@@ -1100,9 +1100,9 @@ export default function RepOnboardingApp() {
               </>
             )}
 
-            {!isAccommodation && (booking || tier >= 4) && (
+            {!isAccommodation && (booking || tier >= 2) && (
               <>
-                <SectionTitle>{booking ? "Extras" : "Tier 4"}</SectionTitle>
+                <SectionTitle>{booking ? "Extras" : "Tier 2 — Extras"}</SectionTitle>
                 {isRestaurant && (
                   <>
                     <TextField label="Booking Email Address" value={data.bookingEmail} onChange={set("bookingEmail")} />

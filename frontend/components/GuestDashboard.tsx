@@ -1097,7 +1097,7 @@ export default function GuestDashboard() {
                                 country={restaurant.country}
                               />
                             )}
-                            {tierOf(restaurant.accessLevel) >= 4 && (
+                            {tierOf(restaurant.accessLevel) >= 2 && (
                               <DirectionsDropdown
                                 latitude={restaurant.latitude}
                                 longitude={restaurant.longitude}
@@ -1361,7 +1361,7 @@ export default function GuestDashboard() {
                                 country={service.country}
                               />
                             )}
-                            {tierOf(service.accessLevel) >= 4 && (
+                            {tierOf(service.accessLevel) >= 2 && (
                               <DirectionsDropdown
                                 latitude={service.latitude}
                                 longitude={service.longitude}
@@ -1569,7 +1569,7 @@ export default function GuestDashboard() {
                                 country={attraction.country}
                               />
                             )}
-                            {tierOf(attraction.accessLevel) >= 4 && (
+                            {tierOf(attraction.accessLevel) >= 2 && (
                               <DirectionsDropdown
                                 latitude={attraction.latitude}
                                 longitude={attraction.longitude}

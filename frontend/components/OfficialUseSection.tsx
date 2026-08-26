@@ -31,7 +31,7 @@ interface OfficialUseSectionProps {
 }
 
 const GUEST_TYPE_OPTIONS = ["Guest Only", "Local", "Both"] as const;
-const ACCESS_LEVEL_OPTIONS = ["Tier 1", "Tier 2", "Tier 3", "Tier 4"] as const;
+const ACCESS_LEVEL_OPTIONS = ["Tier 1", "Tier 2"] as const;
 
 function RadioGroup({
   label,
@@ -104,9 +104,9 @@ export default function OfficialUseSection({ data, onChange, showTierFields = tr
               options={GUEST_TYPE_OPTIONS}
               value={data.guestType}
               onChange={(val) =>
-                // Choosing "Both" audiences auto-selects the top tier (Tier 4),
+                // Choosing "Both" audiences auto-selects the top tier (Tier 2),
                 // matching the Rep Onboarding app.
-                onChange({ ...data, guestType: val, ...(val === "Both" ? { accessLevel: "Tier 4" } : {}) })
+                onChange({ ...data, guestType: val, ...(val === "Both" ? { accessLevel: "Tier 2" } : {}) })
               }
             />
             <RadioGroup

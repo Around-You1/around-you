@@ -572,7 +572,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
             </div>
           </div>
 
-          <div className="space-y-3" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="space-y-3" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label>Service Categories</Label>
             <div className="space-y-2">
               {CATEGORY_GROUPS.map((group) => {
@@ -632,7 +632,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
             onChange={(urls) => setFormData({ ...formData, imageUrls: urls, imageUrl: urls[0] || "" })}
           />
 
-          <div className="grid grid-cols-2 gap-4" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="grid grid-cols-2 gap-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <div className="space-y-2">
               <Label htmlFor="discountOffered">Discount Offered</Label>
               <Input
@@ -651,7 +651,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
             </div>
           </div>
 
-          <div className="space-y-2" style={{ display: tierNum >= 3 ? undefined : "none" }}>
+          <div className="space-y-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
@@ -661,7 +661,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
             />
           </div>
 
-          <div className="space-y-4" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Experience Info</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -707,7 +707,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
             </div>
           </div>
 
-          <div className="space-y-4" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Payment Options</Label>
             <div className="grid grid-cols-3 gap-4">
               <div className="flex items-center space-x-2">
@@ -791,7 +791,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
             </div>
           </div>
 
-          <div className="space-y-4" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Bookable Items</Label>
             <p className="text-sm text-muted-foreground">
               Products or services a guest can select when booking (name, price in Rand, duration in minutes).
@@ -825,7 +825,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
             </Button>
           </div>
 
-          <div className="space-y-4" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Social Media</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -891,7 +891,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
           )}
 
           <div className="flex flex-col gap-4">
-            <div className="flex items-center space-x-2" style={{ display: tierNum >= 3 ? undefined : "none" }}>
+            <div className="flex items-center space-x-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
               <Switch
                 id="littleExplorerApproved"
                 checked={formData.littleExplorerApproved}

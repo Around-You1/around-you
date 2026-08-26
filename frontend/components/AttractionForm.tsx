@@ -373,7 +373,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="space-y-2" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="space-y-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label>Attraction Categories (Select all that apply)</Label>
             <div className="grid grid-cols-2 gap-2 p-4 border rounded-md max-h-48 overflow-y-auto">
               {ATTRACTION_CATEGORIES.map((category) => (
@@ -493,7 +493,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
             onChange={(urls) => setFormData({ ...formData, imageUrls: urls, imageUrl: urls[0] || "" })}
           />
 
-          <div className="grid grid-cols-2 gap-4" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="grid grid-cols-2 gap-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <div className="space-y-2">
               <Label htmlFor="discountOffered">Discount Offered</Label>
               <Input
@@ -512,7 +512,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="space-y-2" style={{ display: tierNum >= 3 ? undefined : "none" }}>
+          <div className="space-y-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
@@ -522,7 +522,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
             />
           </div>
 
-          <div className="space-y-4" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Experience Info</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -568,7 +568,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="space-y-4" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Attraction Extras</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -614,7 +614,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="space-y-4" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Payment Options</Label>
             <div className="grid grid-cols-3 gap-4">
               <div className="flex items-center space-x-2">
@@ -698,7 +698,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="space-y-4" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Bookable Items</Label>
             <p className="text-sm text-muted-foreground">
               Products or services a guest can select when booking (name, price in Rand, duration in minutes).
@@ -732,7 +732,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
             </Button>
           </div>
 
-          <div className="space-y-4" style={{ display: tierNum >= 4 ? undefined : "none" }}>
+          <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Social Media</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -798,7 +798,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           )}
 
           <div className="flex flex-col gap-4">
-            <div className="flex items-center space-x-2" style={{ display: tierNum >= 3 ? undefined : "none" }}>
+            <div className="flex items-center space-x-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
               <Switch
                 id="littleExplorerApproved"
                 checked={formData.littleExplorerApproved}
