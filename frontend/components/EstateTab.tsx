@@ -20,6 +20,7 @@ interface Agency {
 
 interface Agent {
   id: number;
+  agencyId?: number;
   name: string;
   agencyName?: string;
   province?: string;
@@ -107,8 +108,12 @@ export default function EstateTab() {
   }
 
   const q = query.trim().toLowerCase();
+  const norm = (s?: string) => (s || "").trim().toLowerCase();
   const filteredAgencies = q ? agencies.filter((a) => a.name.toLowerCase().includes(q)) : agencies;
-  const filteredAgents = q ? agents.filter((a) => a.name.toLowerCase().includes(q) || (a.agencyName || "").toLowerCase().includes(q)) : agents;
+  const belongsTo = (x: Agent, a: Agency) => x.agencyId === a.id || (!!norm(x.agencyName) && norm(x.agencyName) === norm(a.name));
+  const agentsForAgency = (a: Agency) => agents.filter((x) => belongsTo(x, a));
+  const isMatched = (x: Agent) => agencies.some((a) => belongsTo(x, a));
+  const independentAgents = (q ? agents.filter((a) => norm(a.name).includes(q) || norm(a.agencyName).includes(q)) : agents).filter((x) => !isMatched(x));
 
   return (
     <div className="space-y-6">
@@ -128,55 +133,80 @@ export default function EstateTab() {
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : (
         <>
-          {/* Agencies */}
-          <div className="space-y-2">
+          {/* Agencies, each with its agents nested inside */}
+          <div className="space-y-3">
             <p className="text-sm font-semibold">Estate Agencies ({filteredAgencies.length})</p>
             {filteredAgencies.length === 0 ? (
               <p className="text-sm text-muted-foreground">{agencies.length === 0 ? "No estate agencies yet." : "No agencies match your search."}</p>
             ) : (
-              filteredAgencies.map((a) => (
-                <Card key={a.id}>
-                  <CardContent className="p-3 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-sm truncate">{a.name}</p>
-                      <p className="text-xs text-muted-foreground">{a.province || "—"}{a.createAgentPages ? " · has agent pages" : ""}</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Switch checked={a.isActive} onCheckedChange={() => toggleActive(a)} className="data-[state=checked]:bg-green-600" />
-                      <span className="text-xs text-muted-foreground">{a.isActive ? "Active" : "Disabled"}</span>
-                      <Button variant="outline" size="sm" onClick={() => { setEditingId(a.id); setShowForm(true); }}>Edit</Button>
-                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => remove(a)}>Delete</Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+              filteredAgencies.map((a) => {
+                const nested = agentsForAgency(a);
+                return (
+                  <Card key={a.id}>
+                    <CardContent className="p-3 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm truncate">{a.name}</p>
+                          <p className="text-xs text-muted-foreground">{a.province || "—"}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Switch checked={a.isActive} onCheckedChange={() => toggleActive(a)} className="data-[state=checked]:bg-green-600" />
+                          <span className="text-xs text-muted-foreground">{a.isActive ? "Active" : "Disabled"}</span>
+                          <Button variant="outline" size="sm" onClick={() => { setEditingId(a.id); setShowForm(true); }}>Edit</Button>
+                          <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => remove(a)}>Delete</Button>
+                        </div>
+                      </div>
+
+                      <div className="ml-2 pl-3 border-l-2 border-[#AEECE4]/40 space-y-2">
+                        <p className="text-xs font-semibold text-muted-foreground">Estate Agents ({nested.length})</p>
+                        {nested.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">No estate agents yet.</p>
+                        ) : (
+                          nested.map((ag) => (
+                            <div key={ag.id} className="flex items-center justify-between gap-3 rounded-md border border-border/60 p-2">
+                              <div className="min-w-0">
+                                <p className="text-sm truncate">{ag.name}</p>
+                                <p className="text-xs text-muted-foreground truncate">{ag.province || "—"}</p>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <Switch checked={ag.isActive} onCheckedChange={() => toggleAgentActive(ag)} className="data-[state=checked]:bg-green-600" />
+                                <span className="text-xs text-muted-foreground">{ag.isActive ? "Active" : "Disabled"}</span>
+                                <Button variant="outline" size="sm" onClick={() => { setEditingAgentId(ag.id); setShowAgentForm(true); }}>Edit</Button>
+                                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => removeAgent(ag)}>Delete</Button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
             )}
           </div>
 
-          {/* Standalone Agents */}
-          <div className="space-y-2">
-            <p className="text-sm font-semibold">Estate Agents ({filteredAgents.length})</p>
-            {filteredAgents.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{agents.length === 0 ? "No estate agents yet." : "No agents match your search."}</p>
-            ) : (
-              filteredAgents.map((a) => (
-                <Card key={a.id}>
+          {/* Independent agents — their typed agency isn't a registered agency */}
+          {independentAgents.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">Independent Estate Agents ({independentAgents.length})</p>
+              {independentAgents.map((ag) => (
+                <Card key={ag.id}>
                   <CardContent className="p-3 flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-semibold text-sm truncate">{a.name}</p>
-                      <p className="text-xs text-muted-foreground">{a.agencyName || "Independent"}{a.province ? ` · ${a.province}` : ""}</p>
+                      <p className="font-semibold text-sm truncate">{ag.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{ag.agencyName || "Independent"}{ag.province ? ` · ${ag.province}` : ""}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <Switch checked={a.isActive} onCheckedChange={() => toggleAgentActive(a)} className="data-[state=checked]:bg-green-600" />
-                      <span className="text-xs text-muted-foreground">{a.isActive ? "Active" : "Disabled"}</span>
-                      <Button variant="outline" size="sm" onClick={() => { setEditingAgentId(a.id); setShowAgentForm(true); }}>Edit</Button>
-                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => removeAgent(a)}>Delete</Button>
+                      <Switch checked={ag.isActive} onCheckedChange={() => toggleAgentActive(ag)} className="data-[state=checked]:bg-green-600" />
+                      <span className="text-xs text-muted-foreground">{ag.isActive ? "Active" : "Disabled"}</span>
+                      <Button variant="outline" size="sm" onClick={() => { setEditingAgentId(ag.id); setShowAgentForm(true); }}>Edit</Button>
+                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => removeAgent(ag)}>Delete</Button>
                     </div>
                   </CardContent>
                 </Card>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </>
       )}
     </div>

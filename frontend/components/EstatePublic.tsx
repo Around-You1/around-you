@@ -223,15 +223,24 @@ export function EstateAgenciesBrowse() {
         </div>
       )}
 
-      {/* Standalone Agents */}
-      {agents.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-sm font-semibold">Estate Agents ({agents.length})</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {agents.map((a) => <AgentCard key={a.id} a={a} />)}
+      {/* Independent agents — those whose agency isn't a listed agency appear here;
+          agents who belong to a listed agency show inside that agency's page. */}
+      {(() => {
+        const norm = (s?: string) => (s || "").trim().toLowerCase();
+        const agencyNames = new Set(agencies.map((a) => norm(a.name)));
+        const independent = agents.filter(
+          (a) => !(a.agencyId && agencies.some((x) => x.id === a.agencyId)) && !agencyNames.has(norm(a.agencyName))
+        );
+        if (independent.length === 0) return null;
+        return (
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">Estate Agents ({independent.length})</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {independent.map((a) => <AgentCard key={a.id} a={a} />)}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

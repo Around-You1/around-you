@@ -426,7 +426,20 @@ func PublicAgency(ctx context.Context, req *codeReq) (*PublicAgencyResponse, err
 	if err != nil {
 		return nil, mapNotFound(err)
 	}
+	// Agents that belong to this agency: those linked by id, plus standalone
+	// agents who typed this agency's name on their own profile.
 	agentList, _ := agents.ListByAgency(ctx, a.ID, true)
+	byName, _ := agents.ListByAgencyName(ctx, a.Name, true)
+	seen := map[int64]bool{}
+	for _, ag := range agentList {
+		seen[ag.ID] = true
+	}
+	for _, ag := range byName {
+		if !seen[ag.ID] {
+			agentList = append(agentList, ag)
+			seen[ag.ID] = true
+		}
+	}
 	propList, _ := properties.ListByAgency(ctx, a.ID, true)
 	a.StripSensitive()
 	for i := range agentList {

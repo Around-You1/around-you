@@ -286,6 +286,34 @@ func (s *EstateAgentStore) ListByAgency(ctx context.Context, agencyID int64, act
 	return out, rows.Err()
 }
 
+// ListByAgencyName returns standalone agents who typed the given agency name
+// on their own profile (case-insensitive). Used to nest agents under the
+// matching agency even when they aren't formally linked by id.
+func (s *EstateAgentStore) ListByAgencyName(ctx context.Context, name string, activeOnly bool) ([]appdb.EstateAgent, error) {
+	out := []appdb.EstateAgent{}
+	if name == "" {
+		return out, nil
+	}
+	q := "SELECT " + agentCols + " FROM estate_agents WHERE lower(COALESCE(agency_name,'')) = lower($1)"
+	if activeOnly {
+		q += " AND is_active = true"
+	}
+	q += " ORDER BY name ASC"
+	rows, err := appdb.SQLDB.QueryContext(ctx, q, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		a, err := scanAgent(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *a)
+	}
+	return out, rows.Err()
+}
+
 // ListAll returns every agent (admin view). activeOnly filters to live pages.
 func (s *EstateAgentStore) ListAll(ctx context.Context, activeOnly bool) ([]appdb.EstateAgent, error) {
 	q := "SELECT " + agentCols + " FROM estate_agents"
