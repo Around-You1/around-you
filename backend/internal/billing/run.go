@@ -51,7 +51,10 @@ func RunMonthlyBilling(ctx context.Context) (int, error) {
 
 		subtotal := d.monthlyCents
 		if d.plan == "booking" {
-			// Add 10% of the bookings taken in the month just ended.
+			// Add the per-booking charge for the month just ended, on top of the
+			// R200 base: restaurants = R10 per cover (party_size × R10), and
+			// services/attractions = 10% of item value. Both are stored on each
+			// booking's `commission` field, so we just sum it.
 			bc, err := bookingCommissionCents(ctx, d.partnerType, d.partnerID, start.AddDate(0, -1, 0), start)
 			if err != nil {
 				log.Printf("billing run: booking total for sub %d failed: %v", d.subID, err)

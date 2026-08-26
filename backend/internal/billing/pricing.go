@@ -13,7 +13,7 @@ const (
 	Tier3Cents   = 20000 // R200
 	Tier4Cents   = 30000 // R300
 	BothCents    = 40000 // R400 — audience "Both" (forces Tier 4) at this flat price
-	BookingBase  = 20000 // R200/month base for Booking partners (+10% of bookings added per billing period)
+	BookingBase  = 20000 // R200/month base for Booking partners (+ per-cover/per-booking charge added per billing period: restaurants R10/cover, services/attractions 10%)
 	RealEstateCents = 30000 // R300 — flat per real-estate page (agency or agent), no tiers
 
 	// Accommodation Option-A unit bands (6+ units); 1–5 units use tier pricing.
@@ -37,8 +37,9 @@ type Plan struct {
 //   guestType:   "Guest Only" | "Local" | "Both" (empty for accommodation)
 //
 // Rules (confirmed): accommodations are Tier 4 only; audience "Both" forces
-// Tier 4 at R450; the Booking plan is R200 + 10%/booking (the 10% is applied
-// per period during billing, not here). Unknown/blank tier defaults to Tier 1
+// Tier 4 at R450; the Booking plan is R200/month + a per-booking charge
+// (restaurants R10/cover, services/attractions 10%), applied per period during
+// billing, not here. Unknown/blank tier defaults to Tier 1
 // (Free) — deliberately the safe direction (never over-charge on bad data).
 func PriceFor(partnerType, accessLevel, guestType string) Plan {
 	return PriceForUnits(partnerType, accessLevel, guestType, 1)
