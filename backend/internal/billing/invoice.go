@@ -237,9 +237,6 @@ func ResendInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) er
 	).Scan(&number, &partnerType, &partnerID, &billName, &billHolding, &billReg, &billVat, &email, &start, &due, &totalCents); err != nil {
 		return err
 	}
-	if strings.TrimSpace(email) == "" {
-		return fmt.Errorf("this invoice has no billing email on file — set the partner's Official Use → Email, then try again")
-	}
 
 	// Line item description + unit (single-line invoices).
 	var itemDesc string
@@ -251,12 +248,19 @@ func ResendInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) er
 		unitCents = totalCents
 	}
 
-	// Contact name/number are on the partner row (not snapshotted on the invoice).
-	var contactName, contactNumber string
+	// Contact name/number + a live email fallback come from the partner row
+	// (the invoice snapshot may pre-date the email being captured).
+	var contactName, contactNumber, partnerEmail string
 	if tbl := partnerTable(partnerType); tbl != "" {
 		_ = appdb.SQLDB.QueryRowContext(ctx,
-			`SELECT COALESCE(official_contact_name,''), COALESCE(official_contact_number,'') FROM `+tbl+` WHERE id = $1`,
-			partnerID).Scan(&contactName, &contactNumber)
+			`SELECT COALESCE(official_contact_name,''), COALESCE(official_contact_number,''), COALESCE(official_email,'') FROM `+tbl+` WHERE id = $1`,
+			partnerID).Scan(&contactName, &contactNumber, &partnerEmail)
+	}
+	if strings.TrimSpace(email) == "" {
+		email = strings.TrimSpace(partnerEmail)
+	}
+	if strings.TrimSpace(email) == "" {
+		return fmt.Errorf("this invoice has no billing email on file — set the partner's Official Use → Email, then try again")
 	}
 
 	settings, _ := LoadInvoiceSettings(ctx)
