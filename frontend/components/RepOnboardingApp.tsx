@@ -12,7 +12,7 @@ const RESTAURANT_FEATURES = ["Walk-ins Welcome", "Live Music", "Free Wi-Fi"];
 const DEFAULT_TABLE_ITEMS = [
   ["Table for 1", "10"], ["Table for 2", "20"], ["Table for 4", "40"], ["Table for 6", "60"],
   ["Table for 8", "80"], ["Table for 10", "100"], ["Table for 12", "120"], ["Table for 14", "140"],
-  ["Table for 16", "160"], ["Table for 20", "180"], ["Table for 20+", "250"],
+  ["Table for 16", "160"], ["Table for 20", "200"], ["Table for 20+", "250"],
 ].map(([name, price]) => ({ name, price, duration: "" }));
 const CHARITY_KEY: Record<string, string> = {
   Accommodations: "accommodation",

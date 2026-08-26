@@ -69,7 +69,7 @@ const RESTAURANT_FEATURES = ["Walk-ins Welcome", "Live Music", "Free Wi-Fi"];
 const DEFAULT_TABLE_ITEMS: { name: string; price: number; duration: number }[] = [
   ["Table for 1", 10], ["Table for 2", 20], ["Table for 4", 40], ["Table for 6", 60],
   ["Table for 8", 80], ["Table for 10", 100], ["Table for 12", 120], ["Table for 14", 140],
-  ["Table for 16", 160], ["Table for 20", 180], ["Table for 20+", 250],
+  ["Table for 16", 160], ["Table for 20", 200], ["Table for 20+", 250],
 ].map(([name, price]) => ({ name: name as string, price: price as number, duration: 0 }));
 
 export default function RestaurantForm({ restaurantId, onClose, partnerEdit = false }: RestaurantFormProps) {
