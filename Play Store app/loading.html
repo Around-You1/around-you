@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Around You - Loading</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:#0b1030;overflow:hidden}
+  body{display:flex;align-items:center;justify-content:center}
+
+  .stage{position:absolute; width:1376px; height:768px; top:50%; left:50%;
+    transform:translate(-50%,-50%) scale(1); transform-origin:center center;
+    background:url('loading-bg.png') center/cover no-repeat, #0b1030;}
+
+  .fill{position:absolute; left:0; top:84.1%; height:1.1%; width:0;
+    background:linear-gradient(90deg,#39FF14,#8dff5a); box-shadow:0 0 14px #39FF14;
+    animation:fill var(--loop,6s) cubic-bezier(.45,0,.55,1) infinite;}
+  @keyframes fill{0%{width:0}90%{width:100%}100%{width:100%}}
+
+  .carPath{position:absolute; left:0; top:0; width:78px; height:36px;
+    offset-path:path("M725,644 Q702,600 682,570 Q662,540 649,513 Q636,486 641,467 Q646,448 668,426 Q690,405 726,388 Q762,372 792,364 Q822,356 838,351 L854,346"); offset-rotate:0deg;
+    animation:drive var(--loop,6s) cubic-bezier(.4,0,.6,1) infinite;}
+  @keyframes drive{0%{offset-distance:0%;opacity:0}5%{opacity:1}90%{offset-distance:100%;opacity:1}100%{offset-distance:100%;opacity:0}}
+
+  .car{position:absolute; inset:0; transform-origin:center bottom;
+    animation:shrink var(--loop,6s) cubic-bezier(.4,0,.6,1) infinite;
+    filter:drop-shadow(0 3px 3px rgba(0,0,0,.5));}
+  @keyframes shrink{0%{transform:scale(1)}90%{transform:scale(.42)}100%{transform:scale(.42)}}
+  .car svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+  .beam{position:absolute; left:95%; top:44%; width:120%; height:150%; transform:translateY(-50%);
+    background:radial-gradient(closest-side at left center, rgba(255,247,180,.7), rgba(255,240,120,.15), transparent 78%);
+    filter:blur(1px); animation:flick var(--loop,6s) linear infinite;}
+  @keyframes flick{0%,100%{opacity:.6}50%{opacity:1}}
+  .dust{position:absolute; right:90%; top:62%; width:70%; height:60%; transform:translateY(-50%);
+    background:radial-gradient(closest-side, rgba(255,255,255,.4), transparent 70%); filter:blur(2px); opacity:.5;}
+</style>
+</head>
+<body>
+  <div class="stage" id="stage">
+    <div class="fill"></div>
+    <div class="carPath">
+      <div class="car">
+        <div class="dust"></div>
+        <div class="beam"></div>
+        <svg viewBox="0 0 100 46" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#6fe06a"/><stop offset="1" stop-color="#2f8f3e"/></linearGradient></defs>
+          <ellipse cx="52" cy="41" rx="42" ry="4" fill="rgba(0,0,0,.28)"/>
+          <path d="M4,34 Q4,27 13,26 L27,25 L39,14 Q43,10 51,10 L66,10 Q75,10 81,17 L90,26 Q96,27 96,33 L96,35 Q96,38 91,38 L9,38 Q4,38 4,35 Z"
+                fill="url(#body)" stroke="#1f6b2b" stroke-width="1.4"/>
+          <path d="M40,15 L50,15 L50,25 L32,25 Z" fill="#d6f3ff" stroke="#1f6b2b" stroke-width="0.8"/>
+          <path d="M52,15 L65,15 Q72,15 77,21 L79,25 L52,25 Z" fill="#d6f3ff" stroke="#1f6b2b" stroke-width="0.8"/>
+          <circle cx="30" cy="38" r="7.5" fill="#141414"/><circle cx="30" cy="38" r="3.2" fill="#9aa"/>
+          <circle cx="74" cy="38" r="7.5" fill="#141414"/><circle cx="74" cy="38" r="3.2" fill="#9aa"/>
+          <circle cx="93" cy="31" r="2.6" fill="#fff7cc"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+<script>
+  const stage=document.getElementById('stage');
+  function fit(){const s=Math.min(window.innerWidth/1376, window.innerHeight/768);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')';}
+  window.addEventListener('resize',fit); fit();
+</script>
+</body>
+</html>

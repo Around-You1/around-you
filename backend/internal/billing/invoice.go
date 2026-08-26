@@ -219,6 +219,64 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 	return nil
 }
 
+// ResendInvoiceEmail re-sends the email for an invoice that already exists,
+// rebuilt from the stored invoice data. withCodes appends the partner's Access
+// Code / Edit Code / QR Code block (as on the first invoice). Returns the
+// mailer error so the caller can report whether it actually sent.
+func ResendInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) error {
+	var number, partnerType, billName, billHolding, billReg, billVat, email string
+	var partnerID int64
+	var start, due time.Time
+	var totalCents int
+	if err := appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT invoice_number, partner_type, partner_id,
+		       COALESCE(bill_name,''), COALESCE(bill_holding_company,''),
+		       COALESCE(bill_reg_number,''), COALESCE(bill_vat_number,''),
+		       COALESCE(bill_email,''), period_start, due_at, total_cents
+		FROM invoice WHERE id = $1`, invoiceID,
+	).Scan(&number, &partnerType, &partnerID, &billName, &billHolding, &billReg, &billVat, &email, &start, &due, &totalCents); err != nil {
+		return err
+	}
+	if strings.TrimSpace(email) == "" {
+		return fmt.Errorf("this invoice has no billing email on file — set the partner's Official Use → Email, then try again")
+	}
+
+	// Line item description + unit (single-line invoices).
+	var itemDesc string
+	var unitCents int
+	_ = appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT COALESCE(description,''), COALESCE(unit_cents,0) FROM invoice_line_item WHERE invoice_id = $1 ORDER BY id LIMIT 1`,
+		invoiceID).Scan(&itemDesc, &unitCents)
+	if unitCents == 0 {
+		unitCents = totalCents
+	}
+
+	// Contact name/number are on the partner row (not snapshotted on the invoice).
+	var contactName, contactNumber string
+	if tbl := partnerTable(partnerType); tbl != "" {
+		_ = appdb.SQLDB.QueryRowContext(ctx,
+			`SELECT COALESCE(official_contact_name,''), COALESCE(official_contact_number,'') FROM `+tbl+` WHERE id = $1`,
+			partnerID).Scan(&contactName, &contactNumber)
+	}
+
+	settings, _ := LoadInvoiceSettings(ctx)
+	bizName := "Around You"
+	if settings != nil && strings.TrimSpace(settings.BusinessName) != "" {
+		bizName = settings.BusinessName
+	}
+	view := invoiceView{
+		Number: number, Date: start, Due: due,
+		ItemDesc: itemDesc, Cents: unitCents,
+		BillName: firstNonEmpty(billHolding, billName), BillReg: billReg, BillVat: billVat,
+		BillContactName: contactName, BillContactNumber: contactNumber, BillEmail: email,
+	}
+	html := renderInvoiceHTML(settings, view)
+	if withCodes {
+		html += onboardingCodesHTML(ctx, partnerType, partnerID)
+	}
+	return mailer.Send(email, "Your "+bizName+" invoice "+number, html)
+}
+
 // onboardingCodesHTML builds the "welcome" block appended to the FIRST invoice
 // email only: the partner's Access Code, Partner Edit Code and Profile QR Code.
 func onboardingCodesHTML(ctx context.Context, partnerType string, partnerID int64) string {

@@ -211,6 +211,7 @@ export default function BillingTab() {
   const [commRollup, setCommRollup] = useState<CommissionRollup | null>(null);
   const [bookingLedger, setBookingLedger] = useState<BookingLedger | null>(null);
   const [emailLog, setEmailLog] = useState<any[]>([]);
+  const [resendingId, setResendingId] = useState<number | null>(null);
   const [accStatus, setAccStatus] = useState<AccCodeStatus | null>(null);
   const [newAccCode, setNewAccCode] = useState("");
   const [savingAcc, setSavingAcc] = useState(false);
@@ -293,6 +294,21 @@ export default function BillingTab() {
       }
     })();
   }, [toast]);
+
+  const handleResend = async (invoiceId: number) => {
+    setResendingId(invoiceId);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.billing.resendInvoice({ invoiceId });
+      toast({ title: "Invoice re-sent", description: "See the Email Delivery panel above for the result." });
+      const el: any = await backend.billing.emailLog().catch(() => ({ entries: [] }));
+      setEmailLog(el.entries || []);
+    } catch (e: any) {
+      toast({ title: "Resend failed", description: e?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setResendingId(null);
+    }
+  };
 
   const loadStatements = async (p: string) => {
     try {
@@ -517,6 +533,7 @@ export default function BillingTab() {
                     <th className="py-2 pr-3">Rep</th>
                     <th className="py-2 pr-3">Status</th>
                     <th className="py-2 pr-3">Issued</th>
+                    <th className="py-2 pr-3"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -529,6 +546,12 @@ export default function BillingTab() {
                       <td className="py-2 pr-3 font-mono">{v.repCode || "—"}</td>
                       <td className="py-2 pr-3">{v.status}</td>
                       <td className="py-2 pr-3">{v.issuedAt}</td>
+                      <td className="py-2 pr-3">
+                        <Button variant="outline" size="sm" disabled={resendingId === v.id}
+                          onClick={() => handleResend(v.id)}>
+                          {resendingId === v.id ? "Sending…" : "Resend"}
+                        </Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

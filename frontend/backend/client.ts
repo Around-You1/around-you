@@ -188,6 +188,7 @@ export const backend = {
     setInvoiceSettings: (req: any) => request("POST", "/billing/invoice-settings", { body: req }),
     invoicePreview: () => request("GET", "/billing/invoice-preview"),
     emailLog: () => request("GET", "/billing/email-log"),
+    resendInvoice: (req: { invoiceId: number }) => request("POST", "/billing/invoice/resend", { body: req }),
   },
 
   analytics: {

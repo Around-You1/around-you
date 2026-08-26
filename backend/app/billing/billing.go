@@ -288,6 +288,30 @@ func EmailLog(ctx context.Context) (*EmailLogResponse, error) {
 	return &EmailLogResponse{Entries: out}, rows.Err()
 }
 
+type ResendInvoiceRequest struct {
+	InvoiceID int64 `json:"invoiceId"`
+}
+type ResendInvoiceResponse struct {
+	OK bool `json:"ok"`
+}
+
+// ResendInvoice re-sends the email for an existing invoice (invoice + the
+// partner's Access/Edit/QR codes). SuperAdmin-only.
+//
+//encore:api auth method=POST path=/billing/invoice/resend
+func ResendInvoice(ctx context.Context, req *ResendInvoiceRequest) (*ResendInvoiceResponse, error) {
+	if !isSuperAdmin(ctx) {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can resend invoices"}
+	}
+	if req.InvoiceID == 0 {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "invoiceId is required"}
+	}
+	if err := billingcore.ResendInvoiceEmail(ctx, req.InvoiceID, true); err != nil {
+		return nil, &errs.Error{Code: errs.Internal, Message: err.Error()}
+	}
+	return &ResendInvoiceResponse{OK: true}, nil
+}
+
 // canSeeAccounts allows the Accountant role as well as SuperAdmin — used for the
 // invoice list + mark-paid, which the accountant needs to reconcile payments.
 func canSeeAccounts(ctx context.Context) bool {
