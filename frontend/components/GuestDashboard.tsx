@@ -70,7 +70,7 @@ export default function GuestDashboard() {
     { entityType: RatableType; entityId: number; entityName: string; items: BookItem[] } | null
   >(null);
   const [redeemFor, setRedeemFor] = useState<
-    { entityType: RatableType; entityId: number; entityName: string; discount?: string } | null
+    { entityType: RatableType; entityId: number; entityName: string; discount?: string; discountCode?: string } | null
   >(null);
   const [showMyBookings, setShowMyBookings] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
@@ -842,7 +842,7 @@ export default function GuestDashboard() {
                                 size="sm"
                                 variant="outline"
                                 className="w-full sm:w-auto border-[#AEECE4] text-[#AEECE4]"
-                                onClick={() => setRedeemFor({ entityType: "restaurant", entityId: Number(restaurant.id), entityName: restaurant.name, discount: discOffered(restaurant) })}
+                                onClick={() => setRedeemFor({ entityType: "restaurant", entityId: Number(restaurant.id), entityName: restaurant.name, discount: discOffered(restaurant), discountCode: discCode(restaurant) })}
                               >
                                 Redeem discount
                               </Button>
@@ -1264,7 +1264,7 @@ export default function GuestDashboard() {
                                 size="sm"
                                 variant="outline"
                                 className="w-full sm:w-auto border-[#AEECE4] text-[#AEECE4]"
-                                onClick={() => setRedeemFor({ entityType: "service", entityId: Number(service.id), entityName: service.name, discount: discOffered(service) })}
+                                onClick={() => setRedeemFor({ entityType: "service", entityId: Number(service.id), entityName: service.name, discount: discOffered(service), discountCode: discCode(service) })}
                               >
                                 Redeem discount
                               </Button>
@@ -1472,7 +1472,7 @@ export default function GuestDashboard() {
                                 size="sm"
                                 variant="outline"
                                 className="w-full sm:w-auto border-[#AEECE4] text-[#AEECE4]"
-                                onClick={() => setRedeemFor({ entityType: "attraction", entityId: Number(attraction.id), entityName: attraction.name, discount: discOffered(attraction) })}
+                                onClick={() => setRedeemFor({ entityType: "attraction", entityId: Number(attraction.id), entityName: attraction.name, discount: discOffered(attraction), discountCode: discCode(attraction) })}
                               >
                                 Redeem discount
                               </Button>
@@ -1653,6 +1653,7 @@ export default function GuestDashboard() {
             entityId={redeemFor.entityId}
             entityName={redeemFor.entityName}
             discount={redeemFor.discount}
+            discountCode={redeemFor.discountCode}
           />
         )}
         {showMyBookings && <MyBookingsModal onClose={() => setShowMyBookings(false)} />}
@@ -1867,8 +1868,8 @@ function BookingModal({ onClose, entityType, entityId, entityName, items }: {
   );
 }
 
-function RedeemModal({ onClose, entityType, entityId, entityName, discount }: {
-  onClose: () => void; entityType: RatableType; entityId: number; entityName: string; discount?: string;
+function RedeemModal({ onClose, entityType, entityId, entityName, discount, discountCode }: {
+  onClose: () => void; entityType: RatableType; entityId: number; entityName: string; discount?: string; discountCode?: string;
 }) {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1895,17 +1896,32 @@ function RedeemModal({ onClose, entityType, entityId, entityName, discount }: {
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-background rounded-lg shadow-lg max-w-sm w-full p-5 space-y-4 text-center" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-semibold">Redeem at {entityName}</h3>
-        {discount && <p className="text-sm text-[#AEECE4] font-medium">{discount}</p>}
+
+        {discount && <p className="text-base font-semibold">{discount}</p>}
+
+        {discountCode ? (
+          <div className="rounded-lg border-2 border-dashed border-[#AEECE4] bg-[#AEECE4]/10 px-4 py-3">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Discount Code</p>
+            <p className="text-2xl font-bold font-mono tracking-widest text-black">{discountCode}</p>
+          </div>
+        ) : (
+          discount ? null : <p className="text-sm text-muted-foreground">Show your booking to the venue to claim this offer.</p>
+        )}
+
+        {discountCode && (
+          <p className="text-xs text-muted-foreground">Show this code to the venue to claim your discount.</p>
+        )}
+
         {loading ? (
           <p className="text-sm text-muted-foreground">Preparing your code…</p>
         ) : token ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={qrUrl} alt="Your discount QR code" className="mx-auto rounded-lg" width={280} height={280} />
+            <img src={qrUrl} alt="Redemption QR code" className="mx-auto rounded-lg" width={200} height={200} />
             <p className="text-xs text-muted-foreground">
-              Show this to the venue so they can scan it. Once redeemed, you'll be able to rate your experience.
+              The venue can scan this to confirm your visit. Once redeemed, you'll be able to rate your experience.
             </p>
-            <p className="text-xs font-mono break-all text-muted-foreground">Code: {token}</p>
+            <p className="text-[10px] font-mono break-all text-muted-foreground/70">Ref: {token}</p>
           </>
         ) : null}
         <Button variant="outline" onClick={onClose} className="w-full">Close</Button>
