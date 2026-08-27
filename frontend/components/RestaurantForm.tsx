@@ -559,7 +559,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="space-y-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
+          <div className="space-y-2" style={{ display: tierNum >= 1 ? undefined : "none" }}>
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
@@ -661,7 +661,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
+          <div className="space-y-4" style={{ display: tierNum >= 1 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Accessibility</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center space-x-2">
@@ -831,7 +831,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
           )}
 
           <div className="flex flex-col gap-4">
-            <div className="flex items-center space-x-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
+            <div className="flex items-center space-x-2" style={{ display: tierNum >= 1 ? undefined : "none" }}>
               <Switch
                 id="littleExplorerApproved"
                 checked={formData.littleExplorerApproved}

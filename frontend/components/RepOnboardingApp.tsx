@@ -1023,6 +1023,14 @@ export default function RepOnboardingApp() {
                 <SectionTitle>{isAccommodation ? "Accommodation Details" : booking ? "Profile Details" : "Tier 1"}</SectionTitle>
                 <ImageUpload images={images} setImages={setImages} />
                 <TextField label={nameLabel} value={data.name} onChange={set("name")} />
+                {!isAccommodation && (
+                  <>
+                    <CheckboxGroup label="Accessibility Options" options={ACCESSIBILITY_OPTIONS} selected={data.accessibility || []} onChange={set("accessibility")} />
+                    <CheckboxGroup label="Child Friendly" options={["Child Friendly"]} selected={data.childFriendly || []} onChange={set("childFriendly")} />
+                    {isRestaurant && <TextField label="Address (public listing)" value={data.publicAddress} onChange={set("publicAddress")} />}
+                    {isRestaurant && <TextField label="Description" area value={data.description} onChange={set("description")} />}
+                  </>
+                )}
               </>
             )}
 
@@ -1055,8 +1063,7 @@ export default function RepOnboardingApp() {
             {!isAccommodation && (booking || tier >= 2) && (
               <>
                 <SectionTitle>{booking ? "Location & Access" : "Tier 2"}</SectionTitle>
-                <TextField label="Address (public listing)" value={data.publicAddress} onChange={set("publicAddress")} />
-                <CheckboxGroup label="Accessibility Options" options={ACCESSIBILITY_OPTIONS} selected={data.accessibility || []} onChange={set("accessibility")} />
+                {!isRestaurant && <TextField label="Address (public listing)" value={data.publicAddress} onChange={set("publicAddress")} />}
               </>
             )}
 
@@ -1092,8 +1099,7 @@ export default function RepOnboardingApp() {
                 {isAttraction && (
                   <CheckboxGroup label="Attraction Categories" options={ATTRACTION_CATEGORIES} selected={data.attractionType || []} onChange={set("attractionType")} />
                 )}
-                <CheckboxGroup label="Child Friendly" options={["Child Friendly"]} selected={data.childFriendly || []} onChange={set("childFriendly")} />
-                <TextField label="Description" area value={data.description} onChange={set("description")} />
+                {!isRestaurant && <TextField label="Description" area value={data.description} onChange={set("description")} />}
                 {(isService || isAttraction) && (
                   <TextField label="Contact" value={data.contact} onChange={set("contact")} />
                 )}
