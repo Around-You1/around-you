@@ -63,6 +63,10 @@ type CreateRequest struct {
 	CommunityWatchContact string `json:"communityWatchContact,omitempty"`
 	LocalSecurityContact  string `json:"localSecurityContact,omitempty"`
 
+	Doctors         appdb.EmergencyEntryList `json:"doctors,omitempty"`
+	Vets            appdb.EmergencyEntryList `json:"vets,omitempty"`
+	HospitalAddress string                   `json:"hospitalAddress,omitempty"`
+
 	Facilities []string `json:"facilities,omitempty"`
 	IsActive   bool     `json:"isActive"`
 	Units      int      `json:"units,omitempty"`
@@ -124,6 +128,10 @@ type UpdateRequest struct {
 	VetContact            *string `json:"vetContact,omitempty"`
 	CommunityWatchContact *string `json:"communityWatchContact,omitempty"`
 	LocalSecurityContact  *string `json:"localSecurityContact,omitempty"`
+
+	Doctors         *appdb.EmergencyEntryList `json:"doctors,omitempty"`
+	Vets            *appdb.EmergencyEntryList `json:"vets,omitempty"`
+	HospitalAddress *string                   `json:"hospitalAddress,omitempty"`
 
 	Facilities []string `json:"facilities,omitempty"`
 	IsActive   *bool    `json:"isActive,omitempty"`

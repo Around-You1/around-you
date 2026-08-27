@@ -6,6 +6,13 @@ export interface EmergencyContact {
   number: string;
 }
 
+// Multi-entry emergency contact (name / number / address) for doctors & vets.
+export interface EmergencyEntry {
+  name: string;
+  number: string;
+  address: string;
+}
+
 export interface Accommodation {
   id: number;
   name: string;
@@ -50,6 +57,9 @@ export interface Accommodation {
   vetContact?: string;
   communityWatchContact?: string;
   localSecurityContact?: string;
+  doctors?: EmergencyEntry[];
+  vets?: EmergencyEntry[];
+  hospitalAddress?: string;
   units?: number;
 
   emergencyContacts?: EmergencyContact[];

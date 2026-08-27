@@ -10,6 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Phone, ExternalLink, Tag, ChevronDown, Search, Eye, EyeOff, MapPin, Globe, Instagram, Twitter, Youtube, Music, Star } from "lucide-react";
 import AddressDropdown from "../components/AddressDropdown";
 import DirectionsDropdown from "../components/DirectionsDropdown";
+import AddressDirectionsButton from "../components/AddressDirectionsButton";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 import { useSwipe } from "../lib/useSwipe";
@@ -573,7 +574,7 @@ export default function GuestDashboard() {
                       Emergency Numbers
                     </CollapsibleTrigger>
                     <CollapsibleContent className={`${contentClass} space-y-2`}>
-                      {accommodation!.primaryContact || accommodation!.policeContact || accommodation!.doctorContact || accommodation!.ambulanceContact || accommodation!.hospitalContact || accommodation!.fireDepartmentContact || accommodation!.snakeCatchersContact || accommodation!.nsriContact || accommodation!.vetContact || accommodation!.communityWatchContact || accommodation!.localSecurityContact ? (
+                      {accommodation!.primaryContact || accommodation!.policeContact || accommodation!.doctorContact || (accommodation!.doctors && accommodation!.doctors.length > 0) || accommodation!.ambulanceContact || accommodation!.hospitalContact || accommodation!.fireDepartmentContact || accommodation!.snakeCatchersContact || accommodation!.nsriContact || accommodation!.vetContact || (accommodation!.vets && accommodation!.vets.length > 0) || accommodation!.communityWatchContact || accommodation!.localSecurityContact ? (
                         <>
                           {accommodation!.primaryContact && (
                             <div className="flex items-center justify-between text-sm">
@@ -591,14 +592,33 @@ export default function GuestDashboard() {
                               </a>
                             </div>
                           )}
-                          {accommodation!.doctorContact && (
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Doctor Contact:</span>
-                              <a href={`tel:${accommodation!.doctorContact}`} className="font-medium text-purple-600 hover:underline">
-                                {accommodation!.doctorContact}
-                              </a>
-                            </div>
-                          )}
+                          {accommodation!.doctors && accommodation!.doctors.length > 0
+                            ? accommodation!.doctors.map((d, i) => (
+                                <div key={`doc-${i}`} className="space-y-1 text-sm">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-muted-foreground">{d.name ? `Doctor — ${d.name}:` : "Doctor:"}</span>
+                                    {d.number && (
+                                      <a href={`tel:${d.number}`} className="font-medium text-purple-600 hover:underline">
+                                        {d.number}
+                                      </a>
+                                    )}
+                                  </div>
+                                  {d.address && (
+                                    <div className="flex items-center justify-between pl-2">
+                                      <span className="text-xs text-muted-foreground">{d.address}</span>
+                                      <AddressDirectionsButton address={d.address} />
+                                    </div>
+                                  )}
+                                </div>
+                              ))
+                            : accommodation!.doctorContact && (
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-muted-foreground">Doctor Contact:</span>
+                                  <a href={`tel:${accommodation!.doctorContact}`} className="font-medium text-purple-600 hover:underline">
+                                    {accommodation!.doctorContact}
+                                  </a>
+                                </div>
+                              )}
                           {accommodation!.ambulanceContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Ambulance Contact:</span>
@@ -613,6 +633,12 @@ export default function GuestDashboard() {
                               <a href={`tel:${accommodation!.hospitalContact}`} className="font-medium text-purple-600 hover:underline">
                                 {accommodation!.hospitalContact}
                               </a>
+                            </div>
+                          )}
+                          {accommodation!.hospitalAddress && (
+                            <div className="flex items-center justify-between pl-2">
+                              <span className="text-xs text-muted-foreground">{accommodation!.hospitalAddress}</span>
+                              <AddressDirectionsButton address={accommodation!.hospitalAddress} />
                             </div>
                           )}
                           {accommodation!.fireDepartmentContact && (
@@ -635,12 +661,31 @@ export default function GuestDashboard() {
                               <a href={`tel:${accommodation!.nsriContact}`} className="font-medium text-purple-600 hover:underline">{accommodation!.nsriContact}</a>
                             </div>
                           )}
-                          {accommodation!.vetContact && (
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Vet:</span>
-                              <a href={`tel:${accommodation!.vetContact}`} className="font-medium text-purple-600 hover:underline">{accommodation!.vetContact}</a>
-                            </div>
-                          )}
+                          {accommodation!.vets && accommodation!.vets.length > 0
+                            ? accommodation!.vets.map((v, i) => (
+                                <div key={`vet-${i}`} className="space-y-1 text-sm">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-muted-foreground">{v.name ? `Vet — ${v.name}:` : "Vet:"}</span>
+                                    {v.number && (
+                                      <a href={`tel:${v.number}`} className="font-medium text-purple-600 hover:underline">
+                                        {v.number}
+                                      </a>
+                                    )}
+                                  </div>
+                                  {v.address && (
+                                    <div className="flex items-center justify-between pl-2">
+                                      <span className="text-xs text-muted-foreground">{v.address}</span>
+                                      <AddressDirectionsButton address={v.address} />
+                                    </div>
+                                  )}
+                                </div>
+                              ))
+                            : accommodation!.vetContact && (
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-muted-foreground">Vet:</span>
+                                  <a href={`tel:${accommodation!.vetContact}`} className="font-medium text-purple-600 hover:underline">{accommodation!.vetContact}</a>
+                                </div>
+                              )}
                           {accommodation!.communityWatchContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Community Watch:</span>

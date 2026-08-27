@@ -121,6 +121,51 @@ func (b *BookingItems) Scan(src interface{}) error {
 	}
 }
 
+// EmergencyEntry is one doctor / vet entry: an optional name, a phone number,
+// and an optional address (so guests can get directions).
+type EmergencyEntry struct {
+	Name    string `json:"name,omitempty"`
+	Number  string `json:"number"`
+	Address string `json:"address,omitempty"`
+}
+
+// EmergencyEntryList is a list stored as a single jsonb column (like BookingItems).
+type EmergencyEntryList []EmergencyEntry
+
+func (b EmergencyEntryList) Value() (driver.Value, error) {
+	if b == nil {
+		return "[]", nil
+	}
+	data, err := json.Marshal([]EmergencyEntry(b))
+	if err != nil {
+		return nil, err
+	}
+	return string(data), nil
+}
+
+func (b *EmergencyEntryList) Scan(src interface{}) error {
+	if src == nil {
+		*b = EmergencyEntryList{}
+		return nil
+	}
+	switch v := src.(type) {
+	case []byte:
+		if len(v) == 0 {
+			*b = EmergencyEntryList{}
+			return nil
+		}
+		return json.Unmarshal(v, b)
+	case string:
+		if v == "" {
+			*b = EmergencyEntryList{}
+			return nil
+		}
+		return json.Unmarshal([]byte(v), b)
+	default:
+		return fmt.Errorf("appdb: cannot scan %T into EmergencyEntryList", src)
+	}
+}
+
 // Accommodation matches the field set read/written across
 // AccommodationForm.tsx, AccommodationList.tsx, and AccommodationTab.tsx.
 type Accommodation struct {
@@ -167,6 +212,12 @@ type Accommodation struct {
 	VetContact            string `json:"vetContact,omitempty"`
 	CommunityWatchContact string `json:"communityWatchContact,omitempty"`
 	LocalSecurityContact  string `json:"localSecurityContact,omitempty"`
+
+	// Multi-entry emergency contacts (name/number/address) for doctors & vets,
+	// plus an address for the (single) hospital number above.
+	Doctors         EmergencyEntryList `json:"doctors,omitempty"`
+	Vets            EmergencyEntryList `json:"vets,omitempty"`
+	HospitalAddress string             `json:"hospitalAddress,omitempty"`
 
 	EmergencyContacts []EmergencyContact `json:"emergencyContacts,omitempty"`
 

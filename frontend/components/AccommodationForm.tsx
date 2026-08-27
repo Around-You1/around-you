@@ -29,6 +29,63 @@ const FACILITIES = [
   "Swimming Pool",
 ];
 
+export interface EmergencyEntry {
+  name: string;
+  number: string;
+  address: string;
+}
+
+// Repeatable name / number / address editor used for Doctors and Vets.
+function EmergencyEntryEditor({
+  label,
+  entries,
+  onChange,
+}: {
+  label: string;
+  entries: EmergencyEntry[];
+  onChange: (next: EmergencyEntry[]) => void;
+}) {
+  const update = (i: number, patch: Partial<EmergencyEntry>) =>
+    onChange(entries.map((e, idx) => (idx === i ? { ...e, ...patch } : e)));
+  const add = () => onChange([...entries, { name: "", number: "", address: "" }]);
+  const remove = (i: number) => onChange(entries.filter((_, idx) => idx !== i));
+
+  return (
+    <div className="space-y-2 sm:col-span-2">
+      <Label>{label}</Label>
+      {entries.map((e, i) => (
+        <div key={i} className="grid grid-cols-1 gap-2 rounded-md border p-3 sm:grid-cols-3">
+          <Input
+            placeholder="Name"
+            value={e.name}
+            onChange={(ev) => update(i, { name: ev.target.value })}
+          />
+          <Input
+            placeholder="Number"
+            value={e.number}
+            onChange={(ev) => update(i, { number: ev.target.value })}
+            type="tel"
+            inputMode="tel"
+          />
+          <div className="flex gap-2">
+            <Input
+              placeholder="Address"
+              value={e.address}
+              onChange={(ev) => update(i, { address: ev.target.value })}
+            />
+            <Button type="button" variant="outline" size="sm" onClick={() => remove(i)}>
+              Remove
+            </Button>
+          </div>
+        </div>
+      ))}
+      <Button type="button" variant="outline" size="sm" onClick={add}>
+        + Add {label.replace(/s$/, "")}
+      </Button>
+    </div>
+  );
+}
+
 interface AccommodationFormProps {
   accommodation: Accommodation | null;
   onClose: () => void;
@@ -84,6 +141,9 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
     vetContact: accommodation?.vetContact || "",
     communityWatchContact: accommodation?.communityWatchContact || "",
     localSecurityContact: accommodation?.localSecurityContact || "",
+    doctors: (accommodation?.doctors || []) as EmergencyEntry[],
+    vets: (accommodation?.vets || []) as EmergencyEntry[],
+    hospitalAddress: accommodation?.hospitalAddress || "",
     units: accommodation?.units || 1,
     facilities: (accommodation?.facilities || []) as string[],
     isActive: accommodation?.isActive ?? false,
@@ -141,6 +201,9 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
         vetContact: accommodation.vetContact || "",
         communityWatchContact: accommodation.communityWatchContact || "",
         localSecurityContact: accommodation.localSecurityContact || "",
+        doctors: (accommodation.doctors || []) as EmergencyEntry[],
+        vets: (accommodation.vets || []) as EmergencyEntry[],
+        hospitalAddress: accommodation.hospitalAddress || "",
         units: accommodation.units || 1,
         facilities: accommodation.facilities || [],
         isActive: accommodation.isActive,
@@ -489,17 +552,11 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="doctorContact">Doctor Contact</Label>
-              <Input
-                id="doctorContact"
-                value={formData.doctorContact}
-                onChange={(e) => setFormData({ ...formData, doctorContact: e.target.value })}
-                type="tel"
-                inputMode="tel"
-                enterKeyHint="next"
-              />
-            </div>
+            <EmergencyEntryEditor
+              label="Doctors"
+              entries={formData.doctors}
+              onChange={(next) => setFormData({ ...formData, doctors: next })}
+            />
 
             <div className="space-y-2">
               <Label htmlFor="ambulanceContact">Ambulance Contact</Label>
@@ -521,6 +578,16 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
                 onChange={(e) => setFormData({ ...formData, hospitalContact: e.target.value })}
                 type="tel"
                 inputMode="tel"
+                enterKeyHint="next"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="hospitalAddress">Hospital Address</Label>
+              <Input
+                id="hospitalAddress"
+                value={formData.hospitalAddress}
+                onChange={(e) => setFormData({ ...formData, hospitalAddress: e.target.value })}
                 enterKeyHint="next"
               />
             </div>
@@ -551,12 +618,11 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
                 type="tel" inputMode="tel" enterKeyHint="next" />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="vetContact">Vet</Label>
-              <Input id="vetContact" value={formData.vetContact}
-                onChange={(e) => setFormData({ ...formData, vetContact: e.target.value })}
-                type="tel" inputMode="tel" enterKeyHint="next" />
-            </div>
+            <EmergencyEntryEditor
+              label="Vets"
+              entries={formData.vets}
+              onChange={(next) => setFormData({ ...formData, vets: next })}
+            />
 
             <div className="space-y-2">
               <Label htmlFor="communityWatchContact">Community Watch</Label>

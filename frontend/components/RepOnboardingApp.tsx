@@ -467,6 +467,8 @@ export default function RepOnboardingApp() {
   const [province, setProvince] = useState([]);
   const [data, setData] = useState<Record<string, any>>({});
   const [emergency, setEmergency] = useState<Record<string, string>>({});
+  const [doctorsList, setDoctorsList] = useState<Array<{ name: string; number: string; address: string }>>([]);
+  const [vetsList, setVetsList] = useState<Array<{ name: string; number: string; address: string }>>([]);
   const [images, setImages] = useState([]);
   const [charity, setCharity] = useState<string[]>([]);
   const [autoSaveStatus, setAutoSaveStatus] = useState("");
@@ -481,7 +483,7 @@ export default function RepOnboardingApp() {
     setAutoSaveStatus("Saving…");
     const t = setTimeout(() => setAutoSaveStatus("Auto-saved to Admin Dashboard ✓"), 500);
     return () => clearTimeout(t);
-  }, [data, emergency, images, country, province, visibility, tier, booking, bookingItems, partnerType]);
+  }, [data, emergency, doctorsList, vetsList, images, country, province, visibility, tier, booking, bookingItems, partnerType]);
 
   const isAccommodation = partnerType === "Accommodations";
   const isRestaurant = partnerType === "Restaurants";
@@ -497,7 +499,7 @@ export default function RepOnboardingApp() {
 
   const reset = () => {
     setPartnerType(null); setTier(0); setVisibility([]); setBooking(false); setBookingItems([]); setCountry([]); setProvince([]);
-    setData({}); setEmergency({}); setImages([]); setCharity([]); setSubmitted(null);
+    setData({}); setEmergency({}); setDoctorsList([]); setVetsList([]); setImages([]); setCharity([]); setSubmitted(null);
   };
 
   // Maps the onboarding form's multi-checkbox "visibility" selection to the
@@ -582,10 +584,12 @@ export default function RepOnboardingApp() {
           parkingAvailability: false,
           primaryContact: emergency["Primary"] || "",
           policeContact: emergency["Police"] || "",
-          doctorContact: emergency["Doctor"] || "",
           ambulanceContact: emergency["Ambulance"] || "",
           hospitalContact: emergency["Hospital"] || "",
+          hospitalAddress: emergency["HospitalAddress"] || "",
           fireDepartmentContact: emergency["Fire Department"] || "",
+          doctors: doctorsList.filter((d) => d.name || d.number || d.address),
+          vets: vetsList.filter((v) => v.name || v.number || v.address),
           imageUrl: primaryImageUrl,
           imageUrls: uploadedImageUrls,
           isActive: false,
@@ -1054,9 +1058,33 @@ export default function RepOnboardingApp() {
                   <a href="https://www.yr.no/en" target="_blank" rel="noreferrer" style={{ color: colors.accent }}>https://www.yr.no/en</a>
                 </p>
                 <SectionTitle>Emergency Contacts</SectionTitle>
-                {["Primary", "Police", "Doctor", "Ambulance", "Hospital", "Fire Department"].map((k) => (
+                {["Primary", "Police", "Ambulance", "Fire Department"].map((k) => (
                   <TextField key={k} label={k} value={emergency[k]} onChange={(v) => setEmergency((e) => ({ ...e, [k]: v }))} />
                 ))}
+                <TextField label="Hospital" value={emergency["Hospital"]} onChange={(v) => setEmergency((e) => ({ ...e, Hospital: v }))} />
+                <TextField label="Hospital Address" value={emergency["HospitalAddress"]} onChange={(v) => setEmergency((e) => ({ ...e, HospitalAddress: v }))} />
+
+                <label style={labelStyle}>Doctors</label>
+                {doctorsList.map((d, i) => (
+                  <div key={i} style={{ border: `1px solid ${colors.border}`, borderRadius: 8, padding: 8, marginBottom: 8 }}>
+                    <TextField label="Name" value={d.name} onChange={(v) => setDoctorsList((l) => l.map((x, idx) => (idx === i ? { ...x, name: v } : x)))} />
+                    <TextField label="Number" value={d.number} onChange={(v) => setDoctorsList((l) => l.map((x, idx) => (idx === i ? { ...x, number: v } : x)))} />
+                    <TextField label="Address" value={d.address} onChange={(v) => setDoctorsList((l) => l.map((x, idx) => (idx === i ? { ...x, address: v } : x)))} />
+                    <button type="button" onClick={() => setDoctorsList((l) => l.filter((_, idx) => idx !== i))} style={{ background: "none", border: "none", color: colors.accent, cursor: "pointer", fontSize: 12 }}>Remove</button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => setDoctorsList((l) => [...l, { name: "", number: "", address: "" }])} style={{ background: "none", border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.accent, cursor: "pointer", fontSize: 12, padding: "4px 10px", marginBottom: 10 }}>+ Add Doctor</button>
+
+                <label style={labelStyle}>Vets</label>
+                {vetsList.map((d, i) => (
+                  <div key={i} style={{ border: `1px solid ${colors.border}`, borderRadius: 8, padding: 8, marginBottom: 8 }}>
+                    <TextField label="Name" value={d.name} onChange={(v) => setVetsList((l) => l.map((x, idx) => (idx === i ? { ...x, name: v } : x)))} />
+                    <TextField label="Number" value={d.number} onChange={(v) => setVetsList((l) => l.map((x, idx) => (idx === i ? { ...x, number: v } : x)))} />
+                    <TextField label="Address" value={d.address} onChange={(v) => setVetsList((l) => l.map((x, idx) => (idx === i ? { ...x, address: v } : x)))} />
+                    <button type="button" onClick={() => setVetsList((l) => l.filter((_, idx) => idx !== i))} style={{ background: "none", border: "none", color: colors.accent, cursor: "pointer", fontSize: 12 }}>Remove</button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => setVetsList((l) => [...l, { name: "", number: "", address: "" }])} style={{ background: "none", border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.accent, cursor: "pointer", fontSize: 12, padding: "4px 10px", marginBottom: 10 }}>+ Add Vet</button>
               </>
             )}
 
