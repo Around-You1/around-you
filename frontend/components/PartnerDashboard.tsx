@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   MapPin, Phone, ExternalLink, Building2, Store, Compass, LogOut, Navigation, Baby,
-  Wifi, CreditCard, Accessibility, CarFront, Globe, Facebook, Instagram, Mail,
+  Wifi, CreditCard, Accessibility, CarFront, Globe, Facebook, Instagram, Mail, ChevronDown,
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 import OptimizedImage from "../components/OptimizedImage";
@@ -35,12 +36,19 @@ const PAYMENT_LABELS: [string, string][] = [
   ["paymentZapper", "Zapper"],
 ];
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+// Section renders each block of partner info as a collapsible dropdown, matching
+// the Guest / Local page style (tap the heading to expand). Defaults collapsed.
+function Section({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   return (
-    <div>
-      <h3 className="font-semibold text-sm text-muted-foreground mb-2">{title}</h3>
-      {children}
-    </div>
+    <Collapsible defaultOpen={defaultOpen} className="rounded-lg border border-border/60 px-3">
+      <CollapsibleTrigger className="flex w-full items-center justify-between py-3 text-left font-semibold text-sm hover:text-[#0FB89B] transition-colors [&[data-state=open]>svg]:rotate-180">
+        {title}
+        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform" />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="pb-3 pt-1">
+        {children}
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
