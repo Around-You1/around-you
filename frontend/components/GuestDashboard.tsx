@@ -397,16 +397,16 @@ export default function GuestDashboard() {
 
                 {showAccInfo && (
                 <div className="mt-4 space-y-2">
+                  <DirectionsDropdown
+                    latitude={accommodation!.latitude}
+                    longitude={accommodation!.longitude}
+                  />
                   <AddressDropdown
                     address={accommodation!.address}
                     area={accommodation!.area}
                     province={accommodation!.province}
                     postalCode={accommodation!.postalCode}
                     country={accommodation!.country}
-                  />
-                  <DirectionsDropdown
-                    latitude={accommodation!.latitude}
-                    longitude={accommodation!.longitude}
                   />
 
                   <Collapsible>
@@ -728,13 +728,13 @@ export default function GuestDashboard() {
                 className="h-9"
                 onClick={() => { setMinRating(0); setDiscountsOnly(false); setSearchQuery(""); }}
               >
-                Clear
+                Clear filters
               </Button>
             )}
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1 h-auto p-1 bg-muted rounded-md">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-muted rounded-md" style={{ height: "auto" }}>
               <TabsTrigger value="restaurants" className="min-h-[44px] touch-manipulation">Restaurants ({filteredRestaurants.length})</TabsTrigger>
               <TabsTrigger value="services" className="min-h-[44px] touch-manipulation">Services ({filteredServices.length})</TabsTrigger>
               <TabsTrigger value="attractions" className="min-h-[44px] touch-manipulation">Attractions ({filteredAttractions.length})</TabsTrigger>
