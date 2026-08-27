@@ -632,6 +632,8 @@ export default function RepOnboardingApp() {
           wifiPassword: data.wifiPassword || "",
           discountOffered: data.discountOffered || "",
           discountCode: data.discountCode || "",
+          localDiscountOffered: data.localDiscountOffered || "",
+          localDiscountCode: data.localDiscountCode || "",
           bookingsEmail: data.bookingEmail || "",
           bookingsContactNumber: data.bookingContact || "",
           socialsWebsite: (data.socialLinks || {}).Website || "",
@@ -682,6 +684,8 @@ export default function RepOnboardingApp() {
           parkingAvailability: (data.accessibility || []).includes("Parking Availability"),
           discountOffered: data.discountOffered || "",
           discountCode: data.discountCode || "",
+          localDiscountOffered: data.localDiscountOffered || "",
+          localDiscountCode: data.localDiscountCode || "",
           socialsWebsite: (data.socialLinks || {}).Website || "",
           socialsFacebook: (data.socialLinks || {}).Facebook || "",
           socialsInstagram: (data.socialLinks || {}).Instagram || "",
@@ -735,6 +739,8 @@ export default function RepOnboardingApp() {
           parkingAvailability: (data.accessibility || []).includes("Parking Availability"),
           discountOffered: data.discountOffered || "",
           discountCode: data.discountCode || "",
+          localDiscountOffered: data.localDiscountOffered || "",
+          localDiscountCode: data.localDiscountCode || "",
           socialsWebsite: (data.socialLinks || {}).Website || "",
           socialsFacebook: (data.socialLinks || {}).Facebook || "",
           socialsInstagram: (data.socialLinks || {}).Instagram || "",
@@ -1152,8 +1158,18 @@ export default function RepOnboardingApp() {
                     <TextField label="Wifi Password" value={data.wifiPassword} onChange={set("wifiPassword")} />
                   </>
                 )}
-                <TextField label="Discount Offered" value={data.discountOffered} onChange={set("discountOffered")} />
-                <TextField label="Discount Code" value={data.discountCode} onChange={set("discountCode")} />
+                {(resolveGuestType() === "Guest Only" || resolveGuestType() === "Both") && (
+                  <>
+                    <TextField label={resolveGuestType() === "Both" ? "Guest Discount Offered" : "Discount Offered"} value={data.discountOffered} onChange={set("discountOffered")} />
+                    <TextField label={resolveGuestType() === "Both" ? "Guest Discount Code" : "Discount Code"} value={data.discountCode} onChange={set("discountCode")} />
+                  </>
+                )}
+                {(resolveGuestType() === "Local" || resolveGuestType() === "Both") && (
+                  <>
+                    <TextField label={resolveGuestType() === "Both" ? "Local Discount Offered" : "Discount Offered"} value={data.localDiscountOffered} onChange={set("localDiscountOffered")} />
+                    <TextField label={resolveGuestType() === "Both" ? "Local Discount Code" : "Discount Code"} value={data.localDiscountCode} onChange={set("localDiscountCode")} />
+                  </>
+                )}
                 <SocialLinksField value={data.socialLinks || {}} onChange={set("socialLinks")} />
                 <CheckboxGroup label="Payment Options" options={PAYMENT_OPTIONS} selected={data.paymentOptions || []} onChange={set("paymentOptions")} />
                 {(isService || isAttraction) && (

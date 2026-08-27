@@ -66,6 +66,9 @@ type CreateRequest struct {
 	DiscountOffered string `json:"discountOffered,omitempty"`
 	DiscountCode    string `json:"discountCode,omitempty"`
 
+	LocalDiscountOffered string `json:"localDiscountOffered,omitempty"`
+	LocalDiscountCode    string `json:"localDiscountCode,omitempty"`
+
 	BookingsEmail         string `json:"bookingsEmail,omitempty"`
 	BookingsContactNumber string `json:"bookingsContactNumber,omitempty"`
 
@@ -134,6 +137,9 @@ type UpdateRequest struct {
 
 	DiscountOffered *string `json:"discountOffered,omitempty"`
 	DiscountCode    *string `json:"discountCode,omitempty"`
+
+	LocalDiscountOffered *string `json:"localDiscountOffered,omitempty"`
+	LocalDiscountCode    *string `json:"localDiscountCode,omitempty"`
 
 	BookingsEmail         *string `json:"bookingsEmail,omitempty"`
 	BookingsContactNumber *string `json:"bookingsContactNumber,omitempty"`

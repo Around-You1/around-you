@@ -48,6 +48,8 @@ export interface Restaurant {
 
   discountOffered?: string;
   discountCode?: string;
+  localDiscountOffered?: string;
+  localDiscountCode?: string;
 
   bookingsEmail?: string;
   bookingsContactNumber?: string;

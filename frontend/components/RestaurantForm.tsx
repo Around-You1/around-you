@@ -107,6 +107,8 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
     menuPdfUrls: [] as string[],
     discountOffered: "",
     discountCode: "",
+    localDiscountOffered: "",
+    localDiscountCode: "",
     description: "",
     paymentCard: false,
     paymentCash: false,
@@ -189,6 +191,8 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
         menuPdfUrls: data.menuPdfUrls || [],
         discountOffered: data.discountOffered || "",
         discountCode: data.discountCode || "",
+        localDiscountOffered: data.localDiscountOffered || "",
+        localDiscountCode: data.localDiscountCode || "",
         description: data.description || "",
         paymentCard: data.paymentCard || false,
         paymentCash: data.paymentCash || false,
@@ -477,24 +481,51 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="discountOffered">Discount Offered</Label>
-              <Input
-                id="discountOffered"
-                value={formData.discountOffered}
-                onChange={(e) => setFormData({ ...formData, discountOffered: e.target.value })}
-                placeholder="e.g., 10% off"
-              />
-            </div>
+            {(officialUse.guestType === "Guest Only" || officialUse.guestType === "Both" || !officialUse.guestType) && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="discountOffered">{officialUse.guestType === "Both" ? "Guest Discount Offered" : "Discount Offered"}</Label>
+                  <Input
+                    id="discountOffered"
+                    value={formData.discountOffered}
+                    onChange={(e) => setFormData({ ...formData, discountOffered: e.target.value })}
+                    placeholder="e.g., 10% off"
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="discountCode">Discount Code</Label>
-              <Input
-                id="discountCode"
-                value={formData.discountCode}
-                onChange={(e) => setFormData({ ...formData, discountCode: e.target.value })}
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="discountCode">{officialUse.guestType === "Both" ? "Guest Discount Code" : "Discount Code"}</Label>
+                  <Input
+                    id="discountCode"
+                    value={formData.discountCode}
+                    onChange={(e) => setFormData({ ...formData, discountCode: e.target.value })}
+                  />
+                </div>
+              </>
+            )}
+
+            {(officialUse.guestType === "Local" || officialUse.guestType === "Both") && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="localDiscountOffered">{officialUse.guestType === "Both" ? "Local Discount Offered" : "Discount Offered"}</Label>
+                  <Input
+                    id="localDiscountOffered"
+                    value={formData.localDiscountOffered}
+                    onChange={(e) => setFormData({ ...formData, localDiscountOffered: e.target.value })}
+                    placeholder="e.g., 15% off"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="localDiscountCode">{officialUse.guestType === "Both" ? "Local Discount Code" : "Discount Code"}</Label>
+                  <Input
+                    id="localDiscountCode"
+                    value={formData.localDiscountCode}
+                    onChange={(e) => setFormData({ ...formData, localDiscountCode: e.target.value })}
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           <div className="space-y-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>

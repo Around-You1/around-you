@@ -149,13 +149,17 @@ export default function GuestDashboard() {
     if (e.serviceDelivery) kw.push("delivery", "deliver");
     if (e.wheelchairAccess) kw.push("wheelchair", "accessible");
     if (e.parkingAvailability) kw.push("parking");
-    if (e.discountOffered && String(e.discountOffered).trim()) {
-      kw.push("discount", "special", "offer", String(e.discountOffered));
+    if (discOffered(e).trim()) {
+      kw.push("discount", "special", "offer", discOffered(e));
     }
     return kw;
   };
 
-  const hasDiscount = (e: any): boolean => !!(e.discountOffered && String(e.discountOffered).trim());
+  // Guests see discountOffered/discountCode; Locals see the local_* variants.
+  const discOffered = (e: any): string => String((isLocalMode ? e.localDiscountOffered : e.discountOffered) || "");
+  const discCode = (e: any): string => String((isLocalMode ? e.localDiscountCode : e.discountCode) || "");
+
+  const hasDiscount = (e: any): boolean => !!discOffered(e).trim();
 
   // Rating gate for the "3★ & above" filter. Unrated partners (no votes yet)
   // are kept — per the chosen behaviour they show BELOW rated ones rather than
@@ -832,12 +836,12 @@ export default function GuestDashboard() {
                                 Click here to book at this establishment.
                               </Button>
                             )}
-                            {restaurant.discountOffered && (
+                            {discOffered(restaurant) && (
                               <Button
                                 size="sm"
                                 variant="outline"
                                 className="w-full sm:w-auto border-[#AEECE4] text-[#AEECE4]"
-                                onClick={() => setRedeemFor({ entityType: "restaurant", entityId: Number(restaurant.id), entityName: restaurant.name, discount: restaurant.discountOffered })}
+                                onClick={() => setRedeemFor({ entityType: "restaurant", entityId: Number(restaurant.id), entityName: restaurant.name, discount: discOffered(restaurant) })}
                               >
                                 Redeem discount
                               </Button>
@@ -1111,19 +1115,19 @@ export default function GuestDashboard() {
                                 Discount and Discount Code
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm`}>
-                                {restaurant.discountOffered || restaurant.discountCode ? (
+                                {discOffered(restaurant) || discCode(restaurant) ? (
                                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-purple-50 border border-purple-200 rounded-lg">
-                                    {restaurant.discountOffered && (
+                                    {discOffered(restaurant) && (
                                       <div className="flex items-center gap-1.5 text-purple-600">
                                         <Tag className="h-4 w-4" />
-                                        <span className="font-semibold text-sm whitespace-nowrap">{restaurant.discountOffered}</span>
+                                        <span className="font-semibold text-sm whitespace-nowrap">{discOffered(restaurant)}</span>
                                       </div>
                                     )}
-                                    {restaurant.discountCode && (
+                                    {discCode(restaurant) && (
                                       <div className="flex items-center gap-1">
                                         <span className="text-xs text-muted-foreground">Code:</span>
                                         <span className="px-2 py-0.5 bg-[#AEECE4] text-black rounded font-mono text-xs font-bold">
-                                          {restaurant.discountCode}
+                                          {discCode(restaurant)}
                                         </span>
                                       </div>
                                     )}
@@ -1254,12 +1258,12 @@ export default function GuestDashboard() {
                                 Click here to book at this establishment.
                               </Button>
                             )}
-                            {service.discountOffered && (
+                            {discOffered(service) && (
                               <Button
                                 size="sm"
                                 variant="outline"
                                 className="w-full sm:w-auto border-[#AEECE4] text-[#AEECE4]"
-                                onClick={() => setRedeemFor({ entityType: "service", entityId: Number(service.id), entityName: service.name, discount: service.discountOffered })}
+                                onClick={() => setRedeemFor({ entityType: "service", entityId: Number(service.id), entityName: service.name, discount: discOffered(service) })}
                               >
                                 Redeem discount
                               </Button>
@@ -1375,19 +1379,19 @@ export default function GuestDashboard() {
                                 Discount and Discount Code
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm`}>
-                                {service.discountOffered || service.discountCode ? (
+                                {discOffered(service) || discCode(service) ? (
                                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-purple-50 border border-purple-200 rounded-lg">
-                                    {service.discountOffered && (
+                                    {discOffered(service) && (
                                       <div className="flex items-center gap-1.5 text-purple-600">
                                         <Tag className="h-4 w-4" />
-                                        <span className="font-semibold text-sm whitespace-nowrap">{service.discountOffered}</span>
+                                        <span className="font-semibold text-sm whitespace-nowrap">{discOffered(service)}</span>
                                       </div>
                                     )}
-                                    {service.discountCode && (
+                                    {discCode(service) && (
                                       <div className="flex items-center gap-1">
                                         <span className="text-xs text-muted-foreground">Code:</span>
                                         <span className="px-2 py-0.5 bg-[#AEECE4] text-black rounded font-mono text-xs font-bold">
-                                          {service.discountCode}
+                                          {discCode(service)}
                                         </span>
                                       </div>
                                     )}
@@ -1462,12 +1466,12 @@ export default function GuestDashboard() {
                                 Click here to book at this establishment.
                               </Button>
                             )}
-                            {attraction.discountOffered && (
+                            {discOffered(attraction) && (
                               <Button
                                 size="sm"
                                 variant="outline"
                                 className="w-full sm:w-auto border-[#AEECE4] text-[#AEECE4]"
-                                onClick={() => setRedeemFor({ entityType: "attraction", entityId: Number(attraction.id), entityName: attraction.name, discount: attraction.discountOffered })}
+                                onClick={() => setRedeemFor({ entityType: "attraction", entityId: Number(attraction.id), entityName: attraction.name, discount: discOffered(attraction) })}
                               >
                                 Redeem discount
                               </Button>
@@ -1583,19 +1587,19 @@ export default function GuestDashboard() {
                                 Discount and Discount Code
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm`}>
-                                {attraction.discountOffered || attraction.discountCode ? (
+                                {discOffered(attraction) || discCode(attraction) ? (
                                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-purple-50 border border-purple-200 rounded-lg">
-                                    {attraction.discountOffered && (
+                                    {discOffered(attraction) && (
                                       <div className="flex items-center gap-1.5 text-purple-600">
                                         <Tag className="h-4 w-4" />
-                                        <span className="font-semibold text-sm whitespace-nowrap">{attraction.discountOffered}</span>
+                                        <span className="font-semibold text-sm whitespace-nowrap">{discOffered(attraction)}</span>
                                       </div>
                                     )}
-                                    {attraction.discountCode && (
+                                    {discCode(attraction) && (
                                       <div className="flex items-center gap-1">
                                         <span className="text-xs text-muted-foreground">Code:</span>
                                         <span className="px-2 py-0.5 bg-[#AEECE4] text-black rounded font-mono text-xs font-bold">
-                                          {attraction.discountCode}
+                                          {discCode(attraction)}
                                         </span>
                                       </div>
                                     )}

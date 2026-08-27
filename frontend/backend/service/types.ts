@@ -33,6 +33,8 @@ export interface ServiceData {
   parkingAvailability: boolean;
   discountOffered?: string;
   discountCode?: string;
+  localDiscountOffered?: string;
+  localDiscountCode?: string;
   imageUrl?: string;
   imageUrls?: string[];
   isActive: boolean;

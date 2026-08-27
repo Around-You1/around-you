@@ -128,6 +128,8 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Restaurant, error) 
 		WifiPassword:        req.WifiPassword,
 		DiscountOffered:     req.DiscountOffered,
 		DiscountCode:        req.DiscountCode,
+		LocalDiscountOffered: req.LocalDiscountOffered,
+		LocalDiscountCode:    req.LocalDiscountCode,
 		BookingsEmail:         req.BookingsEmail,
 		BookingsContactNumber: req.BookingsContactNumber,
 		Socials: appdb.Socials{
@@ -217,6 +219,8 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.Restaurant, error) 
 		WifiPassword:           req.WifiPassword,
 		DiscountOffered:        req.DiscountOffered,
 		DiscountCode:           req.DiscountCode,
+		LocalDiscountOffered:   req.LocalDiscountOffered,
+		LocalDiscountCode:      req.LocalDiscountCode,
 		BookingsEmail:          req.BookingsEmail,
 		BookingsContactNumber:  req.BookingsContactNumber,
 		SocialsWebsite:         req.SocialsWebsite,

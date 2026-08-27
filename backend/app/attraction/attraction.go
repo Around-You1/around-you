@@ -129,6 +129,8 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.AttractionData, err
 		ParkingAvailability: req.ParkingAvailability,
 		DiscountOffered:     req.DiscountOffered,
 		DiscountCode:        req.DiscountCode,
+		LocalDiscountOffered: req.LocalDiscountOffered,
+		LocalDiscountCode:    req.LocalDiscountCode,
 		ExperienceInfo: appdb.ExperienceInfo{
 			SafetyInfo:      req.SafetyInfo,
 			AgeRestrictions: req.AgeRestrictions,
@@ -221,6 +223,8 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.AttractionData, err
 		ParkingAvailability:    req.ParkingAvailability,
 		DiscountOffered:        req.DiscountOffered,
 		DiscountCode:           req.DiscountCode,
+		LocalDiscountOffered:   req.LocalDiscountOffered,
+		LocalDiscountCode:      req.LocalDiscountCode,
 		SafetyInfo:             req.SafetyInfo,
 		AgeRestrictions:        req.AgeRestrictions,
 		FitnessLevel:           req.FitnessLevel,

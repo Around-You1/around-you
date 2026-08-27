@@ -286,6 +286,11 @@ type Restaurant struct {
 	DiscountOffered string `json:"discountOffered,omitempty"`
 	DiscountCode    string `json:"discountCode,omitempty"`
 
+	// Separate discount shown to Locals (Guest sees Discount*, Local sees
+	// LocalDiscount*). Only surfaced when the partner is visible to Locals.
+	LocalDiscountOffered string `json:"localDiscountOffered,omitempty"`
+	LocalDiscountCode    string `json:"localDiscountCode,omitempty"`
+
 	BookingsEmail         string `json:"bookingsEmail,omitempty"`
 	BookingsContactNumber string `json:"bookingsContactNumber,omitempty"`
 
@@ -344,6 +349,10 @@ type ServiceData struct {
 	DiscountOffered string `json:"discountOffered,omitempty"`
 	DiscountCode    string `json:"discountCode,omitempty"`
 
+	// Separate discount shown to Locals (see Restaurant note).
+	LocalDiscountOffered string `json:"localDiscountOffered,omitempty"`
+	LocalDiscountCode    string `json:"localDiscountCode,omitempty"`
+
 	ExperienceInfo
 	Socials
 
@@ -392,6 +401,10 @@ type AttractionData struct {
 
 	DiscountOffered string `json:"discountOffered,omitempty"`
 	DiscountCode    string `json:"discountCode,omitempty"`
+
+	// Separate discount shown to Locals (see Restaurant note).
+	LocalDiscountOffered string `json:"localDiscountOffered,omitempty"`
+	LocalDiscountCode    string `json:"localDiscountCode,omitempty"`
 
 	ExperienceInfo
 	Socials

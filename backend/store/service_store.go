@@ -38,6 +38,8 @@ const serviceColumns = `
 	wheelchair_access, parking_availability,
 	COALESCE(discount_offered, '') as discount_offered,
 	COALESCE(discount_code, '') as discount_code,
+	COALESCE(local_discount_offered, '') as local_discount_offered,
+	COALESCE(local_discount_code, '') as local_discount_code,
 	COALESCE(safety_info, '') as safety_info,
 	COALESCE(age_restrictions, '') as age_restrictions,
 	COALESCE(fitness_level, '') as fitness_level,
@@ -82,6 +84,7 @@ func scanService(row serviceScanner) (*appdb.ServiceData, error) {
 		&s.PaymentCard, &s.PaymentCash, &s.PaymentMobile, &s.PaymentGaap, &s.PaymentSnapScan, &s.PaymentYoco, &s.PaymentZapper,
 		&s.WheelchairAccess, &s.ParkingAvailability,
 		&s.DiscountOffered, &s.DiscountCode,
+		&s.LocalDiscountOffered, &s.LocalDiscountCode,
 		&s.SafetyInfo, &s.AgeRestrictions, &s.FitnessLevel, &s.BestTimeOfDay, &s.WhatToBring,
 		&s.SocialsWebsite, &s.SocialsFacebook, &s.SocialsInstagram, &s.SocialsTiktok, &s.SocialsTwitter,
 		&s.ImageUrl, pq.Array(&s.ImageUrls), &s.IsActive,
@@ -178,10 +181,12 @@ func (s *ServiceStore) Create(ctx context.Context, in *appdb.ServiceData) (*appd
 			image_url, image_urls, is_active,
 			official_holding_company, official_contact_name, official_contact_number, official_email, official_rep_code,
 			official_rep_name, company_reg_number, company_vat_number,
-			guest_type, access_level, partner_code, partner_code_active, booking_items
+			guest_type, access_level, partner_code, partner_code_active, booking_items,
+			local_discount_offered, local_discount_code
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,
-			$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50
+			$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,
+			$51,$52
 		)
 		RETURNING `+serviceColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -197,6 +202,7 @@ func (s *ServiceStore) Create(ctx context.Context, in *appdb.ServiceData) (*appd
 		in.OfficialRepName, in.CompanyRegNumber, in.CompanyVatNumber,
 		in.GuestType, in.AccessLevel, in.PartnerCode.Code, in.PartnerCode.Active,
 		in.BookingItems,
+		in.LocalDiscountOffered, in.LocalDiscountCode,
 	)
 	return scanService(row)
 }
@@ -228,8 +234,10 @@ type ServicePatch struct {
 	WheelchairAccess    *bool
 	ParkingAvailability *bool
 
-	DiscountOffered *string
-	DiscountCode    *string
+	DiscountOffered      *string
+	DiscountCode         *string
+	LocalDiscountOffered *string
+	LocalDiscountCode    *string
 
 	SafetyInfo      *string
 	AgeRestrictions *string
@@ -336,6 +344,12 @@ func (s *ServiceStore) Update(ctx context.Context, id int64, patch ServicePatch)
 	}
 	if patch.DiscountCode != nil {
 		sets = append(sets, "discount_code = "+arg(*patch.DiscountCode))
+	}
+	if patch.LocalDiscountOffered != nil {
+		sets = append(sets, "local_discount_offered = "+arg(*patch.LocalDiscountOffered))
+	}
+	if patch.LocalDiscountCode != nil {
+		sets = append(sets, "local_discount_code = "+arg(*patch.LocalDiscountCode))
 	}
 	if patch.SafetyInfo != nil {
 		sets = append(sets, "safety_info = "+arg(*patch.SafetyInfo))

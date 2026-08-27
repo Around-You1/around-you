@@ -38,6 +38,8 @@ export interface AttractionData {
 
   discountOffered?: string;
   discountCode?: string;
+  localDiscountOffered?: string;
+  localDiscountCode?: string;
 
   imageUrl?: string;
   imageUrls?: string[];
