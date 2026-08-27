@@ -81,6 +81,38 @@ function RedeemScanner() {
 
   useEffect(() => () => stopCamera(), []);
 
+  // Attach the camera stream and start detection only once the <video> element
+  // is actually mounted (it renders conditionally on `scanning`). Attaching in
+  // startScan directly failed because videoRef was still null at that point,
+  // which left the stream unattached and the preview black.
+  useEffect(() => {
+    if (!scanning || !streamRef.current || !videoRef.current) return;
+    const video = videoRef.current;
+    video.srcObject = streamRef.current;
+    video.play().catch(() => {});
+    activeRef.current = true;
+
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const detector = "BarcodeDetector" in window ? new (window as any).BarcodeDetector({ formats: ["qr_code"] }) : null;
+    const scan = async () => {
+      if (!activeRef.current || !videoRef.current || !detector) return;
+      try {
+        const codes = await detector.detect(videoRef.current);
+        if (codes && codes.length > 0 && codes[0].rawValue) {
+          stopCamera();
+          doRedeem(String(codes[0].rawValue));
+          return;
+        }
+      } catch {
+        // transient detect error — keep trying
+      }
+      timer = setTimeout(scan, 400);
+    };
+    scan();
+    return () => { if (timer) clearTimeout(timer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scanning]);
+
   const doRedeem = async (raw: string) => {
     const code = raw.trim();
     if (!code || busy) return;
@@ -103,38 +135,22 @@ function RedeemScanner() {
 
   const startScan = async () => {
     setResult(null);
-    if (!("BarcodeDetector" in window)) {
-      toast({ title: "Scanning not supported on this device", description: "Type the guest's code below instead.", variant: "destructive" });
-      return;
-    }
+    const hasDetector = "BarcodeDetector" in window;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      activeRef.current = true;
+      // Mount the <video> — the effect above attaches the stream and (if the
+      // browser supports it) starts QR detection.
       setScanning(true);
-      const detector = new (window as any).BarcodeDetector({ formats: ["qr_code"] });
-      const scan = async () => {
-        if (!activeRef.current || !videoRef.current) return;
-        try {
-          const codes = await detector.detect(videoRef.current);
-          if (codes && codes.length > 0 && codes[0].rawValue) {
-            stopCamera();
-            doRedeem(String(codes[0].rawValue));
-            return;
-          }
-        } catch {
-          // transient detect error — keep trying
-        }
-        setTimeout(scan, 400);
-      };
-      scan();
+      if (!hasDetector) {
+        toast({
+          title: "Auto-scan not supported on this browser",
+          description: "You'll see the camera, but please type the guest's code below to redeem.",
+        });
+      }
     } catch {
       stopCamera();
-      toast({ title: "Couldn't open the camera", description: "Type the guest's code below instead.", variant: "destructive" });
+      toast({ title: "Couldn't open the camera", description: "Please allow camera access, or type the guest's code below instead.", variant: "destructive" });
     }
   };
 
@@ -149,7 +165,7 @@ function RedeemScanner() {
         </p>
         {scanning ? (
           <div className="space-y-2">
-            <video ref={videoRef} className="w-full rounded-lg bg-black" muted playsInline />
+            <video ref={videoRef} className="w-full rounded-lg bg-black aspect-square object-cover" autoPlay muted playsInline />
             <Button variant="outline" onClick={stopCamera} className="w-full">Stop camera</Button>
           </div>
         ) : (
