@@ -732,18 +732,19 @@ export default function GuestDashboard() {
             </div>
           )}
 
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder={
-                isLocalMode
-                  ? "Search by name, category or description…"
-                  : "Search by name, cuisine, category…"
-              }
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 text-ellipsis"
-            />
+          <div className="space-y-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                placeholder="Search…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground leading-snug whitespace-normal break-words">
+              Search restaurants, services and attractions by name, cuisine, category or description.
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">

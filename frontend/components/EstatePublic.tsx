@@ -154,10 +154,13 @@ export function EstateAgenciesBrowse() {
         <div className="flex gap-2">
           <div className="relative flex-1">
             <MapPin className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search properties by title, area, type…" className={`${epSelect} pl-8`} />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search properties…" className={`${epSelect} pl-8`} />
           </div>
           <Button variant="outline" size="sm" onClick={() => setShowFilters((s) => !s)}>{showFilters ? "Hide" : "Filters"}</Button>
         </div>
+        <p className="text-xs text-muted-foreground leading-snug whitespace-normal break-words">
+          Search properties by title, area, or type.
+        </p>
 
         {showFilters && (
           <div className="rounded-lg border border-border p-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
