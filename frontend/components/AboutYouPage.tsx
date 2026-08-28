@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppLogo from "../components/AppLogo";
+import { Facebook, Linkedin } from "lucide-react";
 
 const LUMO = "#39FF14";
 const LUMO_DARK = "#2dd10f";
@@ -296,6 +297,51 @@ export default function AboutYouPage() {
           >
             Log In
           </button>
+
+          <div className="flex items-center justify-center gap-4 pt-6">
+            <a
+              href="https://www.facebook.com/AroundYou365"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Around You on Facebook"
+              className="touch-manipulation"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 44,
+                height: 44,
+                borderRadius: 999,
+                color: LUMO,
+                border: "1px solid rgba(57,255,20,0.35)",
+                background: "rgba(57,255,20,0.06)",
+                transition: "all 0.2s",
+              }}
+            >
+              <Facebook size={22} />
+            </a>
+            <a
+              href="https://www.linkedin.com/company/around-you-247/"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Around You on LinkedIn"
+              className="touch-manipulation"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 44,
+                height: 44,
+                borderRadius: 999,
+                color: LUMO,
+                border: "1px solid rgba(57,255,20,0.35)",
+                background: "rgba(57,255,20,0.06)",
+                transition: "all 0.2s",
+              }}
+            >
+              <Linkedin size={22} />
+            </a>
+          </div>
         </div>
 
 
