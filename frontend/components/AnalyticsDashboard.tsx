@@ -111,10 +111,10 @@ function Section({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-5 py-2.5 text-left"
+        className="w-full flex items-center justify-between px-4 py-1.5 text-left"
       >
-        <span className="text-base font-semibold">{title}</span>
-        <ChevronDown className={`w-5 h-5 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        <span className="text-sm font-semibold">{title}</span>
+        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
       {isOpen && <CardContent className="pt-0">{children}</CardContent>}
     </Card>
@@ -181,7 +181,7 @@ export default function AnalyticsDashboard() {
   return (
     <div className="min-h-screen bg-background p-6">
       <PrintContext.Provider value={printMode}>
-      <div className="max-w-7xl mx-auto space-y-3">
+      <div className="max-w-7xl mx-auto space-y-2">
         <div className="flex items-center justify-between gap-2 print:hidden">
           <Button variant="outline" size="sm" onClick={() => router.push("/admin-dashboard")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
