@@ -502,55 +502,59 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           />
 
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
-            <div className="space-y-2 rounded-lg border p-4">
-              <div>
-                <h4 className="font-semibold text-sm">Discount – Guest</h4>
-                <p className="text-xs text-muted-foreground">Shown on the Guest page only.</p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="discountOffered">Discount Offered</Label>
-                  <Input
-                    id="discountOffered"
-                    value={formData.discountOffered}
-                    onChange={(e) => setFormData({ ...formData, discountOffered: e.target.value })}
-                  />
+            {(officialUse.guestType === "Guest Only" || officialUse.guestType === "Both" || !officialUse.guestType) && (
+              <div className="space-y-2 rounded-lg border p-4">
+                <div>
+                  <h4 className="font-semibold text-sm">Discount – Guest</h4>
+                  <p className="text-xs text-muted-foreground">Shown on the Guest page only.</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="discountCode">Discount Code</Label>
-                  <Input
-                    id="discountCode"
-                    value={formData.discountCode}
-                    onChange={(e) => setFormData({ ...formData, discountCode: e.target.value })}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="discountOffered">Discount Offered</Label>
+                    <Input
+                      id="discountOffered"
+                      value={formData.discountOffered}
+                      onChange={(e) => setFormData({ ...formData, discountOffered: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="discountCode">Discount Code</Label>
+                    <Input
+                      id="discountCode"
+                      value={formData.discountCode}
+                      onChange={(e) => setFormData({ ...formData, discountCode: e.target.value })}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            <div className="space-y-2 rounded-lg border p-4">
-              <div>
-                <h4 className="font-semibold text-sm">Discount – Local</h4>
-                <p className="text-xs text-muted-foreground">Shown on the Local page only.</p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="localDiscountOffered">Discount Offered</Label>
-                  <Input
-                    id="localDiscountOffered"
-                    value={formData.localDiscountOffered}
-                    onChange={(e) => setFormData({ ...formData, localDiscountOffered: e.target.value })}
-                  />
+            {(officialUse.guestType === "Local" || officialUse.guestType === "Both") && (
+              <div className="space-y-2 rounded-lg border p-4">
+                <div>
+                  <h4 className="font-semibold text-sm">Discount – Local</h4>
+                  <p className="text-xs text-muted-foreground">Shown on the Local page only.</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="localDiscountCode">Discount Code</Label>
-                  <Input
-                    id="localDiscountCode"
-                    value={formData.localDiscountCode}
-                    onChange={(e) => setFormData({ ...formData, localDiscountCode: e.target.value })}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="localDiscountOffered">Discount Offered</Label>
+                    <Input
+                      id="localDiscountOffered"
+                      value={formData.localDiscountOffered}
+                      onChange={(e) => setFormData({ ...formData, localDiscountOffered: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="localDiscountCode">Discount Code</Label>
+                    <Input
+                      id="localDiscountCode"
+                      value={formData.localDiscountCode}
+                      onChange={(e) => setFormData({ ...formData, localDiscountCode: e.target.value })}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="space-y-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>

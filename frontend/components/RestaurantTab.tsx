@@ -8,7 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import RestaurantList from "./RestaurantList";
 import RestaurantForm from "./RestaurantForm";
 import BulkImportDialog from "./BulkImportDialog";
-import SortControls, { SortField, SortOrder } from "./SortControls";
+import SortControls, { SortState, DEFAULT_SORT_STATE, applySortState } from "./SortControls";
 
 interface RestaurantTabProps {
   onUpdate: () => void;
@@ -21,33 +21,29 @@ export default function RestaurantTab({ onUpdate }: RestaurantTabProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingRestaurantId, setEditingRestaurantId] = useState<number | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
-  const [sortBy, setSortBy] = useState<SortField>("created_at");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [sortState, setSortState] = useState<SortState>(DEFAULT_SORT_STATE);
 
   const { toast } = useToast();
 
   useEffect(() => {
     loadRestaurants();
-  }, [sortBy, sortOrder]);
+  }, []);
 
   useEffect(() => {
-    if (searchQuery.trim()) {
-      const filtered = restaurants.filter((r) =>
-        r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.postalCode.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredRestaurants(filtered);
-    } else {
-      setFilteredRestaurants(restaurants);
-    }
-  }, [searchQuery, restaurants]);
+    const searched = searchQuery.trim()
+      ? restaurants.filter((r) =>
+          r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          r.postalCode.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : restaurants;
+    setFilteredRestaurants(applySortState(searched, sortState));
+  }, [searchQuery, restaurants, sortState]);
 
   const loadRestaurants = async () => {
     try {
       const backend = getAuthenticatedBackend();
-      const data = await backend.restaurant.list({ sortBy, sortOrder });
+      const data = await backend.restaurant.list({});
       setRestaurants(data.restaurants);
-      setFilteredRestaurants(data.restaurants);
     } catch (error) {
       console.error("Failed to load restaurants:", error);
       toast({
@@ -169,14 +165,7 @@ export default function RestaurantTab({ onUpdate }: RestaurantTabProps) {
               Download Template
             </Button>
           </div>
-          <SortControls
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            onSortChange={(newSortBy, newSortOrder) => {
-              setSortBy(newSortBy);
-              setSortOrder(newSortOrder);
-            }}
-          />
+          <SortControls state={sortState} onChange={setSortState} />
         </div>
       </div>
 

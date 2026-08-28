@@ -7,7 +7,7 @@ import AttractionForm from "./AttractionForm";
 import BulkImportDialog from "./BulkImportDialog";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
-import SortControls, { SortField, SortOrder } from "./SortControls";
+import SortControls, { SortState, DEFAULT_SORT_STATE } from "./SortControls";
 
 interface AttractionTabProps {
   onUpdate?: () => void;
@@ -19,8 +19,7 @@ export default function AttractionTab({ onUpdate }: AttractionTabProps) {
   const [editingAttractionId, setEditingAttractionId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<SortField>("created_at");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [sortState, setSortState] = useState<SortState>(DEFAULT_SORT_STATE);
   const { toast } = useToast();
 
   const handleAdd = () => {
@@ -147,14 +146,7 @@ export default function AttractionTab({ onUpdate }: AttractionTabProps) {
               Download Template
             </Button>
           </div>
-          <SortControls
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            onSortChange={(newSortBy, newSortOrder) => {
-              setSortBy(newSortBy);
-              setSortOrder(newSortOrder);
-            }}
-          />
+          <SortControls state={sortState} onChange={setSortState} />
         </div>
       </div>
 
@@ -164,7 +156,7 @@ export default function AttractionTab({ onUpdate }: AttractionTabProps) {
           onClose={handleFormClose}
         />
       ) : (
-        <AttractionList key={refreshKey} onEdit={handleEdit} onUpdate={onUpdate} searchQuery={searchQuery} sortBy={sortBy} sortOrder={sortOrder} />
+        <AttractionList key={refreshKey} onEdit={handleEdit} onUpdate={onUpdate} searchQuery={searchQuery} sortState={sortState} />
       )}
 
       {showImport && (

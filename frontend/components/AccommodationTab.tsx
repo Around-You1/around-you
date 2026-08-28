@@ -8,7 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import AccommodationList from "./AccommodationList";
 import AccommodationForm from "./AccommodationForm";
 import BulkImportDialog from "./BulkImportDialog";
-import SortControls, { SortField, SortOrder } from "./SortControls";
+import SortControls, { SortState, DEFAULT_SORT_STATE, applySortState } from "./SortControls";
 
 interface AccommodationTabProps {
   onUpdate: () => void;
@@ -21,32 +21,28 @@ export default function AccommodationTab({ onUpdate }: AccommodationTabProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingAccommodation, setEditingAccommodation] = useState<Accommodation | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
-  const [sortBy, setSortBy] = useState<SortField>("created_at");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [sortState, setSortState] = useState<SortState>(DEFAULT_SORT_STATE);
   const { toast } = useToast();
 
   useEffect(() => {
     loadAccommodations();
-  }, [sortBy, sortOrder]);
+  }, []);
 
   useEffect(() => {
-    if (searchQuery.trim()) {
-      const filtered = accommodations.filter((a) =>
-        a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.postalCode.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredAccommodations(filtered);
-    } else {
-      setFilteredAccommodations(accommodations);
-    }
-  }, [searchQuery, accommodations]);
+    const searched = searchQuery.trim()
+      ? accommodations.filter((a) =>
+          a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          a.postalCode.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : accommodations;
+    setFilteredAccommodations(applySortState(searched, sortState));
+  }, [searchQuery, accommodations, sortState]);
 
   const loadAccommodations = async () => {
     try {
       const backend = getAuthenticatedBackend();
-      const data = await backend.accommodation.list({ sortBy, sortOrder });
+      const data = await backend.accommodation.list({});
       setAccommodations(data.accommodations);
-      setFilteredAccommodations(data.accommodations);
     } catch (error) {
       console.error("Failed to load accommodations:", error);
       toast({
@@ -168,14 +164,7 @@ export default function AccommodationTab({ onUpdate }: AccommodationTabProps) {
               Download Template
             </Button>
           </div>
-          <SortControls
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            onSortChange={(newSortBy, newSortOrder) => {
-              setSortBy(newSortBy);
-              setSortOrder(newSortOrder);
-            }}
-          />
+          <SortControls state={sortState} onChange={setSortState} />
         </div>
       </div>
 

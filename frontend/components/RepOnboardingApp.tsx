@@ -1160,14 +1160,16 @@ export default function RepOnboardingApp() {
                 )}
                 {(resolveGuestType() === "Guest Only" || resolveGuestType() === "Both") && (
                   <>
-                    <TextField label={resolveGuestType() === "Both" ? "Guest Discount Offered" : "Discount Offered"} value={data.discountOffered} onChange={set("discountOffered")} />
-                    <TextField label={resolveGuestType() === "Both" ? "Guest Discount Code" : "Discount Code"} value={data.discountCode} onChange={set("discountCode")} />
+                    <SectionTitle>Discount – Guest</SectionTitle>
+                    <TextField label="Discount Offered" value={data.discountOffered} onChange={set("discountOffered")} />
+                    <TextField label="Discount Code" value={data.discountCode} onChange={set("discountCode")} />
                   </>
                 )}
                 {(resolveGuestType() === "Local" || resolveGuestType() === "Both") && (
                   <>
-                    <TextField label={resolveGuestType() === "Both" ? "Local Discount Offered" : "Discount Offered"} value={data.localDiscountOffered} onChange={set("localDiscountOffered")} />
-                    <TextField label={resolveGuestType() === "Both" ? "Local Discount Code" : "Discount Code"} value={data.localDiscountCode} onChange={set("localDiscountCode")} />
+                    <SectionTitle>Discount – Local</SectionTitle>
+                    <TextField label="Discount Offered" value={data.localDiscountOffered} onChange={set("localDiscountOffered")} />
+                    <TextField label="Discount Code" value={data.localDiscountCode} onChange={set("localDiscountCode")} />
                   </>
                 )}
                 <SocialLinksField value={data.socialLinks || {}} onChange={set("socialLinks")} />

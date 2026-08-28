@@ -11,13 +11,13 @@ import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 import { getCurrentPosition, buildDirectionsUrl } from "../lib/geolocation";
 import type { AttractionData } from "~backend/attraction/types";
+import { SortState, DEFAULT_SORT_STATE, applySortState } from "./SortControls";
 
 interface AttractionListProps {
   onEdit: (attractionId: string) => void;
   onUpdate?: () => void;
   searchQuery?: string;
-  sortBy?: string;
-  sortOrder?: string;
+  sortState?: SortState;
 }
 
 const FALLBACK = "The company has opted not to make this information visible.";
@@ -57,7 +57,7 @@ function FieldRow({ label, value }: { label: string; value: string | number | bo
   );
 }
 
-export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sortBy = "created_at", sortOrder = "desc" }: AttractionListProps) {
+export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sortState = DEFAULT_SORT_STATE }: AttractionListProps) {
   const [attractions, setAttractions] = useState<AttractionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [gettingDirections, setGettingDirections] = useState<string | null>(null);
@@ -129,7 +129,7 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attractions.map((a) => a.id).join(",")]);
 
-  const filteredAttractions = attractions.filter((attraction) => {
+  const searchedAttractions = attractions.filter((attraction) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -140,15 +140,16 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
         attraction.attractionType.some((type) => type.toLowerCase().includes(query)))
     );
   });
+  const filteredAttractions = applySortState(searchedAttractions, sortState);
 
   useEffect(() => {
     loadAttractions();
-  }, [sortBy, sortOrder]);
+  }, []);
 
   const loadAttractions = async () => {
     try {
       const backend = getAuthenticatedBackend();
-      const data = await backend.attraction.list({ sortBy: sortBy as any, sortOrder: sortOrder as any });
+      const data = await backend.attraction.list({});
       setAttractions(data.attractions);
     } catch (error) {
       console.error("Failed to load attractions:", error);

@@ -11,13 +11,13 @@ import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 import { getCurrentPosition, buildDirectionsUrl } from "../lib/geolocation";
 import type { ServiceData } from "~backend/service/types";
+import { SortState, DEFAULT_SORT_STATE, applySortState } from "./SortControls";
 
 interface ServiceListProps {
   onEdit: (serviceId: string) => void;
   onUpdate?: () => void;
   searchQuery?: string;
-  sortBy?: string;
-  sortOrder?: string;
+  sortState?: SortState;
 }
 
 const FALLBACK = "The company has opted not to make this information visible.";
@@ -57,7 +57,7 @@ function FieldRow({ label, value }: { label: string; value: string | number | bo
   );
 }
 
-export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortBy = "created_at", sortOrder = "desc" }: ServiceListProps) {
+export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortState = DEFAULT_SORT_STATE }: ServiceListProps) {
   const [services, setServices] = useState<ServiceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [gettingDirections, setGettingDirections] = useState<string | null>(null);
@@ -129,7 +129,7 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortBy
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [services.map((s) => s.id).join(",")]);
 
-  const filteredServices = services.filter((service) => {
+  const searchedServices = services.filter((service) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -139,15 +139,16 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortBy
       service.serviceCategories.some((cat) => cat.toLowerCase().includes(query))
     );
   });
+  const filteredServices = applySortState(searchedServices, sortState);
 
   useEffect(() => {
     loadServices();
-  }, [sortBy, sortOrder]);
+  }, []);
 
   const loadServices = async () => {
     try {
       const backend = getAuthenticatedBackend();
-      const data = await backend.service.list({ sortBy: sortBy as any, sortOrder: sortOrder as any });
+      const data = await backend.service.list({});
       setServices(data.services);
     } catch (error) {
       console.error("Failed to load services:", error);
