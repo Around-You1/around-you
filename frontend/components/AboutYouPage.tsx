@@ -321,7 +321,7 @@ export default function AboutYouPage() {
               <Facebook size={22} />
             </a>
             <a
-              href="https://www.linkedin.com/company/around-you-247/"
+              href="https://www.linkedin.com/company/around-you-247/?viewAsMember=true"
               target="_blank"
               rel="noreferrer"
               aria-label="Around You on LinkedIn"
