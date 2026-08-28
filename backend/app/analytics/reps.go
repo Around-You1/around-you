@@ -72,7 +72,7 @@ func RepsAnalytics(ctx context.Context) (*RepsAnalyticsResponse, error) {
 			repRows.Close()
 			return nil, err
 		}
-		if m.RepCode != "" {
+		if m.RepCode != "" && !appdb.IsTestRep(m.RepCode) {
 			byRep[m.RepCode] = m
 		}
 	}

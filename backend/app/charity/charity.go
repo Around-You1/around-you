@@ -190,10 +190,12 @@ func Tally(ctx context.Context, req *TallyRequest) (*TallyResponse, error) {
 	for _, c := range Categories {
 		var thisMonth, allTime int
 		_ = appdb.SQLDB.QueryRowContext(ctx,
-			`SELECT COUNT(*) FROM partner_charity WHERE category=$1 AND created_at >= $2 AND created_at < $3`,
+			`SELECT COUNT(*) FROM partner_charity WHERE category=$1 AND created_at >= $2 AND created_at < $3
+			   AND (partner_type, partner_id) NOT IN `+appdb.TestRepEntitiesSubquery(),
 			c, monthStart, monthEnd).Scan(&thisMonth)
 		_ = appdb.SQLDB.QueryRowContext(ctx,
-			`SELECT COUNT(*) FROM partner_charity WHERE category=$1`, c).Scan(&allTime)
+			`SELECT COUNT(*) FROM partner_charity WHERE category=$1
+			   AND (partner_type, partner_id) NOT IN `+appdb.TestRepEntitiesSubquery(), c).Scan(&allTime)
 		rows = append(rows, TallyRow{Category: c, ThisMonth: thisMonth, AllTime: allTime})
 	}
 
@@ -210,13 +212,15 @@ func Tally(ctx context.Context, req *TallyRequest) (*TallyResponse, error) {
 				 JOIN partner_charity sc
 				   ON sc.partner_type = gc.partner_type AND sc.partner_id = gc.partner_id
 				 WHERE gc.category = $1 AND sc.category = $2
-				   AND sc.created_at >= $3 AND sc.created_at < $4`,
+				   AND sc.created_at >= $3 AND sc.created_at < $4
+				   AND (gc.partner_type, gc.partner_id) NOT IN `+appdb.TestRepEntitiesSubquery(),
 				g, s, monthStart, monthEnd).Scan(&thisMonth)
 			_ = appdb.SQLDB.QueryRowContext(ctx,
 				`SELECT COUNT(*) FROM partner_charity gc
 				 JOIN partner_charity sc
 				   ON sc.partner_type = gc.partner_type AND sc.partner_id = gc.partner_id
-				 WHERE gc.category = $1 AND sc.category = $2`,
+				 WHERE gc.category = $1 AND sc.category = $2
+				   AND (gc.partner_type, gc.partner_id) NOT IN `+appdb.TestRepEntitiesSubquery(),
 				g, s).Scan(&allTime)
 			combos = append(combos, ComboCount{Group: g, Sub: s, ThisMonth: thisMonth, AllTime: allTime})
 		}

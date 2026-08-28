@@ -55,7 +55,8 @@ func BusinessMetrics(ctx context.Context) (*BusinessMetricsResponse, error) {
 	// 1) Active subscriptions → MRR, active count, tier mix.
 	subRows, err := appdb.SQLDB.QueryContext(ctx, `
 		SELECT plan, COALESCE(tier, 0), monthly_cents
-		FROM partner_subscription WHERE status = 'Active'`)
+		FROM partner_subscription WHERE status = 'Active'
+		  AND `+appdb.NotTestRepSQL("lower(coalesce(rep_code,''))"))
 	if err != nil {
 		return nil, err
 	}
@@ -85,13 +86,15 @@ func BusinessMetrics(ctx context.Context) (*BusinessMetricsResponse, error) {
 	// 2) New & churned this month.
 	if err := appdb.SQLDB.QueryRowContext(ctx, `
 		SELECT COUNT(*) FROM partner_subscription
-		WHERE date_trunc('month', started_at) = date_trunc('month', now())`).Scan(&resp.NewThisMonth); err != nil {
+		WHERE date_trunc('month', started_at) = date_trunc('month', now())
+		  AND `+appdb.NotTestRepSQL("lower(coalesce(rep_code,''))")).Scan(&resp.NewThisMonth); err != nil {
 		return nil, err
 	}
 	if err := appdb.SQLDB.QueryRowContext(ctx, `
 		SELECT COUNT(*) FROM partner_subscription
 		WHERE cancelled_at IS NOT NULL
-		  AND date_trunc('month', cancelled_at) = date_trunc('month', now())`).Scan(&resp.ChurnedThisMonth); err != nil {
+		  AND date_trunc('month', cancelled_at) = date_trunc('month', now())
+		  AND `+appdb.NotTestRepSQL("lower(coalesce(rep_code,''))")).Scan(&resp.ChurnedThisMonth); err != nil {
 		return nil, err
 	}
 	if resp.ActivePartners > 0 {
@@ -104,11 +107,13 @@ func BusinessMetrics(ctx context.Context) (*BusinessMetricsResponse, error) {
 
 	// 3) Rep network.
 	if err := appdb.SQLDB.QueryRowContext(ctx,
-		`SELECT COUNT(*) FROM users WHERE role = 'Rep' AND COALESCE(rep_status,'Active') = 'Active'`).Scan(&resp.ActiveReps); err != nil {
+		`SELECT COUNT(*) FROM users WHERE role = 'Rep' AND COALESCE(rep_status,'Active') = 'Active'
+		  AND `+appdb.NotTestRepSQL("lower(coalesce(rep_code,''))")).Scan(&resp.ActiveReps); err != nil {
 		return nil, err
 	}
 	if err := appdb.SQLDB.QueryRowContext(ctx,
-		`SELECT COUNT(*) FROM users WHERE role = 'Rep' AND is_team_leader = true`).Scan(&resp.TeamLeaders); err != nil {
+		`SELECT COUNT(*) FROM users WHERE role = 'Rep' AND is_team_leader = true
+		  AND `+appdb.NotTestRepSQL("lower(coalesce(rep_code,''))")).Scan(&resp.TeamLeaders); err != nil {
 		return nil, err
 	}
 
@@ -117,7 +122,8 @@ func BusinessMetrics(ctx context.Context) (*BusinessMetricsResponse, error) {
 		SELECT COALESCE(ROUND(SUM(total) * 100), 0)::bigint,
 		       COALESCE(ROUND(SUM(commission) * 100), 0)::bigint
 		FROM bookings WHERE status <> 'cancelled'
-		  AND date_trunc('month', created_at) = date_trunc('month', now())`).Scan(
+		  AND date_trunc('month', created_at) = date_trunc('month', now())
+		  AND (entity_type, entity_id) NOT IN `+appdb.TestRepEntitiesSubquery()).Scan(
 		&resp.BookingGmvCentsMonth, &resp.BookingRevenueCentsMonth); err != nil {
 		return nil, err
 	}
@@ -129,15 +135,18 @@ func BusinessMetrics(ctx context.Context) (*BusinessMetricsResponse, error) {
 	invCountByMonth := map[string]int{}
 
 	if err := scanMonthCount(ctx,
-		`SELECT to_char(started_at, 'YYYY-MM'), COUNT(*) FROM partner_subscription GROUP BY 1`, newByMonth); err != nil {
+		`SELECT to_char(started_at, 'YYYY-MM'), COUNT(*) FROM partner_subscription
+		 WHERE `+appdb.NotTestRepSQL("lower(coalesce(rep_code,''))")+` GROUP BY 1`, newByMonth); err != nil {
 		return nil, err
 	}
 	if err := scanMonthCount(ctx,
-		`SELECT to_char(cancelled_at, 'YYYY-MM'), COUNT(*) FROM partner_subscription WHERE cancelled_at IS NOT NULL GROUP BY 1`, churnByMonth); err != nil {
+		`SELECT to_char(cancelled_at, 'YYYY-MM'), COUNT(*) FROM partner_subscription
+		 WHERE cancelled_at IS NOT NULL AND `+appdb.NotTestRepSQL("lower(coalesce(rep_code,''))")+` GROUP BY 1`, churnByMonth); err != nil {
 		return nil, err
 	}
 	invRows, err := appdb.SQLDB.QueryContext(ctx,
-		`SELECT to_char(issued_at, 'YYYY-MM'), COALESCE(SUM(total_cents),0), COUNT(*) FROM invoice GROUP BY 1`)
+		`SELECT to_char(issued_at, 'YYYY-MM'), COALESCE(SUM(total_cents),0), COUNT(*) FROM invoice
+		 WHERE `+appdb.NotTestRepSQL("lower(coalesce(bill_rep_code,''))")+` GROUP BY 1`)
 	if err != nil {
 		return nil, err
 	}

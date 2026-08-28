@@ -43,6 +43,7 @@ func EventsSummary(ctx context.Context) (*EventsSummaryResponse, error) {
 		SELECT event_type, COUNT(*)
 		FROM events
 		WHERE date_trunc('month', created_at) = date_trunc('month', now())
+		  AND (entity_id IS NULL OR (entity_type, entity_id) NOT IN `+appdb.TestRepEntitiesSubquery()+`)
 		GROUP BY 1`)
 	if err != nil {
 		return nil, err
@@ -64,7 +65,8 @@ func EventsSummary(ctx context.Context) (*EventsSummaryResponse, error) {
 	// QR-scan 12-month trend (reuses the helper from business.go).
 	scanByMonth := map[string]int{}
 	if err := scanMonthCount(ctx,
-		`SELECT to_char(created_at, 'YYYY-MM'), COUNT(*) FROM events WHERE event_type = 'qr_scan' GROUP BY 1`,
+		`SELECT to_char(created_at, 'YYYY-MM'), COUNT(*) FROM events WHERE event_type = 'qr_scan'
+		   AND (entity_id IS NULL OR (entity_type, entity_id) NOT IN `+appdb.TestRepEntitiesSubquery()+`) GROUP BY 1`,
 		scanByMonth); err != nil {
 		return nil, err
 	}

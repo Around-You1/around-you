@@ -73,6 +73,9 @@ func RepActivityReport(ctx context.Context) (*RepActivityResponse, error) {
 		if err := rows.Scan(&repCode, &accessLevel, &createdDate); err != nil {
 			return nil, err
 		}
+		if appdb.IsTestRep(repCode) {
+			continue // internal/test rep — excluded from all analytics
+		}
 		a, ok := byRep[repCode]
 		if !ok {
 			a = &agg{byTier: map[string]int{}, dates: map[string]int{}}

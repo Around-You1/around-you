@@ -6,7 +6,6 @@ import (
 	htmlPkg "html"
 	"log"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -15,31 +14,16 @@ import (
 	"backend_encore/internal/mailer"
 )
 
-// isTestRep reports whether a rep code is flagged as a TEST rep, whose onboarded
-// partners must NOT generate any billing/commission records. Rep00000001 is a
-// test rep by default; more can be added via the TEST_REP_CODES env var
-// (comma-separated, case-insensitive), e.g. "Rep00000001,Rep00000007".
-func isTestRep(code string) bool {
-	code = strings.ToLower(strings.TrimSpace(code))
-	if code == "" {
-		return false
-	}
-	for _, t := range testRepCodes() {
-		if code == t {
-			return true
-		}
-	}
-	return false
-}
+// isTestRep delegates to appdb.IsTestRep — the single source of truth shared
+// with the analytics package, so the billing exclusion can never drift from the
+// analytics exclusion. Rep00000001 is a test rep by default; more via the
+// TEST_REP_CODES env var (comma-separated, case-insensitive).
+func isTestRep(code string) bool { return appdb.IsTestRep(code) }
 
-func testRepCodes() []string {
-	codes := []string{"rep00000001"} // default test rep
-	for _, c := range strings.Split(os.Getenv("TEST_REP_CODES"), ",") {
-		if c = strings.ToLower(strings.TrimSpace(c)); c != "" {
-			codes = append(codes, c)
-		}
-	}
-	return codes
+// isPromoMonth reports whether a billing period falls in the free introductory
+// promotional month (September 2026), when every invoice is issued at R0.
+func isPromoMonth(periodStart time.Time) bool {
+	return periodStart.Year() == 2026 && periodStart.Month() == time.September
 }
 
 // Invoice mirrors an invoice row for read APIs.
@@ -84,14 +68,20 @@ func partnerTable(partnerType string) string {
 // ensures the billing subscription exists and issues the first invoice. Both
 // steps are idempotent, so a re-save reconciles rather than duplicates.
 func OnPartnerOnboarded(ctx context.Context, partnerType string, partnerID int64, accessLevel, guestType, repCode string) error {
-	// Test reps (e.g. Rep00000001) create real profiles for testing, but must
-	// not generate any subscription/invoice/commission noise in the live books.
-	if isTestRep(repCode) {
-		log.Printf("billing: skipping subscription+invoice for test rep %q (%s %d)", repCode, partnerType, partnerID)
-		return nil
-	}
 	if err := EnsureSubscription(ctx, partnerType, partnerID, accessLevel, guestType, repCode); err != nil {
 		return err
+	}
+	// Test reps (e.g. Rep00000001) create real profiles that must still receive
+	// their one onboarding invoice + email, but must never be recurring-billed
+	// (no outstanding balance) and never counted in any metric. Nulling
+	// next_bill_date takes them out of the monthly billing run; commission
+	// accrual is skipped in GenerateInvoice; analytics queries filter them out.
+	if isTestRep(repCode) {
+		if _, err := appdb.SQLDB.ExecContext(ctx,
+			`UPDATE partner_subscription SET next_bill_date = NULL, updated_at = now()
+			 WHERE partner_type = $1 AND partner_id = $2`, partnerType, partnerID); err != nil {
+			log.Printf("billing: could not clear next_bill_date for test rep %q (%s %d): %v", repCode, partnerType, partnerID, err)
+		}
 	}
 	return IssueFirstInvoice(ctx, partnerType, partnerID)
 }
@@ -135,6 +125,12 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 	}
 	if exists {
 		return nil // already billed this period
+	}
+
+	// September 2026 is a free introductory promotional month — every invoice
+	// (all partners, base + any booking portion) is issued at R0.
+	if isPromoMonth(start) {
+		subtotalCents = 0
 	}
 
 	// Snapshot billing identity from the partner row (columns common to all
@@ -193,8 +189,11 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 	}
 
 	// Accrue rep commissions for this invoice (30% own + 10% upline override).
-	if err := accrueCommissions(ctx, invID, partnerType, partnerID, repCode, subtotalCents, start); err != nil {
-		log.Printf("commission accrual for invoice %s failed: %v", number, err)
+	// Test reps earn nothing — their partners are excluded from all metrics.
+	if !isTestRep(repCode) {
+		if err := accrueCommissions(ctx, invID, partnerType, partnerID, repCode, subtotalCents, start); err != nil {
+			log.Printf("commission accrual for invoice %s failed: %v", number, err)
+		}
 	}
 
 	// Best-effort email — never block on a mail hiccup.
