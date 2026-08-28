@@ -94,6 +94,12 @@ const rand = (cents: number) => `R${(cents / 100).toFixed(2)}`;
 
 // Collapsible section — click the header to expand/collapse, matching the
 // dropdown pattern used elsewhere in the app.
+// Pending is the inline placeholder shown inside a Section while the shared
+// fetch is still running (so every header can render immediately).
+function Pending({ loading, empty = "Nothing to show yet." }: { loading: boolean; empty?: string }) {
+  return <p className="text-sm text-muted-foreground py-1">{loading ? "Loading…" : empty}</p>;
+}
+
 function Section({
   title,
   defaultOpen = false,
@@ -195,8 +201,11 @@ export default function AnalyticsDashboard() {
 
         <h1 className="text-4xl font-bold text-foreground">Analytics Dashboard</h1>
 
-        {charityCombos.some((c) => c.allTime > 0) && (
-          <Section title="Charity Support">
+        <Section title="Charity Support">
+          {!charityCombos.some((c) => c.allTime > 0) ? (
+            <Pending loading={loading} empty="No charity selections yet." />
+          ) : (
+            <>
             <p className="text-xs text-muted-foreground mb-3">
               What partners chose to support in the Official Use section, broken down by focus area. "This month" counts new selections in {charityMonth || "the current month"}.
             </p>
@@ -221,11 +230,15 @@ export default function AnalyticsDashboard() {
                 </div>
               ))}
             </div>
-          </Section>
-        )}
+            </>
+          )}
+        </Section>
 
-        {bizStats && (
-          <Section title="Business Metrics">
+        <Section title="Business Metrics">
+          {!bizStats ? (
+            <Pending loading={loading} />
+          ) : (
+            <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
               {([
                 ["Monthly Recurring (MRR)", rand(bizStats.mrrCents)],
@@ -280,11 +293,15 @@ export default function AnalyticsDashboard() {
                 </tbody>
               </table>
             </div>
-          </Section>
-        )}
+            </>
+          )}
+        </Section>
 
-        {events && (
-          <Section title="Engagement — QR Scans & Activity">
+        <Section title="Engagement — QR Scans & Activity">
+          {!events ? (
+            <Pending loading={loading} />
+          ) : (
+            <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
               {Object.entries(events.byTypeThisMonth).length === 0 ? (
                 <p className="text-sm text-muted-foreground col-span-full">
@@ -331,11 +348,15 @@ export default function AnalyticsDashboard() {
                 </div>
               </div>
             )}
-          </Section>
-        )}
+            </>
+          )}
+        </Section>
 
-        {repStats && (
-          <Section title="Reps — Performance & Commissions">
+        <Section title="Reps — Performance & Commissions">
+          {!repStats ? (
+            <Pending loading={loading} />
+          ) : (
+            <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
               <div className="rounded-lg border border-border p-3">
                 <p className="text-xs text-muted-foreground">Active Reps</p>
@@ -399,8 +420,9 @@ export default function AnalyticsDashboard() {
                 </table>
               </div>
             )}
-          </Section>
-        )}
+            </>
+          )}
+        </Section>
 
         <Section title="Rep Onboarding Activity">
           <p className="text-sm text-muted-foreground mb-4">
