@@ -7,6 +7,8 @@ import EstateRepFlow from "./EstateRepFlow";
 import { saveCharity } from "../lib/charity";
 
 const CHARITY_OPTIONS = ["Adults", "Children", "Animals", "Health", "Homes", "Food"];
+const CHARITY_GROUPS = ["Adults", "Children", "Animals"];
+const CHARITY_SUBS = ["Health", "Homes", "Food"];
 const ATMOSPHERE_OPTIONS = ["Family-friendly", "Romantic", "Trendy / Modern", "Quiet", "Lively", "Outdoor Seating", "Sea View", "Mountain View", "Rooftop", "Garden"];
 const RESTAURANT_FEATURES = ["Walk-ins Welcome", "Live Music", "Free Wi-Fi"];
 const DEFAULT_TABLE_ITEMS = [
@@ -279,6 +281,50 @@ function CheckboxGroup({ label, options, selected = [], onChange, single = false
           </label>
         ))}
       </div>
+    </div>
+  );
+}
+
+// Two-level single-select charity picker: one group (Adults/Children/Animals),
+// then — only once a group is chosen — one focus (Health/Homes/Food). Stored as
+// [group, sub]. Click a selected pill again to clear it.
+function CharityPicker({ value = [], onChange }) {
+  const group = value.find((c) => CHARITY_GROUPS.includes(c)) || "";
+  const sub = value.find((c) => CHARITY_SUBS.includes(c)) || "";
+  const selectGroup = (g) => {
+    const ng = group === g ? "" : g;
+    onChange([...(ng ? [ng] : []), ...(ng && sub ? [sub] : [])]);
+  };
+  const selectSub = (s) => {
+    const ns = sub === s ? "" : s;
+    onChange([...(group ? [group] : []), ...(ns ? [ns] : [])]);
+  };
+  const pill = (opt, selected, onClick) => (
+    <label
+      key={opt}
+      onClick={onClick}
+      style={{
+        display: "flex", alignItems: "center", gap: 6, fontSize: 13,
+        color: selected ? colors.primary : colors.textSecondary,
+        border: `1px solid ${selected ? colors.primary : colors.border}`,
+        borderRadius: 20, padding: "7px 12px", cursor: "pointer",
+      }}
+    >
+      <input type="checkbox" readOnly checked={selected} style={{ accentColor: colors.primary }} />
+      {opt}
+    </label>
+  );
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <label style={labelStyle}>Charity</label>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {CHARITY_GROUPS.map((g) => pill(g, group === g, () => selectGroup(g)))}
+      </div>
+      {group && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+          {CHARITY_SUBS.map((s) => pill(s, sub === s, () => selectSub(s)))}
+        </div>
+      )}
     </div>
   );
 }
@@ -911,7 +957,7 @@ export default function RepOnboardingApp() {
             <TextField label="Company VAT Number" value={data.companyVatNumber} onChange={set("companyVatNumber")} />
             <TextField label="Rep Name (auto-filled)" value={repSession.repName} onChange={() => {}} />
             <TextField label="Rep Code (auto-filled)" value={repSession.repCode} onChange={() => {}} />
-            <CheckboxGroup label="Charity" options={CHARITY_OPTIONS} selected={charity} onChange={setCharity} />
+            <CharityPicker value={charity} onChange={setCharity} />
             <CheckboxGroup label="Country" options={COUNTRY_OPTIONS} selected={country} onChange={setCountry} />
             {country.includes("South Africa") && (
               <CheckboxGroup label="Province" options={PROVINCE_OPTIONS} selected={province} onChange={setProvince} />

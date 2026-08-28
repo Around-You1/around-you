@@ -17,6 +17,11 @@ import (
 // Categories is the fixed, ordered set shown as checkboxes and columns.
 var Categories = []string{"Adults", "Children", "Animals", "Health", "Homes", "Food"}
 
+// CharityGroups (who) and CharitySubs (what) form the two-level single-select.
+// A partner picks one of each, so their support is a (group, sub) pair.
+var CharityGroups = []string{"Adults", "Children", "Animals"}
+var CharitySubs = []string{"Health", "Homes", "Food"}
+
 func isValid(c string) bool {
 	for _, v := range Categories {
 		if v == c {
@@ -153,9 +158,18 @@ type TallyRow struct {
 type TallyRequest struct {
 	Month string `query:"month"` // "YYYY-MM"; empty = current month
 }
+// ComboCount pairs a group (Adults/Children/Animals) with a sub focus
+// (Health/Homes/Food) and counts partners who selected both.
+type ComboCount struct {
+	Group     string `json:"group"`
+	Sub       string `json:"sub"`
+	ThisMonth int    `json:"thisMonth"`
+	AllTime   int    `json:"allTime"`
+}
 type TallyResponse struct {
-	Month string     `json:"month"`
-	Rows  []TallyRow `json:"rows"`
+	Month  string       `json:"month"`
+	Rows   []TallyRow   `json:"rows"`
+	Combos []ComboCount `json:"combos"`
 }
 
 //encore:api auth method=GET path=/charity/tally
@@ -182,5 +196,31 @@ func Tally(ctx context.Context, req *TallyRequest) (*TallyResponse, error) {
 			`SELECT COUNT(*) FROM partner_charity WHERE category=$1`, c).Scan(&allTime)
 		rows = append(rows, TallyRow{Category: c, ThisMonth: thisMonth, AllTime: allTime})
 	}
-	return &TallyResponse{Month: monthStart.Format("2006-01"), Rows: rows}, nil
+
+	// Combo matrix: count partners who chose BOTH a group and a sub. A partner
+	// has one row per selected category, so we self-join partner_charity on the
+	// same partner. "This month" keys off when the sub row was created (group +
+	// sub are inserted together, so their timestamps match).
+	combos := make([]ComboCount, 0, len(CharityGroups)*len(CharitySubs))
+	for _, g := range CharityGroups {
+		for _, s := range CharitySubs {
+			var thisMonth, allTime int
+			_ = appdb.SQLDB.QueryRowContext(ctx,
+				`SELECT COUNT(*) FROM partner_charity gc
+				 JOIN partner_charity sc
+				   ON sc.partner_type = gc.partner_type AND sc.partner_id = gc.partner_id
+				 WHERE gc.category = $1 AND sc.category = $2
+				   AND sc.created_at >= $3 AND sc.created_at < $4`,
+				g, s, monthStart, monthEnd).Scan(&thisMonth)
+			_ = appdb.SQLDB.QueryRowContext(ctx,
+				`SELECT COUNT(*) FROM partner_charity gc
+				 JOIN partner_charity sc
+				   ON sc.partner_type = gc.partner_type AND sc.partner_id = gc.partner_id
+				 WHERE gc.category = $1 AND sc.category = $2`,
+				g, s).Scan(&allTime)
+			combos = append(combos, ComboCount{Group: g, Sub: s, ThisMonth: thisMonth, AllTime: allTime})
+		}
+	}
+
+	return &TallyResponse{Month: monthStart.Format("2006-01"), Rows: rows, Combos: combos}, nil
 }

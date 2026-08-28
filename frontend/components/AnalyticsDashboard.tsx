@@ -130,6 +130,7 @@ export default function AnalyticsDashboard() {
   const [loading, setLoading] = useState(true);
   const [printMode, setPrintMode] = useState(false);
   const [charityTally, setCharityTally] = useState<{ category: string; thisMonth: number; allTime: number }[]>([]);
+  const [charityCombos, setCharityCombos] = useState<{ group: string; sub: string; thisMonth: number; allTime: number }[]>([]);
   const [charityMonth, setCharityMonth] = useState("");
   const { toast } = useToast();
 
@@ -167,6 +168,7 @@ export default function AnalyticsDashboard() {
       setBizStats(biz);
       setEvents(ev);
       setCharityTally((charity as any).rows || []);
+      setCharityCombos((charity as any).combos || []);
       setCharityMonth((charity as any).month || "");
     } catch (error) {
       console.error("Failed to load analytics:", error);
@@ -193,20 +195,29 @@ export default function AnalyticsDashboard() {
 
         <h1 className="text-4xl font-bold text-foreground">Analytics Dashboard</h1>
 
-        {charityTally.length > 0 && (
+        {charityCombos.some((c) => c.allTime > 0) && (
           <Section title="Charity Support" defaultOpen>
             <p className="text-xs text-muted-foreground mb-3">
-              Charities partners chose to support in the Official Use section. "This month" counts new selections in {charityMonth || "the current month"}.
+              What partners chose to support in the Official Use section, broken down by focus area. "This month" counts new selections in {charityMonth || "the current month"}.
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {charityTally.map((c) => (
-                <div key={c.category} className="rounded-lg border border-border p-3">
-                  <p className="text-sm font-semibold">{c.category}</p>
-                  <div className="flex items-baseline justify-between mt-1">
-                    <span className="text-2xl font-bold">{c.thisMonth}</span>
-                    <span className="text-xs text-muted-foreground">this month</span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {["Adults", "Children", "Animals"].map((group) => (
+                <div key={group} className="rounded-lg border border-border p-3">
+                  <p className="text-sm font-semibold mb-2">{group}</p>
+                  <div className="space-y-1.5">
+                    {["Health", "Homes", "Food"].map((sub) => {
+                      const combo = charityCombos.find((x) => x.group === group && x.sub === sub);
+                      return (
+                        <div key={sub} className="flex items-baseline justify-between text-sm">
+                          <span className="text-muted-foreground">{sub}</span>
+                          <span>
+                            <span className="font-bold text-foreground">{combo?.allTime ?? 0}</span>
+                            <span className="text-xs text-muted-foreground"> all time · {combo?.thisMonth ?? 0} this month</span>
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">All time: <span className="font-semibold text-foreground">{c.allTime}</span></p>
                 </div>
               ))}
             </div>
