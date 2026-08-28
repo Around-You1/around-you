@@ -111,9 +111,9 @@ function Section({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-6 py-4 text-left"
+        className="w-full flex items-center justify-between px-5 py-2.5 text-left"
       >
-        <span className="text-lg font-semibold">{title}</span>
+        <span className="text-base font-semibold">{title}</span>
         <ChevronDown className={`w-5 h-5 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
       {isOpen && <CardContent className="pt-0">{children}</CardContent>}
@@ -181,7 +181,7 @@ export default function AnalyticsDashboard() {
   return (
     <div className="min-h-screen bg-background p-6">
       <PrintContext.Provider value={printMode}>
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-3">
         <div className="flex items-center justify-between gap-2 print:hidden">
           <Button variant="outline" size="sm" onClick={() => router.push("/admin-dashboard")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -196,7 +196,7 @@ export default function AnalyticsDashboard() {
         <h1 className="text-4xl font-bold text-foreground">Analytics Dashboard</h1>
 
         {charityCombos.some((c) => c.allTime > 0) && (
-          <Section title="Charity Support" defaultOpen>
+          <Section title="Charity Support">
             <p className="text-xs text-muted-foreground mb-3">
               What partners chose to support in the Official Use section, broken down by focus area. "This month" counts new selections in {charityMonth || "the current month"}.
             </p>
@@ -225,7 +225,7 @@ export default function AnalyticsDashboard() {
         )}
 
         {bizStats && (
-          <Section title="Business Metrics" defaultOpen>
+          <Section title="Business Metrics">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
               {([
                 ["Monthly Recurring (MRR)", rand(bizStats.mrrCents)],
