@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getAuthenticatedBackend } from "../lib/backend";
 import EstateRepFlow from "./EstateRepFlow";
+import RepInvoice from "./RepInvoice";
 import { saveCharity } from "../lib/charity";
 
 const CHARITY_OPTIONS = ["Adults", "Children", "Animals", "Health", "Homes", "Food"];
@@ -520,6 +521,7 @@ export default function RepOnboardingApp() {
   const router = useRouter();
   const repSession = getRepSession();
   const [partnerType, setPartnerType] = useState(null); // "Accommodations" | "Restaurants" | "Services" | "Attractions"
+  const [showInvoice, setShowInvoice] = useState(false);
   const [tier, setTier] = useState(0);
   const [visibility, setVisibility] = useState([]);
   const [booking, setBooking] = useState(false);
@@ -922,22 +924,43 @@ export default function RepOnboardingApp() {
 
         {/* Step 1: Partner type — big finger-friendly buttons */}
         {!partnerType ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {["Accommodations", "Restaurants", "Services", "Attractions", "Real Estate & Rentals"].map((type) => (
+          showInvoice ? (
+            <RepInvoice
+              repName={repSession.repName}
+              repCode={repSession.repCode}
+              repEmail={repSession.repEmail}
+              onBack={() => setShowInvoice(false)}
+            />
+          ) : (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {["Accommodations", "Restaurants", "Services", "Attractions", "Real Estate & Rentals"].map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setPartnerType(type)}
+                    style={{
+                      padding: "28px 8px", borderRadius: 16, background: colors.surface,
+                      border: `2px solid ${colors.primary}`, color: colors.primary,
+                      fontWeight: 800, fontSize: 15, cursor: "pointer",
+                      gridColumn: type === "Real Estate & Rentals" ? "1 / -1" : undefined,
+                    }}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
               <button
-                key={type}
-                onClick={() => setPartnerType(type)}
+                onClick={() => setShowInvoice(true)}
                 style={{
-                  padding: "28px 8px", borderRadius: 16, background: colors.surface,
-                  border: `2px solid ${colors.primary}`, color: colors.primary,
+                  marginTop: 14, width: "100%", padding: "20px 8px", borderRadius: 16,
+                  background: colors.surface, border: `2px solid ${colors.accent}`, color: colors.accent,
                   fontWeight: 800, fontSize: 15, cursor: "pointer",
-                  gridColumn: type === "Real Estate & Rentals" ? "1 / -1" : undefined,
                 }}
               >
-                {type}
+                Create an invoice
               </button>
-            ))}
-          </div>
+            </>
+          )
         ) : partnerType === "Real Estate & Rentals" ? (
           <>
             <button
