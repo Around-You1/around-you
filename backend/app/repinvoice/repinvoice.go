@@ -86,6 +86,16 @@ type PreviewResponse struct {
 	RepName     string `json:"repName"`
 	RepCode     string `json:"repCode"`
 	RepEmail    string `json:"repEmail"`
+	IDNumber    string `json:"idNumber"`
+}
+
+// repIDNumber returns the rep's stored SA ID / Passport number (from the
+// application), or "" if not captured.
+func repIDNumber(ctx context.Context, repCode string) string {
+	var id string
+	_ = appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT COALESCE(id_number, '') FROM users WHERE role = 'Rep' AND rep_code = $1`, repCode).Scan(&id)
+	return id
 }
 
 //encore:api auth method=GET path=/rep-invoice/preview
@@ -110,12 +120,14 @@ func Preview(ctx context.Context) (*PreviewResponse, error) {
 		RepName:     u.FullName,
 		RepCode:     u.RepCode,
 		RepEmail:    u.Email,
+		IDNumber:    repIDNumber(ctx, u.RepCode),
 	}, nil
 }
 
 // ---- Submit (record + email Accounts) ---------------------------------------
 
 type SubmitRequest struct {
+	IDNumber           string `json:"idNumber"`
 	ResidentialAddress string `json:"residentialAddress"`
 	BankHolder         string `json:"bankHolder"`
 	BankName           string `json:"bankName"`
@@ -167,14 +179,18 @@ func Submit(ctx context.Context, req *SubmitRequest) (*SubmitResponse, error) {
 		}
 	}
 
-	htmlBody := renderRepInvoiceHTML(u, number, itemCode, itemDesc, amount, req)
+	idNum := repIDNumber(ctx, u.RepCode)
+	if idNum == "" {
+		idNum = strings.TrimSpace(req.IDNumber)
+	}
+	htmlBody := renderRepInvoiceHTML(u, idNum, number, itemCode, itemDesc, amount, req)
 	subject := fmt.Sprintf("Rep Invoice %s — %s (%s)", number, u.FullName, u.RepCode)
 	// To Accounts, reply-to the rep, cc the rep so they keep a copy.
 	emailErr := mailer.SendOpts(accountsEmail, subject, htmlBody, u.Email, []string{u.Email})
 	return &SubmitResponse{InvoiceNumber: number, AmountCents: amount, Emailed: emailErr == nil}, nil
 }
 
-func renderRepInvoiceHTML(u *appdb.User, number, itemCode, itemDesc string, amountCents int, req *SubmitRequest) string {
+func renderRepInvoiceHTML(u *appdb.User, idNumber, number, itemCode, itemDesc string, amountCents int, req *SubmitRequest) string {
 	now := time.Now()
 	due := now.AddDate(0, 0, 3)
 	amt := rands(amountCents)
@@ -186,11 +202,15 @@ func renderRepInvoiceHTML(u *appdb.User, number, itemCode, itemDesc string, amou
 		logo = fmt.Sprintf(`<img src="%s" alt="logo" style="max-width:140px;max-height:100px;object-fit:contain"/>`, req.LogoDataUrl)
 	}
 	e := html.EscapeString
+	idLine := ""
+	if strings.TrimSpace(idNumber) != "" {
+		idLine = "ID Number: " + e(idNumber) + "<br>"
+	}
 
 	return fmt.Sprintf(`<div style="font-family:Arial,Helvetica,sans-serif;color:#111;max-width:660px">
   <table width="100%%" cellpadding="0" cellspacing="0"><tr>
     <td style="width:150px;vertical-align:top">%s</td>
-    <td style="vertical-align:top"><b>%s</b><br>%s<br>Rep Code: %s<br>%s</td>
+    <td style="vertical-align:top"><b>%s</b><br>%s%s<br>Rep Code: %s<br>%s</td>
   </tr></table>
   <p style="color:#2563eb;font-weight:bold;margin-top:18px">TAX INVOICE</p>
   <table cellpadding="3">
@@ -212,7 +232,7 @@ func renderRepInvoiceHTML(u *appdb.User, number, itemCode, itemDesc string, amou
     <td align="right" style="vertical-align:top">Net: %s<br>Subtotal: %s<br>Total: %s<br><b>Balance Due: %s</b></td>
   </tr></table>
 </div>`,
-		logo, e(u.FullName), e(u.Email), e(u.RepCode), e(req.ResidentialAddress),
+		logo, e(u.FullName), idLine, e(u.Email), e(u.RepCode), e(req.ResidentialAddress),
 		e(number), now.Format("02/Jan/2006"), due.Format("02/Jan/2006"), amt, amt,
 		e(itemCode), e(itemDesc), amt, amt,
 		e(req.BankHolder), e(req.BankName), e(req.BankAccount), e(req.BankBranch),

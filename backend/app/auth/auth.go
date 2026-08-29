@@ -789,9 +789,9 @@ func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*Rep
 	// New applications are created Inactive (pending). A SuperAdmin activates
 	// them on the Reps tab before the applicant can sign in.
 	if _, err := appdb.SQLDB.ExecContext(ctx, `
-		INSERT INTO users (email, role, full_name, rep_code, rep_email, upline_rep_code, rep_status)
-		VALUES ($1, 'Rep', $2, $3, NULLIF($4,''), NULLIF($5,''), 'Inactive')`,
-		loginEmail, fullName, repCode, strings.TrimSpace(req.Email), strings.TrimSpace(req.UplineRepCode),
+		INSERT INTO users (email, role, full_name, rep_code, rep_email, upline_rep_code, rep_status, id_number)
+		VALUES ($1, 'Rep', $2, $3, NULLIF($4,''), NULLIF($5,''), 'Inactive', $6)`,
+		loginEmail, fullName, repCode, strings.TrimSpace(req.Email), strings.TrimSpace(req.UplineRepCode), strings.TrimSpace(req.IDNumber),
 	); err != nil {
 		return nil, err
 	}

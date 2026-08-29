@@ -82,6 +82,7 @@ export default function RepInvoice({ repName, repCode, repEmail, onBack }: RepIn
   const itemCode = `Rep${MON_SHORT[prev.getMonth()]}${String(prev.getFullYear()).slice(2)}`; // e.g. RepAug26
   const itemDesc = `Rep ${MON_FULL[prev.getMonth()]} ${prev.getFullYear()}`; // e.g. Rep August 2026
 
+  const [idNumber, setIdNumber] = useState("");
   const [residentialAddress, setResidentialAddress] = useState("");
   const [unitCost, setUnitCost] = useState("");
   const [bankName, setBankName] = useState("");
@@ -98,6 +99,7 @@ export default function RepInvoice({ repName, repCode, repEmail, onBack }: RepIn
         if (typeof p?.amountCents === "number") setAmountCents(p.amountCents);
         if (p?.itemCode) setServerItemCode(p.itemCode);
         if (p?.itemDesc) setServerItemDesc(p.itemDesc);
+        if (p?.idNumber) setIdNumber(p.idNumber);
       } catch {
         /* offline / no session — fall back to manual entry + local number */
       }
@@ -117,6 +119,7 @@ export default function RepInvoice({ repName, repCode, repEmail, onBack }: RepIn
     setSubmitMsg("");
     try {
       const res: any = await getAuthenticatedBackend().repInvoice.submit({
+        idNumber,
         residentialAddress,
         bankHolder,
         bankName,
@@ -197,6 +200,19 @@ export default function RepInvoice({ repName, repCode, repEmail, onBack }: RepIn
 
           <div style={{ minWidth: 200, fontSize: 15 }}>
             <div><span style={label}>Full Name:</span> <b>{repName}</b></div>
+            <div style={{ marginTop: 2 }}>
+              <span style={label}>ID Number:</span>{" "}
+              {idNumber ? (
+                idNumber
+              ) : (
+                <input
+                  value={idNumber}
+                  onChange={(e) => setIdNumber(e.target.value)}
+                  placeholder="SA ID / Passport"
+                  style={{ ...inputStyle, width: 160, display: "inline-block", padding: "2px 6px" }}
+                />
+              )}
+            </div>
             <div><span style={label}>Email address:</span> {repEmail}</div>
             <div><span style={label}>Rep Code:</span> {repCode}</div>
           </div>
