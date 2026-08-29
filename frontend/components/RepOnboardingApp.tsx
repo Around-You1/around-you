@@ -36,6 +36,21 @@ const colors = {
   error: "#FF4D4F",
 };
 
+// Accommodation Option-A monthly pricing by unit count. Mirrors the backend
+// billing.PriceForUnits bands exactly, so what the rep sees matches the invoice.
+function accUnitCount(v: any) {
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && n > 0 ? n : 1;
+}
+function accMonthlyLabel(v: any) {
+  const n = accUnitCount(v);
+  if (n >= 41) return "Custom quote";
+  if (n >= 21) return "R1,200";
+  if (n >= 11) return "R800";
+  if (n >= 6) return "R500";
+  return "R300";
+}
+
 const COUNTRY_OPTIONS = ["South Africa", "Asia", "Europe", "USA"];
 const PROVINCE_OPTIONS = [
   "Eastern Cape", "Free State", "Gauteng", "KwaZulu Natal", "Limpopo",
@@ -625,6 +640,7 @@ export default function RepOnboardingApp() {
           amenities: data.amenities || "",
           guidelines: data.guidelines || "",
           checkOutInstructions: data.checkOut || "",
+          units: accUnitCount(data.units),
           facilities: data.facilities || [],
           wheelchairAccess: false, // no accessibility checkboxes in this form's Accommodation section
           parkingAvailability: false,
@@ -1092,6 +1108,19 @@ export default function RepOnboardingApp() {
 
             {isAccommodation && (
               <>
+                <SectionTitle>Units &amp; Monthly Pricing</SectionTitle>
+                <TextField label="Number of Units / Rooms" value={data.units} onChange={set("units")} />
+                <div style={{ border: `1px solid ${colors.border}`, borderRadius: 8, padding: 10, marginBottom: 12, fontSize: 12, color: colors.textSecondary }}>
+                  <div style={{ fontWeight: 700, color: colors.textPrimary, marginBottom: 6 }}>Monthly price by units</div>
+                  <div>1–5 units — R300</div>
+                  <div>6–10 units — R500</div>
+                  <div>11–20 units — R800</div>
+                  <div>21–40 units — R1,200</div>
+                  <div>40+ units — Custom quote</div>
+                  <div style={{ marginTop: 8, fontWeight: 700, color: colors.primary }}>
+                    Estimated monthly for {accUnitCount(data.units)} unit{accUnitCount(data.units) === 1 ? "" : "s"}: {accMonthlyLabel(data.units)}
+                  </div>
+                </div>
                 <TextField label="Contact" value={data.contact} onChange={set("contact")} />
                 <TextField label="Description" area value={data.description} onChange={set("description")} />
                 <TextField label="Check-In Instructions" area value={data.checkIn} onChange={set("checkIn")} />
