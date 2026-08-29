@@ -193,13 +193,13 @@ export default function AccommodationList({ accommodations, onEdit, onUpdate }: 
                           Duplicate
                         </Badge>
                       )}
-                      <span className="text-xs text-muted-foreground truncate">{accommodation.postalCode}</span>
-                      <span className="text-xs text-muted-foreground truncate">{accommodation.province}</span>
+                      <span className="hidden sm:inline text-xs text-muted-foreground truncate">{accommodation.postalCode}</span>
+                      <span className="hidden sm:inline text-xs text-muted-foreground truncate">{accommodation.province}</span>
                     </button>
                   </CollapsibleTrigger>
                   <div className="flex items-center gap-2 shrink-0">
                     {accommodation.profileReferenceCode && (
-                      <div className="flex items-center gap-1">
+                      <div className="hidden sm:flex items-center gap-1">
                         <span className="text-xs font-mono text-muted-foreground">{accommodation.profileReferenceCode}</span>
                         <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => copyProfileCode(accommodation.profileReferenceCode, accommodation.name)}>
                           <Copy className="w-3 h-3" />
@@ -213,7 +213,7 @@ export default function AccommodationList({ accommodations, onEdit, onUpdate }: 
                         disabled={toggling === accommodation.id}
                         className="data-[state=checked]:bg-green-600"
                       />
-                      <span className="text-xs text-muted-foreground">{accommodation.isActive ? "Active" : "Disabled"}</span>
+                      <span className="hidden sm:inline text-xs text-muted-foreground">{accommodation.isActive ? "Active" : "Disabled"}</span>
                     </div>
                     <div className="flex gap-1">
                       {accommodation.latitude != null && accommodation.longitude != null && (

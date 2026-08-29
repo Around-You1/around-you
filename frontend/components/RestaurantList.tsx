@@ -236,16 +236,16 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
                           Duplicate
                         </Badge>
                       )}
-                      <span className="text-xs text-muted-foreground truncate">{restaurant.postalCode}</span>
+                      <span className="hidden sm:inline text-xs text-muted-foreground truncate">{restaurant.postalCode}</span>
                       {restaurant.cuisineTypes.length > 0 && (
-                        <span className="text-xs text-muted-foreground truncate">{restaurant.cuisineTypes.slice(0, 1).join(", ")}</span>
+                        <span className="hidden sm:inline text-xs text-muted-foreground truncate">{restaurant.cuisineTypes.slice(0, 1).join(", ")}</span>
                       )}
                       {restaurant.littleExplorerApproved && <span className="text-xs shrink-0">👶</span>}
                     </button>
                   </CollapsibleTrigger>
                   <div className="flex items-center gap-2 shrink-0">
                     {restaurant.profileReferenceCode && (
-                      <div className="flex items-center gap-1">
+                      <div className="hidden sm:flex items-center gap-1">
                         <span className="text-xs font-mono text-muted-foreground">{restaurant.profileReferenceCode}</span>
                         <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => copyProfileCode(restaurant.profileReferenceCode, restaurant.name)}>
                           <Copy className="w-3 h-3" />
@@ -259,7 +259,7 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
                         disabled={toggling === restaurant.id}
                         className="data-[state=checked]:bg-green-600"
                       />
-                      <span className="text-xs text-muted-foreground">{restaurant.isActive ? "Active" : "Disabled"}</span>
+                      <span className="hidden sm:inline text-xs text-muted-foreground">{restaurant.isActive ? "Active" : "Disabled"}</span>
                     </div>
                     <div className="flex gap-1">
                       {restaurant.latitude != null && restaurant.longitude != null && (

@@ -163,14 +163,14 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <Tabs value={tab} onValueChange={setTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-9 min-h-[48px]">
-                <TabsTrigger value="accommodations" className="min-h-[44px] touch-manipulation">Accommodations</TabsTrigger>
-                <TabsTrigger value="restaurants" className="min-h-[44px] touch-manipulation">Restaurants</TabsTrigger>
-                <TabsTrigger value="services" className="min-h-[44px] touch-manipulation">Services</TabsTrigger>
-                <TabsTrigger value="attractions" className="min-h-[44px] touch-manipulation">Attractions</TabsTrigger>
-                <TabsTrigger value="reps" className="min-h-[44px] touch-manipulation">Reps</TabsTrigger>
-                <TabsTrigger value="billing" className="min-h-[44px] touch-manipulation">Billing</TabsTrigger>
-                <TabsTrigger value="moderation" className="min-h-[44px] touch-manipulation">
+              <TabsList className="grid w-full h-auto grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-1">
+                <TabsTrigger value="accommodations" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Accommodations</TabsTrigger>
+                <TabsTrigger value="restaurants" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Restaurants</TabsTrigger>
+                <TabsTrigger value="services" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Services</TabsTrigger>
+                <TabsTrigger value="attractions" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Attractions</TabsTrigger>
+                <TabsTrigger value="reps" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Reps</TabsTrigger>
+                <TabsTrigger value="billing" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Billing</TabsTrigger>
+                <TabsTrigger value="moderation" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">
                   Moderation
                   {modOpenCount > 0 && (
                     <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold h-4 min-w-[16px] px-1">
@@ -178,8 +178,8 @@ export default function AdminDashboard() {
                     </span>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="archived" className="min-h-[44px] touch-manipulation">Archived</TabsTrigger>
-                <TabsTrigger value="realestate" className="min-h-[44px] touch-manipulation">Real Estate</TabsTrigger>
+                <TabsTrigger value="archived" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Archived</TabsTrigger>
+                <TabsTrigger value="realestate" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Real Estate</TabsTrigger>
               </TabsList>
 
               <TabsContent value="accommodations">

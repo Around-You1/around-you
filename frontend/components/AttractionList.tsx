@@ -273,7 +273,7 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
                           Duplicate
                         </Badge>
                       )}
-                      <span className="text-xs text-muted-foreground truncate">{attraction.postalCode}</span>
+                      <span className="hidden sm:inline text-xs text-muted-foreground truncate">{attraction.postalCode}</span>
                       {Array.isArray(attraction.attractionType) && attraction.attractionType.length > 0 && (
                         <span className="text-xs text-muted-foreground truncate">{attraction.attractionType.slice(0, 1).join(", ")}</span>
                       )}
@@ -281,7 +281,7 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
                   </CollapsibleTrigger>
                   <div className="flex items-center gap-2 shrink-0">
                     {attraction.profileReferenceCode && (
-                      <div className="flex items-center gap-1">
+                      <div className="hidden sm:flex items-center gap-1">
                         <span className="text-xs font-mono text-muted-foreground">{attraction.profileReferenceCode}</span>
                         <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => copyProfileCode(attraction.profileReferenceCode, attraction.name)}>
                           <Copy className="w-3 h-3" />
@@ -295,7 +295,7 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
                         disabled={toggling === attraction.attractionId}
                         className="data-[state=checked]:bg-green-600"
                       />
-                      <span className="text-xs text-muted-foreground">{attraction.isActive ? "Active" : "Disabled"}</span>
+                      <span className="hidden sm:inline text-xs text-muted-foreground">{attraction.isActive ? "Active" : "Disabled"}</span>
                     </div>
                     <div className="flex gap-1">
                       {attraction.latitude != null && attraction.longitude != null && (

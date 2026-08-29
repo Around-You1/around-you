@@ -272,7 +272,7 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortSt
                           Duplicate
                         </Badge>
                       )}
-                      <span className="text-xs text-muted-foreground truncate">{service.postalCode}</span>
+                      <span className="hidden sm:inline text-xs text-muted-foreground truncate">{service.postalCode}</span>
                       {service.serviceCategories.length > 0 && (
                         <span className="text-xs text-muted-foreground truncate">{service.serviceCategories.slice(0, 1).join(", ")}</span>
                       )}
@@ -280,7 +280,7 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortSt
                   </CollapsibleTrigger>
                   <div className="flex items-center gap-2 shrink-0">
                     {service.profileReferenceCode && (
-                      <div className="flex items-center gap-1">
+                      <div className="hidden sm:flex items-center gap-1">
                         <span className="text-xs font-mono text-muted-foreground">{service.profileReferenceCode}</span>
                         <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => copyProfileCode(service.profileReferenceCode, service.name)}>
                           <Copy className="w-3 h-3" />
@@ -294,7 +294,7 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortSt
                         disabled={toggling === service.serviceId}
                         className="data-[state=checked]:bg-green-600"
                       />
-                      <span className="text-xs text-muted-foreground">{service.isActive ? "Active" : "Disabled"}</span>
+                      <span className="hidden sm:inline text-xs text-muted-foreground">{service.isActive ? "Active" : "Disabled"}</span>
                     </div>
                     <div className="flex gap-1">
                       {service.latitude != null && service.longitude != null && (
