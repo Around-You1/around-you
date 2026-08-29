@@ -122,29 +122,7 @@ export default function AboutYouPage() {
         </>
       ),
     },
-    {
-      id: "how",
-      title: "How It Works",
-      content: (
-        <>
-          <p>Around You is designed to elevate guests' experience. It's a smart, seamless way to view all the accommodation information, connect with trusted local partners, and enjoy meaningful extras that help make your stay unforgettable.</p>
-          <p>By using Around You, you unlock a powerful hospitality tool that helps you feel welcomed, informed, and connected from the moment you arrive at your accommodation.</p>
-          <p>Your accommodation would have issued you a unique "Access Code" or "QR Code."</p>
-          <p>Click the "Log In" button below, select the "Guest" tab, then select the "Holiday" tab, and either enter the accommodation name, address, province, and area, or enter the access code they may have sent you into the login portal. Then click the "Sign In" button.</p>
-          <p>Or scan the QR Code the accommodation may have sent you. Make sure that on the Sign In page, the access code auto populates, then click the "Sign In" button.</p>
-          <p>When logged in, guests instantly access:</p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Verified information about their accommodation</li>
-          </ul>
-          <p>Guests and Locals will access:</p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>A curated selection of nearby restaurants, wellness venues, essential services, and local attractions</li>
-            <li>Exclusive discounts from select venues (redeemable via digital codes)</li>
-            <li>One click navigation to partner venues and points of interest</li>
-          </ul>
-        </>
-      ),
-    },
+    { id: "howto", title: "How It Works", href: "/how-it-works" },
     {
       id: "partner",
       title: "Partner With Us",
@@ -179,7 +157,6 @@ export default function AboutYouPage() {
         </>
       ),
     },
-    { id: "howto", title: "How It Works", href: "/how-it-works" },
     { id: "support", title: "Contact Support", href: "mailto:support@aroundyou.co.za" },
   ];
 
@@ -227,7 +204,6 @@ export default function AboutYouPage() {
                       minHeight: 0,
                       lineHeight: 1.25,
                       textDecoration: "none",
-                      gridColumnStart: section.id === "support" ? 2 : undefined,
                     }}
                     className="touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39FF14] focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
                     onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.filter = "brightness(1.2)"; }}
