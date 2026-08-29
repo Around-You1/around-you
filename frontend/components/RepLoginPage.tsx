@@ -42,6 +42,10 @@ export default function RepLoginPage() {
   const [app, setApp] = useState({ ...emptyApp });
   const [submitting, setSubmitting] = useState(false);
   const [newCode, setNewCode] = useState<string | null>(null);
+  // Terms gate: a new applicant must read + accept the responsibility & payment
+  // terms before the application form (personal info) is shown.
+  const [agreedTerms, setAgreedTerms] = useState(false);
+  const [termsChecked, setTermsChecked] = useState(false);
   const setA = (k: keyof typeof emptyApp) => (v: any) => setApp((s) => ({ ...s, [k]: v }));
 
   async function handleRepLogin(e: React.FormEvent) {
@@ -122,7 +126,7 @@ export default function RepLoginPage() {
           {/* mode switch */}
           <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
             {(["signin", "apply"] as const).map((m) => (
-              <button key={m} type="button" onClick={() => setMode(m)}
+              <button key={m} type="button" onClick={() => { setMode(m); if (m === "apply") { setAgreedTerms(false); setTermsChecked(false); } }}
                 style={{ flex: 1, borderRadius: 8, padding: "9px 0", fontSize: 12, fontWeight: 700, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.04em",
                   background: mode === m ? `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})` : "transparent",
                   color: mode === m ? "#000" : "#888", border: `1px solid ${mode === m ? LUMO : "rgba(255,255,255,0.12)"}` }}>
@@ -147,6 +151,36 @@ export default function RepLoginPage() {
                 {loading ? "Signing in…" : "Sign In"}
               </button>
             </form>
+          ) : !agreedTerms ? (
+            <div className="space-y-3">
+              <h3 style={{ color: LUMO, fontWeight: 800, fontSize: "1rem" }}>Rep Responsibility &amp; Payment Terms</h3>
+              <p className="text-xs" style={{ color: "#888" }}>Please read and accept before entering your details.</p>
+              <div
+                style={{ maxHeight: 300, overflowY: "auto", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: 12, fontSize: 12, lineHeight: 1.5, color: "#bcd" }}
+                className="space-y-2"
+              >
+                <p style={{ color: "#cdd" }}>By applying as an Around You Sales Rep, you acknowledge and agree:</p>
+                <p><b style={{ color: "#cdd" }}>1. Independent contractor.</b> You join as an independent contractor, not an employee. You are solely responsible for your own tax — income tax, provisional tax and any other SARS obligations. Around You does not deduct or submit tax on your behalf.</p>
+                <p><b style={{ color: "#cdd" }}>2. Monthly invoice required.</b> Your commission each month is based on your new sales that month <i>plus</i> your accumulated sales from previous months (per the Around You commission structure). To be paid, you must send Around You a monthly invoice for the amount due, showing your full name, Rep Code, billing month, total commission and banking details.</p>
+                <p><b style={{ color: "#cdd" }}>3. No invoice = no payment.</b> If your invoice is not submitted, is late, or is incorrect, that month's commission will not be paid. Payment is made only once a correct invoice is received and approved. Submitting on time each month is your responsibility.</p>
+                <p><b style={{ color: "#cdd" }}>4. Accurate sales.</b> You confirm all sales you submit are genuine, accurate, linked to verified partners and correctly assigned to your Rep Code. Discrepancies may delay payment.</p>
+                <p><b style={{ color: "#cdd" }}>5. Agreement.</b> By continuing you confirm you understand and accept all of the above: you are responsible for your own tax, you must invoice monthly to be paid, no invoice means no commission for that month, and you agree to operate as an independent contractor under the Around You commission and payment process.</p>
+              </div>
+              <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12, color: "#bcd", cursor: "pointer" }}>
+                <input type="checkbox" checked={termsChecked} onChange={(e) => setTermsChecked(e.target.checked)} style={{ accentColor: LUMO, marginTop: 2 }} />
+                I have read and agree to the Rep Responsibility &amp; Payment Terms above.
+              </label>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button type="button" onClick={() => setMode("signin")}
+                  style={{ flex: 1, background: "transparent", color: "#888", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: "13px 0", fontWeight: 700, fontSize: "0.95rem", cursor: "pointer", minHeight: 48 }}>
+                  Cancel
+                </button>
+                <button type="button" disabled={!termsChecked} onClick={() => setAgreedTerms(true)}
+                  style={{ flex: 2, background: termsChecked ? `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})` : "#1a3a0a", color: "#000", border: "none", borderRadius: 10, padding: "13px 0", fontWeight: 700, fontSize: "0.95rem", cursor: termsChecked ? "pointer" : "not-allowed", opacity: termsChecked ? 1 : 0.5, minHeight: 48 }}>
+                  I Agree &amp; Continue
+                </button>
+              </div>
+            </div>
           ) : (
             <form onSubmit={handleApply} className="space-y-3" aria-label="Rep application form">
               <p className="text-xs" style={{ color: "#888" }}>Commission-only, self-employed sales agent — individuals only. Your details are kept on file; you'll receive a Rep Code to sign in with.</p>
