@@ -166,9 +166,9 @@ export default function AboutYouPage() {
       title: "Become a Seller",
       content: (
         <>
-          <p>Become part of our sales family and earn 20% commission on all sales every month.</p>
+          <p>Become part of our sales family and earn BIG commission on all sales every month.</p>
           <p>Your sales carry forward and compound: what you sell in Month 1 is added to your Month 2 total; Month 1 + Month 2 are added to Month 3, and so on. This means consistent selling builds larger monthly totals and bigger payouts over time.</p>
-          <p>Commissions are calculated and paid monthly, so you can track your progress and rewards each pay cycle.</p>
+          <p>Commissions are calculated and paid at month end, so you can track your progress and rewards each pay cycle.</p>
           <p>
             Contact us at{" "}
             <a href="mailto:sales@aroundyou.co.za" style={{ color: LUMO }} className="hover:underline">
