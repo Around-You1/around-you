@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppLogo from "../components/AppLogo";
 import { Facebook, Linkedin } from "lucide-react";
@@ -203,79 +203,71 @@ export default function AboutYouPage() {
         >
           <div className="grid grid-cols-3 gap-1.5">
             {sections.map((section) => (
-              "href" in section ? (
-                <a
-                  key={section.id}
-                  href={section.href}
-                  style={{
-                    background: "#000",
-                    border: `2px solid ${LUMO}`,
-                    color: LUMO,
-                    borderRadius: 10,
-                    fontWeight: 700,
-                    fontSize: "0.65rem",
-                    cursor: "pointer",
-                    textAlign: "center",
-                    letterSpacing: "0.03em",
-                    transition: "all 0.2s ease",
-                    aspectRatio: "1 / 1",
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "4px",
-                    minHeight: 0,
-                    lineHeight: 1.25,
-                    textDecoration: "none",
-                    gridColumnStart: section.id === "support" ? 2 : undefined,
-                  }}
-                  className="touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39FF14] focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.filter = "brightness(1.2)"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.filter = "brightness(1)"; }}
-                  onMouseDown={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = "scale(0.98)"; }}
-                  onMouseUp={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1)"; }}
-                >
-                  {section.title}
-                </a>
-              ) : (
-                <InfoSquareBtn
-                  key={section.id}
-                  title={section.title}
-                  isOpen={openId === section.id}
-                  onToggle={() => handleToggle(section.id)}
-                />
-              )
+              <Fragment key={section.id}>
+                {"href" in section ? (
+                  <a
+                    href={section.href}
+                    style={{
+                      background: "#000",
+                      border: `2px solid ${LUMO}`,
+                      color: LUMO,
+                      borderRadius: 10,
+                      fontWeight: 700,
+                      fontSize: "0.65rem",
+                      cursor: "pointer",
+                      textAlign: "center",
+                      letterSpacing: "0.03em",
+                      transition: "all 0.2s ease",
+                      aspectRatio: "1 / 1",
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "4px",
+                      minHeight: 0,
+                      lineHeight: 1.25,
+                      textDecoration: "none",
+                      gridColumnStart: section.id === "support" ? 2 : undefined,
+                    }}
+                    className="touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39FF14] focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.filter = "brightness(1.2)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.filter = "brightness(1)"; }}
+                    onMouseDown={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = "scale(0.98)"; }}
+                    onMouseUp={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1)"; }}
+                  >
+                    {section.title}
+                  </a>
+                ) : (
+                  <InfoSquareBtn
+                    title={section.title}
+                    isOpen={openId === section.id}
+                    onToggle={() => handleToggle(section.id)}
+                  />
+                )}
+
+                {/* The open section's message renders as a full-width row right
+                    after its button, so subsequent buttons fall below it. */}
+                {!("href" in section) && openId === section.id && (
+                  <div id={`content-${section.id}`} style={{ gridColumn: "1 / -1" }}>
+                    <div
+                      className="px-4 py-4 text-sm leading-relaxed space-y-3"
+                      style={{
+                        color: "#a0a0a0",
+                        background: "rgba(57,255,20,0.04)",
+                        borderRadius: 10,
+                        border: "1px solid rgba(57,255,20,0.18)",
+                      }}
+                    >
+                      <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: LUMO }}>
+                        {section.title}
+                      </p>
+                      {section.content}
+                    </div>
+                  </div>
+                )}
+              </Fragment>
             ))}
           </div>
-
-          {(sections.filter((s) => !("href" in s)) as Section[]).map((section) => (
-            <div
-              key={section.id}
-              id={`content-${section.id}`}
-              style={{
-                maxHeight: openId === section.id ? "800px" : "0px",
-                overflow: "hidden",
-                transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease, margin 0.2s ease",
-                opacity: openId === section.id ? 1 : 0,
-                marginBottom: openId === section.id ? "4px" : "0px",
-              }}
-            >
-              <div
-                className="px-4 py-4 text-sm leading-relaxed space-y-3"
-                style={{
-                  color: "#a0a0a0",
-                  background: "rgba(57,255,20,0.04)",
-                  borderRadius: 10,
-                  border: "1px solid rgba(57,255,20,0.18)",
-                }}
-              >
-                <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: LUMO }}>
-                  {section.title}
-                </p>
-                {section.content}
-              </div>
-            </div>
-          ))}
 
           <button
             style={{
