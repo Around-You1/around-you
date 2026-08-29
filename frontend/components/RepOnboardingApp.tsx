@@ -909,7 +909,7 @@ export default function RepOnboardingApp() {
 
   return (
     <div style={{ minHeight: "100vh", background: colors.background, color: colors.textPrimary, fontFamily: "'Segoe UI', system-ui, -apple-system, sans-serif" }}>
-      <div style={{ maxWidth: 420, margin: "0 auto", padding: "20px 16px 100px" }}>
+      <div style={{ maxWidth: showInvoice ? 860 : 420, margin: "0 auto", padding: "20px 16px 100px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
           <h1 style={{ color: colors.primary, fontSize: 19, margin: 0 }}>Tap Based Onboarding</h1>
           {partnerType && (

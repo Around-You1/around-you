@@ -32,6 +32,7 @@ import (
 	"backend_encore/app/moderation"
 	"backend_encore/app/rating"
 	"backend_encore/app/redemption"
+	"backend_encore/app/repinvoice"
 	"backend_encore/app/restaurant"
 	"backend_encore/app/service"
 	"backend_encore/app/stats"
@@ -82,6 +83,8 @@ func main() {
 	r.auth("POST /auth/create-rep", httpx.Body(auth.CreateRep))
 	r.auth("GET /auth/reps", httpx.Empty(auth.ListReps))
 	r.auth("POST /auth/rep/update", httpx.Body(auth.UpdateRep))
+	r.auth("GET /rep-invoice/preview", httpx.Empty(repinvoice.Preview))
+	r.auth("POST /rep-invoice/submit", httpx.Body(repinvoice.Submit))
 	r.auth("POST /auth/acc-code/set", httpx.Body(auth.SetAccCode))
 	r.auth("GET /auth/acc-code/status", httpx.Empty(auth.AccCodeStatus))
 	r.auth("GET /moderation/flags", httpx.Empty(moderation.ListFlags))

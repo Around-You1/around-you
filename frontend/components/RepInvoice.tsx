@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { getAuthenticatedBackend } from "../lib/backend";
 
 // RepInvoice is the invoice a rep issues TO Around You for their monthly
 // commission. It renders the same layout as an Around You partner invoice, but
@@ -30,24 +31,22 @@ function money(n: number) {
 
 export default function RepInvoice({ repName, repCode, repEmail, onBack }: RepInvoiceProps) {
   const logoKey = `rep_invoice_logo_${repCode}`;
-  const seqKey = `rep_invoice_seq_${repCode}`;
 
   // Rep number = the digits of the rep code, padded to 8 (Rep00000001 → 00000001).
   const repDigits = (repCode.match(/\d+/g) || []).join("") || "0";
   const repNum = repDigits.padStart(8, "0").slice(-8);
 
-  // Sequential invoice number — consumed once per opened invoice.
-  const [invoiceNo] = useState(() => {
-    let next = 1;
-    try {
-      const cur = parseInt(localStorage.getItem(seqKey) || "0", 10) || 0;
-      next = cur + 1;
-      localStorage.setItem(seqKey, String(next));
-    } catch {
-      /* localStorage unavailable — fall back to 1 */
-    }
-    return `AY-${repNum}-${String(next).padStart(6, "0")}`;
-  });
+  // The server owns the authoritative number + amount; these are the offline
+  // fallbacks shown until the preview loads.
+  const [invoiceNo, setInvoiceNo] = useState(`AY-${repNum}-000001`);
+  // amountCents is the rep's cumulative commission through the prior month,
+  // pulled from Around You accounts. Null until loaded → the field stays
+  // manually editable as a fallback.
+  const [amountCents, setAmountCents] = useState<number | null>(null);
+  const [serverItemCode, setServerItemCode] = useState("");
+  const [serverItemDesc, setServerItemDesc] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitMsg, setSubmitMsg] = useState("");
 
   const [logo, setLogo] = useState<string>(() => {
     try {
@@ -90,7 +89,54 @@ export default function RepInvoice({ repName, repCode, repEmail, onBack }: RepIn
   const [bankBranch, setBankBranch] = useState("");
   const [bankHolder, setBankHolder] = useState("");
 
-  const amount = parseFloat(unitCost) || 0;
+  // Pull the authoritative number + cumulative commission amount from the server.
+  useEffect(() => {
+    (async () => {
+      try {
+        const p: any = await getAuthenticatedBackend().repInvoice.preview();
+        if (p?.nextNumber) setInvoiceNo(p.nextNumber);
+        if (typeof p?.amountCents === "number") setAmountCents(p.amountCents);
+        if (p?.itemCode) setServerItemCode(p.itemCode);
+        if (p?.itemDesc) setServerItemDesc(p.itemDesc);
+      } catch {
+        /* offline / no session — fall back to manual entry + local number */
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Displayed amount: the pulled cumulative commission when available, else the
+  // manually-typed unit cost.
+  const amount = amountCents != null ? amountCents / 100 : parseFloat(unitCost) || 0;
+  const shownItemCode = serverItemCode || itemCode;
+  const shownItemDesc = serverItemDesc || itemDesc;
+
+  const submit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    setSubmitMsg("");
+    try {
+      const res: any = await getAuthenticatedBackend().repInvoice.submit({
+        residentialAddress,
+        bankHolder,
+        bankName,
+        bankAccount,
+        bankBranch,
+        logoDataUrl: logo,
+      });
+      if (res?.invoiceNumber) setInvoiceNo(res.invoiceNumber);
+      if (typeof res?.amountCents === "number") setAmountCents(res.amountCents);
+      setSubmitMsg(
+        res?.emailed
+          ? `Submitted — invoice ${res.invoiceNumber} emailed to Accounts (copy sent to you).`
+          : `Recorded as ${res?.invoiceNumber}, but the email could not be sent — please Print / Save as PDF and email it manually.`,
+      );
+    } catch (e: any) {
+      setSubmitMsg("Could not submit: " + (e?.message || "please try again."));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const label: React.CSSProperties = { color: "#6b7280", fontSize: 13 };
   const cell: React.CSSProperties = { padding: "8px 6px" };
@@ -114,10 +160,16 @@ export default function RepInvoice({ repName, repCode, repEmail, onBack }: RepIn
         <button onClick={onBack} style={{ background: "transparent", border: "1px solid #1F1F1F", color: "#A6B0A6", borderRadius: 8, padding: "8px 12px", fontSize: 12, cursor: "pointer" }}>
           ← Back
         </button>
-        <button onClick={() => window.print()} style={{ marginLeft: "auto", background: "linear-gradient(135deg, #39FF14, #2ECC10)", color: "#000", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+        <button onClick={() => window.print()} style={{ marginLeft: "auto", background: "transparent", color: "#39FF14", border: "1px solid #39FF14", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
           Print / Save as PDF
         </button>
+        <button onClick={submit} disabled={submitting} style={{ background: "linear-gradient(135deg, #39FF14, #2ECC10)", color: "#000", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer", opacity: submitting ? 0.6 : 1 }}>
+          {submitting ? "Submitting…" : "Submit to Accounts"}
+        </button>
       </div>
+      {submitMsg && (
+        <p className="rep-invoice-no-print" style={{ color: submitMsg.startsWith("Submitted") ? "#39FF14" : "#FF4D4F", fontSize: 12, marginBottom: 10 }}>{submitMsg}</p>
+      )}
 
       {/* The printable invoice sheet — white, like an Around You invoice. */}
       <div id="rep-invoice-sheet" style={{ background: "#fff", color: "#111", borderRadius: 12, padding: 24, fontFamily: "Arial, Helvetica, sans-serif", lineHeight: 1.4 }}>
@@ -184,38 +236,44 @@ export default function RepInvoice({ repName, repCode, repEmail, onBack }: RepIn
           </div>
         </div>
 
-        {/* Line items */}
-        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 22, fontSize: 14 }}>
-          <thead>
-            <tr style={{ borderBottom: "1px solid #d1d5db", textAlign: "left" }}>
-              <th style={cell}>Item</th>
-              <th style={cell}>Description</th>
-              <th style={{ ...cell, textAlign: "right" }}>Unit Cost</th>
-              <th style={{ ...cell, textAlign: "right" }}>Quantity</th>
-              <th style={{ ...cell, textAlign: "right" }}>Line Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
-              <td style={{ ...cell, color: "#2563eb" }}>{itemCode}</td>
-              <td style={cell}>{itemDesc}</td>
-              <td style={{ ...cell, textAlign: "right" }}>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  step="0.01"
-                  value={unitCost}
-                  onChange={(e) => setUnitCost(e.target.value)}
-                  placeholder="0.00"
-                  style={{ ...inputStyle, width: 110, textAlign: "right" }}
-                />
-              </td>
-              <td style={{ ...cell, textAlign: "right" }}>1</td>
-              <td style={{ ...cell, textAlign: "right" }}>{money(amount)}</td>
-            </tr>
-          </tbody>
-        </table>
+        {/* Line items — scrolls horizontally on very narrow screens rather than squashing */}
+        <div style={{ overflowX: "auto", marginTop: 22 }}>
+          <table style={{ width: "100%", minWidth: 460, borderCollapse: "collapse", fontSize: 14 }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid #d1d5db", textAlign: "left" }}>
+                <th style={cell}>Item</th>
+                <th style={cell}>Description</th>
+                <th style={{ ...cell, textAlign: "right", whiteSpace: "nowrap" }}>Unit Cost</th>
+                <th style={{ ...cell, textAlign: "right", whiteSpace: "nowrap" }}>Quantity</th>
+                <th style={{ ...cell, textAlign: "right", whiteSpace: "nowrap" }}>Line Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
+                <td style={{ ...cell, color: "#2563eb", whiteSpace: "nowrap" }}>{shownItemCode}</td>
+                <td style={cell}>{shownItemDesc}</td>
+                <td style={{ ...cell, textAlign: "right" }}>
+                  {amountCents != null ? (
+                    <span style={{ whiteSpace: "nowrap" }}>{money(amount)}</span>
+                  ) : (
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="0.01"
+                      value={unitCost}
+                      onChange={(e) => setUnitCost(e.target.value)}
+                      placeholder="0.00"
+                      style={{ ...inputStyle, width: 110, textAlign: "right" }}
+                    />
+                  )}
+                </td>
+                <td style={{ ...cell, textAlign: "right" }}>1</td>
+                <td style={{ ...cell, textAlign: "right", whiteSpace: "nowrap" }}>{money(amount)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         {/* Banking (rep's) + totals */}
         <div style={{ display: "flex", gap: 24, flexWrap: "wrap", justifyContent: "space-between", marginTop: 26 }}>
@@ -241,7 +299,7 @@ export default function RepInvoice({ repName, repCode, repEmail, onBack }: RepIn
       </div>
 
       <p className="rep-invoice-no-print" style={{ color: "#A6B0A6", fontSize: 11, marginTop: 12 }}>
-        Enter the exact amount you were paid, upload your logo (kept for future invoices), then Print / Save as PDF and email it to accounts@aroundyou.co.za.
+        The amount is pulled automatically from your Around You commission (cumulative through last month). Upload your logo (kept for future invoices) and fill in your banking, then tap "Submit to Accounts" — it's emailed to Accounts with a copy to you. You can also Print / Save as PDF for your records.
       </p>
     </div>
   );

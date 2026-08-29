@@ -355,6 +355,10 @@ export const backend = {
     regenerate: (req: any) => request("POST", "/edit-code/regenerate", { body: req }),
     verify: (req: any) => request("POST", "/edit-code/verify", { body: req }),
   },
+  repInvoice: {
+    preview: () => request("GET", "/rep-invoice/preview"),
+    submit: (req: any) => request("POST", "/rep-invoice/submit", { body: req }),
+  },
 };
 
 export default backend;

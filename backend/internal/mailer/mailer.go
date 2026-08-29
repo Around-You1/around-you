@@ -29,6 +29,13 @@ import (
 )
 
 func Send(to, subject, html string) error {
+	return SendOpts(to, subject, html, "", nil)
+}
+
+// SendOpts is Send with an optional reply-to address and optional CC list. Used
+// by the rep-invoice submission so Accounts can reply straight to the rep and
+// the rep gets their own copy.
+func SendOpts(to, subject, html, replyTo string, cc []string) error {
 	apiKey := os.Getenv("RESEND_API_KEY")
 	if to == "" {
 		logAttempt(to, subject, "skipped", "no recipient address")
@@ -42,12 +49,19 @@ func Send(to, subject, html string) error {
 	if from == "" {
 		from = "Around You <onboarding@resend.dev>"
 	}
-	payload, err := json.Marshal(map[string]interface{}{
+	body := map[string]interface{}{
 		"from":    from,
 		"to":      []string{to},
 		"subject": subject,
 		"html":    html,
-	})
+	}
+	if replyTo != "" {
+		body["reply_to"] = replyTo
+	}
+	if len(cc) > 0 {
+		body["cc"] = cc
+	}
+	payload, err := json.Marshal(body)
 	if err != nil {
 		return err
 	}
