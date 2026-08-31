@@ -165,6 +165,9 @@ export const backend = {
       province: string;
       status: string;
       email: string;
+      idNumber?: string;
+      phone?: string;
+      residentialAddress?: string;
     }) => request("POST", "/auth/rep/update", { body: req }),
     // Accountant access code (SuperAdmin only). setAccCode stores a bcrypt hash
     // server-side; accCodeStatus never returns the code itself.

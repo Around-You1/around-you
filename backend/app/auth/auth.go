@@ -813,9 +813,10 @@ func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*Rep
 	// New applications are created Inactive (pending). A SuperAdmin activates
 	// them on the Reps tab before the applicant can sign in.
 	if _, err := appdb.SQLDB.ExecContext(ctx, `
-		INSERT INTO users (email, role, full_name, rep_code, rep_email, upline_rep_code, rep_status, id_number, login_code)
-		VALUES ($1, 'Rep', $2, $3, NULLIF($4,''), NULLIF($5,''), 'Inactive', $6, $7)`,
+		INSERT INTO users (email, role, full_name, rep_code, rep_email, upline_rep_code, rep_status, id_number, login_code, phone, residential_address)
+		VALUES ($1, 'Rep', $2, $3, NULLIF($4,''), NULLIF($5,''), 'Inactive', $6, $7, $8, $9)`,
 		loginEmail, fullName, repCode, strings.TrimSpace(req.Email), strings.TrimSpace(req.UplineRepCode), strings.TrimSpace(req.IDNumber), loginCode,
+		strings.TrimSpace(req.Phone), strings.TrimSpace(req.ResidentialAddress),
 	); err != nil {
 		return nil, err
 	}
@@ -906,6 +907,9 @@ type Rep struct {
 	Status        string `json:"status"`
 	Email         string `json:"email"`
 	AccessCode    string `json:"accessCode"` // 12-char login code (SuperAdmin view, for reveal/resend)
+	IDNumber      string `json:"idNumber"`
+	Phone         string `json:"phone"`
+	ResidentialAddress string `json:"residentialAddress"`
 }
 
 type ListRepsResponse struct {
@@ -926,7 +930,8 @@ func ListReps(ctx context.Context) (*ListRepsResponse, error) {
 		SELECT id, COALESCE(full_name, ''), COALESCE(rep_code, ''),
 		       COALESCE(upline_rep_code, ''), is_team_leader,
 		       COALESCE(region, ''), COALESCE(province, ''), rep_status,
-		       COALESCE(rep_email, ''), COALESCE(login_code, '')
+		       COALESCE(rep_email, ''), COALESCE(login_code, ''),
+		       COALESCE(id_number, ''), COALESCE(phone, ''), COALESCE(residential_address, '')
 		FROM users WHERE role = 'Rep' ORDER BY rep_code ASC`)
 	if err != nil {
 		return nil, err
@@ -937,7 +942,8 @@ func ListReps(ctx context.Context) (*ListRepsResponse, error) {
 	for rows.Next() {
 		var r Rep
 		if err := rows.Scan(&r.ID, &r.FullName, &r.RepCode,
-			&r.UplineRepCode, &r.IsTeamLeader, &r.Region, &r.Province, &r.Status, &r.Email, &r.AccessCode); err != nil {
+			&r.UplineRepCode, &r.IsTeamLeader, &r.Region, &r.Province, &r.Status, &r.Email, &r.AccessCode,
+			&r.IDNumber, &r.Phone, &r.ResidentialAddress); err != nil {
 			return nil, err
 		}
 		reps = append(reps, r)
@@ -950,13 +956,16 @@ func ListReps(ctx context.Context) (*ListRepsResponse, error) {
 }
 
 type UpdateRepRequest struct {
-	RepCode       string `json:"repCode"`
-	UplineRepCode string `json:"uplineRepCode"` // "" clears the upline
-	IsTeamLeader  bool   `json:"isTeamLeader"`
-	Region        string `json:"region"`
-	Province      string `json:"province"`
-	Status        string `json:"status"` // "Active" | "Inactive"
-	Email         string `json:"email"`
+	RepCode            string `json:"repCode"`
+	UplineRepCode      string `json:"uplineRepCode"` // "" clears the upline
+	IsTeamLeader       bool   `json:"isTeamLeader"`
+	Region             string `json:"region"`
+	Province           string `json:"province"`
+	Status             string `json:"status"` // "Active" | "Inactive"
+	Email              string `json:"email"`
+	IDNumber           string `json:"idNumber"`
+	Phone              string `json:"phone"`
+	ResidentialAddress string `json:"residentialAddress"`
 }
 
 // UpdateRep is SuperAdmin-only. It sets a rep's hierarchy + profile fields:
@@ -1027,11 +1036,15 @@ func UpdateRep(ctx context.Context, req *UpdateRepRequest) (*Rep, error) {
 		    province        = NULLIF($5, ''),
 		    rep_status      = $6,
 		    rep_email       = NULLIF($7, ''),
-		    login_code      = $8
+		    login_code      = $8,
+		    id_number       = $9,
+		    phone           = $10,
+		    residential_address = $11
 		WHERE role = 'Rep' AND lower(rep_code) = lower($1)`,
 		repCode, upline, req.IsTeamLeader,
 		strings.TrimSpace(req.Region), strings.TrimSpace(req.Province), status,
 		strings.TrimSpace(req.Email), loginCode,
+		strings.TrimSpace(req.IDNumber), strings.TrimSpace(req.Phone), strings.TrimSpace(req.ResidentialAddress),
 	)
 	if err != nil {
 		return nil, err
@@ -1069,10 +1082,12 @@ func UpdateRep(ctx context.Context, req *UpdateRepRequest) (*Rep, error) {
 		SELECT id, COALESCE(full_name, ''), COALESCE(rep_code, ''),
 		       COALESCE(upline_rep_code, ''), is_team_leader,
 		       COALESCE(region, ''), COALESCE(province, ''), rep_status,
-		       COALESCE(rep_email, ''), COALESCE(login_code, '')
+		       COALESCE(rep_email, ''), COALESCE(login_code, ''),
+		       COALESCE(id_number, ''), COALESCE(phone, ''), COALESCE(residential_address, '')
 		FROM users WHERE role = 'Rep' AND lower(rep_code) = lower($1)`, repCode,
 	).Scan(&r.ID, &r.FullName, &r.RepCode, &r.UplineRepCode, &r.IsTeamLeader,
-		&r.Region, &r.Province, &r.Status, &r.Email, &r.AccessCode)
+		&r.Region, &r.Province, &r.Status, &r.Email, &r.AccessCode,
+		&r.IDNumber, &r.Phone, &r.ResidentialAddress)
 	if err != nil {
 		return nil, err
 	}

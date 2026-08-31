@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { UserPlus, Copy, Save } from "lucide-react";
+import { UserPlus, Copy, Save, ChevronDown } from "lucide-react";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -18,6 +18,9 @@ interface Rep {
   status: string;
   email: string;
   accessCode?: string;
+  idNumber?: string;
+  phone?: string;
+  residentialAddress?: string;
 }
 
 const PROVINCES = [
@@ -41,7 +44,15 @@ export default function RepsTab() {
   const [email, setEmail] = useState("");
   const [creating, setCreating] = useState(false);
   const [savingId, setSavingId] = useState<number | null>(null);
+  const [openIds, setOpenIds] = useState<Set<number>>(new Set());
   const { toast } = useToast();
+
+  const toggleOpen = (id: number) =>
+    setOpenIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   useEffect(() => {
     loadReps();
@@ -95,6 +106,9 @@ export default function RepsTab() {
         province: rep.province || "",
         status: rep.status || "Active",
         email: rep.email || "",
+        idNumber: rep.idNumber || "",
+        phone: rep.phone || "",
+        residentialAddress: rep.residentialAddress || "",
       });
       toast({ title: "Rep updated", description: `${rep.fullName} saved` });
       loadReps(); // reflect auto Team-Leader promotion of the chosen upline
@@ -164,36 +178,70 @@ export default function RepsTab() {
             <p className="text-sm text-muted-foreground">No reps yet — add one above.</p>
           ) : (
             <div className="space-y-3">
-              {reps.map((rep) => (
-                <div key={rep.id} className="p-3 rounded-lg border border-border space-y-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="font-medium">
-                        {rep.fullName}
-                        {rep.isTeamLeader && (
-                          <span className="ml-2 text-xs rounded px-1.5 py-0.5 bg-[#AEECE4] text-black align-middle">
-                            Team Leader
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-sm text-muted-foreground font-mono">{rep.repCode}</p>
-                      {rep.accessCode && (
-                        <p className="text-xs text-muted-foreground">
-                          Access Code: <span className="font-mono text-foreground">{rep.accessCode}</span>
+              {reps.map((rep) => {
+                const isOpen = openIds.has(rep.id);
+                return (
+                <div key={rep.id} className="rounded-lg border border-border">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggleOpen(rep.id)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleOpen(rep.id); } }}
+                    className="flex items-center justify-between gap-3 p-3 cursor-pointer select-none"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <ChevronDown className={`w-4 h-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">
+                          {rep.fullName}
+                          {rep.isTeamLeader && (
+                            <span className="ml-2 text-xs rounded px-1.5 py-0.5 bg-[#AEECE4] text-black align-middle">
+                              Team Leader
+                            </span>
+                          )}
+                          {rep.status === "Inactive" && (
+                            <span className="ml-2 text-xs rounded px-1.5 py-0.5 bg-yellow-100 text-yellow-800 align-middle">
+                              Pending / Inactive
+                            </span>
+                          )}
                         </p>
+                        <p className="text-sm text-muted-foreground font-mono">{rep.repCode}</p>
+                      </div>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); copyCode(rep.repCode); }}>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy Code
+                    </Button>
+                  </div>
+
+                  {isOpen && (
+                  <div className="px-3 pb-3 pt-3 space-y-3 border-t border-border">
+                  <div className="rounded-md bg-muted/40 p-3 space-y-3">
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
+                      <div><span className="text-muted-foreground">Full legal name: </span><span className="font-medium">{rep.fullName || "—"}</span></div>
+                      {rep.accessCode && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">Access Code:</span>
+                          <span className="font-mono text-foreground">{rep.accessCode}</span>
+                          <Button variant="outline" size="sm" className="h-6 px-2" onClick={() => copyCode(rep.accessCode)}>
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
                       )}
                     </div>
-                    <div className="flex flex-col gap-1.5">
-                      <Button variant="outline" size="sm" onClick={() => copyCode(rep.repCode)}>
-                        <Copy className="w-4 h-4 mr-2" />
-                        Copy Rep Code
-                      </Button>
-                      {rep.accessCode && (
-                        <Button variant="outline" size="sm" onClick={() => copyCode(rep.accessCode)}>
-                          <Copy className="w-4 h-4 mr-2" />
-                          Copy Access Code
-                        </Button>
-                      )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">SA ID / Passport Number</Label>
+                        <Input value={rep.idNumber || ""} onChange={(e) => setRepField(rep.id, { idNumber: e.target.value })} placeholder="ID / Passport" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Mobile</Label>
+                        <Input value={rep.phone || ""} onChange={(e) => setRepField(rep.id, { phone: e.target.value })} placeholder="Mobile number" />
+                      </div>
+                      <div className="space-y-1 sm:col-span-2">
+                        <Label className="text-xs">Residential Address</Label>
+                        <Input value={rep.residentialAddress || ""} onChange={(e) => setRepField(rep.id, { residentialAddress: e.target.value })} placeholder="Residential address" />
+                      </div>
                     </div>
                   </div>
 
@@ -283,8 +331,11 @@ export default function RepsTab() {
                       {savingId === rep.id ? "Saving…" : "Save"}
                     </Button>
                   </div>
+                  </div>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
