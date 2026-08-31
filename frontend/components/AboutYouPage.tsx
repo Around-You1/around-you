@@ -339,6 +339,12 @@ export default function AboutYouPage() {
               <Linkedin size={22} />
             </a>
           </div>
+
+          <p className="text-center" style={{ color: "#666", fontSize: 11, marginTop: 14, lineHeight: 1.6 }}>
+            © {new Date().getFullYear()} Around You (Pty) Ltd. All rights reserved.
+            <br />
+            <a href="/terms" style={{ color: "#888" }} className="hover:underline">Terms of Use</a>
+          </p>
         </div>
 
 

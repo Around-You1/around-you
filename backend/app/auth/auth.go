@@ -11,6 +11,7 @@ package auth
 
 import (
 	"context"
+	"crypto/subtle"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -423,9 +424,10 @@ func issueSession(ctx context.Context, u *appdb.User) (*LoginResponse, error) {
 // what actually matters is whether the account found by email has
 // role == "SuperAdmin" AND the password matches its stored hash.
 type LoginRequest struct {
-	Role     string `json:"role"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Role       string `json:"role"`
+	Email      string `json:"email"`
+	Password   string `json:"password"`
+	AccessCode string `json:"accessCode"`
 }
 
 // Login is password-based sign-in for SuperAdmin accounts only — the only
@@ -464,6 +466,15 @@ func Login(ctx context.Context, req *LoginRequest) (*LoginResponse, error) {
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(req.Password)); err != nil {
 		return nil, &errs.Error{Code: errs.Unauthenticated, Message: "invalid email or password"}
+	}
+
+	// Second-factor access code. Enforced only when the ADMIN_LOGIN_CODE Fly
+	// secret is set — so it can never lock the admin out (it's off until you set
+	// it, and you choose the value). Constant-time compare avoids timing leaks.
+	if code := strings.TrimSpace(os.Getenv("ADMIN_LOGIN_CODE")); code != "" {
+		if subtle.ConstantTimeCompare([]byte(strings.TrimSpace(req.AccessCode)), []byte(code)) != 1 {
+			return nil, &errs.Error{Code: errs.Unauthenticated, Message: "invalid access code"}
+		}
 	}
 
 	return issueSession(ctx, &u)

@@ -16,6 +16,7 @@ export default function AdminLoginPage() {
   const { toast, dismiss } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [accessCode, setAccessCode] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleAdminLogin(e: React.FormEvent) {
@@ -30,7 +31,7 @@ export default function AdminLoginPage() {
     }
     setLoading(true);
     try {
-      const res = await backend.auth.login({ role: "Admin", email: email.trim(), password });
+      const res = await backend.auth.login({ role: "Admin", email: email.trim(), password, accessCode: accessCode.trim() });
       localStorage.setItem("token", res.token);
       localStorage.setItem("user", JSON.stringify(res.user));
       dismiss();
@@ -127,6 +128,37 @@ export default function AdminLoginPage() {
                 placeholder="Enter your password"
                 autoComplete="current-password"
                 aria-label="Admin password"
+                enterKeyHint="go"
+                style={{
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(57,255,20,0.2)",
+                  color: "#fff",
+                  borderRadius: 8,
+                  padding: "10px 14px",
+                  width: "100%",
+                  fontSize: "0.9rem",
+                  outline: "none",
+                }}
+                className="transition-all focus:border-[#39FF14] placeholder-gray-600"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label
+                htmlFor="admin-access-code"
+                className="text-xs font-semibold uppercase tracking-wider"
+                style={{ color: "#a0a0a0" }}
+              >
+                Access Code
+              </label>
+              <input
+                id="admin-access-code"
+                type="password"
+                value={accessCode}
+                onChange={(e) => setAccessCode(e.target.value)}
+                placeholder="Your access code"
+                autoComplete="one-time-code"
+                aria-label="Admin access code"
                 enterKeyHint="go"
                 style={{
                   background: "rgba(255,255,255,0.05)",
