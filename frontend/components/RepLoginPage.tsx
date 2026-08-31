@@ -37,6 +37,7 @@ export default function RepLoginPage() {
   const [mode, setMode] = useState<"signin" | "apply">("signin");
   const [fullName, setFullName] = useState("");
   const [repCode, setRepCode] = useState("");
+  const [repAccessCode, setRepAccessCode] = useState("");
   const [loading, setLoading] = useState(false);
 
   const [app, setApp] = useState({ ...emptyApp });
@@ -56,7 +57,7 @@ export default function RepLoginPage() {
     }
     setLoading(true);
     try {
-      const res = await backend.auth.repLogin({ fullName: fullName.trim(), repCode: repCode.trim() });
+      const res = await backend.auth.repLogin({ fullName: fullName.trim(), repCode: repCode.trim(), accessCode: repAccessCode.trim() });
       localStorage.setItem("token", res.token);
       localStorage.setItem("user", JSON.stringify(res.user));
       dismiss();
@@ -144,6 +145,10 @@ export default function RepLoginPage() {
               <div className="space-y-1.5">
                 <label htmlFor="rep-code" className={labelCls} style={labelStyle}>Rep Code</label>
                 <input id="rep-code" type="text" value={repCode} onChange={(e) => setRepCode(e.target.value)} placeholder="e.g. Rep00000001" autoComplete="off" style={inputStyle} className="transition-all focus:border-[#39FF14] placeholder-gray-600" />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="rep-access-code" className={labelCls} style={labelStyle}>Access Code</label>
+                <input id="rep-access-code" type="password" value={repAccessCode} onChange={(e) => setRepAccessCode(e.target.value)} placeholder="From your welcome email" autoComplete="one-time-code" style={inputStyle} className="transition-all focus:border-[#39FF14] placeholder-gray-600" />
               </div>
               <button id="rep-login-btn" type="submit" disabled={loading}
                 style={{ background: loading ? "#1a3a0a" : `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`, color: "#000", border: "none", borderRadius: 10, padding: "14px 0", width: "100%", fontWeight: 700, fontSize: "1rem", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.5 : 1, minHeight: 48, marginTop: 8 }}

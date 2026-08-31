@@ -149,7 +149,7 @@ export const backend = {
       request("POST", "/auth/local-guest-login", { body: req }),
     // SuperAdmin (email + password) and Rep (full name + rep code) sign-in.
     login: (req: any) => request("POST", "/auth/login", { body: req }),
-    repLogin: (req: { fullName: string; repCode: string }) =>
+    repLogin: (req: { fullName: string; repCode: string; accessCode?: string }) =>
       request("POST", "/auth/rep-login", { body: req }),
     repApplication: (req: any) => request("POST", "/auth/rep-application", { body: req }),
     accLogin: (req: { accessCode: string }) =>

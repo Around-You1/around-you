@@ -484,8 +484,9 @@ func Login(ctx context.Context, req *LoginRequest) (*LoginResponse, error) {
 // (e.g. "Rep00000001") instead of a password. Rep accounts are created only
 // by a SuperAdmin via CreateRep below — there is no self-service signup.
 type RepLoginRequest struct {
-	FullName string `json:"fullName"`
-	RepCode  string `json:"repCode"`
+	FullName   string `json:"fullName"`
+	RepCode    string `json:"repCode"`
+	AccessCode string `json:"accessCode"`
 }
 
 //encore:api public method=POST path=/auth/rep-login
@@ -497,13 +498,13 @@ func RepLogin(ctx context.Context, req *RepLoginRequest) (*LoginResponse, error)
 	}
 
 	var u appdb.User
-	var repStatus string
+	var repStatus, loginCode string
 	err := appdb.SQLDB.QueryRowContext(ctx, `
-		SELECT id, email, role, full_name, rep_code, COALESCE(NULLIF(rep_status,''),'Active')
+		SELECT id, email, role, full_name, rep_code, COALESCE(NULLIF(rep_status,''),'Active'), COALESCE(login_code,'')
 		FROM users
 		WHERE role = 'Rep' AND lower(full_name) = lower($1) AND lower(rep_code) = lower($2)`,
 		fullName, repCode,
-	).Scan(&u.ID, &u.Email, &u.Role, &u.FullName, &u.RepCode, &repStatus)
+	).Scan(&u.ID, &u.Email, &u.Role, &u.FullName, &u.RepCode, &repStatus, &loginCode)
 	if err != nil {
 		if isNoRows(err) {
 			// Same generic message either way — don't reveal which part
@@ -517,6 +518,15 @@ func RepLogin(ctx context.Context, req *RepLoginRequest) (*LoginResponse, error)
 	// in until a SuperAdmin activates them on the Reps tab.
 	if !strings.EqualFold(repStatus, "Active") {
 		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "Your rep application is pending approval. You'll be able to sign in once it's activated."}
+	}
+
+	// Access-code second factor. Enforced only when a code has been issued to
+	// this rep (login_code non-empty) — so existing reps without one yet are not
+	// locked out. New reps get theirs in the activation welcome email.
+	if strings.TrimSpace(loginCode) != "" {
+		if subtle.ConstantTimeCompare([]byte(strings.TrimSpace(req.AccessCode)), []byte(loginCode)) != 1 {
+			return nil, &errs.Error{Code: errs.Unauthenticated, Message: "invalid access code"}
+		}
 	}
 
 	return issueSession(ctx, &u)
@@ -697,9 +707,9 @@ func CreateRep(ctx context.Context, req *CreateRepRequest) (*CreateRepResponse, 
 	email := strings.ToLower(repCode) + "@reps.aroundyou.internal"
 
 	if _, err := appdb.SQLDB.ExecContext(ctx, `
-		INSERT INTO users (email, role, full_name, rep_code, rep_email)
-		VALUES ($1, 'Rep', $2, $3, NULLIF($4, ''))`,
-		email, fullName, repCode, strings.TrimSpace(req.Email),
+		INSERT INTO users (email, role, full_name, rep_code, rep_email, login_code)
+		VALUES ($1, 'Rep', $2, $3, NULLIF($4, ''), $5)`,
+		email, fullName, repCode, strings.TrimSpace(req.Email), appdb.RandomCode(12),
 	); err != nil {
 		return nil, err
 	}
@@ -796,13 +806,16 @@ func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*Rep
 		return nil, err
 	}
 	loginEmail := strings.ToLower(repCode) + "@reps.aroundyou.internal"
+	// 12-char access code, issued now and emailed to the rep when a SuperAdmin
+	// activates them (see UpdateRep). Kept on file until then.
+	loginCode := appdb.RandomCode(12)
 
 	// New applications are created Inactive (pending). A SuperAdmin activates
 	// them on the Reps tab before the applicant can sign in.
 	if _, err := appdb.SQLDB.ExecContext(ctx, `
-		INSERT INTO users (email, role, full_name, rep_code, rep_email, upline_rep_code, rep_status, id_number)
-		VALUES ($1, 'Rep', $2, $3, NULLIF($4,''), NULLIF($5,''), 'Inactive', $6)`,
-		loginEmail, fullName, repCode, strings.TrimSpace(req.Email), strings.TrimSpace(req.UplineRepCode), strings.TrimSpace(req.IDNumber),
+		INSERT INTO users (email, role, full_name, rep_code, rep_email, upline_rep_code, rep_status, id_number, login_code)
+		VALUES ($1, 'Rep', $2, $3, NULLIF($4,''), NULLIF($5,''), 'Inactive', $6, $7)`,
+		loginEmail, fullName, repCode, strings.TrimSpace(req.Email), strings.TrimSpace(req.UplineRepCode), strings.TrimSpace(req.IDNumber), loginCode,
 	); err != nil {
 		return nil, err
 	}
@@ -817,6 +830,27 @@ func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*Rep
 	)
 
 	return &RepApplicationResponse{FullName: fullName, RepCode: repCode}, nil
+}
+
+// renderRepWelcomeHTML is the email a rep receives when a SuperAdmin activates
+// their account — it carries their sign-in access code.
+func renderRepWelcomeHTML(fullName, repCode, loginCode string) string {
+	esc := htmlpkg.EscapeString
+	name := strings.TrimSpace(fullName)
+	if name == "" {
+		name = "there"
+	}
+	return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;color:#1a1f2e;">` +
+		`<h2 style="color:#159a53;margin:0 0 10px;">Welcome to Around You!</h2>` +
+		`<p>Hi ` + esc(name) + `, your rep account has been activated. Here are your sign-in details — please keep them safe and don't share them.</p>` +
+		`<table style="border-collapse:collapse;font-size:15px;margin:12px 0;">` +
+		`<tr><td style="padding:6px 12px;color:#555;">Full Name</td><td style="padding:6px 12px;"><b>` + esc(name) + `</b></td></tr>` +
+		`<tr><td style="padding:6px 12px;color:#555;">Rep Code</td><td style="padding:6px 12px;"><b>` + esc(repCode) + `</b></td></tr>` +
+		`<tr><td style="padding:6px 12px;color:#555;">Access Code</td><td style="padding:6px 12px;"><b style="font-size:18px;color:#159a53;letter-spacing:1px;">` + esc(loginCode) + `</b></td></tr>` +
+		`</table>` +
+		`<p>To sign in: open Around You, tap <b>Rep</b>, then enter your full name, rep code and access code.</p>` +
+		`<p style="color:#888;font-size:13px;">If you didn't apply to be an Around You rep, please ignore this email.</p>` +
+		`</div>`
 }
 
 func renderRepApplicationHTML(r *RepApplicationRequest, repCode string) string {
@@ -871,6 +905,7 @@ type Rep struct {
 	Province      string `json:"province"`
 	Status        string `json:"status"`
 	Email         string `json:"email"`
+	AccessCode    string `json:"accessCode"` // 12-char login code (SuperAdmin view, for reveal/resend)
 }
 
 type ListRepsResponse struct {
@@ -891,7 +926,7 @@ func ListReps(ctx context.Context) (*ListRepsResponse, error) {
 		SELECT id, COALESCE(full_name, ''), COALESCE(rep_code, ''),
 		       COALESCE(upline_rep_code, ''), is_team_leader,
 		       COALESCE(region, ''), COALESCE(province, ''), rep_status,
-		       COALESCE(rep_email, '')
+		       COALESCE(rep_email, ''), COALESCE(login_code, '')
 		FROM users WHERE role = 'Rep' ORDER BY rep_code ASC`)
 	if err != nil {
 		return nil, err
@@ -902,7 +937,7 @@ func ListReps(ctx context.Context) (*ListRepsResponse, error) {
 	for rows.Next() {
 		var r Rep
 		if err := rows.Scan(&r.ID, &r.FullName, &r.RepCode,
-			&r.UplineRepCode, &r.IsTeamLeader, &r.Region, &r.Province, &r.Status, &r.Email); err != nil {
+			&r.UplineRepCode, &r.IsTeamLeader, &r.Region, &r.Province, &r.Status, &r.Email, &r.AccessCode); err != nil {
 			return nil, err
 		}
 		reps = append(reps, r)
@@ -972,6 +1007,18 @@ func UpdateRep(ctx context.Context, req *UpdateRepRequest) (*Rep, error) {
 		}
 	}
 
+	// Snapshot current state so we can (a) issue a login code if none exists yet
+	// and (b) detect an Inactive→Active transition to fire the welcome email.
+	var curStatus, curLoginCode, curRepEmail, curFullName string
+	_ = appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT COALESCE(rep_status,''), COALESCE(login_code,''), COALESCE(rep_email,''), COALESCE(full_name,'')
+		FROM users WHERE role = 'Rep' AND lower(rep_code) = lower($1)`, repCode,
+	).Scan(&curStatus, &curLoginCode, &curRepEmail, &curFullName)
+	loginCode := strings.TrimSpace(curLoginCode)
+	if loginCode == "" {
+		loginCode = appdb.RandomCode(12)
+	}
+
 	res, err := appdb.SQLDB.ExecContext(ctx, `
 		UPDATE users
 		SET upline_rep_code = NULLIF($2, ''),
@@ -979,17 +1026,32 @@ func UpdateRep(ctx context.Context, req *UpdateRepRequest) (*Rep, error) {
 		    region          = NULLIF($4, ''),
 		    province        = NULLIF($5, ''),
 		    rep_status      = $6,
-		    rep_email       = NULLIF($7, '')
+		    rep_email       = NULLIF($7, ''),
+		    login_code      = $8
 		WHERE role = 'Rep' AND lower(rep_code) = lower($1)`,
 		repCode, upline, req.IsTeamLeader,
 		strings.TrimSpace(req.Region), strings.TrimSpace(req.Province), status,
-		strings.TrimSpace(req.Email),
+		strings.TrimSpace(req.Email), loginCode,
 	)
 	if err != nil {
 		return nil, err
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return nil, &errs.Error{Code: errs.NotFound, Message: "rep not found"}
+	}
+
+	// On activation (Inactive→Active), email the rep a welcome with their access
+	// code + rep code. Best-effort, never blocks the update.
+	if strings.EqualFold(status, "Active") && !strings.EqualFold(curStatus, "Active") {
+		to := strings.TrimSpace(req.Email)
+		if to == "" {
+			to = curRepEmail
+		}
+		if to != "" {
+			go func(addr, name, rc, lc string) {
+				_ = mailer.Send(addr, "Welcome to Around You — your Rep access", renderRepWelcomeHTML(name, rc, lc))
+			}(to, curFullName, repCode, loginCode)
+		}
 	}
 
 	// Assigning an upline makes that upline a Team Leader.
@@ -1007,10 +1069,10 @@ func UpdateRep(ctx context.Context, req *UpdateRepRequest) (*Rep, error) {
 		SELECT id, COALESCE(full_name, ''), COALESCE(rep_code, ''),
 		       COALESCE(upline_rep_code, ''), is_team_leader,
 		       COALESCE(region, ''), COALESCE(province, ''), rep_status,
-		       COALESCE(rep_email, '')
+		       COALESCE(rep_email, ''), COALESCE(login_code, '')
 		FROM users WHERE role = 'Rep' AND lower(rep_code) = lower($1)`, repCode,
 	).Scan(&r.ID, &r.FullName, &r.RepCode, &r.UplineRepCode, &r.IsTeamLeader,
-		&r.Region, &r.Province, &r.Status, &r.Email)
+		&r.Region, &r.Province, &r.Status, &r.Email, &r.AccessCode)
 	if err != nil {
 		return nil, err
 	}

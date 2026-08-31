@@ -17,6 +17,7 @@ interface Rep {
   province: string;
   status: string;
   email: string;
+  accessCode?: string;
 }
 
 const PROVINCES = [
@@ -176,11 +177,24 @@ export default function RepsTab() {
                         )}
                       </p>
                       <p className="text-sm text-muted-foreground font-mono">{rep.repCode}</p>
+                      {rep.accessCode && (
+                        <p className="text-xs text-muted-foreground">
+                          Access Code: <span className="font-mono text-foreground">{rep.accessCode}</span>
+                        </p>
+                      )}
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => copyCode(rep.repCode)}>
-                      <Copy className="w-4 h-4 mr-2" />
-                      Copy Code
-                    </Button>
+                    <div className="flex flex-col gap-1.5">
+                      <Button variant="outline" size="sm" onClick={() => copyCode(rep.repCode)}>
+                        <Copy className="w-4 h-4 mr-2" />
+                        Copy Rep Code
+                      </Button>
+                      {rep.accessCode && (
+                        <Button variant="outline" size="sm" onClick={() => copyCode(rep.accessCode)}>
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copy Access Code
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
