@@ -127,21 +127,28 @@ export default function AboutYouPage() {
       title: "How It Works",
       content: (
         <>
-          <p>Around You is designed to elevate guests' experience. It's a smart, seamless way to view all the accommodation information, connect with trusted local partners, and enjoy meaningful extras that help make your stay unforgettable.</p>
-          <p>By using Around You, you unlock a powerful hospitality tool that helps you feel welcomed, informed, and connected from the moment you arrive at your accommodation.</p>
-          <p>Your accommodation would have issued you a unique "Access Code" or "QR Code."</p>
-          <p>Click the "Log In" button below, select the "Guest" tab, then select the "Holiday" tab, and either enter the accommodation name, address, province, and area, or enter the access code they may have sent you into the login portal. Then click the "Sign In" button.</p>
-          <p>Or scan the QR Code the accommodation may have sent you. Make sure that on the Sign In page, the access code auto populates, then click the "Sign In" button.</p>
-          <p>When logged in, guests instantly access:</p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Verified information about their accommodation</li>
-          </ul>
-          <p>Guests and Locals will access:</p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>A curated selection of nearby restaurants, wellness venues, essential services, and local attractions</li>
-            <li>Exclusive discounts from select venues (redeemable via digital codes)</li>
-            <li>One click navigation to partner venues and points of interest</li>
-          </ul>
+          <p>Around You gives you instant access to everything worth knowing near where you're staying — verified accommodation info, trusted local restaurants, services and attractions, exclusive discounts, and one-tap directions. Here's how to get started.</p>
+
+          <p className="font-semibold" style={{ color: LUMO }}>For Holiday Guests</p>
+          <p>Your accommodation gives you an Access Code or a QR code when you arrive.</p>
+          <ol className="list-decimal pl-5 space-y-1">
+            <li>Open Around You and tap <strong>Guest</strong> on the sign-in screen.</li>
+            <li>Enter your 12-character <strong>Access Code</strong> (or scan the QR code — it fills the code in for you), then tap <strong>Sign In</strong>. You can also sign in with your accommodation's name, address, province and postal code.</li>
+            <li>You'll land on your accommodation's page with everything you need — Wi-Fi, check-in and check-out details, house rules, amenities, emergency contacts and directions.</li>
+            <li>Explore what's Around You: browse restaurants, services and attractions near your stay using the radius slider (from 10 km up to 150 km). Search by cuisine, category or keyword.</li>
+            <li>Save money: when a place offers a discount, tap <strong>Redeem discount</strong> to get your QR code — show it to the venue to redeem. You can also book a restaurant table right in the app.</li>
+            <li>After you've visited, leave a star rating to help other guests.</li>
+          </ol>
+
+          <p className="font-semibold" style={{ color: LUMO }}>For Locals</p>
+          <p>Live in the area? Around You is for you too.</p>
+          <ol className="list-decimal pl-5 space-y-1">
+            <li>Tap <strong>Locals</strong> on the sign-in screen.</li>
+            <li>Sign in with your email, province and postal code. The first time, we'll email you a one-time code (OTP) to verify it's you.</li>
+            <li>After that, you can sign in without the code — up to 5 times a month (or 10 if you're awarded <strong>Super Local</strong> status).</li>
+            <li>Browse restaurants, services and attractions near you with the radius slider (up to 50 km), search, and grab exclusive discounts the same way — tap <strong>Redeem discount</strong> and show your QR to the venue.</li>
+            <li>Rate the places you visit to help your community.</li>
+          </ol>
         </>
       ),
     },
