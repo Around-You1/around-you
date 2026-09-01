@@ -215,6 +215,8 @@ func main() {
 	r.auth("GET /accounts/bookings", httpx.Empty(billing.AccountsBookings))
 	// Scheduler-triggered monthly billing run — token-protected, not user auth.
 	mux.Handle("POST /billing/run", billingRunHandler())
+	// Scheduler-triggered monthly rep-invoice run (the 5th) — same shared token.
+	mux.Handle("POST /rep-invoice/run", repInvoiceRunHandler())
 
 	// ---- Edit code (partner self-service profile editing) ------------------
 	r.auth("GET /edit-code", httpx.Query(editcode.Get))
@@ -415,6 +417,27 @@ func billingRunHandler() http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(map[string]int{"invoicesIssued": n})
+	}
+}
+
+// repInvoiceRunHandler triggers the monthly rep-invoice run (auto-sends each
+// active rep's commission invoice to Accounts). A scheduler calls it on the
+// 5th; it shares the BILLING_RUN_TOKEN secret via the X-Billing-Token header.
+func repInvoiceRunHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		token := os.Getenv("BILLING_RUN_TOKEN")
+		if token == "" || req.Header.Get("X-Billing-Token") != token {
+			writeErr(w, &errs.Error{Code: errs.Unauthenticated, Message: "invalid or missing billing token"})
+			return
+		}
+		n, err := repinvoice.RunMonthlyRepInvoices(req.Context())
+		if err != nil {
+			writeErr(w, err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]int{"repInvoicesSent": n})
 	}
 }
 

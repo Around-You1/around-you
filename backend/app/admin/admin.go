@@ -21,11 +21,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
 	"backend_encore/app/auth"
 	"backend_encore/internal/appdb"
+	"backend_encore/internal/billing"
 	"backend_encore/internal/errs"
 	"backend_encore/store"
 )
@@ -101,8 +103,16 @@ func BulkSetActive(ctx context.Context, req *BulkRequest) (*BulkResponse, error)
 	for _, id := range req.IDs {
 		if req.Active {
 			enableCodes(ctx, req.EntityType, id)
+			// Activation is what triggers a partner's first invoice + starts the
+			// monthly billing cycle (idempotent: a re-activation won't re-invoice).
+			if err := billing.OnPartnerActivated(ctx, req.EntityType, id); err != nil {
+				log.Printf("admin: partner activated but invoicing failed (%s %d): %v", req.EntityType, id, err)
+			}
 		} else {
 			disableCodes(ctx, req.EntityType, id)
+			if err := billing.PausePartnerBilling(ctx, req.EntityType, id); err != nil {
+				log.Printf("admin: could not pause billing on deactivate (%s %d): %v", req.EntityType, id, err)
+			}
 		}
 	}
 	return &BulkResponse{Affected: len(req.IDs)}, nil

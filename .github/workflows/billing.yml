@@ -2,7 +2,7 @@ name: Billing Run
 
 # Triggers the billing run DAILY at 02:00 UTC (and on demand from the Actions
 # tab). Running daily means each partner is invoiced on their own monthly
-# anniversary — the day of the month they signed up — rather than everyone
+# anniversary — the day of the month they went live — rather than everyone
 # being batched to month-start. The run only bills subscriptions whose
 # next_bill_date has arrived, and is idempotent, so daily runs are safe.
 #

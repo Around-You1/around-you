@@ -49,20 +49,21 @@ func RunMonthlyBilling(ctx context.Context) (int, error) {
 		end := start.AddDate(0, 1, 0)
 		dueDate := start.AddDate(0, 0, 3)
 
-		subtotal := d.monthlyCents
+		base := d.monthlyCents
+		covers := 0
 		if d.plan == "booking" {
-			// Add the per-booking charge for the month just ended, on top of the
-			// R200 base: restaurants = R10 per cover (party_size × R10), and
-			// services/attractions = 10% of item value. Both are stored on each
-			// booking's `commission` field, so we just sum it.
+			// The per-booking charge for the month just ended, billed in arrears
+			// as its own invoice line on top of the R200 base: restaurants = R10
+			// per cover (party_size × R10), services/attractions = 10% of item
+			// value. Both are stored on each booking's `commission` field.
 			bc, err := bookingCommissionCents(ctx, d.partnerType, d.partnerID, start.AddDate(0, -1, 0), start)
 			if err != nil {
 				log.Printf("billing run: booking total for sub %d failed: %v", d.subID, err)
 			}
-			subtotal += bc
+			covers = bc
 		}
 
-		if err := GenerateInvoice(ctx, d.subID, d.partnerType, d.partnerID, d.plan, d.tier, subtotal, start, end, dueDate, false); err != nil {
+		if err := GenerateInvoice(ctx, d.subID, d.partnerType, d.partnerID, d.plan, d.tier, base, covers, start, end, dueDate, false); err != nil {
 			log.Printf("billing run: invoice for sub %d failed: %v", d.subID, err)
 			continue
 		}

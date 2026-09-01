@@ -131,6 +131,22 @@ func InvoiceItem(partnerType string, tier int, audience string, units int) (code
 		fmt.Sprintf("%s Tier %d %s", typeName, tier, audWord)
 }
 
+// BookingItemCodes returns the two invoice line codes/descriptions for a
+// Booking-plan partner: the fixed monthly base (…BookM, R200) and the variable
+// usage line (…BookC / …Book — restaurant covers at R10 each, service/attraction
+// bookings at 10% of the chosen items). Accommodation/estate never use the
+// Booking plan, so they fall back to the restaurant labels defensively.
+func BookingItemCodes(partnerType string) (monthlyCode, monthlyDesc, usageCode, usageDesc string) {
+	switch partnerType {
+	case "service":
+		return "SerBookM", "Service Booking Monthly", "SerBook", "Service Bookings"
+	case "attraction":
+		return "AttBookM", "Attraction Booking Monthly", "AttBook", "Attraction Bookings"
+	default: // restaurant
+		return "ResBookM", "Restaurant Booking Monthly", "ResBookC", "Restaurant Booking Covers"
+	}
+}
+
 // tierNumber maps a stored accessLevel to the 2-tier model. Legacy values map
 // by price: old "Tier 4" (R300) → 2, old "Tier 3" (R200) → 1, so pre-migration
 // billing stays correct.

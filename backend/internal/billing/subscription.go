@@ -47,7 +47,10 @@ func EnsureSubscription(ctx context.Context, partnerType string, partnerID int64
 	if strings.TrimSpace(repCode) != "" {
 		repArg = strings.TrimSpace(repCode)
 	}
-	nextBill := time.Now().AddDate(0, 1, 0) // first bill covers this month; next in one month
+	// The first invoice is issued at onboarding (the day the partner goes live);
+	// recurring billing then runs on that same day-of-month every month, so the
+	// next bill date is one month out from today.
+	nextBill := time.Now().AddDate(0, 1, 0)
 
 	_, err := appdb.SQLDB.ExecContext(ctx, `
 		INSERT INTO partner_subscription

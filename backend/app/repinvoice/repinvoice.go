@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"html"
+	"log"
 	"strings"
 	"time"
 
@@ -236,5 +237,164 @@ func renderRepInvoiceHTML(u *appdb.User, idNumber, number, itemCode, itemDesc st
 		e(number), now.Format("02/Jan/2006"), due.Format("02/Jan/2006"), amt, amt,
 		e(itemCode), e(itemDesc), amt, amt,
 		e(req.BankHolder), e(req.BankName), e(req.BankAccount), e(req.BankBranch),
+		amt, amt, amt, amt)
+}
+
+// ---- Automated monthly run (the 5th) ----------------------------------------
+
+// RunMonthlyRepInvoices auto-generates and emails each active rep's commission
+// invoice to Accounts — intended to run on the 5th of each month. For every
+// active, non-test rep who is owed commission (cumulative through the prior
+// month) and hasn't already been invoiced for that month, it issues an
+// authoritative per-rep invoice number, records it, and emails Accounts (reply-
+// to + cc the rep) with the rep's full application details (banking + tax).
+// Idempotent per rep per month, so re-running is safe. Returns the count sent.
+func RunMonthlyRepInvoices(ctx context.Context) (int, error) {
+	label, itemCode, itemDesc := priorMonthParts(time.Now())
+
+	rows, err := appdb.SQLDB.QueryContext(ctx, `
+		SELECT COALESCE(rep_code,''), COALESCE(full_name,''), COALESCE(rep_email,''),
+		       COALESCE(id_number,''), COALESCE(residential_address,''),
+		       COALESCE(date_of_birth,''), COALESCE(tax_number,''), COALESCE(vat_number,''),
+		       COALESCE(bank_account_name,''), COALESCE(bank_name,''),
+		       COALESCE(bank_account_number,''), COALESCE(bank_branch_code,''), COALESCE(bank_account_type,'')
+		FROM users
+		WHERE role = 'Rep' AND COALESCE(rep_status,'') = 'Active' AND COALESCE(rep_code,'') <> ''`)
+	if err != nil {
+		return 0, err
+	}
+	type repRow struct {
+		code, name, email, id, addr, dob, tax, vat string
+		bankHolder, bankName, bankAcc, bankBranch, bankType string
+	}
+	var reps []repRow
+	for rows.Next() {
+		var r repRow
+		if err := rows.Scan(&r.code, &r.name, &r.email, &r.id, &r.addr, &r.dob, &r.tax, &r.vat,
+			&r.bankHolder, &r.bankName, &r.bankAcc, &r.bankBranch, &r.bankType); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		reps = append(reps, r)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+
+	sent := 0
+	for _, r := range reps {
+		if appdb.IsTestRep(r.code) {
+			continue
+		}
+		amount, err := cumulativeCommissionCents(ctx, r.code)
+		if err != nil {
+			log.Printf("rep-invoice run: commission for %s failed: %v", r.code, err)
+			continue
+		}
+		if amount <= 0 {
+			continue // nothing owed this month
+		}
+
+		// Idempotent: skip if this rep already has an invoice for this month.
+		var exists bool
+		if err := appdb.SQLDB.QueryRowContext(ctx,
+			`SELECT EXISTS(SELECT 1 FROM rep_invoice WHERE rep_code = $1 AND period_month = $2)`,
+			r.code, label).Scan(&exists); err != nil {
+			log.Printf("rep-invoice run: dup check for %s failed: %v", r.code, err)
+			continue
+		}
+		if exists {
+			continue
+		}
+
+		// Allocate an authoritative per-rep sequence + number (retry on race).
+		var number string
+		var insErr error
+		for attempt := 0; attempt < 5; attempt++ {
+			var maxSeq int
+			if err := appdb.SQLDB.QueryRowContext(ctx,
+				`SELECT COALESCE(MAX(seq),0) FROM rep_invoice WHERE rep_code = $1`, r.code).Scan(&maxSeq); err != nil {
+				insErr = err
+				break
+			}
+			seq := maxSeq + 1
+			number = fmt.Sprintf("AY-%s-%06d", repNum(r.code), seq)
+			_, insErr = appdb.SQLDB.ExecContext(ctx, `
+				INSERT INTO rep_invoice
+				  (rep_code, seq, invoice_number, period_month, amount_cents,
+				   rep_name, rep_email, residential_address, bank_holder, bank_name, bank_account, bank_branch)
+				VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+				r.code, seq, number, label, amount,
+				r.name, r.email, r.addr, r.bankHolder, r.bankName, r.bankAcc, r.bankBranch)
+			if insErr == nil {
+				break
+			}
+		}
+		if insErr != nil {
+			log.Printf("rep-invoice run: could not record invoice for %s: %v", r.code, insErr)
+			continue
+		}
+
+		body := renderAutoRepInvoiceHTML(r.name, r.code, r.email, r.id, r.dob, r.tax, r.vat, r.addr,
+			r.bankHolder, r.bankName, r.bankAcc, r.bankBranch, r.bankType, number, itemCode, itemDesc, amount)
+		subject := fmt.Sprintf("Rep Invoice %s — %s (%s)", number, r.name, r.code)
+		var cc []string
+		if strings.TrimSpace(r.email) != "" {
+			cc = []string{r.email}
+		}
+		if err := mailer.SendOpts(accountsEmail, subject, body, r.email, cc); err != nil {
+			log.Printf("rep-invoice run: email for %s failed: %v", r.code, err)
+			// The record is stored; idempotency prevents a resend next run.
+		}
+		sent++
+	}
+	return sent, nil
+}
+
+// renderAutoRepInvoiceHTML renders the auto-generated rep invoice with the rep's
+// full application details (ID, DOB, tax, VAT, banking incl. account type).
+func renderAutoRepInvoiceHTML(name, code, email, idNumber, dob, tax, vat, addr,
+	bankHolder, bankName, bankAcc, bankBranch, bankType, number, itemCode, itemDesc string, amountCents int) string {
+	now := time.Now()
+	due := now.AddDate(0, 0, 3)
+	amt := rands(amountCents)
+	e := html.EscapeString
+	row := func(k, v string) string {
+		if strings.TrimSpace(v) == "" {
+			return ""
+		}
+		return `<tr><td style="color:#666;padding-right:14px">` + e(k) + `</td><td>` + e(v) + `</td></tr>`
+	}
+	return fmt.Sprintf(`<div style="font-family:Arial,Helvetica,sans-serif;color:#111;max-width:660px">
+  <p style="font-weight:bold;font-size:16px;margin:0">%s</p>
+  <table cellpadding="2" style="margin:6px 0">%s%s%s%s%s%s%s</table>
+  <p style="color:#2563eb;font-weight:bold;margin-top:14px">TAX INVOICE</p>
+  <table cellpadding="3">
+    <tr><td style="color:#666">Invoice Number</td><td>%s</td></tr>
+    <tr><td style="color:#666">Invoice Date</td><td>%s</td></tr>
+    <tr><td style="color:#666">Due Date</td><td>%s</td></tr>
+    <tr><td style="color:#666">Invoice Total</td><td>%s</td></tr>
+    <tr><td style="color:#666">Balance Due</td><td>%s</td></tr>
+  </table>
+  <p><b>Around You (Pty) Ltd</b><br>Accounts<br>accounts@aroundyou.co.za</p>
+  <table width="100%%" cellpadding="6" cellspacing="0" style="border-collapse:collapse">
+    <tr style="border-bottom:1px solid #ccc;text-align:left">
+      <th>Item</th><th>Description</th><th align="right">Unit Cost</th><th align="right">Qty</th><th align="right">Line Total</th></tr>
+    <tr style="border-bottom:1px solid #eee">
+      <td style="color:#2563eb">%s</td><td>%s</td><td align="right">%s</td><td align="right">1</td><td align="right">%s</td></tr>
+  </table>
+  <table width="100%%" cellpadding="6"><tr>
+    <td style="vertical-align:top">Banking:<br>%s<br>%s<br>Acc: %s<br>Branch: %s<br>Type: %s</td>
+    <td align="right" style="vertical-align:top">Net: %s<br>Subtotal: %s<br>Total: %s<br><b>Balance Due: %s</b></td>
+  </tr></table>
+  <p style="color:#888;font-size:11px;margin-top:10px">Auto-generated on behalf of the rep. Payment due within 3 days of the invoice date.</p>
+</div>`,
+		e(name),
+		row("Rep Code", code), row("ID Number", idNumber), row("Date of Birth", dob),
+		row("Email", email), row("Residential Address", addr), row("SARS Tax Number", tax), row("VAT Number", vat),
+		e(number), now.Format("02/Jan/2006"), due.Format("02/Jan/2006"), amt, amt,
+		e(itemCode), e(itemDesc), amt, amt,
+		e(bankHolder), e(bankName), e(bankAcc), e(bankBranch), e(bankType),
 		amt, amt, amt, amt)
 }

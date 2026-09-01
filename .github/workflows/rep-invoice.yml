@@ -1,0 +1,26 @@
+name: Rep Invoice Run
+
+# Auto-generates each active rep's monthly commission invoice and emails it to
+# Accounts. Runs on the 5th of every month at 02:00 UTC (and on demand from the
+# Actions tab). The run is idempotent per rep per month, so a repeat is safe.
+#
+# Reuses the same repository secrets as the billing run:
+#   BACKEND_URL         e.g. https://around-you-backend.fly.dev
+#   BILLING_RUN_TOKEN   the shared token; must match the Fly secret of the same
+#                       name on the backend.
+on:
+  schedule:
+    - cron: "0 2 5 * *"
+  workflow_dispatch: {}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger rep-invoice run
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          BILLING_RUN_TOKEN: ${{ secrets.BILLING_RUN_TOKEN }}
+        run: |
+          curl -fsS -X POST "$BACKEND_URL/rep-invoice/run" \
+            -H "X-Billing-Token: $BILLING_RUN_TOKEN"

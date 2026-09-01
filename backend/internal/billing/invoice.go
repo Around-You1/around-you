@@ -2,6 +2,8 @@ package billing
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	htmlPkg "html"
 	"log"
@@ -65,25 +67,84 @@ func partnerTable(partnerType string) string {
 }
 
 // OnPartnerOnboarded is the single hook the partner Create handlers call: it
-// ensures the billing subscription exists and issues the first invoice. Both
-// steps are idempotent, so a re-save reconciles rather than duplicates.
+// ensures the billing subscription exists but does NOT invoice. Billing is
+// paused (next_bill_date NULL) until a SuperAdmin activates the profile — the
+// first invoice and the monthly anchor are set then (see OnPartnerActivated).
+// Idempotent: a re-save reconciles the subscription and, as long as the partner
+// hasn't been activated yet, leaves billing paused.
 func OnPartnerOnboarded(ctx context.Context, partnerType string, partnerID int64, accessLevel, guestType, repCode string) error {
 	if err := EnsureSubscription(ctx, partnerType, partnerID, accessLevel, guestType, repCode); err != nil {
 		return err
 	}
-	// Test reps (e.g. Rep00000001) create real profiles that must still receive
-	// their one onboarding invoice + email, but must never be recurring-billed
-	// (no outstanding balance) and never counted in any metric. Nulling
-	// next_bill_date takes them out of the monthly billing run; commission
-	// accrual is skipped in GenerateInvoice; analytics queries filter them out.
+	// Pause billing until activation. Only touch subscriptions that have never
+	// been invoiced, so re-saving an already-active partner never clears a live
+	// billing anchor.
+	if _, err := appdb.SQLDB.ExecContext(ctx, `
+		UPDATE partner_subscription
+		SET next_bill_date = NULL, updated_at = now()
+		WHERE partner_type = $1 AND partner_id = $2
+		  AND NOT EXISTS (SELECT 1 FROM invoice WHERE invoice.subscription_id = partner_subscription.id)`,
+		partnerType, partnerID); err != nil {
+		log.Printf("billing: could not pause billing for %s %d: %v", partnerType, partnerID, err)
+	}
+	return nil
+}
+
+// OnPartnerActivated is called when a SuperAdmin activates a partner profile. It
+// issues the partner's FIRST invoice (with onboarding codes) the first time
+// they're activated and sets the monthly billing anchor to one month from the
+// activation day. Idempotent: re-activating a partner who was already invoiced
+// does not send a second first-invoice — it only resumes the monthly cycle.
+// Test reps never bill.
+func OnPartnerActivated(ctx context.Context, partnerType string, partnerID int64) error {
+	var subID int64
+	var repCode string
+	err := appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT id, COALESCE(rep_code, '') FROM partner_subscription
+		WHERE partner_type = $1 AND partner_id = $2`, partnerType, partnerID,
+	).Scan(&subID, &repCode)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil // no subscription — nothing to bill
+	}
+	if err != nil {
+		return err
+	}
 	if isTestRep(repCode) {
-		if _, err := appdb.SQLDB.ExecContext(ctx,
-			`UPDATE partner_subscription SET next_bill_date = NULL, updated_at = now()
-			 WHERE partner_type = $1 AND partner_id = $2`, partnerType, partnerID); err != nil {
-			log.Printf("billing: could not clear next_bill_date for test rep %q (%s %d): %v", repCode, partnerType, partnerID, err)
-		}
+		return nil
+	}
+
+	var invoiced bool
+	if err := appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM invoice WHERE subscription_id = $1)`, subID,
+	).Scan(&invoiced); err != nil {
+		return err
+	}
+
+	// Set the recurring anchor to one month out (billed on the activation
+	// day-of-month) if it isn't already set. COALESCE means an already-set
+	// anchor is left untouched.
+	if _, err := appdb.SQLDB.ExecContext(ctx, `
+		UPDATE partner_subscription
+		SET next_bill_date = COALESCE(next_bill_date, ((now() at time zone 'utc')::date + interval '1 month')),
+		    updated_at = now()
+		WHERE id = $1`, subID); err != nil {
+		return err
+	}
+
+	if invoiced {
+		return nil // already had its first invoice — just resumed recurring
 	}
 	return IssueFirstInvoice(ctx, partnerType, partnerID)
+}
+
+// PausePartnerBilling stops recurring billing for a partner (used when a
+// SuperAdmin deactivates a profile). Clearing next_bill_date takes it out of
+// the monthly run; re-activating restores the anchor via OnPartnerActivated.
+func PausePartnerBilling(ctx context.Context, partnerType string, partnerID int64) error {
+	_, err := appdb.SQLDB.ExecContext(ctx,
+		`UPDATE partner_subscription SET next_bill_date = NULL, updated_at = now()
+		 WHERE partner_type = $1 AND partner_id = $2`, partnerType, partnerID)
+	return err
 }
 
 // IssueFirstInvoice bills the current month for a freshly-onboarded partner.
@@ -104,18 +165,22 @@ func IssueFirstInvoice(ctx context.Context, partnerType string, partnerID int64)
 	start := time.Now()
 	end := start.AddDate(0, 1, 0)
 	due := start.AddDate(0, 0, 3)
-	return GenerateInvoice(ctx, subID, partnerType, partnerID, plan, tier, int(monthly), start, end, due, true)
+	// Onboarding invoice: base only. Booking usage for this month is billed in
+	// arrears on the next monthly run.
+	return GenerateInvoice(ctx, subID, partnerType, partnerID, plan, tier, int(monthly), 0, start, end, due, true)
 }
 
-// GenerateInvoice creates one invoice (+ a line item) for a subscription's
+// GenerateInvoice creates one invoice (+ its line items) for a subscription's
 // billing period and emails it. No-op if an invoice already exists for that
 // (subscription, period_start) — the idempotency the monthly run relies on.
-// subtotalCents is the fixed monthly amount; the monthly run adds any 10%
-// booking portion for Booking partners on top (Phase 4).
-// withCodes is true only for the FIRST (onboarding) invoice — when set, the
+// baseCents is the fixed monthly amount; coversCents is the Booking-plan usage
+// charge for the period (restaurant covers at R10 each, service/attraction
+// bookings at 10% of chosen items) and is 0 for tier/units partners. Booking
+// partners get two lines (…BookM base + …BookC/…Book usage); everyone else gets
+// one. withCodes is true only for the FIRST (onboarding) invoice — when set, the
 // email also includes the partner's Access Code, Partner Edit Code and Profile
 // QR Code. The monthly billing run passes false so those go out only once.
-func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partnerID int64, plan string, tier, subtotalCents int, start, end, due time.Time, withCodes bool) error {
+func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partnerID int64, plan string, tier, baseCents, coversCents int, start, end, due time.Time, withCodes bool) error {
 	var exists bool
 	if err := appdb.SQLDB.QueryRowContext(ctx,
 		`SELECT EXISTS(SELECT 1 FROM invoice WHERE subscription_id = $1 AND period_start = $2)`,
@@ -130,7 +195,8 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 	// September 2026 is a free introductory promotional month — every invoice
 	// (all partners, base + any booking portion) is issued at R0.
 	if isPromoMonth(start) {
-		subtotalCents = 0
+		baseCents = 0
+		coversCents = 0
 	}
 
 	// Snapshot billing identity from the partner row (columns common to all
@@ -161,6 +227,23 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 	}
 	itemCode, itemDesc := InvoiceItem(partnerType, tier, audience, units)
 
+	// Build the invoice's line items. Booking partners get a fixed monthly base
+	// line plus a usage line (covers/bookings); everyone else gets one line.
+	var lines []invoiceLine
+	if plan == "booking" {
+		mCode, mDesc, uCode, uDesc := BookingItemCodes(partnerType)
+		lines = append(lines, invoiceLine{Code: mCode, Desc: mDesc + " — " + start.Format("January 2006"), Cents: baseCents})
+		if coversCents > 0 {
+			lines = append(lines, invoiceLine{Code: uCode, Desc: uDesc + " — " + start.Format("January 2006"), Cents: coversCents})
+		}
+	} else {
+		lines = append(lines, invoiceLine{Code: itemCode, Desc: itemDesc, Cents: baseCents})
+	}
+	totalCents := 0
+	for _, l := range lines {
+		totalCents += l.Cents
+	}
+
 	var seq int64
 	if err := appdb.SQLDB.QueryRowContext(ctx, `SELECT nextval('invoice_number_seq')`).Scan(&seq); err != nil {
 		return err
@@ -176,22 +259,25 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 		   bill_rep_name, bill_rep_code, bill_email, due_at)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,0,$7,'Issued',$8,$9,$10,$11,$12,$13,$14,$15)
 		RETURNING id`,
-		number, subID, partnerType, partnerID, start, end, subtotalCents,
+		number, subID, partnerType, partnerID, start, end, totalCents,
 		name, holding, reg, vat, repName, repCode, email, due,
 	).Scan(&invID); err != nil {
 		return err
 	}
 
-	if _, err := appdb.SQLDB.ExecContext(ctx, `
-		INSERT INTO invoice_line_item (invoice_id, description, qty, unit_cents, line_cents)
-		VALUES ($1, $2, 1, $3, $3)`, invID, itemDesc, subtotalCents); err != nil {
-		return err
+	for _, l := range lines {
+		if _, err := appdb.SQLDB.ExecContext(ctx, `
+			INSERT INTO invoice_line_item (invoice_id, description, qty, unit_cents, line_cents)
+			VALUES ($1, $2, 1, $3, $3)`, invID, l.Desc, l.Cents); err != nil {
+			return err
+		}
 	}
 
-	// Accrue rep commissions for this invoice (30% own + 10% upline override).
-	// Test reps earn nothing — their partners are excluded from all metrics.
+	// Accrue rep commissions for this invoice (30% own + 10% upline override) on
+	// the full invoiced total (base + any booking usage). Test reps earn nothing
+	// — their partners are excluded from all metrics.
 	if !isTestRep(repCode) {
-		if err := accrueCommissions(ctx, invID, partnerType, partnerID, repCode, subtotalCents, start); err != nil {
+		if err := accrueCommissions(ctx, invID, partnerType, partnerID, repCode, totalCents, start); err != nil {
 			log.Printf("commission accrual for invoice %s failed: %v", number, err)
 		}
 	}
@@ -205,7 +291,7 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 		}
 		view := invoiceView{
 			Number: number, Date: start, Due: due,
-			ItemCode: itemCode, ItemDesc: itemDesc, Cents: subtotalCents,
+			Lines:    lines,
 			BillName: firstNonEmpty(holding, name), BillReg: reg, BillVat: vat,
 			BillContactName: contactName, BillContactNumber: contactNumber, BillEmail: email,
 		}
@@ -237,14 +323,23 @@ func ResendInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) er
 		return err
 	}
 
-	// Line item description + unit (single-line invoices).
-	var itemDesc string
-	var unitCents int
-	_ = appdb.SQLDB.QueryRowContext(ctx,
-		`SELECT COALESCE(description,''), COALESCE(unit_cents,0) FROM invoice_line_item WHERE invoice_id = $1 ORDER BY id LIMIT 1`,
-		invoiceID).Scan(&itemDesc, &unitCents)
-	if unitCents == 0 {
-		unitCents = totalCents
+	// Load every line item so multi-line (Booking) invoices resend in full.
+	// Stored line items keep description + unit cost, not the item code, so the
+	// Item column is blank on a resend — the description carries the meaning.
+	var lines []invoiceLine
+	if lrows, err := appdb.SQLDB.QueryContext(ctx,
+		`SELECT COALESCE(description,''), COALESCE(unit_cents,0) FROM invoice_line_item WHERE invoice_id = $1 ORDER BY id`,
+		invoiceID); err == nil {
+		for lrows.Next() {
+			var l invoiceLine
+			if err := lrows.Scan(&l.Desc, &l.Cents); err == nil {
+				lines = append(lines, l)
+			}
+		}
+		lrows.Close()
+	}
+	if len(lines) == 0 {
+		lines = []invoiceLine{{Desc: "Subscription", Cents: totalCents}}
 	}
 
 	// Contact name/number + a live email fallback come from the partner row
@@ -269,7 +364,7 @@ func ResendInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) er
 	}
 	view := invoiceView{
 		Number: number, Date: start, Due: due,
-		ItemDesc: itemDesc, Cents: unitCents,
+		Lines:    lines,
 		BillName: firstNonEmpty(billHolding, billName), BillReg: billReg, BillVat: billVat,
 		BillContactName: contactName, BillContactNumber: contactNumber, BillEmail: email,
 	}
@@ -349,14 +444,43 @@ func lineDescription(plan string, tier int, start time.Time) string {
 
 func rands(cents int) string { return fmt.Sprintf("R%.2f", float64(cents)/100) }
 
-// invoiceView is the data the redesigned invoice template renders.
+// invoiceLine is one row of an invoice's item table.
+type invoiceLine struct {
+	Code, Desc string
+	Cents      int
+}
+
+// invoiceView is the data the redesigned invoice template renders. Lines holds
+// the item rows (one for tier/units partners, two for Booking partners:
+// monthly base + covers/bookings). ItemCode/ItemDesc/Cents remain for the
+// single-line callers (preview) — when Lines is empty the renderer falls back
+// to them.
 type invoiceView struct {
 	Number             string
 	Date, Due          time.Time
 	ItemCode, ItemDesc string
 	Cents              int
+	Lines              []invoiceLine
 	// Bill-to (pulled from the partner's Official Use).
 	BillName, BillReg, BillVat, BillContactName, BillContactNumber, BillEmail string
+}
+
+// lines normalises a view to its item rows, folding the single-item fields into
+// a one-row slice when Lines isn't set.
+func (v invoiceView) lines() []invoiceLine {
+	if len(v.Lines) > 0 {
+		return v.Lines
+	}
+	return []invoiceLine{{Code: v.ItemCode, Desc: v.ItemDesc, Cents: v.Cents}}
+}
+
+// total sums the line amounts.
+func (v invoiceView) total() int {
+	sum := 0
+	for _, l := range v.lines() {
+		sum += l.Cents
+	}
+	return sum
 }
 
 func firstNonEmpty(a, b string) string {
@@ -393,11 +517,11 @@ func money(cents int) string {
 // bill-to below, an item table, then bank details and totals.
 func renderInvoiceHTML(s *InvoiceSettings, v invoiceView) string {
 	if s == nil {
-		s = &InvoiceSettings{BusinessName: "Around You", PaymentTerms: "Payment due immediately."}
+		s = &InvoiceSettings{BusinessName: "Around You", PaymentTerms: "Payment due within 3 days of the invoice date."}
 	}
 	esc := htmlPkg.EscapeString
 	bizName := firstNonEmpty(s.BusinessName, "Around You")
-	total := money(v.Cents)
+	total := money(v.total())
 
 	logo := ""
 	if strings.TrimSpace(s.LogoURL) != "" {
@@ -447,13 +571,17 @@ func renderInvoiceHTML(s *InvoiceSettings, v invoiceView) string {
 	addBill(v.BillEmail)
 	b.WriteString(`</td></tr></table>`)
 
-	// --- Item table ---
+	// --- Item table (one row per line item) ---
 	b.WriteString(`<table width="100%" cellpadding="8" cellspacing="0" style="margin-top:22px;border-collapse:collapse">`)
 	b.WriteString(`<tr style="border-bottom:1px solid #ccc;text-align:left"><th>Item</th><th>Description</th>` +
 		`<th style="text-align:right">Unit Cost</th><th style="text-align:right">Quantity</th><th style="text-align:right">Line Total</th></tr>`)
-	b.WriteString(`<tr style="border-bottom:1px solid #eee"><td style="color:#2f80ed">` + esc(v.ItemCode) + `</td>` +
-		`<td>` + esc(v.ItemDesc) + `</td><td style="text-align:right">` + total + `</td>` +
-		`<td style="text-align:right">1</td><td style="text-align:right">` + total + `</td></tr></table>`)
+	for _, l := range v.lines() {
+		amt := money(l.Cents)
+		b.WriteString(`<tr style="border-bottom:1px solid #eee"><td style="color:#2f80ed">` + esc(l.Code) + `</td>` +
+			`<td>` + esc(l.Desc) + `</td><td style="text-align:right">` + amt + `</td>` +
+			`<td style="text-align:right">1</td><td style="text-align:right">` + amt + `</td></tr>`)
+	}
+	b.WriteString(`</table>`)
 
 	// --- Bottom: bank (left) | totals without Paid to Date (right) ---
 	bank := ""
@@ -478,7 +606,7 @@ func renderInvoiceHTML(s *InvoiceSettings, v invoiceView) string {
 	trow("Balance Due", total)
 	b.WriteString(`</table></td></tr></table>`)
 
-	terms := firstNonEmpty(strings.TrimSpace(s.PaymentTerms), "Payment due immediately.")
+	terms := firstNonEmpty(strings.TrimSpace(s.PaymentTerms), "Payment due within 3 days of the invoice date.")
 	b.WriteString(`<p style="color:#888;font-size:11px;margin-top:18px">` + esc(bizName) +
 		` is not currently VAT-registered; no VAT has been charged. ` + esc(terms) + `</p></div>`)
 	return b.String()

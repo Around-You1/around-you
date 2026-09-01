@@ -1108,10 +1108,18 @@ func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*Rep
 	// New applications are created Inactive (pending). A SuperAdmin activates
 	// them on the Reps tab before the applicant can sign in.
 	if _, err := appdb.SQLDB.ExecContext(ctx, `
-		INSERT INTO users (email, role, full_name, rep_code, rep_email, upline_rep_code, rep_status, id_number, login_code, phone, residential_address, province, postal_code)
-		VALUES ($1, 'Rep', $2, $3, NULLIF($4,''), NULLIF($5,''), 'Inactive', $6, $7, $8, $9, NULLIF($10,''), $11)`,
+		INSERT INTO users (email, role, full_name, rep_code, rep_email, upline_rep_code, rep_status,
+		   id_number, login_code, phone, residential_address, province, postal_code,
+		   date_of_birth, tax_number, vat_number,
+		   bank_account_name, bank_name, bank_account_number, bank_branch_code, bank_account_type)
+		VALUES ($1, 'Rep', $2, $3, NULLIF($4,''), NULLIF($5,''), 'Inactive',
+		   $6, $7, $8, $9, NULLIF($10,''), $11,
+		   $12, $13, $14, $15, $16, $17, $18, $19)`,
 		loginEmail, fullName, repCode, strings.TrimSpace(req.Email), strings.TrimSpace(req.UplineRepCode), strings.TrimSpace(req.IDNumber), loginCode,
 		strings.TrimSpace(req.Phone), strings.TrimSpace(req.ResidentialAddress), strings.TrimSpace(req.Province), strings.TrimSpace(req.PostalCode),
+		strings.TrimSpace(req.DateOfBirth), strings.TrimSpace(req.TaxNumber), strings.TrimSpace(req.VatNumber),
+		strings.TrimSpace(req.BankAccountName), strings.TrimSpace(req.BankName), strings.TrimSpace(req.BankAccountNumber),
+		strings.TrimSpace(req.BankBranchCode), strings.TrimSpace(req.BankAccountType),
 	); err != nil {
 		return nil, err
 	}

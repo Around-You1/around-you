@@ -153,6 +153,9 @@ func SetAgencyActive(ctx context.Context, req *activeReq) (*okResp, error) {
 	if req.Active {
 		_ = billing.OnPartnerOnboarded(ctx, "estate_agency", req.ID, "", "", "")
 		_ = billing.SetStatusByPartner(ctx, "estate_agency", req.ID, "Active")
+		// Activation issues the first invoice + starts the monthly cycle
+		// (idempotent — a re-activation won't re-invoice).
+		_ = billing.OnPartnerActivated(ctx, "estate_agency", req.ID)
 	} else {
 		_ = billing.SetStatusByPartner(ctx, "estate_agency", req.ID, "Cancelled")
 	}
@@ -263,6 +266,9 @@ func SetAgentActive(ctx context.Context, req *activeReq) (*okResp, error) {
 	if req.Active {
 		_ = billing.OnPartnerOnboarded(ctx, "estate_agent", req.ID, "", "", "")
 		_ = billing.SetStatusByPartner(ctx, "estate_agent", req.ID, "Active")
+		// Activation issues the first invoice + starts the monthly cycle
+		// (idempotent — a re-activation won't re-invoice).
+		_ = billing.OnPartnerActivated(ctx, "estate_agent", req.ID)
 	} else {
 		_ = billing.SetStatusByPartner(ctx, "estate_agent", req.ID, "Cancelled")
 	}
