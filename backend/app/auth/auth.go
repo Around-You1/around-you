@@ -532,11 +532,12 @@ func RepLogin(ctx context.Context, req *RepLoginRequest) (*LoginResponse, error)
 	return issueSession(ctx, &u)
 }
 
-// AccLoginRequest is the accountant sign-in: a single shared access code.
-// The code is checked against the bcrypt hash a SuperAdmin sets in the Admin
-// Billing tab (stored in the accountant_access table). If no code has been set
-// there, it falls back to the ACC_ACCESS_CODE env var (a Fly secret) so the
-// portal keeps working during the transition. No per-person accounts yet.
+// AccLoginRequest is the accountant sign-in: a 12-char access code. It first
+// matches per-accountant accounts (registered + activated by a SuperAdmin on
+// the Admin Dashboard, each with their own login_code). If no per-person code
+// matches, it falls back to the shared code — the bcrypt hash a SuperAdmin
+// sets in the Admin Billing tab (accountant_access table), or the
+// ACC_ACCESS_CODE env var — so the portal keeps working during the transition.
 type AccLoginRequest struct {
 	AccessCode string `json:"accessCode"`
 }
@@ -546,6 +547,40 @@ func AccLogin(ctx context.Context, req *AccLoginRequest) (*LoginResponse, error)
 	code := strings.TrimSpace(req.AccessCode)
 	if code == "" {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "access code is required"}
+	}
+
+	// Per-accountant accounts first: a SuperAdmin registers accountants on the
+	// Admin Dashboard, each gets their own 12-char login_code, and is activated
+	// (rep_status='Active') before they can sign in. If the entered code matches
+	// an active accountant, sign that specific person in.
+	{
+		var u appdb.User
+		err := appdb.SQLDB.QueryRowContext(ctx, `
+			SELECT id, email, role, COALESCE(full_name,'')
+			FROM users
+			WHERE role = 'Accountant'
+			  AND COALESCE(login_code,'') <> ''
+			  AND login_code = $1
+			  AND COALESCE(rep_status,'Active') = 'Active'
+			LIMIT 1`, code,
+		).Scan(&u.ID, &u.Email, &u.Role, &u.FullName)
+		if err == nil {
+			return issueSession(ctx, &u)
+		}
+		if err != nil && !isNoRows(err) {
+			return nil, err
+		}
+		// If the code matches an accountant who exists but is NOT active, block
+		// with a clear message rather than silently falling through to the
+		// shared code (which would never match anyway).
+		var pendingCount int
+		if err := appdb.SQLDB.QueryRowContext(ctx, `
+			SELECT count(*) FROM users
+			WHERE role = 'Accountant' AND COALESCE(login_code,'') <> ''
+			  AND login_code = $1 AND COALESCE(rep_status,'Active') <> 'Active'`, code,
+		).Scan(&pendingCount); err == nil && pendingCount > 0 {
+			return nil, &errs.Error{Code: errs.Unauthenticated, Message: "this accountant account is not active yet — please contact the administrator"}
+		}
 	}
 
 	// Prefer the in-app code (bcrypt hash in accountant_access). A blank/absent
@@ -662,6 +697,223 @@ func AccCodeStatus(ctx context.Context) (*AccCodeStatusResponse, error) {
 	return &AccCodeStatusResponse{IsSet: false, Source: "none"}, nil
 }
 
+// ---- Per-accountant accounts (SuperAdmin-managed, mirror the Rep flow) ------
+//
+// An accountant is a users row with role='Accountant' and a non-empty
+// login_code (the 12-char access code they sign in with). They are created
+// Inactive; a SuperAdmin activates them, which emails a welcome with the code.
+// rep_status doubles as the accountant's Active/Inactive status and rep_email
+// as their contact email — reusing the existing columns, no new schema.
+
+type Accountant struct {
+	ID         int64  `json:"id"`
+	FullName   string `json:"fullName"`
+	Email      string `json:"email"`
+	Status     string `json:"status"`
+	AccessCode string `json:"accessCode"` // 12-char login code (SuperAdmin view)
+}
+
+type CreateAccountantRequest struct {
+	FullName string `json:"fullName"`
+	Email    string `json:"email"`
+}
+
+type CreateAccountantResponse struct {
+	FullName   string `json:"fullName"`
+	AccessCode string `json:"accessCode"`
+}
+
+// CreateAccountant is SuperAdmin-only. It creates an Inactive accountant with a
+// 12-char access code; the code is emailed to them when the SuperAdmin
+// activates the account (see UpdateAccountant).
+//
+//encore:api auth method=POST path=/auth/create-accountant
+func CreateAccountant(ctx context.Context, req *CreateAccountantRequest) (*CreateAccountantResponse, error) {
+	data := FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can create accountant accounts"}
+	}
+
+	fullName := strings.TrimSpace(req.FullName)
+	if fullName == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "full name is required"}
+	}
+	if err := moderation.BlockError(
+		moderation.NamedField{Name: "fullName", Value: fullName},
+		moderation.NamedField{Name: "email", Value: req.Email},
+	); err != nil {
+		return nil, err
+	}
+
+	loginCode := appdb.RandomCode(12)
+	// Accountants sign in with just their access code — no email login — so this
+	// synthetic address only satisfies the users table's NOT NULL email
+	// constraint (same pattern as reps). The real contact email goes in rep_email.
+	syntheticEmail := "acc-" + strings.ToLower(appdb.RandomCode(10)) + "@accts.aroundyou.internal"
+
+	if _, err := appdb.SQLDB.ExecContext(ctx, `
+		INSERT INTO users (email, role, full_name, rep_email, rep_status, login_code)
+		VALUES ($1, 'Accountant', $2, NULLIF($3, ''), 'Inactive', $4)`,
+		syntheticEmail, fullName, strings.TrimSpace(req.Email), loginCode,
+	); err != nil {
+		return nil, err
+	}
+
+	moderation.ScanAndFlag(ctx, "accountant_onboarding", "accountant", 0, fullName, ActorLabel(ctx),
+		moderation.NamedField{Name: "fullName", Value: fullName},
+		moderation.NamedField{Name: "email", Value: strings.TrimSpace(req.Email)},
+	)
+
+	return &CreateAccountantResponse{FullName: fullName, AccessCode: loginCode}, nil
+}
+
+type ListAccountantsResponse struct {
+	Accountants []Accountant `json:"accountants"`
+}
+
+// ListAccountants is SuperAdmin-only. Only per-person accounts (those with a
+// login_code) are returned — the legacy shared-login row, if any, is excluded.
+//
+//encore:api auth method=GET path=/auth/accountants
+func ListAccountants(ctx context.Context) (*ListAccountantsResponse, error) {
+	data := FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can view accountants"}
+	}
+
+	rows, err := appdb.SQLDB.QueryContext(ctx, `
+		SELECT id, COALESCE(full_name,''), COALESCE(rep_email,''),
+		       COALESCE(rep_status,'Inactive'), COALESCE(login_code,'')
+		FROM users
+		WHERE role = 'Accountant' AND COALESCE(login_code,'') <> ''
+		ORDER BY full_name ASC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	accountants := []Accountant{}
+	for rows.Next() {
+		var a Accountant
+		if err := rows.Scan(&a.ID, &a.FullName, &a.Email, &a.Status, &a.AccessCode); err != nil {
+			return nil, err
+		}
+		accountants = append(accountants, a)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &ListAccountantsResponse{Accountants: accountants}, nil
+}
+
+type UpdateAccountantRequest struct {
+	ID       int64  `json:"id"`
+	FullName string `json:"fullName"`
+	Email    string `json:"email"`
+	Status   string `json:"status"` // "Active" | "Inactive"
+}
+
+// UpdateAccountant is SuperAdmin-only. It edits name/email/status of a
+// per-person accountant. Activating (Inactive→Active) emails the welcome with
+// their access code. Only rows that are already per-person accounts (login_code
+// set) can be updated, so the legacy shared-login row is never touched.
+//
+//encore:api auth method=POST path=/auth/accountant/update
+func UpdateAccountant(ctx context.Context, req *UpdateAccountantRequest) (*Accountant, error) {
+	data := FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can update accountants"}
+	}
+	if req.ID <= 0 {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "id is required"}
+	}
+
+	status := strings.TrimSpace(req.Status)
+	if status == "" {
+		status = "Active"
+	}
+	if status != "Active" && status != "Inactive" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "status must be 'Active' or 'Inactive'"}
+	}
+
+	fullName := strings.TrimSpace(req.FullName)
+	if fullName == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "full name is required"}
+	}
+	if err := moderation.BlockError(
+		moderation.NamedField{Name: "fullName", Value: fullName},
+		moderation.NamedField{Name: "email", Value: req.Email},
+	); err != nil {
+		return nil, err
+	}
+
+	// Snapshot current state to (a) ensure a login code exists and (b) detect an
+	// Inactive→Active transition for the welcome email.
+	var curStatus, curLoginCode, curEmail string
+	err := appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT COALESCE(rep_status,''), COALESCE(login_code,''), COALESCE(rep_email,'')
+		FROM users WHERE id = $1 AND role = 'Accountant' AND COALESCE(login_code,'') <> ''`, req.ID,
+	).Scan(&curStatus, &curLoginCode, &curEmail)
+	if isNoRows(err) {
+		return nil, &errs.Error{Code: errs.NotFound, Message: "accountant not found"}
+	}
+	if err != nil {
+		return nil, err
+	}
+	loginCode := strings.TrimSpace(curLoginCode)
+	if loginCode == "" {
+		loginCode = appdb.RandomCode(12)
+	}
+
+	if _, err := appdb.SQLDB.ExecContext(ctx, `
+		UPDATE users
+		SET full_name  = $2,
+		    rep_email  = NULLIF($3, ''),
+		    rep_status = $4,
+		    login_code = $5
+		WHERE id = $1 AND role = 'Accountant'`,
+		req.ID, fullName, strings.TrimSpace(req.Email), status, loginCode,
+	); err != nil {
+		return nil, err
+	}
+
+	// On activation, email the welcome with the access code. Best-effort.
+	if strings.EqualFold(status, "Active") && !strings.EqualFold(curStatus, "Active") {
+		to := strings.TrimSpace(req.Email)
+		if to == "" {
+			to = curEmail
+		}
+		if to != "" {
+			go func(addr, name, lc string) {
+				_ = mailer.Send(addr, "Welcome to Around You — your Accountant access", renderAccountantWelcomeHTML(name, lc))
+			}(to, fullName, loginCode)
+		}
+	}
+
+	return &Accountant{ID: req.ID, FullName: fullName, Email: strings.TrimSpace(req.Email), Status: status, AccessCode: loginCode}, nil
+}
+
+// renderAccountantWelcomeHTML is the email an accountant receives when a
+// SuperAdmin activates their account — it carries their sign-in access code.
+func renderAccountantWelcomeHTML(fullName, loginCode string) string {
+	esc := htmlpkg.EscapeString
+	name := strings.TrimSpace(fullName)
+	if name == "" {
+		name = "there"
+	}
+	return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;color:#1a1f2e;">` +
+		`<h2 style="color:#159a53;margin:0 0 10px;">Welcome to Around You!</h2>` +
+		`<p>Hi ` + esc(name) + `, your accountant account has been activated. Here is your sign-in code — please keep it safe and don't share it.</p>` +
+		`<table style="border-collapse:collapse;font-size:15px;margin:12px 0;">` +
+		`<tr><td style="padding:6px 12px;color:#555;">Full Name</td><td style="padding:6px 12px;"><b>` + esc(name) + `</b></td></tr>` +
+		`<tr><td style="padding:6px 12px;color:#555;">Access Code</td><td style="padding:6px 12px;"><b style="font-size:18px;color:#159a53;letter-spacing:1px;">` + esc(loginCode) + `</b></td></tr>` +
+		`</table>` +
+		`<p>To sign in: open Around You, tap <b>Accountant</b>, then enter your access code.</p>` +
+		`<p style="color:#888;font-size:13px;">If you weren't expecting this, please ignore this email.</p>` +
+		`</div>`
+}
+
 type CreateRepRequest struct {
 	FullName string `json:"fullName"`
 	Email    string `json:"email"`
@@ -762,7 +1014,8 @@ type RepApplicationRequest struct {
 	Phone              string `json:"phone"`
 	Email              string `json:"email"`
 	ResidentialAddress string `json:"residentialAddress"`
-	PostalAddress      string `json:"postalAddress"`
+	PostalCode         string `json:"postalCode"`
+	Province           string `json:"province"`
 	TaxNumber          string `json:"taxNumber"`
 	VatNumber          string `json:"vatNumber"`
 	BankAccountName    string `json:"bankAccountName"`
@@ -789,8 +1042,29 @@ type RepApplicationResponse struct {
 //encore:api method=POST path=/auth/rep-application
 func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*RepApplicationResponse, error) {
 	fullName := strings.TrimSpace(req.FullName)
-	if fullName == "" {
-		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "full name is required"}
+	// All fields are required except SARS tax number, VAT number and the
+	// recruiting rep (upline) code. Validate server-side so the rule holds even
+	// if the form is bypassed.
+	required := []struct{ label, value string }{
+		{"Full legal name", req.FullName},
+		{"SA ID / Passport number", req.IDNumber},
+		{"Date of birth", req.DateOfBirth},
+		{"Mobile", req.Phone},
+		{"Email", req.Email},
+		{"Residential address", req.ResidentialAddress},
+		{"Postal code", req.PostalCode},
+		{"Province", req.Province},
+		{"Bank account holder", req.BankAccountName},
+		{"Bank", req.BankName},
+		{"Account type", req.BankAccountType},
+		{"Account number", req.BankAccountNumber},
+		{"Branch code", req.BankBranchCode},
+		{"Signature", req.SignatureName},
+	}
+	for _, f := range required {
+		if strings.TrimSpace(f.value) == "" {
+			return nil, &errs.Error{Code: errs.InvalidArgument, Message: f.label + " is required"}
+		}
 	}
 	if !req.PopiaConsent || !req.AgreementConsent {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "please accept the POPIA consent and the commission agreement to apply"}
@@ -799,6 +1073,27 @@ func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*Rep
 		moderation.NamedField{Name: "fullName", Value: fullName},
 	); err != nil {
 		return nil, err
+	}
+
+	// Duplicate guard: a person's ID number (and email) uniquely identify them,
+	// so refuse a second application that matches an existing rep. This stops
+	// double-submits (a second tap on Submit, a page refresh, or re-applying)
+	// from creating multiple rep records for the same person.
+	idNum := strings.TrimSpace(req.IDNumber)
+	repEmail := strings.TrimSpace(req.Email)
+	var dupCount int
+	if err := appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT count(*) FROM users
+		WHERE role = 'Rep'
+		  AND (
+		        (COALESCE(id_number,'') <> '' AND lower(id_number) = lower($1))
+		     OR (COALESCE(rep_email,'') <> '' AND lower(rep_email) = lower($2))
+		      )`, idNum, repEmail,
+	).Scan(&dupCount); err != nil {
+		return nil, err
+	}
+	if dupCount > 0 {
+		return nil, &errs.Error{Code: errs.AlreadyExists, Message: "An application with this ID number or email already exists. If you've already applied, please wait for it to be reviewed or contact Around You — there's no need to apply again."}
 	}
 
 	repCode, err := nextRepCode(ctx)
@@ -813,10 +1108,10 @@ func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*Rep
 	// New applications are created Inactive (pending). A SuperAdmin activates
 	// them on the Reps tab before the applicant can sign in.
 	if _, err := appdb.SQLDB.ExecContext(ctx, `
-		INSERT INTO users (email, role, full_name, rep_code, rep_email, upline_rep_code, rep_status, id_number, login_code, phone, residential_address)
-		VALUES ($1, 'Rep', $2, $3, NULLIF($4,''), NULLIF($5,''), 'Inactive', $6, $7, $8, $9)`,
+		INSERT INTO users (email, role, full_name, rep_code, rep_email, upline_rep_code, rep_status, id_number, login_code, phone, residential_address, province, postal_code)
+		VALUES ($1, 'Rep', $2, $3, NULLIF($4,''), NULLIF($5,''), 'Inactive', $6, $7, $8, $9, NULLIF($10,''), $11)`,
 		loginEmail, fullName, repCode, strings.TrimSpace(req.Email), strings.TrimSpace(req.UplineRepCode), strings.TrimSpace(req.IDNumber), loginCode,
-		strings.TrimSpace(req.Phone), strings.TrimSpace(req.ResidentialAddress),
+		strings.TrimSpace(req.Phone), strings.TrimSpace(req.ResidentialAddress), strings.TrimSpace(req.Province), strings.TrimSpace(req.PostalCode),
 	); err != nil {
 		return nil, err
 	}
@@ -879,7 +1174,8 @@ func renderRepApplicationHTML(r *RepApplicationRequest, repCode string) string {
 		row("Mobile", r.Phone) +
 		row("Email", r.Email) +
 		row("Residential address", r.ResidentialAddress) +
-		row("Postal address", r.PostalAddress) +
+		row("Postal code", r.PostalCode) +
+		row("Province", r.Province) +
 		row("SARS tax number", r.TaxNumber) +
 		row("VAT number", r.VatNumber) +
 		row("Bank account holder", r.BankAccountName) +
@@ -910,6 +1206,7 @@ type Rep struct {
 	IDNumber      string `json:"idNumber"`
 	Phone         string `json:"phone"`
 	ResidentialAddress string `json:"residentialAddress"`
+	PostalCode    string `json:"postalCode"`
 }
 
 type ListRepsResponse struct {
@@ -931,7 +1228,7 @@ func ListReps(ctx context.Context) (*ListRepsResponse, error) {
 		       COALESCE(upline_rep_code, ''), is_team_leader,
 		       COALESCE(region, ''), COALESCE(province, ''), rep_status,
 		       COALESCE(rep_email, ''), COALESCE(login_code, ''),
-		       COALESCE(id_number, ''), COALESCE(phone, ''), COALESCE(residential_address, '')
+		       COALESCE(id_number, ''), COALESCE(phone, ''), COALESCE(residential_address, ''), COALESCE(postal_code, '')
 		FROM users WHERE role = 'Rep' ORDER BY rep_code ASC`)
 	if err != nil {
 		return nil, err
@@ -943,7 +1240,7 @@ func ListReps(ctx context.Context) (*ListRepsResponse, error) {
 		var r Rep
 		if err := rows.Scan(&r.ID, &r.FullName, &r.RepCode,
 			&r.UplineRepCode, &r.IsTeamLeader, &r.Region, &r.Province, &r.Status, &r.Email, &r.AccessCode,
-			&r.IDNumber, &r.Phone, &r.ResidentialAddress); err != nil {
+			&r.IDNumber, &r.Phone, &r.ResidentialAddress, &r.PostalCode); err != nil {
 			return nil, err
 		}
 		reps = append(reps, r)
@@ -966,6 +1263,7 @@ type UpdateRepRequest struct {
 	IDNumber           string `json:"idNumber"`
 	Phone              string `json:"phone"`
 	ResidentialAddress string `json:"residentialAddress"`
+	PostalCode         string `json:"postalCode"`
 }
 
 // UpdateRep is SuperAdmin-only. It sets a rep's hierarchy + profile fields:
@@ -1039,12 +1337,13 @@ func UpdateRep(ctx context.Context, req *UpdateRepRequest) (*Rep, error) {
 		    login_code      = $8,
 		    id_number       = $9,
 		    phone           = $10,
-		    residential_address = $11
+		    residential_address = $11,
+		    postal_code     = $12
 		WHERE role = 'Rep' AND lower(rep_code) = lower($1)`,
 		repCode, upline, req.IsTeamLeader,
 		strings.TrimSpace(req.Region), strings.TrimSpace(req.Province), status,
 		strings.TrimSpace(req.Email), loginCode,
-		strings.TrimSpace(req.IDNumber), strings.TrimSpace(req.Phone), strings.TrimSpace(req.ResidentialAddress),
+		strings.TrimSpace(req.IDNumber), strings.TrimSpace(req.Phone), strings.TrimSpace(req.ResidentialAddress), strings.TrimSpace(req.PostalCode),
 	)
 	if err != nil {
 		return nil, err
@@ -1083,13 +1382,75 @@ func UpdateRep(ctx context.Context, req *UpdateRepRequest) (*Rep, error) {
 		       COALESCE(upline_rep_code, ''), is_team_leader,
 		       COALESCE(region, ''), COALESCE(province, ''), rep_status,
 		       COALESCE(rep_email, ''), COALESCE(login_code, ''),
-		       COALESCE(id_number, ''), COALESCE(phone, ''), COALESCE(residential_address, '')
+		       COALESCE(id_number, ''), COALESCE(phone, ''), COALESCE(residential_address, ''), COALESCE(postal_code, '')
 		FROM users WHERE role = 'Rep' AND lower(rep_code) = lower($1)`, repCode,
 	).Scan(&r.ID, &r.FullName, &r.RepCode, &r.UplineRepCode, &r.IsTeamLeader,
 		&r.Region, &r.Province, &r.Status, &r.Email, &r.AccessCode,
-		&r.IDNumber, &r.Phone, &r.ResidentialAddress)
+		&r.IDNumber, &r.Phone, &r.ResidentialAddress, &r.PostalCode)
 	if err != nil {
 		return nil, err
 	}
 	return &r, nil
+}
+
+type DeleteRepRequest struct {
+	RepCode string `json:"repCode"`
+}
+
+type DeleteRepResponse struct {
+	OK bool `json:"ok"`
+}
+
+// DeleteRep is SuperAdmin-only. As a safety measure it only removes reps that
+// are Inactive (pending / not activated) — an Active rep with real accounting
+// history can't be deleted here, so onboarded partners, subscriptions and
+// commissions are never orphaned by an accidental delete. Use it to clean up
+// duplicate or abandoned applications.
+//
+//encore:api auth method=POST path=/auth/rep/delete
+func DeleteRep(ctx context.Context, req *DeleteRepRequest) (*DeleteRepResponse, error) {
+	data := FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can delete reps"}
+	}
+
+	repCode := strings.TrimSpace(req.RepCode)
+	if repCode == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "repCode is required"}
+	}
+
+	// Confirm the rep exists and is Inactive before deleting.
+	var status string
+	err := appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT COALESCE(rep_status,'') FROM users
+		WHERE role = 'Rep' AND lower(rep_code) = lower($1)`, repCode,
+	).Scan(&status)
+	if isNoRows(err) {
+		return nil, &errs.Error{Code: errs.NotFound, Message: "rep not found"}
+	}
+	if err != nil {
+		return nil, err
+	}
+	if strings.EqualFold(status, "Active") {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "this rep is Active — set them to Inactive first if you're sure you want to delete them"}
+	}
+
+	// Don't strand any reps who reported to this one: clear their upline.
+	if _, err := appdb.SQLDB.ExecContext(ctx, `
+		UPDATE users SET upline_rep_code = NULL
+		WHERE role = 'Rep' AND lower(upline_rep_code) = lower($1)`, repCode,
+	); err != nil {
+		return nil, err
+	}
+
+	res, err := appdb.SQLDB.ExecContext(ctx, `
+		DELETE FROM users WHERE role = 'Rep' AND lower(rep_code) = lower($1)`, repCode)
+	if err != nil {
+		return nil, err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return nil, &errs.Error{Code: errs.NotFound, Message: "rep not found"}
+	}
+
+	return &DeleteRepResponse{OK: true}, nil
 }

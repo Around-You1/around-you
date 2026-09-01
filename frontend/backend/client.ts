@@ -168,12 +168,25 @@ export const backend = {
       idNumber?: string;
       phone?: string;
       residentialAddress?: string;
+      postalCode?: string;
     }) => request("POST", "/auth/rep/update", { body: req }),
+    deleteRep: (req: { repCode: string }) =>
+      request("POST", "/auth/rep/delete", { body: req }),
     // Accountant access code (SuperAdmin only). setAccCode stores a bcrypt hash
     // server-side; accCodeStatus never returns the code itself.
     setAccCode: (req: { code: string }) =>
       request("POST", "/auth/acc-code/set", { body: req }),
     accCodeStatus: () => request("GET", "/auth/acc-code/status"),
+    // Per-accountant accounts (SuperAdmin only) — mirror the rep flow.
+    createAccountant: (req: { fullName: string; email?: string }) =>
+      request("POST", "/auth/create-accountant", { body: req }),
+    listAccountants: () => request("GET", "/auth/accountants"),
+    updateAccountant: (req: {
+      id: number;
+      fullName: string;
+      email: string;
+      status: string;
+    }) => request("POST", "/auth/accountant/update", { body: req }),
   },
   billing: {
     listSubscriptions: () => request("GET", "/billing/subscriptions"),

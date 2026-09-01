@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { UserPlus, Copy, Save, ChevronDown } from "lucide-react";
+import { UserPlus, Copy, Save, ChevronDown, Trash2 } from "lucide-react";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -21,6 +21,7 @@ interface Rep {
   idNumber?: string;
   phone?: string;
   residentialAddress?: string;
+  postalCode?: string;
 }
 
 const PROVINCES = [
@@ -44,6 +45,7 @@ export default function RepsTab() {
   const [email, setEmail] = useState("");
   const [creating, setCreating] = useState(false);
   const [savingId, setSavingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [openIds, setOpenIds] = useState<Set<number>>(new Set());
   const { toast } = useToast();
 
@@ -109,6 +111,7 @@ export default function RepsTab() {
         idNumber: rep.idNumber || "",
         phone: rep.phone || "",
         residentialAddress: rep.residentialAddress || "",
+        postalCode: rep.postalCode || "",
       });
       toast({ title: "Rep updated", description: `${rep.fullName} saved` });
       loadReps(); // reflect auto Team-Leader promotion of the chosen upline
@@ -117,6 +120,24 @@ export default function RepsTab() {
       toast({ title: "Error", description: error?.message || "Failed to update rep", variant: "destructive" });
     } finally {
       setSavingId(null);
+    }
+  };
+
+  const handleDeleteRep = async (rep: Rep) => {
+    if (!window.confirm(`Delete ${rep.fullName || rep.repCode} (${rep.repCode})? This permanently removes the application and can't be undone.`)) {
+      return;
+    }
+    setDeletingId(rep.id);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.auth.deleteRep({ repCode: rep.repCode });
+      toast({ title: "Rep deleted", description: `${rep.fullName || rep.repCode} removed` });
+      loadReps();
+    } catch (error: any) {
+      console.error("Failed to delete rep:", error);
+      toast({ title: "Couldn't delete", description: error?.message || "Failed to delete rep", variant: "destructive" });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -238,9 +259,13 @@ export default function RepsTab() {
                         <Label className="text-xs">Mobile</Label>
                         <Input value={rep.phone || ""} onChange={(e) => setRepField(rep.id, { phone: e.target.value })} placeholder="Mobile number" />
                       </div>
-                      <div className="space-y-1 sm:col-span-2">
+                      <div className="space-y-1">
                         <Label className="text-xs">Residential Address</Label>
                         <Input value={rep.residentialAddress || ""} onChange={(e) => setRepField(rep.id, { residentialAddress: e.target.value })} placeholder="Residential address" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Postal Code</Label>
+                        <Input value={rep.postalCode || ""} onChange={(e) => setRepField(rep.id, { postalCode: e.target.value })} placeholder="Postal code" />
                       </div>
                     </div>
                   </div>
@@ -321,15 +346,29 @@ export default function RepsTab() {
                       />
                       Team Leader
                     </label>
-                    <Button
-                      size="sm"
-                      onClick={() => handleSaveRep(rep)}
-                      disabled={savingId === rep.id}
-                      className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black"
-                    >
-                      <Save className="w-4 h-4 mr-2" />
-                      {savingId === rep.id ? "Saving…" : "Save"}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {rep.status === "Inactive" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDeleteRep(rep)}
+                          disabled={deletingId === rep.id}
+                          className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          {deletingId === rep.id ? "Deleting…" : "Delete"}
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        onClick={() => handleSaveRep(rep)}
+                        disabled={savingId === rep.id}
+                        className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black"
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        {savingId === rep.id ? "Saving…" : "Save"}
+                      </Button>
+                    </div>
                   </div>
                   </div>
                   )}

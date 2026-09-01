@@ -22,9 +22,14 @@ const inputStyle: React.CSSProperties = {
 const labelCls = "text-xs font-semibold uppercase tracking-wider";
 const labelStyle = { color: "#a0a0a0" } as React.CSSProperties;
 
+const PROVINCES = [
+  "Eastern Cape", "Free State", "Gauteng", "KwaZulu Natal", "Limpopo",
+  "Mpumalanga", "Northern Cape", "North West", "Western Cape",
+];
+
 const emptyApp = {
   fullName: "", idNumber: "", dateOfBirth: "", phone: "", email: "",
-  residentialAddress: "", postalAddress: "", taxNumber: "", vatNumber: "",
+  residentialAddress: "", postalCode: "", province: "", taxNumber: "", vatNumber: "",
   bankAccountName: "", bankName: "", bankAccountNumber: "", bankBranchCode: "", bankAccountType: "",
   uplineRepCode: "", popiaConsent: false, agreementConsent: false, signatureName: "",
 };
@@ -72,7 +77,28 @@ export default function RepLoginPage() {
 
   async function handleApply(e: React.FormEvent) {
     e.preventDefault();
-    if (!app.fullName.trim()) { toast({ title: "Validation Error", description: "Full name is required", variant: "destructive" }); return; }
+    // All fields required except SARS tax number, VAT number and upline rep code.
+    const required: [string, string][] = [
+      ["Full Legal Name", app.fullName],
+      ["SA ID / Passport No.", app.idNumber],
+      ["Date of Birth", app.dateOfBirth],
+      ["Mobile", app.phone],
+      ["Email", app.email],
+      ["Residential Address", app.residentialAddress],
+      ["Postal Code", app.postalCode],
+      ["Province", app.province],
+      ["Account Holder", app.bankAccountName],
+      ["Bank", app.bankName],
+      ["Account Type", app.bankAccountType],
+      ["Account Number", app.bankAccountNumber],
+      ["Branch Code", app.bankBranchCode],
+      ["Signature", app.signatureName],
+    ];
+    const missing = required.find(([, v]) => !String(v).trim());
+    if (missing) {
+      toast({ title: "Please complete all fields", description: `${missing[0]} is required.`, variant: "destructive" });
+      return;
+    }
     if (!app.popiaConsent || !app.agreementConsent) {
       toast({ title: "Consent required", description: "Please accept the POPIA consent and the commission agreement.", variant: "destructive" });
       return;
@@ -192,40 +218,49 @@ export default function RepLoginPage() {
 
               <Field label="Full Legal Name *" value={app.fullName} onChange={setA("fullName")} />
               <div style={{ display: "flex", gap: 8 }}>
-                <Field label="SA ID / Passport No." value={app.idNumber} onChange={setA("idNumber")} />
-                <Field label="Date of Birth" type="date" value={app.dateOfBirth} onChange={setA("dateOfBirth")} />
+                <Field label="SA ID / Passport No. *" value={app.idNumber} onChange={setA("idNumber")} />
+                <Field label="Date of Birth *" type="date" value={app.dateOfBirth} onChange={setA("dateOfBirth")} />
               </div>
               <div style={{ display: "flex", gap: 8 }}>
-                <Field label="Mobile" value={app.phone} onChange={setA("phone")} />
-                <Field label="Email" value={app.email} onChange={setA("email")} />
+                <Field label="Mobile *" value={app.phone} onChange={setA("phone")} />
+                <Field label="Email *" value={app.email} onChange={setA("email")} />
               </div>
-              <Field label="Residential Address" value={app.residentialAddress} onChange={setA("residentialAddress")} />
-              <Field label="Postal Address" value={app.postalAddress} onChange={setA("postalAddress")} />
+              <Field label="Residential Address *" value={app.residentialAddress} onChange={setA("residentialAddress")} />
               <div style={{ display: "flex", gap: 8 }}>
-                <Field label="SARS Tax Number" value={app.taxNumber} onChange={setA("taxNumber")} />
-                <Field label="VAT No. (if any)" value={app.vatNumber} onChange={setA("vatNumber")} />
-              </div>
-
-              <p className={labelCls} style={{ ...labelStyle, marginTop: 6 }}>Banking (for commission payouts)</p>
-              <Field label="Account Holder" value={app.bankAccountName} onChange={setA("bankAccountName")} />
-              <div style={{ display: "flex", gap: 8 }}>
-                <Field label="Bank" value={app.bankName} onChange={setA("bankName")} />
+                <Field label="Postal Code *" value={app.postalCode} onChange={setA("postalCode")} />
                 <div style={{ flex: 1 }}>
-                  <label className={labelCls} style={labelStyle}>Account Type</label>
-                  <select value={app.bankAccountType} onChange={(e) => setA("bankAccountType")(e.target.value)} style={{ ...inputStyle, marginTop: 6 }}>
+                  <label className={labelCls} style={labelStyle}>Province *</label>
+                  <select value={app.province} onChange={(e) => setA("province")(e.target.value)} style={{ ...inputStyle, marginTop: 6 }}>
                     <option value="">Select…</option>
-                    <option>Cheque / Current</option>
-                    <option>Savings</option>
-                    <option>Transmission</option>
+                    {PROVINCES.map((p) => (<option key={p} value={p}>{p}</option>))}
                   </select>
                 </div>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
-                <Field label="Account Number" value={app.bankAccountNumber} onChange={setA("bankAccountNumber")} />
-                <Field label="Branch Code" value={app.bankBranchCode} onChange={setA("bankBranchCode")} />
+                <Field label="SARS Tax Number (optional)" value={app.taxNumber} onChange={setA("taxNumber")} />
+                <Field label="VAT No. (optional)" value={app.vatNumber} onChange={setA("vatNumber")} />
               </div>
 
-              <Field label="The Rep Code of the rep (Team Leader) who recruited you" value={app.uplineRepCode} onChange={setA("uplineRepCode")} placeholder="e.g. Rep00000001" />
+              <p className={labelCls} style={{ ...labelStyle, marginTop: 6 }}>Banking (for commission payouts)</p>
+              <Field label="Account Holder *" value={app.bankAccountName} onChange={setA("bankAccountName")} />
+              <div style={{ display: "flex", gap: 8 }}>
+                <Field label="Bank *" value={app.bankName} onChange={setA("bankName")} />
+                <div style={{ flex: 1 }}>
+                  <label className={labelCls} style={labelStyle}>Account Type *</label>
+                  <select value={app.bankAccountType} onChange={(e) => setA("bankAccountType")(e.target.value)} style={{ ...inputStyle, marginTop: 6 }}>
+                    <option value="">Select…</option>
+                    <option>Savings</option>
+                    <option>Current</option>
+                    <option>Cheque</option>
+                  </select>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <Field label="Account Number *" value={app.bankAccountNumber} onChange={setA("bankAccountNumber")} />
+                <Field label="Branch Code *" value={app.bankBranchCode} onChange={setA("bankBranchCode")} />
+              </div>
+
+              <Field label="The Rep Code of the rep (Team Leader) who recruited you (optional)" value={app.uplineRepCode} onChange={setA("uplineRepCode")} placeholder="e.g. Rep00000001" />
 
               <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12, color: "#bcd", cursor: "pointer" }}>
                 <input type="checkbox" checked={app.popiaConsent} onChange={(e) => setA("popiaConsent")(e.target.checked)} style={{ accentColor: LUMO, marginTop: 2 }} />
@@ -236,7 +271,7 @@ export default function RepLoginPage() {
                 I confirm I am applying as an independent, self-employed commission-only agent (not an employee) and the information above is true.
               </label>
 
-              <Field label="Signature (type your full name)" value={app.signatureName} onChange={setA("signatureName")} />
+              <Field label="Signature (type your full name) *" value={app.signatureName} onChange={setA("signatureName")} />
 
               <button type="submit" disabled={submitting}
                 style={{ background: submitting ? "#1a3a0a" : `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`, color: "#000", border: "none", borderRadius: 10, padding: "14px 0", width: "100%", fontWeight: 700, fontSize: "1rem", cursor: submitting ? "not-allowed" : "pointer", opacity: submitting ? 0.5 : 1, minHeight: 48, marginTop: 4 }}>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import ImageUpload from "../components/ImageUpload";
+import AccountantsCard from "../components/AccountantsCard";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -412,6 +413,7 @@ export default function BillingTab() {
           )}
         </CardContent>
       </Card>
+      <AccountantsCard />
       <InvoiceSettingsCard />
       <Card>
         <CardHeader>
