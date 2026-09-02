@@ -311,6 +311,15 @@ var csvHeaders = []string{
 	"description", "paymentCard", "paymentCash", "paymentMobile", "wheelchairAccess",
 	"parkingAvailability", "serviceDineIn", "serviceTakeaway", "serviceDelivery", "wifiNetwork",
 	"wifiPassword", "littleExplorerApproved", "isActive",
+	// Extended fields (append-only; existing columns above are unchanged).
+	"guestType", "accessLevel",
+	"officialRepCode", "officialRepName", "officialHoldingCompany", "officialContactName",
+	"officialContactNumber", "officialEmail", "companyRegNumber", "companyVatNumber",
+	"localDiscountOffered", "localDiscountCode",
+	"paymentGaap", "paymentSnapScan", "paymentYoco", "paymentZapper",
+	"socialsWebsite", "socialsFacebook", "socialsInstagram", "socialsTiktok", "socialsTwitter",
+	"restaurantType", "atmosphere", "features", "imageUrls", "menuPdfUrls",
+	"bookingsEmail", "bookingsContactNumber",
 }
 
 //encore:api auth method=GET path=/restaurant/template
@@ -323,6 +332,15 @@ func Template(ctx context.Context) (*CSVResponse, error) {
 		"+27 21 000 0000", "Italian,Seafood", "https://example.com/menu.pdf", "https://example.com/image.jpg",
 		"10% off mains", "SAVE10", "A cozy bistro by the sea.", "true", "true", "true", "true", "true",
 		"true", "true", "false", "GuestWifi", "password123", "false", "true",
+		// Extended fields
+		"Guest Only", "Tier 2",
+		"Rep00000002", "Jane Rep", "Holding Co (Pty) Ltd", "Contact Person",
+		"+27 21 000 0003", "owner@example.com", "2020/123456/07", "4001234567",
+		"10% off for locals", "LOCAL10",
+		"false", "true", "false", "false",
+		"https://example.com", "https://facebook.com/example", "https://instagram.com/example", "", "",
+		"Fine Dining,Casual", "Romantic,Family Friendly", "Outdoor Seating,Live Music", "https://example.com/1.jpg,https://example.com/2.jpg", "https://example.com/menu2.pdf",
+		"bookings@example.com", "+27 21 000 0004",
 	})
 	w.Flush()
 	return &CSVResponse{CSV: sb.String()}, nil
@@ -345,6 +363,15 @@ func ExportRestaurants(ctx context.Context) (*CSVResponse, error) {
 			strconv.FormatBool(r.WheelchairAccess), strconv.FormatBool(r.ParkingAvailability), strconv.FormatBool(r.ServiceDineIn),
 			strconv.FormatBool(r.ServiceTakeaway), strconv.FormatBool(r.ServiceDelivery), r.WifiNetwork, r.WifiPassword,
 			strconv.FormatBool(r.LittleExplorerApproved), strconv.FormatBool(r.IsActive),
+			// Extended fields
+			r.GuestType, r.AccessLevel,
+			r.OfficialRepCode, r.OfficialRepName, r.OfficialHoldingCompany, r.OfficialContactName,
+			r.OfficialContactNumber, r.OfficialEmail, r.CompanyRegNumber, r.CompanyVatNumber,
+			r.LocalDiscountOffered, r.LocalDiscountCode,
+			strconv.FormatBool(r.PaymentGaap), strconv.FormatBool(r.PaymentSnapScan), strconv.FormatBool(r.PaymentYoco), strconv.FormatBool(r.PaymentZapper),
+			r.SocialsWebsite, r.SocialsFacebook, r.SocialsInstagram, r.SocialsTiktok, r.SocialsTwitter,
+			strings.Join(r.RestaurantType, ","), strings.Join(r.Atmosphere, ","), strings.Join(r.Features, ","), strings.Join(r.ImageUrls, ","), strings.Join(r.MenuPdfUrls, ","),
+			r.BookingsEmail, r.BookingsContactNumber,
 		})
 	}
 	w.Flush()
@@ -387,9 +414,13 @@ func ImportRestaurants(ctx context.Context, req *ImportRequest) (*ImportResponse
 			DiscountCode:         row.DiscountCode,
 			Description:          row.Description,
 			PaymentMethods: appdb.PaymentMethods{
-				PaymentCard:   parseBool(row.PaymentCard),
-				PaymentCash:   parseBool(row.PaymentCash),
-				PaymentMobile: parseBool(row.PaymentMobile),
+				PaymentCard:     parseBool(row.PaymentCard),
+				PaymentCash:     parseBool(row.PaymentCash),
+				PaymentMobile:   parseBool(row.PaymentMobile),
+				PaymentGaap:     parseBool(row.PaymentGaap),
+				PaymentSnapScan: parseBool(row.PaymentSnapScan),
+				PaymentYoco:     parseBool(row.PaymentYoco),
+				PaymentZapper:   parseBool(row.PaymentZapper),
 			},
 			WheelchairAccess:       parseBool(row.WheelchairAccess),
 			ParkingAvailability:    parseBool(row.ParkingAvailability),
@@ -400,12 +431,46 @@ func ImportRestaurants(ctx context.Context, req *ImportRequest) (*ImportResponse
 			WifiPassword:           row.WifiPassword,
 			LittleExplorerApproved: parseBool(row.LittleExplorerApproved),
 			IsActive:               parseBool(row.IsActive),
-			PartnerCode:            appdb.PartnerCode{Code: appdb.RandomCode(10), Active: true},
+			RestaurantType:         splitCSVList(row.RestaurantType),
+			Atmosphere:             splitCSVList(row.Atmosphere),
+			Features:               splitCSVList(row.Features),
+			ImageUrls:              splitCSVList(row.ImageUrls),
+			MenuPdfUrls:            splitCSVList(row.MenuPdfUrls),
+			LocalDiscountOffered:   row.LocalDiscountOffered,
+			LocalDiscountCode:      row.LocalDiscountCode,
+			BookingsEmail:          row.BookingsEmail,
+			BookingsContactNumber:  row.BookingsContactNumber,
+			Socials: appdb.Socials{
+				SocialsWebsite:   row.SocialsWebsite,
+				SocialsFacebook:  row.SocialsFacebook,
+				SocialsInstagram: row.SocialsInstagram,
+				SocialsTiktok:    row.SocialsTiktok,
+				SocialsTwitter:   row.SocialsTwitter,
+			},
+			OfficialUse: appdb.OfficialUse{
+				OfficialHoldingCompany: row.OfficialHoldingCompany,
+				OfficialContactName:    row.OfficialContactName,
+				OfficialContactNumber:  row.OfficialContactNumber,
+				OfficialEmail:          row.OfficialEmail,
+				OfficialRepCode:        row.OfficialRepCode,
+				OfficialRepName:        row.OfficialRepName,
+				CompanyRegNumber:       row.CompanyRegNumber,
+				CompanyVatNumber:       row.CompanyVatNumber,
+				GuestType:              row.GuestType,
+				AccessLevel:            row.AccessLevel,
+			},
+			PartnerCode: appdb.PartnerCode{Code: appdb.RandomCode(10), Active: true},
 		}
-		if _, err := restaurants.Create(ctx, in); err != nil {
+		created, err := restaurants.Create(ctx, in)
+		if err != nil {
 			resp.Failed++
 			resp.Errors = append(resp.Errors, rowError(i, row.Name, err.Error()))
 			continue
+		}
+		// Set up billing like the normal onboarding path (paused until a
+		// SuperAdmin activates the profile). Non-fatal — a later save reconciles.
+		if subErr := billing.OnPartnerOnboarded(ctx, "restaurant", created.ID, created.AccessLevel, created.GuestType, created.OfficialRepCode); subErr != nil {
+			log.Printf("restaurant import %d: subscription setup failed: %v", created.ID, subErr)
 		}
 		resp.Imported++
 	}

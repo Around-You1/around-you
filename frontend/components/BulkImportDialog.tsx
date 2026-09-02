@@ -10,7 +10,7 @@ interface BulkImportDialogProps {
   open: boolean;
   onClose: () => void;
   onImportComplete: () => void;
-  entityType: "service" | "attraction" | "accommodation" | "restaurant";
+  entityType: "service" | "attraction" | "accommodation" | "restaurant" | "estate_agency" | "estate_agent" | "estate_property";
 }
 
 export default function BulkImportDialog({ open, onClose, onImportComplete, entityType }: BulkImportDialogProps) {
@@ -98,7 +98,8 @@ export default function BulkImportDialog({ open, onClose, onImportComplete, enti
   };
 
   const isNotesRow = (row: any): boolean => {
-    const val = String(row.name || "").toLowerCase().trim();
+    // Properties key off `title`; every other entity keys off `name`.
+    const val = String(row.name || row.title || "").toLowerCase().trim();
     return val === "" || val.startsWith("valid values") || val.startsWith("must match") || val.startsWith("true or false") || val.startsWith("comma-separated");
   };
 
@@ -144,28 +145,13 @@ export default function BulkImportDialog({ open, onClose, onImportComplete, enti
         validateRequiredHeaders(["name", "address", "latitude", "longitude", "country", "province", "serviceCategories"]);
         const rows = dataRows.map((row, index) => {
           try {
+            // Forward every column present in the CSV (header names match the
+            // backend's JSON field tags); only latitude/longitude need to be
+            // numbers. New template columns flow through automatically.
             return {
-              name: row.name,
-              address: row.address,
+              ...row,
               latitude: parseNumber(row.latitude, `latitude (row ${index + 2})`),
               longitude: parseNumber(row.longitude, `longitude (row ${index + 2})`),
-              country: row.country,
-              province: row.province,
-              area: row.area || undefined,
-              postalCode: row.postalCode,
-              contactNumber: row.contactNumber || undefined,
-              serviceCategories: row.serviceCategories,
-              imageUrl: row.imageUrl || undefined,
-              discountOffered: row.discountOffered || undefined,
-              discountCode: row.discountCode || undefined,
-              description: row.description || undefined,
-              paymentCard: row.paymentCard || undefined,
-              paymentCash: row.paymentCash || undefined,
-              paymentMobile: row.paymentMobile || undefined,
-              wheelchairAccess: row.wheelchairAccess || undefined,
-              parkingAvailability: row.parkingAvailability || undefined,
-              littleExplorerApproved: row.littleExplorerApproved || undefined,
-              isActive: row.isActive,
             };
           } catch (error) {
             throw new Error(`Row ${index + 2} (${row.name || 'unnamed'}): ${error instanceof Error ? error.message : String(error)}`);
@@ -189,27 +175,9 @@ export default function BulkImportDialog({ open, onClose, onImportComplete, enti
         const rows = dataRows.map((row, index) => {
           try {
             return {
-              name: row.name,
-              address: row.address,
+              ...row,
               latitude: parseNumber(row.latitude, `latitude (row ${index + 2})`),
               longitude: parseNumber(row.longitude, `longitude (row ${index + 2})`),
-              country: row.country,
-              province: row.province,
-              area: row.area || undefined,
-              postalCode: row.postalCode,
-              contactNumber: row.contactNumber || undefined,
-              attractionType: row.attractionType,
-              imageUrl: row.imageUrl || undefined,
-              discountOffered: row.discountOffered || undefined,
-              discountCode: row.discountCode || undefined,
-              description: row.description || undefined,
-              paymentCard: row.paymentCard || undefined,
-              paymentCash: row.paymentCash || undefined,
-              paymentMobile: row.paymentMobile || undefined,
-              wheelchairAccess: row.wheelchairAccess || undefined,
-              parkingAvailability: row.parkingAvailability || undefined,
-              littleExplorerApproved: row.littleExplorerApproved || undefined,
-              isActive: row.isActive,
             };
           } catch (error) {
             throw new Error(`Row ${index + 2} (${row.name || 'unnamed'}): ${error instanceof Error ? error.message : String(error)}`);
@@ -233,30 +201,10 @@ export default function BulkImportDialog({ open, onClose, onImportComplete, enti
         const rows = dataRows.map((row, index) => {
           try {
             return {
-              name: row.name,
-              address: row.address,
+              ...row,
+              area: row.area || "",
               latitude: parseNumber(row.latitude, `latitude (row ${index + 2})`),
               longitude: parseNumber(row.longitude, `longitude (row ${index + 2})`),
-              country: row.country,
-              province: row.province,
-              area: row.area || "",
-              postalCode: row.postalCode,
-              wifiName: row.wifiName || undefined,
-              wifiPassword: row.wifiPassword || undefined,
-              imageUrl: row.imageUrl || undefined,
-              checkInInstructions: row.checkInInstructions || undefined,
-              amenities: row.amenities || undefined,
-              guidelines: row.guidelines || undefined,
-              checkOutInstructions: row.checkOutInstructions || undefined,
-              primaryContact: row.primaryContact || undefined,
-              policeContact: row.policeContact || undefined,
-              doctorContact: row.doctorContact || undefined,
-              ambulanceContact: row.ambulanceContact || undefined,
-              hospitalContact: row.hospitalContact || undefined,
-              fireDepartmentContact: row.fireDepartmentContact || undefined,
-              wheelchairAccess: row.wheelchairAccess || undefined,
-              parkingAvailability: row.parkingAvailability || undefined,
-              isActive: row.isActive,
             };
           } catch (error) {
             throw new Error(`Row ${index + 2} (${row.name || 'unnamed'}): ${error instanceof Error ? error.message : String(error)}`);
@@ -280,33 +228,9 @@ export default function BulkImportDialog({ open, onClose, onImportComplete, enti
         const rows = dataRows.map((row, index) => {
           try {
             return {
-              name: row.name,
-              address: row.address,
+              ...row,
               latitude: parseNumber(row.latitude, `latitude (row ${index + 2})`),
               longitude: parseNumber(row.longitude, `longitude (row ${index + 2})`),
-              country: row.country,
-              province: row.province,
-              area: row.area || undefined,
-              postalCode: row.postalCode,
-              contactNumber: row.contactNumber || undefined,
-              cuisineTypes: row.cuisineTypes,
-              menuLink: row.menuLink || undefined,
-              imageUrl: row.imageUrl || undefined,
-              discountOffered: row.discountOffered || undefined,
-              discountCode: row.discountCode || undefined,
-              description: row.description || undefined,
-              paymentCard: row.paymentCard || undefined,
-              paymentCash: row.paymentCash || undefined,
-              paymentMobile: row.paymentMobile || undefined,
-              wheelchairAccess: row.wheelchairAccess || undefined,
-              parkingAvailability: row.parkingAvailability || undefined,
-              serviceDineIn: row.serviceDineIn || undefined,
-              serviceTakeaway: row.serviceTakeaway || undefined,
-              serviceDelivery: row.serviceDelivery || undefined,
-              wifiNetwork: row.wifiNetwork || undefined,
-              wifiPassword: row.wifiPassword || undefined,
-              littleExplorerApproved: row.littleExplorerApproved,
-              isActive: row.isActive,
             };
           } catch (error) {
             throw new Error(`Row ${index + 2} (${row.name || 'unnamed'}): ${error instanceof Error ? error.message : String(error)}`);
@@ -315,6 +239,25 @@ export default function BulkImportDialog({ open, onClose, onImportComplete, enti
 
         const backend = getAuthenticatedBackend();
         const result = await backend.restaurant.importRestaurants({ rows });
+
+        toast({
+          title: result.success ? "Success" : "Partial Success",
+          description: `Imported: ${result.imported}, Failed: ${result.failed}`,
+          variant: result.success ? "default" : "destructive",
+        });
+
+        if (result.errors.length > 0) {
+          console.error("Import errors:", result.errors);
+        }
+      } else if (entityType === "estate_agency" || entityType === "estate_agent" || entityType === "estate_property") {
+        // Estate imports send raw string cells; the backend parses numbers/bools.
+        validateRequiredHeaders(entityType === "estate_property" ? ["title"] : ["name"]);
+        const rows = dataRows.map((row) => ({ ...row }));
+        const backend = getAuthenticatedBackend();
+        const result =
+          entityType === "estate_agency" ? await backend.estate.importAgencies({ rows })
+          : entityType === "estate_agent" ? await backend.estate.importAgents({ rows })
+          : await backend.estate.importProperties({ rows });
 
         toast({
           title: result.success ? "Success" : "Partial Success",
@@ -345,11 +288,17 @@ export default function BulkImportDialog({ open, onClose, onImportComplete, enti
   const entityLabel = entityType === "service" ? "Services"
     : entityType === "attraction" ? "Attractions"
     : entityType === "restaurant" ? "Restaurants"
+    : entityType === "estate_agency" ? "Estate Agencies"
+    : entityType === "estate_agent" ? "Estate Agents"
+    : entityType === "estate_property" ? "Properties"
     : "Accommodations";
 
   const entityLower = entityType === "service" ? "services"
     : entityType === "attraction" ? "attractions"
     : entityType === "restaurant" ? "restaurants"
+    : entityType === "estate_agency" ? "estate agencies"
+    : entityType === "estate_agent" ? "estate agents"
+    : entityType === "estate_property" ? "properties"
     : "accommodations";
 
   return (

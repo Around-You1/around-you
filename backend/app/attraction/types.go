@@ -195,6 +195,40 @@ type ImportRow struct {
 	ParkingAvailability    string  `json:"parkingAvailability,omitempty"`
 	LittleExplorerApproved string  `json:"littleExplorerApproved,omitempty"`
 	IsActive               string  `json:"isActive,omitempty"`
+
+	// Extended fields (append-only).
+	GuestType              string `json:"guestType,omitempty"`
+	AccessLevel            string `json:"accessLevel,omitempty"`
+	OfficialRepCode        string `json:"officialRepCode,omitempty"`
+	OfficialRepName        string `json:"officialRepName,omitempty"`
+	OfficialHoldingCompany string `json:"officialHoldingCompany,omitempty"`
+	OfficialContactName    string `json:"officialContactName,omitempty"`
+	OfficialContactNumber  string `json:"officialContactNumber,omitempty"`
+	OfficialEmail          string `json:"officialEmail,omitempty"`
+	CompanyRegNumber       string `json:"companyRegNumber,omitempty"`
+	CompanyVatNumber       string `json:"companyVatNumber,omitempty"`
+	LocalDiscountOffered   string `json:"localDiscountOffered,omitempty"`
+	LocalDiscountCode      string `json:"localDiscountCode,omitempty"`
+	PaymentGaap            string `json:"paymentGaap,omitempty"`
+	PaymentSnapScan        string `json:"paymentSnapScan,omitempty"`
+	PaymentYoco            string `json:"paymentYoco,omitempty"`
+	PaymentZapper          string `json:"paymentZapper,omitempty"`
+	SocialsWebsite         string `json:"socialsWebsite,omitempty"`
+	SocialsFacebook        string `json:"socialsFacebook,omitempty"`
+	SocialsInstagram       string `json:"socialsInstagram,omitempty"`
+	SocialsTiktok          string `json:"socialsTiktok,omitempty"`
+	SocialsTwitter         string `json:"socialsTwitter,omitempty"`
+	ImageUrls              string `json:"imageUrls,omitempty"`
+	SafetyInfo             string `json:"safetyInfo,omitempty"`
+	AgeRestrictions        string `json:"ageRestrictions,omitempty"`
+	FitnessLevel           string `json:"fitnessLevel,omitempty"`
+	BestTimeOfDay          string `json:"bestTimeOfDay,omitempty"`
+	WhatToBring            string `json:"whatToBring,omitempty"`
+	TrailDifficulty        string `json:"trailDifficulty,omitempty"`
+	WildlifeCautions       string `json:"wildlifeCautions,omitempty"`
+	TideWarnings           string `json:"tideWarnings,omitempty"`
+	ParkingNotes           string `json:"parkingNotes,omitempty"`
+	PhotographySpots       string `json:"photographySpots,omitempty"`
 }
 
 type ImportRequest struct {

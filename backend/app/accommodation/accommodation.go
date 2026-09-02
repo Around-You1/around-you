@@ -233,6 +233,13 @@ var csvHeaders = []string{
 	"wifiName", "wifiPassword", "imageUrl", "checkInInstructions", "amenities", "guidelines",
 	"checkOutInstructions", "primaryContact", "policeContact", "doctorContact", "ambulanceContact",
 	"hospitalContact", "fireDepartmentContact", "wheelchairAccess", "parkingAvailability", "isActive",
+	// Extended fields (append-only). Note: the multi-entry doctors/vets lists are
+	// nested and remain UI-only; the single-number contacts below are flat.
+	"guestType", "accessLevel",
+	"officialRepCode", "officialRepName", "officialHoldingCompany", "officialContactName",
+	"officialContactNumber", "officialEmail", "companyRegNumber", "companyVatNumber",
+	"units", "contact", "facilities", "imageUrls", "hospitalAddress",
+	"snakeCatchersContact", "nsriContact", "vetContact", "communityWatchContact", "localSecurityContact",
 }
 
 //encore:api auth method=GET path=/accommodation/template
@@ -245,6 +252,12 @@ func Template(ctx context.Context) (*CSVResponse, error) {
 		"GuestWifi", "password123", "https://example.com/image.jpg", "Check in after 2pm", "Pool, braai area",
 		"No smoking indoors", "Check out by 10am", "+27 21 000 0000", "10111", "+27 21 000 0001", "10177",
 		"+27 21 000 0002", "10177", "true", "true", "true",
+		// Extended fields
+		"Guest Only", "Tier 2",
+		"Rep00000002", "Jane Rep", "Holding Co (Pty) Ltd", "Contact Person",
+		"+27 21 000 0003", "owner@example.com", "2020/123456/07", "4001234567",
+		"8", "+27 21 000 0005", "Pool,Braai,Parking", "https://example.com/1.jpg,https://example.com/2.jpg", "12 Hospital Rd, Cape Town",
+		"+27 21 000 0006", "+27 21 000 0007", "+27 21 000 0008", "+27 21 000 0009", "+27 21 000 0010",
 	})
 	w.Flush()
 	return &CSVResponse{CSV: sb.String()}, nil
@@ -267,6 +280,12 @@ func ExportAccommodations(ctx context.Context) (*CSVResponse, error) {
 			a.CheckOutInstructions, a.PrimaryContact, a.PoliceContact, a.DoctorContact, a.AmbulanceContact,
 			a.HospitalContact, a.FireDepartmentContact, strconv.FormatBool(a.WheelchairAccess),
 			strconv.FormatBool(a.ParkingAvailability), strconv.FormatBool(a.IsActive),
+			// Extended fields
+			a.GuestType, a.AccessLevel,
+			a.OfficialRepCode, a.OfficialRepName, a.OfficialHoldingCompany, a.OfficialContactName,
+			a.OfficialContactNumber, a.OfficialEmail, a.CompanyRegNumber, a.CompanyVatNumber,
+			strconv.Itoa(a.Units), a.Contact, strings.Join(a.Facilities, ","), strings.Join(a.ImageUrls, ","), a.HospitalAddress,
+			a.SnakeCatchersContact, a.NsriContact, a.VetContact, a.CommunityWatchContact, a.LocalSecurityContact,
 		})
 	}
 	w.Flush()
@@ -317,12 +336,38 @@ func ImportAccommodations(ctx context.Context, req *ImportRequest) (*ImportRespo
 			WheelchairAccess:      parseBool(row.WheelchairAccess),
 			ParkingAvailability:   parseBool(row.ParkingAvailability),
 			IsActive:              parseBool(row.IsActive),
+			Units:                 parseIntSafe(row.Units),
+			Contact:               row.Contact,
+			Facilities:            splitCSVList(row.Facilities),
+			ImageUrls:             splitCSVList(row.ImageUrls),
+			HospitalAddress:       row.HospitalAddress,
+			SnakeCatchersContact:  row.SnakeCatchersContact,
+			NsriContact:           row.NsriContact,
+			VetContact:            row.VetContact,
+			CommunityWatchContact: row.CommunityWatchContact,
+			LocalSecurityContact:  row.LocalSecurityContact,
+			OfficialUse: appdb.OfficialUse{
+				OfficialHoldingCompany: row.OfficialHoldingCompany,
+				OfficialContactName:    row.OfficialContactName,
+				OfficialContactNumber:  row.OfficialContactNumber,
+				OfficialEmail:          row.OfficialEmail,
+				OfficialRepCode:        row.OfficialRepCode,
+				OfficialRepName:        row.OfficialRepName,
+				CompanyRegNumber:       row.CompanyRegNumber,
+				CompanyVatNumber:       row.CompanyVatNumber,
+				GuestType:              row.GuestType,
+				AccessLevel:            row.AccessLevel,
+			},
 		}
 
-		if _, err := accommodations.Create(ctx, in); err != nil {
+		created, err := accommodations.Create(ctx, in)
+		if err != nil {
 			resp.Failed++
 			resp.Errors = append(resp.Errors, rowError(i, row.Name, err.Error()))
 			continue
+		}
+		if subErr := billing.OnPartnerOnboarded(ctx, "accommodation", created.ID, created.AccessLevel, created.GuestType, created.OfficialRepCode); subErr != nil {
+			log.Printf("accommodation import %d: subscription setup failed: %v", created.ID, subErr)
 		}
 		resp.Imported++
 	}
@@ -334,6 +379,27 @@ func ImportAccommodations(ctx context.Context, req *ImportRequest) (*ImportRespo
 func parseBool(s string) bool {
 	v, _ := strconv.ParseBool(strings.TrimSpace(s))
 	return v
+}
+
+// parseIntSafe parses an integer, returning 0 for blank/invalid input.
+func parseIntSafe(s string) int {
+	n, _ := strconv.Atoi(strings.TrimSpace(s))
+	return n
+}
+
+// splitCSVList splits a comma-separated cell into a trimmed slice (nil if blank).
+func splitCSVList(s string) []string {
+	if strings.TrimSpace(s) == "" {
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if t := strings.TrimSpace(p); t != "" {
+			out = append(out, t)
+		}
+	}
+	return out
 }
 
 func rowError(index int, name, msg string) string {

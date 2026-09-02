@@ -315,6 +315,15 @@ var csvHeaders = []string{
 	"contactNumber", "serviceCategories", "imageUrl", "discountOffered", "discountCode", "description",
 	"paymentCard", "paymentCash", "paymentMobile", "wheelchairAccess", "parkingAvailability",
 	"littleExplorerApproved", "isActive",
+	// Extended fields (append-only).
+	"guestType", "accessLevel",
+	"officialRepCode", "officialRepName", "officialHoldingCompany", "officialContactName",
+	"officialContactNumber", "officialEmail", "companyRegNumber", "companyVatNumber",
+	"localDiscountOffered", "localDiscountCode",
+	"paymentGaap", "paymentSnapScan", "paymentYoco", "paymentZapper",
+	"socialsWebsite", "socialsFacebook", "socialsInstagram", "socialsTiktok", "socialsTwitter",
+	"imageUrls",
+	"safetyInfo", "ageRestrictions", "fitnessLevel", "bestTimeOfDay", "whatToBring",
 }
 
 //encore:api auth method=GET path=/service/template
@@ -326,6 +335,15 @@ func Template(ctx context.Context) (*CSVResponse, error) {
 		"Sample Spa", "1 Main Rd", "-33.9", "18.4", "South Africa", "Western Cape", "Cape Town", "8001",
 		"+27 21 000 0000", "Wellness,Beauty", "https://example.com/image.jpg", "15% off first visit",
 		"RELAX15", "A relaxing day spa.", "true", "true", "true", "true", "true", "false", "true",
+		// Extended fields
+		"Guest Only", "Tier 2",
+		"Rep00000002", "Jane Rep", "Holding Co (Pty) Ltd", "Contact Person",
+		"+27 21 000 0003", "owner@example.com", "2020/123456/07", "4001234567",
+		"10% off for locals", "LOCAL10",
+		"false", "true", "false", "false",
+		"https://example.com", "https://facebook.com/example", "https://instagram.com/example", "", "",
+		"https://example.com/1.jpg,https://example.com/2.jpg",
+		"Bring a towel", "18+", "Easy", "Morning", "Comfortable clothing",
 	})
 	w.Flush()
 	return &CSVResponse{CSV: sb.String()}, nil
@@ -347,6 +365,15 @@ func ExportServices(ctx context.Context) (*CSVResponse, error) {
 			s.Description, strconv.FormatBool(s.PaymentCard), strconv.FormatBool(s.PaymentCash), strconv.FormatBool(s.PaymentMobile),
 			strconv.FormatBool(s.WheelchairAccess), strconv.FormatBool(s.ParkingAvailability),
 			strconv.FormatBool(s.LittleExplorerApproved), strconv.FormatBool(s.IsActive),
+			// Extended fields
+			s.GuestType, s.AccessLevel,
+			s.OfficialRepCode, s.OfficialRepName, s.OfficialHoldingCompany, s.OfficialContactName,
+			s.OfficialContactNumber, s.OfficialEmail, s.CompanyRegNumber, s.CompanyVatNumber,
+			s.LocalDiscountOffered, s.LocalDiscountCode,
+			strconv.FormatBool(s.PaymentGaap), strconv.FormatBool(s.PaymentSnapScan), strconv.FormatBool(s.PaymentYoco), strconv.FormatBool(s.PaymentZapper),
+			s.SocialsWebsite, s.SocialsFacebook, s.SocialsInstagram, s.SocialsTiktok, s.SocialsTwitter,
+			strings.Join(s.ImageUrls, ","),
+			s.SafetyInfo, s.AgeRestrictions, s.FitnessLevel, s.BestTimeOfDay, s.WhatToBring,
 		})
 	}
 	w.Flush()
@@ -388,20 +415,57 @@ func ImportServices(ctx context.Context, req *ImportRequest) (*ImportResponse, e
 			DiscountCode:         row.DiscountCode,
 			Description:          row.Description,
 			PaymentMethods: appdb.PaymentMethods{
-				PaymentCard:   parseBool(row.PaymentCard),
-				PaymentCash:   parseBool(row.PaymentCash),
-				PaymentMobile: parseBool(row.PaymentMobile),
+				PaymentCard:     parseBool(row.PaymentCard),
+				PaymentCash:     parseBool(row.PaymentCash),
+				PaymentMobile:   parseBool(row.PaymentMobile),
+				PaymentGaap:     parseBool(row.PaymentGaap),
+				PaymentSnapScan: parseBool(row.PaymentSnapScan),
+				PaymentYoco:     parseBool(row.PaymentYoco),
+				PaymentZapper:   parseBool(row.PaymentZapper),
 			},
 			WheelchairAccess:       parseBool(row.WheelchairAccess),
 			ParkingAvailability:    parseBool(row.ParkingAvailability),
 			LittleExplorerApproved: parseBool(row.LittleExplorerApproved),
 			IsActive:               parseBool(row.IsActive),
-			PartnerCode:            appdb.PartnerCode{Code: appdb.RandomCode(10), Active: true},
+			ImageUrls:              splitCSVList(row.ImageUrls),
+			LocalDiscountOffered:   row.LocalDiscountOffered,
+			LocalDiscountCode:      row.LocalDiscountCode,
+			ExperienceInfo: appdb.ExperienceInfo{
+				SafetyInfo:      row.SafetyInfo,
+				AgeRestrictions: row.AgeRestrictions,
+				FitnessLevel:    row.FitnessLevel,
+				BestTimeOfDay:   row.BestTimeOfDay,
+				WhatToBring:     row.WhatToBring,
+			},
+			Socials: appdb.Socials{
+				SocialsWebsite:   row.SocialsWebsite,
+				SocialsFacebook:  row.SocialsFacebook,
+				SocialsInstagram: row.SocialsInstagram,
+				SocialsTiktok:    row.SocialsTiktok,
+				SocialsTwitter:   row.SocialsTwitter,
+			},
+			OfficialUse: appdb.OfficialUse{
+				OfficialHoldingCompany: row.OfficialHoldingCompany,
+				OfficialContactName:    row.OfficialContactName,
+				OfficialContactNumber:  row.OfficialContactNumber,
+				OfficialEmail:          row.OfficialEmail,
+				OfficialRepCode:        row.OfficialRepCode,
+				OfficialRepName:        row.OfficialRepName,
+				CompanyRegNumber:       row.CompanyRegNumber,
+				CompanyVatNumber:       row.CompanyVatNumber,
+				GuestType:              row.GuestType,
+				AccessLevel:            row.AccessLevel,
+			},
+			PartnerCode: appdb.PartnerCode{Code: appdb.RandomCode(10), Active: true},
 		}
-		if _, err := services.Create(ctx, in); err != nil {
+		created, err := services.Create(ctx, in)
+		if err != nil {
 			resp.Failed++
 			resp.Errors = append(resp.Errors, rowError(i, row.Name, err.Error()))
 			continue
+		}
+		if subErr := billing.OnPartnerOnboarded(ctx, "service", created.ID, created.AccessLevel, created.GuestType, created.OfficialRepCode); subErr != nil {
+			log.Printf("service import %d: subscription setup failed: %v", created.ID, subErr)
 		}
 		resp.Imported++
 	}

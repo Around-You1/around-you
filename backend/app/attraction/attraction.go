@@ -325,6 +325,16 @@ var csvHeaders = []string{
 	"contactNumber", "attractionType", "imageUrl", "discountOffered", "discountCode", "description",
 	"paymentCard", "paymentCash", "paymentMobile", "wheelchairAccess", "parkingAvailability",
 	"littleExplorerApproved", "isActive",
+	// Extended fields (append-only).
+	"guestType", "accessLevel",
+	"officialRepCode", "officialRepName", "officialHoldingCompany", "officialContactName",
+	"officialContactNumber", "officialEmail", "companyRegNumber", "companyVatNumber",
+	"localDiscountOffered", "localDiscountCode",
+	"paymentGaap", "paymentSnapScan", "paymentYoco", "paymentZapper",
+	"socialsWebsite", "socialsFacebook", "socialsInstagram", "socialsTiktok", "socialsTwitter",
+	"imageUrls",
+	"safetyInfo", "ageRestrictions", "fitnessLevel", "bestTimeOfDay", "whatToBring",
+	"trailDifficulty", "wildlifeCautions", "tideWarnings", "parkingNotes", "photographySpots",
 }
 
 //encore:api auth method=GET path=/attraction/template
@@ -337,6 +347,16 @@ func Template(ctx context.Context) (*CSVResponse, error) {
 		"8001", "+27 21 000 0000", "Nature,Sightseeing", "https://example.com/image.jpg", "10% off online",
 		"CABLE10", "Iconic cableway to the top of Table Mountain.", "true", "true", "true", "false", "true",
 		"true", "true",
+		// Extended fields
+		"Guest Only", "Tier 2",
+		"Rep00000002", "Jane Rep", "Holding Co (Pty) Ltd", "Contact Person",
+		"+27 21 000 0003", "owner@example.com", "2020/123456/07", "4001234567",
+		"10% off for locals", "LOCAL10",
+		"false", "true", "false", "false",
+		"https://example.com", "https://facebook.com/example", "https://instagram.com/example", "", "",
+		"https://example.com/1.jpg,https://example.com/2.jpg",
+		"Wear sunscreen", "None", "Easy", "Morning", "Water, hat",
+		"Moderate", "Watch for baboons", "N/A", "Paid parking at base", "Upper cableway station",
 	})
 	w.Flush()
 	return &CSVResponse{CSV: sb.String()}, nil
@@ -358,6 +378,16 @@ func ExportAttractions(ctx context.Context) (*CSVResponse, error) {
 			a.Description, strconv.FormatBool(a.PaymentCard), strconv.FormatBool(a.PaymentCash), strconv.FormatBool(a.PaymentMobile),
 			strconv.FormatBool(a.WheelchairAccess), strconv.FormatBool(a.ParkingAvailability),
 			strconv.FormatBool(a.LittleExplorerApproved), strconv.FormatBool(a.IsActive),
+			// Extended fields
+			a.GuestType, a.AccessLevel,
+			a.OfficialRepCode, a.OfficialRepName, a.OfficialHoldingCompany, a.OfficialContactName,
+			a.OfficialContactNumber, a.OfficialEmail, a.CompanyRegNumber, a.CompanyVatNumber,
+			a.LocalDiscountOffered, a.LocalDiscountCode,
+			strconv.FormatBool(a.PaymentGaap), strconv.FormatBool(a.PaymentSnapScan), strconv.FormatBool(a.PaymentYoco), strconv.FormatBool(a.PaymentZapper),
+			a.SocialsWebsite, a.SocialsFacebook, a.SocialsInstagram, a.SocialsTiktok, a.SocialsTwitter,
+			strings.Join(a.ImageUrls, ","),
+			a.SafetyInfo, a.AgeRestrictions, a.FitnessLevel, a.BestTimeOfDay, a.WhatToBring,
+			a.TrailDifficulty, a.WildlifeCautions, a.TideWarnings, a.ParkingNotes, a.PhotographySpots,
 		})
 	}
 	w.Flush()
@@ -399,20 +429,62 @@ func ImportAttractions(ctx context.Context, req *ImportRequest) (*ImportResponse
 			DiscountCode:         row.DiscountCode,
 			Description:          row.Description,
 			PaymentMethods: appdb.PaymentMethods{
-				PaymentCard:   parseBool(row.PaymentCard),
-				PaymentCash:   parseBool(row.PaymentCash),
-				PaymentMobile: parseBool(row.PaymentMobile),
+				PaymentCard:     parseBool(row.PaymentCard),
+				PaymentCash:     parseBool(row.PaymentCash),
+				PaymentMobile:   parseBool(row.PaymentMobile),
+				PaymentGaap:     parseBool(row.PaymentGaap),
+				PaymentSnapScan: parseBool(row.PaymentSnapScan),
+				PaymentYoco:     parseBool(row.PaymentYoco),
+				PaymentZapper:   parseBool(row.PaymentZapper),
 			},
 			WheelchairAccess:       parseBool(row.WheelchairAccess),
 			ParkingAvailability:    parseBool(row.ParkingAvailability),
 			LittleExplorerApproved: parseBool(row.LittleExplorerApproved),
 			IsActive:               parseBool(row.IsActive),
-			PartnerCode:            appdb.PartnerCode{Code: appdb.RandomCode(10), Active: true},
+			ImageUrls:              splitCSVList(row.ImageUrls),
+			LocalDiscountOffered:   row.LocalDiscountOffered,
+			LocalDiscountCode:      row.LocalDiscountCode,
+			TrailDifficulty:        row.TrailDifficulty,
+			WildlifeCautions:       row.WildlifeCautions,
+			TideWarnings:           row.TideWarnings,
+			ParkingNotes:           row.ParkingNotes,
+			PhotographySpots:       row.PhotographySpots,
+			ExperienceInfo: appdb.ExperienceInfo{
+				SafetyInfo:      row.SafetyInfo,
+				AgeRestrictions: row.AgeRestrictions,
+				FitnessLevel:    row.FitnessLevel,
+				BestTimeOfDay:   row.BestTimeOfDay,
+				WhatToBring:     row.WhatToBring,
+			},
+			Socials: appdb.Socials{
+				SocialsWebsite:   row.SocialsWebsite,
+				SocialsFacebook:  row.SocialsFacebook,
+				SocialsInstagram: row.SocialsInstagram,
+				SocialsTiktok:    row.SocialsTiktok,
+				SocialsTwitter:   row.SocialsTwitter,
+			},
+			OfficialUse: appdb.OfficialUse{
+				OfficialHoldingCompany: row.OfficialHoldingCompany,
+				OfficialContactName:    row.OfficialContactName,
+				OfficialContactNumber:  row.OfficialContactNumber,
+				OfficialEmail:          row.OfficialEmail,
+				OfficialRepCode:        row.OfficialRepCode,
+				OfficialRepName:        row.OfficialRepName,
+				CompanyRegNumber:       row.CompanyRegNumber,
+				CompanyVatNumber:       row.CompanyVatNumber,
+				GuestType:              row.GuestType,
+				AccessLevel:            row.AccessLevel,
+			},
+			PartnerCode: appdb.PartnerCode{Code: appdb.RandomCode(10), Active: true},
 		}
-		if _, err := attractions.Create(ctx, in); err != nil {
+		created, err := attractions.Create(ctx, in)
+		if err != nil {
 			resp.Failed++
 			resp.Errors = append(resp.Errors, rowError(i, row.Name, err.Error()))
 			continue
+		}
+		if subErr := billing.OnPartnerOnboarded(ctx, "attraction", created.ID, created.AccessLevel, created.GuestType, created.OfficialRepCode); subErr != nil {
+			log.Printf("attraction import %d: subscription setup failed: %v", created.ID, subErr)
 		}
 		resp.Imported++
 	}

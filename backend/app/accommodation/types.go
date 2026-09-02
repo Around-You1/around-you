@@ -196,6 +196,28 @@ type ImportRow struct {
 	WheelchairAccess      string  `json:"wheelchairAccess,omitempty"`
 	ParkingAvailability   string  `json:"parkingAvailability,omitempty"`
 	IsActive              string  `json:"isActive,omitempty"`
+
+	// Extended fields (append-only).
+	GuestType              string `json:"guestType,omitempty"`
+	AccessLevel            string `json:"accessLevel,omitempty"`
+	OfficialRepCode        string `json:"officialRepCode,omitempty"`
+	OfficialRepName        string `json:"officialRepName,omitempty"`
+	OfficialHoldingCompany string `json:"officialHoldingCompany,omitempty"`
+	OfficialContactName    string `json:"officialContactName,omitempty"`
+	OfficialContactNumber  string `json:"officialContactNumber,omitempty"`
+	OfficialEmail          string `json:"officialEmail,omitempty"`
+	CompanyRegNumber       string `json:"companyRegNumber,omitempty"`
+	CompanyVatNumber       string `json:"companyVatNumber,omitempty"`
+	Units                  string `json:"units,omitempty"`
+	Contact                string `json:"contact,omitempty"`
+	Facilities             string `json:"facilities,omitempty"`
+	ImageUrls              string `json:"imageUrls,omitempty"`
+	HospitalAddress        string `json:"hospitalAddress,omitempty"`
+	SnakeCatchersContact   string `json:"snakeCatchersContact,omitempty"`
+	NsriContact            string `json:"nsriContact,omitempty"`
+	VetContact             string `json:"vetContact,omitempty"`
+	CommunityWatchContact  string `json:"communityWatchContact,omitempty"`
+	LocalSecurityContact   string `json:"localSecurityContact,omitempty"`
 }
 
 type ImportRequest struct {

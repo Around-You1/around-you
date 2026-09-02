@@ -280,6 +280,16 @@ export const backend = {
     setPropertyActive: (req: { id: number; active: boolean }) =>
       request("POST", "/estate/property/active", { body: req }),
     deleteProperty: (req: { id: number }) => request("DELETE", "/estate/property", { body: req }),
+    // CSV import/export
+    agencyTemplate: () => request("GET", "/estate/agency/template"),
+    exportAgencies: () => request("GET", "/estate/agency/export"),
+    importAgencies: (req: { rows: any[] }) => request("POST", "/estate/agency/import", { body: req }),
+    agentTemplate: () => request("GET", "/estate/agent/template"),
+    exportAgents: () => request("GET", "/estate/agent/export"),
+    importAgents: (req: { rows: any[] }) => request("POST", "/estate/agent/import", { body: req }),
+    propertyTemplate: () => request("GET", "/estate/property/template"),
+    exportProperties: () => request("GET", "/estate/property/export"),
+    importProperties: (req: { rows: any[] }) => request("POST", "/estate/property/import", { body: req }),
     publicAgencies: () => request("GET", "/estate/public/agencies"),
     publicAgents: () => request("GET", "/estate/public/agents"),
     publicProperties: () => request("GET", "/estate/public/properties"),

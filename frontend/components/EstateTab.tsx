@@ -9,6 +9,7 @@ import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 import EstateAgencyForm from "./EstateAgencyForm";
 import EstateAgentForm from "./EstateAgentForm";
+import BulkImportDialog from "./BulkImportDialog";
 
 interface Agency {
   id: number;
@@ -37,6 +38,49 @@ export default function EstateTab() {
   const [editingId, setEditingId] = useState<number | undefined>(undefined);
   const [showAgentForm, setShowAgentForm] = useState(false);
   const [editingAgentId, setEditingAgentId] = useState<number | undefined>(undefined);
+  const [importEntity, setImportEntity] = useState<null | "estate_agency" | "estate_agent" | "estate_property">(null);
+
+  const downloadCsv = (name: string, csv: string) => {
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleTemplates = async () => {
+    try {
+      const backend = getAuthenticatedBackend();
+      const [ag, agn, prop]: any = await Promise.all([
+        backend.estate.agencyTemplate(), backend.estate.agentTemplate(), backend.estate.propertyTemplate(),
+      ]);
+      downloadCsv("estate-agencies-template.csv", ag.csv);
+      downloadCsv("estate-agents-template.csv", agn.csv);
+      downloadCsv("estate-properties-template.csv", prop.csv);
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Failed to download templates", variant: "destructive" });
+    }
+  };
+
+  const handleExportAll = async () => {
+    try {
+      const backend = getAuthenticatedBackend();
+      const date = new Date().toISOString().split("T")[0];
+      const [ag, agn, prop]: any = await Promise.all([
+        backend.estate.exportAgencies(), backend.estate.exportAgents(), backend.estate.exportProperties(),
+      ]);
+      downloadCsv(`estate-agencies-export-${date}.csv`, ag.csv);
+      downloadCsv(`estate-agents-export-${date}.csv`, agn.csv);
+      downloadCsv(`estate-properties-export-${date}.csv`, prop.csv);
+      toast({ title: "Exported", description: "Agencies, agents and properties exported." });
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Failed to export", variant: "destructive" });
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -128,6 +172,21 @@ export default function EstateTab() {
           </Button>
         </div>
       </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" onClick={() => setImportEntity("estate_agency")}>Import Agencies CSV</Button>
+        <Button variant="outline" size="sm" onClick={() => setImportEntity("estate_agent")}>Import Agents CSV</Button>
+        <Button variant="outline" size="sm" onClick={() => setImportEntity("estate_property")}>Import Properties CSV</Button>
+        <Button variant="outline" size="sm" onClick={handleTemplates}>Download Templates</Button>
+        <Button variant="outline" size="sm" onClick={handleExportAll}>Export All CSV</Button>
+      </div>
+
+      <BulkImportDialog
+        open={importEntity !== null}
+        onClose={() => setImportEntity(null)}
+        onImportComplete={() => { setImportEntity(null); load(); }}
+        entityType={importEntity ?? "estate_agency"}
+      />
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
