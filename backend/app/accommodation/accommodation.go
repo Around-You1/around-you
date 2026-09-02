@@ -355,8 +355,8 @@ func ImportAccommodations(ctx context.Context, req *ImportRequest) (*ImportRespo
 				OfficialRepName:        row.OfficialRepName,
 				CompanyRegNumber:       row.CompanyRegNumber,
 				CompanyVatNumber:       row.CompanyVatNumber,
-				GuestType:              row.GuestType,
-				AccessLevel:            row.AccessLevel,
+				GuestType:              appdb.NormalizeGuestType(row.GuestType),
+				AccessLevel:            appdb.NormalizeAccessLevel(row.AccessLevel),
 			},
 		}
 

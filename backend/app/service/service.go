@@ -453,8 +453,8 @@ func ImportServices(ctx context.Context, req *ImportRequest) (*ImportResponse, e
 				OfficialRepName:        row.OfficialRepName,
 				CompanyRegNumber:       row.CompanyRegNumber,
 				CompanyVatNumber:       row.CompanyVatNumber,
-				GuestType:              row.GuestType,
-				AccessLevel:            row.AccessLevel,
+				GuestType:              appdb.NormalizeGuestType(row.GuestType),
+				AccessLevel:            appdb.NormalizeAccessLevel(row.AccessLevel),
 			},
 			PartnerCode: appdb.PartnerCode{Code: appdb.RandomCode(10), Active: true},
 		}
