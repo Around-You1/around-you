@@ -24,6 +24,17 @@ const CHARITY_KEY: Record<string, string> = {
   Attractions: "attraction",
 };
 
+// Downloadable "what we need to onboard you" form per partner type — a rep can
+// email this to a prospective partner (e.g. one outside their area) so the
+// partner can gather everything before onboarding. Served from /public.
+const ONBOARDING_PDF: Record<string, string> = {
+  Accommodations: "/onboarding/accommodation-onboarding.pdf",
+  Restaurants: "/onboarding/restaurant-onboarding.pdf",
+  Services: "/onboarding/service-onboarding.pdf",
+  Attractions: "/onboarding/attraction-onboarding.pdf",
+  "Real Estate & Rentals": "/onboarding/real-estate-onboarding.pdf",
+};
+
 const colors = {
   background: "#000000",
   surface: "#0A0A0A",
@@ -969,6 +980,14 @@ export default function RepOnboardingApp() {
             >
               ← Change Partner Type (Real Estate & Rentals)
             </button>
+            {ONBOARDING_PDF[partnerType] && (
+              <div style={{ marginBottom: 14 }}>
+                <a href={ONBOARDING_PDF[partnerType]} target="_blank" rel="noopener noreferrer"
+                   style={{ color: colors.accent, fontSize: 12, fontWeight: 700, textDecoration: "underline" }}>
+                  Download onboarding form (PDF) — email to a prospective partner
+                </a>
+              </div>
+            )}
             <EstateRepFlow
               repCode={repSession.repCode}
               repName={repSession.repName}
@@ -983,6 +1002,14 @@ export default function RepOnboardingApp() {
             >
               ← Change Partner Type ({partnerType})
             </button>
+            {ONBOARDING_PDF[partnerType] && (
+              <div style={{ marginBottom: 14 }}>
+                <a href={ONBOARDING_PDF[partnerType]} target="_blank" rel="noopener noreferrer"
+                   style={{ color: colors.accent, fontSize: 12, fontWeight: 700, textDecoration: "underline" }}>
+                  Download onboarding form (PDF) — email to a prospective partner
+                </a>
+              </div>
+            )}
 
             <SectionTitle>Company Details</SectionTitle>
             <TextField label="Company Name" value={data.companyName} onChange={set("companyName")} />
