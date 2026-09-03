@@ -9,6 +9,7 @@ import { LogOut } from "lucide-react";
 import AppLogo from "../components/AppLogo";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
+import PendingApplications from "./PendingApplications";
 
 interface Invoice {
   id: number;
@@ -90,6 +91,8 @@ export default function AccDashboard() {
             Logout
           </Button>
         </div>
+
+        <PendingApplications />
 
         <Card>
           <CardHeader>

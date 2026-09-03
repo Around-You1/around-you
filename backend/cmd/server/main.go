@@ -30,6 +30,7 @@ import (
 	"backend_encore/app/events"
 	"backend_encore/app/health"
 	"backend_encore/app/moderation"
+	"backend_encore/app/partnerapp"
 	"backend_encore/app/rating"
 	"backend_encore/app/redemption"
 	"backend_encore/app/repinvoice"
@@ -79,6 +80,10 @@ func main() {
 	r.login("POST /auth/login", httpx.Body(auth.Login))
 	r.login("POST /auth/rep-login", httpx.Body(auth.RepLogin))
 	r.login("POST /auth/rep-application", httpx.Body(auth.SubmitRepApplication))
+	// Public self-service partner application (per-IP rate limited like other public posts)
+	r.login("POST /partner-application", httpx.Body(partnerapp.SubmitPartnerApplication))
+	r.auth("GET /partner-applications", httpx.Query(partnerapp.ListPartnerApplications))
+	r.auth("POST /partner-application/status", httpx.Body(partnerapp.SetApplicationStatus))
 	r.login("POST /auth/acc-login", httpx.Body(auth.AccLogin))
 	r.auth("POST /auth/create-rep", httpx.Body(auth.CreateRep))
 	r.auth("GET /auth/reps", httpx.Empty(auth.ListReps))

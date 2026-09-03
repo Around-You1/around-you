@@ -6,6 +6,7 @@ import AttractionList from "./AttractionList";
 import AttractionForm from "./AttractionForm";
 import BulkImportDialog from "./BulkImportDialog";
 import { getAuthenticatedBackend } from "../lib/backend";
+import PendingApplications from "./PendingApplications";
 import { useToast } from "@/components/ui/use-toast";
 import SortControls, { SortState, DEFAULT_SORT_STATE } from "./SortControls";
 
@@ -149,6 +150,8 @@ export default function AttractionTab({ onUpdate }: AttractionTabProps) {
           <SortControls state={sortState} onChange={setSortState} />
         </div>
       </div>
+
+      {!showForm && <PendingApplications category="attraction" />}
 
       {showForm ? (
         <AttractionForm

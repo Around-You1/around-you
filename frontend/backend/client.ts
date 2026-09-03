@@ -297,6 +297,14 @@ export const backend = {
     publicAgent: (req: { code: string }) => request("GET", "/estate/public/agent", { query: req }),
     publicProperty: (req: { id: number }) => request("GET", "/estate/public/property", { query: req }),
   },
+  partnerApp: {
+    // Public self-service partner application (no auth needed to submit).
+    submit: (req: any) => request("POST", "/partner-application", { body: req }),
+    list: (req: { category?: string; status?: string }) =>
+      request("GET", "/partner-applications", { query: req }),
+    setStatus: (req: { id: number; status: string }) =>
+      request("POST", "/partner-application/status", { body: req }),
+  },
   accounts: {
     invoices: () => request("GET", "/accounts/invoices"),
     summary: () => request("GET", "/accounts/summary"),

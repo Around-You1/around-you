@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, Upload, Download, FileText } from "lucide-react";
 import { getAuthenticatedBackend } from "../lib/backend";
+import PendingApplications from "./PendingApplications";
 import type { Restaurant } from "~backend/restaurant/types";
 import { useToast } from "@/components/ui/use-toast";
 import RestaurantList from "./RestaurantList";
@@ -168,6 +169,8 @@ export default function RestaurantTab({ onUpdate }: RestaurantTabProps) {
           <SortControls state={sortState} onChange={setSortState} />
         </div>
       </div>
+
+      {!showForm && <PendingApplications category="restaurant" />}
 
       {showForm ? (
         <RestaurantForm

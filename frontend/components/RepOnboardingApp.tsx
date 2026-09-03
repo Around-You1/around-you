@@ -531,6 +531,17 @@ export default function RepOnboardingApp() {
   const router = useRouter();
   const repSession = getRepSession();
   const [partnerType, setPartnerType] = useState(null); // "Accommodations" | "Restaurants" | "Services" | "Attractions"
+  const [linkCopied, setLinkCopied] = useState(false);
+  const copyApplyLink = () => {
+    const url = `${window.location.origin}/apply?rep=${encodeURIComponent(repSession.repCode || "")}`;
+    try {
+      navigator.clipboard.writeText(url);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2500);
+    } catch {
+      window.prompt("Copy this application link to send to a partner:", url);
+    }
+  };
   const [tier, setTier] = useState(0);
   const [visibility, setVisibility] = useState([]);
   const [booking, setBooking] = useState(false);
@@ -933,22 +944,37 @@ export default function RepOnboardingApp() {
 
         {/* Step 1: Partner type — big finger-friendly buttons */}
         {!partnerType ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {["Accommodations", "Restaurants", "Services", "Attractions", "Real Estate & Rentals"].map((type) => (
-              <button
-                key={type}
-                onClick={() => setPartnerType(type)}
-                style={{
-                  padding: "28px 8px", borderRadius: 16, background: colors.surface,
-                  border: `2px solid ${colors.primary}`, color: colors.primary,
-                  fontWeight: 800, fontSize: 15, cursor: "pointer",
-                  gridColumn: type === "Real Estate & Rentals" ? "1 / -1" : undefined,
-                }}
-              >
-                {type}
-              </button>
-            ))}
-          </div>
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {["Accommodations", "Restaurants", "Services", "Attractions", "Real Estate & Rentals"].map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setPartnerType(type)}
+                  style={{
+                    padding: "28px 8px", borderRadius: 16, background: colors.surface,
+                    border: `2px solid ${colors.primary}`, color: colors.primary,
+                    fontWeight: 800, fontSize: 15, cursor: "pointer",
+                    gridColumn: type === "Real Estate & Rentals" ? "1 / -1" : undefined,
+                  }}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={copyApplyLink}
+              style={{
+                marginTop: 14, width: "100%", padding: "16px 8px", borderRadius: 16,
+                background: colors.surface, border: `2px solid ${colors.accent}`, color: colors.accent,
+                fontWeight: 800, fontSize: 14, cursor: "pointer",
+              }}
+            >
+              {linkCopied ? "✓ Link copied — paste it into an email/WhatsApp" : "Copy application link to send to a partner"}
+            </button>
+            <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: 8, textAlign: "center" }}>
+              Send this to a potential partner (even outside your area). They fill it in online and it comes back to you and Accounts.
+            </p>
+          </>
         ) : partnerType === "Real Estate & Rentals" ? (
           <>
             <button

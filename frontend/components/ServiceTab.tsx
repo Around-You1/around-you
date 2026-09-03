@@ -6,6 +6,7 @@ import ServiceList from "./ServiceList";
 import ServiceForm from "./ServiceForm";
 import BulkImportDialog from "./BulkImportDialog";
 import { getAuthenticatedBackend } from "../lib/backend";
+import PendingApplications from "./PendingApplications";
 import { useToast } from "@/components/ui/use-toast";
 import SortControls, { SortState, DEFAULT_SORT_STATE } from "./SortControls";
 
@@ -149,6 +150,8 @@ export default function ServiceTab({ onUpdate }: ServiceTabProps) {
           <SortControls state={sortState} onChange={setSortState} />
         </div>
       </div>
+
+      {!showForm && <PendingApplications category="service" />}
 
       {showForm ? (
         <ServiceForm
