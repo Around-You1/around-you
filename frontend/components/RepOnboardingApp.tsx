@@ -143,6 +143,8 @@ const CATEGORY_GROUPS = [
       "Home Security",
       "Interior Design & Décor",
       "Pest Control",
+      "Pet Sitting",
+      "House Sitting",
     ],
   },
   {

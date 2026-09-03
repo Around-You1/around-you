@@ -31,7 +31,7 @@ const FACILITIES = ["Braai", "Fly Fishing", "Golf", "Gym", "Laundry", "Spa", "Sw
 const SERVICE_GROUPS = [
   { label: "Business & Admin", options: ["Accounting & Bookkeeping", "Business Consulting", "HR & Recruitment", "IT Support & Networking", "Legal & Compliance", "Printing & Document Services"] },
   { label: "Health & Wellness", options: ["Beauty Treatments", "Fitness & Gyms", "Grooming Services", "Holistic Therapies", "Skin Care & Aesthetics", "Spas & Beauty Treatments"] },
-  { label: "Home & Property", options: ["Architecture", "Cleaning Services", "Gardening & Landscaping", "Home Security", "Interior Design & Décor", "Pest Control"] },
+  { label: "Home & Property", options: ["Architecture", "Cleaning Services", "Gardening & Landscaping", "Home Security", "Interior Design & Décor", "Pest Control", "Pet Sitting", "House Sitting"] },
   { label: "Services & Trades", options: ["Appliance Repairs", "Carpenters", "Electricians", "Handyman Services", "Locksmiths", "Mechanics", "Painters", "Plumbers", "Welders"] },
   { label: "Transport", options: ["Delivery & Courier Services", "Equipment Hire", "Moving Services", "Shuttle Services", "Taxi & Ride Hailing", "Towing Services", "Vehicle Rentals"] },
   { label: "Food & Drink", options: ["Bakeries", "Butcheries & Fishmongers", "Catering Services", "Fresh Produce Markets", "Grocery Stores"] },
