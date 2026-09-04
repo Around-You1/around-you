@@ -216,8 +216,14 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
     setToggling(attraction.attractionId);
     try {
       const backend = getAuthenticatedBackend();
-      await backend.attraction.update({ attractionId: attraction.attractionId, isActive: !attraction.isActive });
-      toast({ title: "Success", description: `Attraction ${!attraction.isActive ? "activated" : "deactivated"} successfully` });
+      const activating = !attraction.isActive;
+      await backend.admin.bulkSetActive({ entityType: "attraction", ids: [attraction.id], active: activating });
+      toast({
+        title: activating ? "Activated" : "Deactivated",
+        description: activating
+          ? "Access & edit codes issued and the first invoice emailed to the partner."
+          : "Access & edit codes disabled and billing paused.",
+      });
       loadAttractions();
       onUpdate?.();
     } catch (error) {

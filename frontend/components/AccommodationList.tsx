@@ -141,8 +141,14 @@ export default function AccommodationList({ accommodations, onEdit, onUpdate }: 
     setToggling(accommodation.id);
     try {
       const backend = getAuthenticatedBackend();
-      await backend.accommodation.update({ id: accommodation.id, isActive: !accommodation.isActive });
-      toast({ title: "Success", description: `Accommodation ${!accommodation.isActive ? "activated" : "deactivated"} successfully` });
+      const activating = !accommodation.isActive;
+      await backend.admin.bulkSetActive({ entityType: "accommodation", ids: [accommodation.id], active: activating });
+      toast({
+        title: activating ? "Activated" : "Deactivated",
+        description: activating
+          ? "Access & edit codes issued and the first invoice emailed to the partner."
+          : "Access & edit codes disabled and billing paused.",
+      });
       onUpdate();
     } catch (error) {
       console.error("Failed to toggle status:", error);

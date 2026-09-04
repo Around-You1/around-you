@@ -215,8 +215,14 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortSt
     setToggling(service.serviceId);
     try {
       const backend = getAuthenticatedBackend();
-      await backend.service.update({ serviceId: service.serviceId, isActive: !service.isActive });
-      toast({ title: "Success", description: `Service ${!service.isActive ? "activated" : "deactivated"} successfully` });
+      const activating = !service.isActive;
+      await backend.admin.bulkSetActive({ entityType: "service", ids: [service.id], active: activating });
+      toast({
+        title: activating ? "Activated" : "Deactivated",
+        description: activating
+          ? "Access & edit codes issued and the first invoice emailed to the partner."
+          : "Access & edit codes disabled and billing paused.",
+      });
       loadServices();
       onUpdate?.();
     } catch (error) {

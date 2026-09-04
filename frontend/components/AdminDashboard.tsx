@@ -42,20 +42,30 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const [tab, setTab] = useState("accommodations");
   const [modOpenCount, setModOpenCount] = useState(0);
-  const [pendingAppCount, setPendingAppCount] = useState(0);
+  const [pendingByCat, setPendingByCat] = useState<Record<string, number>>({});
 
   useEffect(() => {
     loadStats();
     loadModCount();
     loadPendingCount();
     loadEstate();
+    // PendingApplications broadcasts this after an onboard/decline so the
+    // per-tab badges stay live without a page reload.
+    const refresh = () => loadPendingCount();
+    window.addEventListener("pending-apps-changed", refresh);
+    return () => window.removeEventListener("pending-apps-changed", refresh);
   }, []);
 
   const loadPendingCount = async () => {
     try {
       const backend = getAuthenticatedBackend();
       const res: any = await backend.partnerApp.list({ status: "Pending" });
-      setPendingAppCount((res.applications || []).length);
+      const tally: Record<string, number> = {};
+      for (const a of res.applications || []) {
+        const c = (a.category || "").toLowerCase();
+        tally[c] = (tally[c] || 0) + 1;
+      }
+      setPendingByCat(tally);
     } catch {
       // non-fatal
     }
@@ -100,19 +110,34 @@ export default function AdminDashboard() {
     }
   };
 
+  const pendingTotal = Object.values(pendingByCat).reduce((a, b) => a + b, 0);
+  // Small red count badge shown to the right of a tab name.
+  const catBadge = (key: string) => {
+    const n = pendingByCat[key] || 0;
+    if (n === 0) return null;
+    return (
+      <span
+        title={`${n} pending application${n === 1 ? "" : "s"}`}
+        className="ml-1.5 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold h-4 min-w-[16px] px-1"
+      >
+        {n}
+      </span>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
             <h1 className="text-4xl font-bold text-foreground">Admin Dashboard</h1>
-            {modOpenCount + pendingAppCount > 0 && (
+            {modOpenCount + pendingTotal > 0 && (
               <span
-                title={`${pendingAppCount} pending application${pendingAppCount === 1 ? "" : "s"} · ${modOpenCount} flagged item${modOpenCount === 1 ? "" : "s"} to review`}
+                title={`${pendingTotal} pending application${pendingTotal === 1 ? "" : "s"} · ${modOpenCount} flagged item${modOpenCount === 1 ? "" : "s"} to review`}
                 className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-red-600 text-white text-sm font-bold shadow"
-                aria-label={`${modOpenCount + pendingAppCount} items need attention`}
+                aria-label={`${modOpenCount + pendingTotal} items need attention`}
               >
-                {modOpenCount + pendingAppCount}
+                {modOpenCount + pendingTotal}
               </span>
             )}
             <Button variant="outline" onClick={() => router.push("/admin-analytics")}>
@@ -178,17 +203,6 @@ export default function AdminDashboard() {
           </button>
         )}
 
-        {pendingAppCount > 0 && (
-          <div className="w-full flex items-center gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-left">
-            <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-full bg-red-600 text-white text-xs font-bold shrink-0">
-              {pendingAppCount}
-            </span>
-            <span className="text-sm text-foreground">
-              <strong>{pendingAppCount}</strong> new partner {pendingAppCount === 1 ? "application is" : "applications are"} pending — review under the relevant category tab (Restaurants / Services / Attractions) or the Accountant portal.
-            </span>
-          </div>
-        )}
-
         <Card>
           <CardHeader>
             <CardTitle>Manage Content</CardTitle>
@@ -196,10 +210,10 @@ export default function AdminDashboard() {
           <CardContent>
             <Tabs value={tab} onValueChange={setTab} className="space-y-6">
               <TabsList className="grid w-full h-auto grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-1">
-                <TabsTrigger value="accommodations" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Accommodations</TabsTrigger>
-                <TabsTrigger value="restaurants" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Restaurants</TabsTrigger>
-                <TabsTrigger value="services" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Services</TabsTrigger>
-                <TabsTrigger value="attractions" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Attractions</TabsTrigger>
+                <TabsTrigger value="accommodations" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Accommodations{catBadge("accommodation")}</TabsTrigger>
+                <TabsTrigger value="restaurants" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Restaurants{catBadge("restaurant")}</TabsTrigger>
+                <TabsTrigger value="services" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Services{catBadge("service")}</TabsTrigger>
+                <TabsTrigger value="attractions" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Attractions{catBadge("attraction")}</TabsTrigger>
                 <TabsTrigger value="reps" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Reps</TabsTrigger>
                 <TabsTrigger value="billing" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Billing</TabsTrigger>
                 <TabsTrigger value="moderation" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">
@@ -211,7 +225,7 @@ export default function AdminDashboard() {
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="archived" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Archived</TabsTrigger>
-                <TabsTrigger value="realestate" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Real Estate</TabsTrigger>
+                <TabsTrigger value="realestate" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Real Estate{catBadge("estate")}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="accommodations">

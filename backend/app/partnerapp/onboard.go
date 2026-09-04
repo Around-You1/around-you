@@ -87,6 +87,33 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 	parking := has(acc, "Parking")
 	childFriendly := has(a.f("Child friendly"), "Child")
 
+	// Audience (Guest Only / Local / Both) + tier from the applicant's answers.
+	// Newer forms use "Shown to (tick one)"; older ones stored "Audience".
+	appear := a.f("Shown to (tick one)")
+	if appear == "" {
+		appear = a.f("Audience")
+	}
+	guestType := ""
+	switch {
+	case has(appear, "Both"):
+		guestType = "Both"
+	case has(appear, "Local"):
+		guestType = "Local"
+	case has(appear, "Guest"):
+		guestType = "Guest Only"
+	}
+	accessLevel := ""
+	pricing := a.f("Pricing structure (tick one)")
+	switch {
+	case has(pricing, "Tier 2"):
+		accessLevel = "Tier 2"
+	case has(pricing, "Tier 1"):
+		accessLevel = "Tier 1"
+	}
+	if guestType == "Both" {
+		accessLevel = "Tier 2" // "Both" is always the top tier
+	}
+
 	switch a.Category {
 	case "restaurant":
 		_, err := restaurant.Create(ctx, &restaurant.CreateRequest{
@@ -134,6 +161,8 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			OfficialRepCode:        a.RepCode,
 			CompanyRegNumber:       a.f("Company registration number"),
 			CompanyVatNumber:       a.f("VAT number (if registered)"),
+			GuestType:              guestType,
+			AccessLevel:            accessLevel,
 		})
 		return err
 
@@ -179,6 +208,8 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			OfficialRepCode:        a.RepCode,
 			CompanyRegNumber:       a.f("Company registration number"),
 			CompanyVatNumber:       a.f("VAT number (if registered)"),
+			GuestType:              guestType,
+			AccessLevel:            accessLevel,
 		})
 		return err
 
@@ -229,6 +260,8 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			OfficialRepCode:        a.RepCode,
 			CompanyRegNumber:       a.f("Company registration number"),
 			CompanyVatNumber:       a.f("VAT number (if registered)"),
+			GuestType:              guestType,
+			AccessLevel:            accessLevel,
 		})
 		return err
 
@@ -275,6 +308,8 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			OfficialRepCode:        a.RepCode,
 			CompanyRegNumber:       a.f("Company registration number"),
 			CompanyVatNumber:       a.f("VAT number (if registered)"),
+			GuestType:              guestType,
+			AccessLevel:            accessLevel,
 		})
 		return err
 

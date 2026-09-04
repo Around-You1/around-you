@@ -67,6 +67,8 @@ export default function PendingApplications({ category }: { category?: string })
           : app.businessName,
       });
       setApps((prev) => prev.filter((a) => a.id !== app.id));
+      // Let the Admin Dashboard refresh its pending badges without a reload.
+      if (typeof window !== "undefined") window.dispatchEvent(new Event("pending-apps-changed"));
     } catch (error: any) {
       toast({ title: "Error", description: error?.message || "Failed to update", variant: "destructive" });
     } finally {

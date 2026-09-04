@@ -180,8 +180,14 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
     setToggling(restaurant.id);
     try {
       const backend = getAuthenticatedBackend();
-      await backend.restaurant.update({ id: restaurant.id, isActive: !restaurant.isActive });
-      toast({ title: "Success", description: `Restaurant ${!restaurant.isActive ? "activated" : "deactivated"} successfully` });
+      const activating = !restaurant.isActive;
+      await backend.admin.bulkSetActive({ entityType: "restaurant", ids: [restaurant.id], active: activating });
+      toast({
+        title: activating ? "Activated" : "Deactivated",
+        description: activating
+          ? "Access & edit codes issued and the first invoice emailed to the partner."
+          : "Access & edit codes disabled and billing paused.",
+      });
       onUpdate();
     } catch (error) {
       console.error("Failed to toggle status:", error);
