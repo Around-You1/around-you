@@ -10,22 +10,21 @@ import backend from "~backend/client";
 // itself stays an internal step.
 
 const CATEGORIES: { key: string; label: string }[] = [
+  { key: "accommodation", label: "Accommodation" },
   { key: "restaurant", label: "Restaurant" },
   { key: "service", label: "Service" },
   { key: "attraction", label: "Attraction" },
-  { key: "accommodation", label: "Accommodation" },
   { key: "estate", label: "Real Estate & Rentals" },
 ];
 
 const PROVINCES = ["Eastern Cape", "Free State", "Gauteng", "KwaZulu Natal", "Limpopo", "Mpumalanga", "Northern Cape", "North West", "Western Cape"];
-const AUDIENCE = ["Guest only", "Local only", "Both"];
 const PAYMENTS = ["Card", "Cash", "Gaap", "Mobile Tap", "Snap Scan", "Yoco", "Zapper"];
 const ACCESS = ["Wheelchair Access", "Parking Availability"];
 const DIETARY = ["Gluten Free", "Halaal", "Kosher", "Nut Free", "Signature Dish", "Chef Recommendation"];
 const ATMOSPHERE = ["Family-friendly", "Romantic", "Trendy / Modern", "Quiet", "Lively", "Outdoor Seating", "Sea View", "Mountain View", "Rooftop", "Garden"];
 const REST_FEATURES = ["Walk-ins Welcome", "Live Music", "Free Wi-Fi"];
 const REST_TYPES = ["Food Truck", "Home Meals", "Take Away", "Pop Up", "Restaurant"];
-const CUISINE = ["African", "À la carte", "American", "Asian", "BBQ", "Bakery", "Boerewors Rolls", "Breakfast", "Bunny Chow", "Burgers", "Cafe", "Cake", "Chinese", "Coffee Shop", "Curry", "Deli", "Fast Food", "Fine Dining", "French", "Greek", "Indian", "Italian", "Japanese", "Mediterranean", "Mexican", "Middle Eastern", "Pasta", "Pizza", "Ribs", "Roast", "Sandwiches", "Seafood", "Spanish", "Steaks", "Sushi", "Thai", "Vegan", "Vegetarian"];
+const CUISINE = ["African", "À la carte", "American", "Asian", "BBQ", "Bakery", "Boerewors Rolls", "Breakfast", "Bunny Chow", "Burgers", "Cafe", "Cake", "Chinese", "Coffee Shop", "Curry", "Deli", "Fast Food", "Fine Dining", "French", "Greek", "Indian", "Italian", "Jaffels", "Japanese", "Mediterranean", "Mexican", "Middle Eastern", "Pasta", "Pizza", "Ribs", "Roast", "Sandwiches", "Seafood", "Spanish", "Steaks", "Sushi", "Thai", "Vegan", "Vegetarian"];
 const ATTRACTION_CATS = ["Artisanal Tastings & Pairings", "Beaches & Coastal", "Cultural & Historical", "Entertainment & Events", "Nature & Outdoors", "Shopping & Markets", "Sports & Adventure", "Water-Based Activities", "Wellness & Retreats", "Wildlife & Eco"];
 const FACILITIES = ["Braai", "Fly Fishing", "Golf", "Gym", "Laundry", "Spa", "Swimming Pool"];
 const SERVICE_GROUPS = [
@@ -57,7 +56,31 @@ const businessSection = (nameLabel: string): Section => ({
     { key: "VAT number (if registered)", type: "text" },
   ],
 });
-const audienceSection: Section = { title: "How you'd like to appear", fields: [{ key: "Audience", type: "radio", options: AUDIENCE, note: "Or ask your rep about a Booking listing." }] };
+// Per-category booking charge shown on the "How you'd like to appear" section.
+const BOOKING_NOTE: Record<string, string> = {
+  restaurant: "R200/month + R10 per cover",
+  service: "R200/month + 10% per order",
+  attraction: "R200/month + 10% per person",
+};
+function appearSection(cat: string): Section {
+  return {
+    title: "How you'd like to appear",
+    fields: [
+      { key: "Pricing structure (tick one)", type: "radio", options: [
+        "Tier 1 — R200/month (Partial Information)",
+        "Tier 2 — R300/month (Full Information)",
+      ] },
+      { key: "Shown to (tick one)", type: "radio", options: [
+        "Guest only (Tier 1 R200 or Tier 2 R300)",
+        "Local only (Tier 1 R200 or Tier 2 R300)",
+        "Both (Tier 2 R400)",
+      ] },
+      { key: "Or, if you take bookings", type: "multi", options: [
+        `Booking listing — ${BOOKING_NOTE[cat] || "R200/month"}`,
+      ] },
+    ],
+  };
+}
 const discountsSection: Section = { title: "Discounts for Around You users", fields: [
   { key: "Guest discount — offer", type: "text" }, { key: "Guest discount code", type: "text" },
   { key: "Local discount — offer", type: "text" }, { key: "Local discount code", type: "text" },
@@ -89,7 +112,7 @@ function specsFor(cat: string): Section[] {
       { key: "Service options", type: "multi", options: ["Dine-in", "Takeaway", "Delivery"] },
       { key: "Wi-Fi network name", type: "text" }, { key: "Wi-Fi password", type: "text" },
     ] },
-    audienceSection, discountsSection, paymentsSection, socialsSection, accessibilitySection, charitySection,
+    appearSection(cat), discountsSection, paymentsSection, socialsSection, accessibilitySection, charitySection,
   ];
   if (cat === "service") return [
     businessSection("Service name"),
@@ -101,7 +124,7 @@ function specsFor(cat: string): Section[] {
       { key: "Safety information", type: "text" }, { key: "Age restrictions", type: "text" },
       { key: "Fitness level", type: "text" }, { key: "Best time of day", type: "text" }, { key: "What to bring", type: "text" },
     ] },
-    audienceSection, discountsSection, paymentsSection, socialsSection, accessibilitySection, charitySection,
+    appearSection(cat), discountsSection, paymentsSection, socialsSection, accessibilitySection, charitySection,
   ];
   if (cat === "attraction") return [
     businessSection("Attraction name"),
@@ -114,7 +137,7 @@ function specsFor(cat: string): Section[] {
       { key: "Best time of day", type: "text" }, { key: "What to bring", type: "text" }, { key: "Trail difficulty", type: "text" },
       { key: "Wildlife cautions", type: "text" }, { key: "Tide warnings", type: "text" }, { key: "Parking notes", type: "text" }, { key: "Photography spots", type: "text" },
     ] },
-    audienceSection, discountsSection, paymentsSection, socialsSection, accessibilitySection, charitySection,
+    appearSection(cat), discountsSection, paymentsSection, socialsSection, accessibilitySection, charitySection,
   ];
   if (cat === "accommodation") return [
     businessSection("Accommodation name"),
@@ -254,6 +277,12 @@ export default function PartnerApplyForm() {
 
   return (
     <div style={wrap}><div style={card}>
+      <button
+        onClick={() => { setCat(""); setVals({}); setAgree(false); setErr(""); }}
+        style={{ background: "transparent", border: "none", color: "#159a53", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0, marginBottom: 8 }}
+      >
+        ← Change category
+      </button>
       <h1 style={{ color: "#159a53", fontSize: 22, textAlign: "center", margin: "0 0 2px" }}>Around You — {catLabel} Application</h1>
       <p style={{ color: "#555", fontSize: 13, textAlign: "center", marginTop: 0 }}>
         Please complete the fields below. Fields marked * are required.

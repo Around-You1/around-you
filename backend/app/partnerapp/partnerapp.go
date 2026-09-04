@@ -235,6 +235,24 @@ func SetApplicationStatus(ctx context.Context, req *SetStatusRequest) (*OKRespon
 	if st != "Pending" && st != "Onboarded" && st != "Declined" {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "invalid status"}
 	}
+
+	// Onboarding creates the actual partner record (Inactive) from the
+	// application, so it shows up in the relevant admin list for the SuperAdmin
+	// to add the map location, pick the tier, and activate. We only mark the
+	// application Onboarded once the partner is created, so a failure here
+	// leaves it Pending rather than losing the applicant's details.
+	if st == "Onboarded" {
+		app, err := loadApplication(ctx, req.ID)
+		if err != nil {
+			return nil, err
+		}
+		if app.Status != "Onboarded" { // idempotent: don't double-create
+			if err := createPartnerFromApplication(ctx, app); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	if _, err := appdb.SQLDB.ExecContext(ctx,
 		`UPDATE partner_applications SET status = $2, updated_at = now() WHERE id = $1`, req.ID, st,
 	); err != nil {

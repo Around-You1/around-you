@@ -219,7 +219,7 @@ const CUISINE_TYPES = [
   "Breakfast", "Bunny Chow", "Burgers", "Cafe", "Cake", "Chinese", "Coffee Shop",
   "Croissant", "Curry", "Dagwood", "Deli", "Eisbein", "Espetada", "Fast Food",
   "Fine Dining", "French", "Gatsby", "Greek", "Indian", "Irish", "Italian",
-  "Japanese", "Mediterranean", "Mexican", "Middle Eastern", "Pancakes", "Panini",
+  "Jaffels", "Japanese", "Mediterranean", "Mexican", "Middle Eastern", "Pancakes", "Panini",
   "Pasta", "Pizza", "Pies", "Pita", "Quiche", "Ribs", "Roast", "Sandwiches",
   "Scones", "Seafood", "Spanish", "Steaks", "Sushi", "Soup", "Thai", "Toasties",
   "Vegan", "Vegetarian", "Vetkoek",

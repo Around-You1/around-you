@@ -42,12 +42,24 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const [tab, setTab] = useState("accommodations");
   const [modOpenCount, setModOpenCount] = useState(0);
+  const [pendingAppCount, setPendingAppCount] = useState(0);
 
   useEffect(() => {
     loadStats();
     loadModCount();
+    loadPendingCount();
     loadEstate();
   }, []);
+
+  const loadPendingCount = async () => {
+    try {
+      const backend = getAuthenticatedBackend();
+      const res: any = await backend.partnerApp.list({ status: "Pending" });
+      setPendingAppCount((res.applications || []).length);
+    } catch {
+      // non-fatal
+    }
+  };
 
   const loadEstate = async () => {
     try {
@@ -94,6 +106,15 @@ export default function AdminDashboard() {
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
             <h1 className="text-4xl font-bold text-foreground">Admin Dashboard</h1>
+            {modOpenCount + pendingAppCount > 0 && (
+              <span
+                title={`${pendingAppCount} pending application${pendingAppCount === 1 ? "" : "s"} · ${modOpenCount} flagged item${modOpenCount === 1 ? "" : "s"} to review`}
+                className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-red-600 text-white text-sm font-bold shadow"
+                aria-label={`${modOpenCount + pendingAppCount} items need attention`}
+              >
+                {modOpenCount + pendingAppCount}
+              </span>
+            )}
             <Button variant="outline" onClick={() => router.push("/admin-analytics")}>
               <BarChart3 className="w-4 h-4 mr-2" />
               Analytics Dashboard
@@ -155,6 +176,17 @@ export default function AdminDashboard() {
               (profanity, hate/abuse, AI-detected content, or duplicate profiles). Click to review.
             </span>
           </button>
+        )}
+
+        {pendingAppCount > 0 && (
+          <div className="w-full flex items-center gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-left">
+            <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-full bg-red-600 text-white text-xs font-bold shrink-0">
+              {pendingAppCount}
+            </span>
+            <span className="text-sm text-foreground">
+              <strong>{pendingAppCount}</strong> new partner {pendingAppCount === 1 ? "application is" : "applications are"} pending — review under the relevant category tab (Restaurants / Services / Attractions) or the Accountant portal.
+            </span>
+          </div>
         )}
 
         <Card>

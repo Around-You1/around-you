@@ -60,7 +60,12 @@ export default function PendingApplications({ category }: { category?: string })
     try {
       const backend = getAuthenticatedBackend();
       await backend.partnerApp.setStatus({ id: app.id, status });
-      toast({ title: status === "Onboarded" ? "Marked onboarded" : "Declined", description: app.businessName });
+      toast({
+        title: status === "Onboarded" ? "Onboarded" : "Declined",
+        description: status === "Onboarded"
+          ? `${app.businessName} added as Inactive — open it in the list to set the map location and activate.`
+          : app.businessName,
+      });
       setApps((prev) => prev.filter((a) => a.id !== app.id));
     } catch (error: any) {
       toast({ title: "Error", description: error?.message || "Failed to update", variant: "destructive" });
@@ -126,7 +131,7 @@ export default function PendingApplications({ category }: { category?: string })
                         </Button>
                         <Button size="sm" className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black"
                           disabled={busyId === app.id} onClick={() => setStatus(app, "Onboarded")}>
-                          {busyId === app.id ? "Saving…" : "Mark Onboarded"}
+                          {busyId === app.id ? "Onboarding…" : "Onboard"}
                         </Button>
                       </div>
                     </div>

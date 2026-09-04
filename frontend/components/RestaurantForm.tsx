@@ -46,6 +46,7 @@ const CUISINE_TYPES = [
   "Indian",
   "Irish",
   "Italian",
+  "Jaffels",
   "Japanese",
   "Mediterranean",
   "Mexican",
