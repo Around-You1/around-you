@@ -110,7 +110,11 @@ func OnPartnerActivated(ctx context.Context, partnerType string, partnerID int64
 		return err
 	}
 	if isTestRep(repCode) {
-		return nil
+		// Test-rep partners are complimentary — free, with no invoice and no
+		// recurring billing (used for friends or people in need). They still get
+		// the onboarding email with their access + edit codes and profile QR so
+		// they can use the app, and so activation can be tested end-to-end.
+		return SendComplimentaryOnboardingEmail(ctx, partnerType, partnerID)
 	}
 
 	var invoiced bool
@@ -377,6 +381,37 @@ func ResendInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) er
 
 // onboardingCodesHTML builds the "welcome" block appended to the FIRST invoice
 // email only: the partner's Access Code, Partner Edit Code and Profile QR Code.
+// SendComplimentaryOnboardingEmail emails a free (test-rep) partner their
+// welcome with Access Code, Partner Edit Code and profile QR — no invoice and no
+// recurring billing. Best-effort: a missing email just means nothing is sent.
+func SendComplimentaryOnboardingEmail(ctx context.Context, partnerType string, partnerID int64) error {
+	tbl := partnerTable(partnerType)
+	if tbl == "" {
+		return nil
+	}
+	var name, email string
+	if err := appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT COALESCE(name,''), COALESCE(official_email,'') FROM `+tbl+` WHERE id = $1`, partnerID,
+	).Scan(&name, &email); err != nil {
+		return err
+	}
+	if strings.TrimSpace(email) == "" {
+		return nil
+	}
+	bizName := "Around You"
+	if settings, _ := LoadInvoiceSettings(ctx); settings != nil && strings.TrimSpace(settings.BusinessName) != "" {
+		bizName = settings.BusinessName
+	}
+	var b strings.Builder
+	b.WriteString(`<div style="font-family:Arial,Helvetica,sans-serif;max-width:640px;color:#1a1f2e">`)
+	b.WriteString(`<h2 style="margin:0 0 6px">Welcome to ` + htmlPkg.EscapeString(bizName) + `</h2>`)
+	b.WriteString(`<p style="margin:0 0 12px">Your listing <b>` + htmlPkg.EscapeString(name) +
+		`</b> is now live. This is a <b>complimentary</b> partnership — there is no charge.</p>`)
+	b.WriteString(onboardingCodesHTML(ctx, partnerType, partnerID))
+	b.WriteString(`</div>`)
+	return mailer.Send(email, "Welcome to "+bizName+" — "+name, b.String())
+}
+
 func onboardingCodesHTML(ctx context.Context, partnerType string, partnerID int64) string {
 	tbl := partnerTable(partnerType)
 	if tbl == "" {
