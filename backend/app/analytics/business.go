@@ -2,7 +2,6 @@ package analytics
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"backend_encore/app/auth"
@@ -52,32 +51,60 @@ func BusinessMetrics(ctx context.Context) (*BusinessMetricsResponse, error) {
 
 	resp := &BusinessMetricsResponse{TierMix: map[string]int{}}
 
-	// 1) Active subscriptions → MRR, active count, tier mix.
+	// 1a) MRR from active, non-test paid subscriptions — the revenue figure.
 	subRows, err := appdb.SQLDB.QueryContext(ctx, `
-		SELECT plan, COALESCE(tier, 0), monthly_cents
+		SELECT COALESCE(monthly_cents, 0)
 		FROM partner_subscription WHERE status = 'Active'
 		  AND `+appdb.NotTestRepSQL("lower(coalesce(rep_code,''))"))
 	if err != nil {
 		return nil, err
 	}
 	for subRows.Next() {
-		var plan string
-		var tier, monthly int
-		if err := subRows.Scan(&plan, &tier, &monthly); err != nil {
+		var monthly int
+		if err := subRows.Scan(&monthly); err != nil {
 			subRows.Close()
 			return nil, err
 		}
 		resp.MrrCents += monthly
-		resp.ActivePartners++
-		key := "Booking"
-		if plan != "booking" {
-			key = fmt.Sprintf("Tier %d", tier)
-		}
-		resp.TierMix[key]++
 	}
 	subRows.Close()
 	if err := subRows.Err(); err != nil {
 		return nil, err
+	}
+
+	// 1b) Active partners = every live partner profile (matches the dashboard
+	// category cards), including complimentary/test-rep ones. Tier mix comes from
+	// the tiered categories; flat-rate estate pages are grouped under "Estate".
+	for _, tbl := range []string{"restaurants", "services", "attractions", "accommodations"} {
+		rows, err := appdb.SQLDB.QueryContext(ctx,
+			`SELECT COALESCE(NULLIF(TRIM(access_level), ''), 'Unspecified'), COUNT(*)
+			 FROM `+tbl+` WHERE is_active = true GROUP BY 1`)
+		if err != nil {
+			return nil, err
+		}
+		for rows.Next() {
+			var key string
+			var n int
+			if err := rows.Scan(&key, &n); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			resp.TierMix[key] += n
+			resp.ActivePartners += n
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+	}
+	for _, tbl := range []string{"estate_agencies", "estate_agents"} {
+		var n int
+		if err := appdb.SQLDB.QueryRowContext(ctx,
+			`SELECT COUNT(*) FROM `+tbl+` WHERE is_active = true`).Scan(&n); err != nil {
+			return nil, err
+		}
+		resp.TierMix["Estate"] += n
+		resp.ActivePartners += n
 	}
 	if resp.ActivePartners > 0 {
 		resp.ArpuCents = resp.MrrCents / resp.ActivePartners
