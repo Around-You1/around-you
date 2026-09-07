@@ -9,6 +9,7 @@ import (
 
 	"backend_encore/app/accommodation"
 	"backend_encore/app/attraction"
+	"backend_encore/app/charity"
 	"backend_encore/app/estate"
 	"backend_encore/app/restaurant"
 	"backend_encore/app/service"
@@ -114,9 +115,11 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 		accessLevel = "Tier 2" // "Both" is always the top tier
 	}
 
+	var partnerID int64
+	var charityType string
 	switch a.Category {
 	case "restaurant":
-		_, err := restaurant.Create(ctx, &restaurant.CreateRequest{
+		created, err := restaurant.Create(ctx, &restaurant.CreateRequest{
 			Name:                   a.BusinessName,
 			Address:                a.f("Physical address"),
 			Country:                "South Africa",
@@ -164,10 +167,13 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			GuestType:              guestType,
 			AccessLevel:            accessLevel,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		partnerID, charityType = created.ID, "restaurant"
 
 	case "service":
-		_, err := service.Create(ctx, &service.CreateRequest{
+		created, err := service.Create(ctx, &service.CreateRequest{
 			Name:                   a.BusinessName,
 			Address:                a.f("Physical address"),
 			Country:                "South Africa",
@@ -211,10 +217,13 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			GuestType:              guestType,
 			AccessLevel:            accessLevel,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		partnerID, charityType = created.ID, "service"
 
 	case "attraction":
-		_, err := attraction.Create(ctx, &attraction.CreateRequest{
+		created, err := attraction.Create(ctx, &attraction.CreateRequest{
 			Name:                   a.BusinessName,
 			Address:                a.f("Physical address"),
 			Country:                "South Africa",
@@ -263,14 +272,17 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			GuestType:              guestType,
 			AccessLevel:            accessLevel,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		partnerID, charityType = created.ID, "attraction"
 
 	case "accommodation":
 		contact := a.f("Contact")
 		if contact == "" {
 			contact = a.ContactNumber
 		}
-		_, err := accommodation.Create(ctx, &accommodation.CreateRequest{
+		created, err := accommodation.Create(ctx, &accommodation.CreateRequest{
 			Name:                   a.BusinessName,
 			Address:                a.f("Physical address"),
 			Country:                "South Africa",
@@ -311,10 +323,13 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			GuestType:              guestType,
 			AccessLevel:            accessLevel,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		partnerID, charityType = created.ID, "accommodation"
 
 	case "estate":
-		_, err := estate.CreateAgency(ctx, &appdb.EstateAgency{
+		created, err := estate.CreateAgency(ctx, &appdb.EstateAgency{
 			Name:                   a.BusinessName,
 			Description:            a.f("Agency description"),
 			Address:                a.f("Physical address"),
@@ -332,7 +347,26 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			CompanyRegNumber:       a.f("Company registration number"),
 			CompanyVatNumber:       a.f("VAT number (if registered)"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		partnerID, charityType = created.ID, "estate_agency"
+	}
+
+	// Carry over the applicant's charity choice (group + focus). It lives in a
+	// separate table, so we set it after the partner record exists. Best-effort:
+	// a charity write must never undo a successful onboarding.
+	if partnerID != 0 {
+		cats := []string{}
+		if g := a.f("Charity group"); g != "" {
+			cats = append(cats, g)
+		}
+		if s := a.f("Charity focus"); s != "" {
+			cats = append(cats, s)
+		}
+		if len(cats) > 0 {
+			_, _ = charity.Set(ctx, &charity.SetRequest{PartnerType: charityType, PartnerID: partnerID, Categories: cats})
+		}
 	}
 	return nil
 }
