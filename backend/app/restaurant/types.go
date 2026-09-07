@@ -238,6 +238,8 @@ type ImportRow struct {
 	MenuPdfUrls           string `json:"menuPdfUrls,omitempty"`
 	BookingsEmail         string `json:"bookingsEmail,omitempty"`
 	BookingsContactNumber string `json:"bookingsContactNumber,omitempty"`
+	DietaryOptions        string `json:"dietaryOptions,omitempty"`
+	OffersBookings        string `json:"offersBookings,omitempty"`
 }
 
 type ImportRequest struct {

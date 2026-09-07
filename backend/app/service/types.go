@@ -214,6 +214,7 @@ type ImportRow struct {
 	FitnessLevel           string `json:"fitnessLevel,omitempty"`
 	BestTimeOfDay          string `json:"bestTimeOfDay,omitempty"`
 	WhatToBring            string `json:"whatToBring,omitempty"`
+	OffersBookings         string `json:"offersBookings,omitempty"`
 }
 
 type ImportRequest struct {

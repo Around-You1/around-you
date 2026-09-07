@@ -337,6 +337,7 @@ var csvHeaders = []string{
 	"imageUrls",
 	"safetyInfo", "ageRestrictions", "fitnessLevel", "bestTimeOfDay", "whatToBring",
 	"trailDifficulty", "wildlifeCautions", "tideWarnings", "parkingNotes", "photographySpots",
+	"offersBookings",
 }
 
 //encore:api auth method=GET path=/attraction/template
@@ -359,6 +360,7 @@ func Template(ctx context.Context) (*CSVResponse, error) {
 		"https://example.com/1.jpg,https://example.com/2.jpg",
 		"Wear sunscreen", "None", "Easy", "Morning", "Water, hat",
 		"Moderate", "Watch for baboons", "N/A", "Paid parking at base", "Upper cableway station",
+		"true",
 	})
 	w.Flush()
 	return &CSVResponse{CSV: sb.String()}, nil
@@ -390,6 +392,7 @@ func ExportAttractions(ctx context.Context) (*CSVResponse, error) {
 			strings.Join(a.ImageUrls, ","),
 			a.SafetyInfo, a.AgeRestrictions, a.FitnessLevel, a.BestTimeOfDay, a.WhatToBring,
 			a.TrailDifficulty, a.WildlifeCautions, a.TideWarnings, a.ParkingNotes, a.PhotographySpots,
+			strconv.FormatBool(a.OffersBookings),
 		})
 	}
 	w.Flush()
@@ -442,6 +445,7 @@ func ImportAttractions(ctx context.Context, req *ImportRequest) (*ImportResponse
 			WheelchairAccess:       parseBool(row.WheelchairAccess),
 			ParkingAvailability:    parseBool(row.ParkingAvailability),
 			LittleExplorerApproved: parseBool(row.LittleExplorerApproved),
+			OffersBookings:         parseBool(row.OffersBookings),
 			IsActive:               parseBool(row.IsActive),
 			ImageUrls:              splitCSVList(row.ImageUrls),
 			LocalDiscountOffered:   row.LocalDiscountOffered,

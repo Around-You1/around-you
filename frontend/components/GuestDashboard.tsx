@@ -915,6 +915,28 @@ export default function GuestDashboard() {
                               </Collapsible>
                             )}
 
+                            {restaurant.dietaryOptions && restaurant.dietaryOptions.length > 0 && (
+                              <Collapsible>
+                                <CollapsibleTrigger className={triggerClass}>
+                                  <ChevronDown className="h-4 w-4" />
+                                  Dietary Options
+                                </CollapsibleTrigger>
+                                <CollapsibleContent className={contentClass}>
+                                  <div className="flex flex-wrap gap-2">
+                                    {restaurant.dietaryOptions.map((d: string) => (
+                                      <span key={d} className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs">{d}</span>
+                                    ))}
+                                  </div>
+                                </CollapsibleContent>
+                              </Collapsible>
+                            )}
+
+                            {restaurant.offersBookings && (
+                              <div className="mt-1">
+                                <span className="inline-block px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-medium">Takes bookings</span>
+                              </div>
+                            )}
+
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
@@ -1305,6 +1327,12 @@ export default function GuestDashboard() {
                               </CollapsibleContent>
                             </Collapsible>
 
+                            {service.offersBookings && (
+                              <div className="mt-1">
+                                <span className="inline-block px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-medium">Takes bookings</span>
+                              </div>
+                            )}
+
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
@@ -1512,6 +1540,12 @@ export default function GuestDashboard() {
                                 )}
                               </CollapsibleContent>
                             </Collapsible>
+
+                            {attraction.offersBookings && (
+                              <div className="mt-1">
+                                <span className="inline-block px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-medium">Takes bookings</span>
+                              </div>
+                            )}
 
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>

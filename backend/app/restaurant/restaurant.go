@@ -324,6 +324,7 @@ var csvHeaders = []string{
 	"socialsWebsite", "socialsFacebook", "socialsInstagram", "socialsTiktok", "socialsTwitter",
 	"restaurantType", "atmosphere", "features", "imageUrls", "menuPdfUrls",
 	"bookingsEmail", "bookingsContactNumber",
+	"dietaryOptions", "offersBookings",
 }
 
 //encore:api auth method=GET path=/restaurant/template
@@ -345,6 +346,7 @@ func Template(ctx context.Context) (*CSVResponse, error) {
 		"https://example.com", "https://facebook.com/example", "https://instagram.com/example", "", "",
 		"Fine Dining,Casual", "Romantic,Family Friendly", "Outdoor Seating,Live Music", "https://example.com/1.jpg,https://example.com/2.jpg", "https://example.com/menu2.pdf",
 		"bookings@example.com", "+27 21 000 0004",
+		"Halaal,Gluten Free", "true",
 	})
 	w.Flush()
 	return &CSVResponse{CSV: sb.String()}, nil
@@ -376,6 +378,7 @@ func ExportRestaurants(ctx context.Context) (*CSVResponse, error) {
 			r.SocialsWebsite, r.SocialsFacebook, r.SocialsInstagram, r.SocialsTiktok, r.SocialsTwitter,
 			strings.Join(r.RestaurantType, ","), strings.Join(r.Atmosphere, ","), strings.Join(r.Features, ","), strings.Join(r.ImageUrls, ","), strings.Join(r.MenuPdfUrls, ","),
 			r.BookingsEmail, r.BookingsContactNumber,
+			strings.Join(r.DietaryOptions, ","), strconv.FormatBool(r.OffersBookings),
 		})
 	}
 	w.Flush()
@@ -438,6 +441,8 @@ func ImportRestaurants(ctx context.Context, req *ImportRequest) (*ImportResponse
 			RestaurantType:         splitCSVList(row.RestaurantType),
 			Atmosphere:             splitCSVList(row.Atmosphere),
 			Features:               splitCSVList(row.Features),
+			DietaryOptions:         splitCSVList(row.DietaryOptions),
+			OffersBookings:         parseBool(row.OffersBookings),
 			ImageUrls:              splitCSVList(row.ImageUrls),
 			MenuPdfUrls:            splitCSVList(row.MenuPdfUrls),
 			LocalDiscountOffered:   row.LocalDiscountOffered,

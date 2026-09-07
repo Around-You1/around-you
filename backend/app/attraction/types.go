@@ -231,6 +231,7 @@ type ImportRow struct {
 	TideWarnings           string `json:"tideWarnings,omitempty"`
 	ParkingNotes           string `json:"parkingNotes,omitempty"`
 	PhotographySpots       string `json:"photographySpots,omitempty"`
+	OffersBookings         string `json:"offersBookings,omitempty"`
 }
 
 type ImportRequest struct {
