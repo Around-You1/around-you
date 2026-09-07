@@ -27,6 +27,7 @@ export interface AttractionData {
   duplicateReason?: string;
 
   attractionType: string[];
+  offersBookings?: boolean;
   littleExplorerApproved: boolean;
 
   paymentCard: boolean;

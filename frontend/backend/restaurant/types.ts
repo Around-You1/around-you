@@ -29,6 +29,8 @@ export interface Restaurant {
   restaurantType?: string[];
   atmosphere?: string[];
   features?: string[];
+  dietaryOptions?: string[];
+  offersBookings?: boolean;
   menuLink?: string;
   serviceDineIn: boolean;
   serviceTakeaway: boolean;

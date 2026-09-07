@@ -115,6 +115,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.ServiceData, error)
 		Description:            req.Description,
 		ProfileReferenceCode:   appdb.RandomCode(12),
 		ServiceCategories:      req.ServiceCategories,
+		OffersBookings:         req.OffersBookings,
 		LittleExplorerApproved: req.LittleExplorerApproved,
 		PaymentMethods: appdb.PaymentMethods{
 			PaymentCard:     req.PaymentCard,
@@ -206,6 +207,7 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.ServiceData, error)
 		ContactNumber:          req.ContactNumber,
 		Description:            req.Description,
 		ServiceCategories:      req.ServiceCategories,
+		OffersBookings:         req.OffersBookings,
 		LittleExplorerApproved: req.LittleExplorerApproved,
 		PaymentCard:            req.PaymentCard,
 		PaymentCash:            req.PaymentCash,

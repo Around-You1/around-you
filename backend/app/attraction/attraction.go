@@ -115,6 +115,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.AttractionData, err
 		Description:            req.Description,
 		ProfileReferenceCode:   appdb.RandomCode(12),
 		AttractionType:         req.AttractionType,
+		OffersBookings:         req.OffersBookings,
 		LittleExplorerApproved: req.LittleExplorerApproved,
 		PaymentMethods: appdb.PaymentMethods{
 			PaymentCard:     req.PaymentCard,
@@ -211,6 +212,7 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.AttractionData, err
 		ContactNumber:          req.ContactNumber,
 		Description:            req.Description,
 		AttractionType:         req.AttractionType,
+		OffersBookings:         req.OffersBookings,
 		LittleExplorerApproved: req.LittleExplorerApproved,
 		PaymentCard:            req.PaymentCard,
 		PaymentCash:            req.PaymentCash,

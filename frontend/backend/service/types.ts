@@ -25,6 +25,7 @@ export interface ServiceData {
   isDuplicate?: boolean;
   duplicateReason?: string;
   serviceCategories: ServiceCategory[];
+  offersBookings?: boolean;
   littleExplorerApproved: boolean;
   paymentCard: boolean;
   paymentCash: boolean;

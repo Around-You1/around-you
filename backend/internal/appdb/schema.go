@@ -268,6 +268,8 @@ type Restaurant struct {
 	RestaurantType         []string `json:"restaurantType"`
 	Atmosphere             []string `json:"atmosphere,omitempty"`
 	Features               []string `json:"features,omitempty"`
+	DietaryOptions         []string `json:"dietaryOptions,omitempty"`
+	OffersBookings         bool     `json:"offersBookings"`
 	MenuLink               string   `json:"menuLink,omitempty"`
 	ServiceDineIn          bool     `json:"serviceDineIn"`
 	ServiceTakeaway        bool     `json:"serviceTakeaway"`
@@ -338,6 +340,7 @@ type ServiceData struct {
 	DuplicateReason      string `json:"duplicateReason,omitempty"`
 
 	ServiceCategories      []string `json:"serviceCategories"`
+	OffersBookings         bool     `json:"offersBookings"`
 	BookingItems           BookingItems `json:"bookingItems,omitempty"`
 	LittleExplorerApproved bool     `json:"littleExplorerApproved"`
 
@@ -391,6 +394,7 @@ type AttractionData struct {
 	DuplicateReason      string `json:"duplicateReason,omitempty"`
 
 	AttractionType         []string `json:"attractionType"`
+	OffersBookings         bool     `json:"offersBookings"`
 	BookingItems           BookingItems `json:"bookingItems,omitempty"`
 	LittleExplorerApproved bool     `json:"littleExplorerApproved"`
 

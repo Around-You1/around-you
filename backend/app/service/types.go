@@ -40,6 +40,7 @@ type CreateRequest struct {
 	Description   string `json:"description,omitempty"`
 
 	ServiceCategories      []string `json:"serviceCategories"`
+	OffersBookings         bool     `json:"offersBookings"`
 	LittleExplorerApproved bool     `json:"littleExplorerApproved"`
 
 	PaymentCard     bool `json:"paymentCard"`
@@ -105,6 +106,7 @@ type UpdateRequest struct {
 	Description   *string `json:"description,omitempty"`
 
 	ServiceCategories      []string `json:"serviceCategories,omitempty"`
+	OffersBookings         *bool    `json:"offersBookings,omitempty"`
 	LittleExplorerApproved *bool    `json:"littleExplorerApproved,omitempty"`
 
 	PaymentCard     *bool `json:"paymentCard,omitempty"`

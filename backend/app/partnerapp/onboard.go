@@ -115,6 +115,9 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 		accessLevel = "Tier 2" // "Both" is always the top tier
 	}
 
+	// The applicant ticked the "if you take bookings" option.
+	offersBookings := a.f("Or, if you take bookings") != ""
+
 	var partnerID int64
 	var charityType string
 	switch a.Category {
@@ -131,6 +134,8 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			RestaurantType:         splitList(a.f("Restaurant type")),
 			Atmosphere:             splitList(a.f("Atmosphere")),
 			Features:               splitList(a.f("Features")),
+			DietaryOptions:         splitList(a.f("Dietary options")),
+			OffersBookings:         offersBookings,
 			MenuLink:               a.f("Menu link"),
 			ServiceDineIn:          has(a.f("Service options"), "Dine"),
 			ServiceTakeaway:        has(a.f("Service options"), "Takeaway"),
@@ -182,6 +187,7 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			ContactNumber:          a.ContactNumber,
 			Description:            a.f("Description"),
 			ServiceCategories:      splitList(a.f("Service category(ies)")),
+			OffersBookings:         offersBookings,
 			LittleExplorerApproved: childFriendly,
 			PaymentCard:            has(pay, "Card"),
 			PaymentCash:            has(pay, "Cash"),
@@ -232,6 +238,7 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			ContactNumber:          a.ContactNumber,
 			Description:            a.f("Description"),
 			AttractionType:         splitList(a.f("Attraction category(ies)")),
+			OffersBookings:         offersBookings,
 			LittleExplorerApproved: childFriendly,
 			PaymentCard:            has(pay, "Card"),
 			PaymentCash:            has(pay, "Cash"),

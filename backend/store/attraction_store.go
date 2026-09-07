@@ -69,6 +69,7 @@ const attractionColumns = `
 	COALESCE(partner_code, '') as partner_code,
 	partner_code_active,
 		COALESCE(booking_items, '[]'::jsonb) as booking_items,
+	offers_bookings,
 	created_at, updated_at
 `
 
@@ -98,6 +99,7 @@ func scanAttraction(row attractionScanner) (*appdb.AttractionData, error) {
 		&a.GuestType, &a.AccessLevel,
 		&a.PartnerCode.Code, &a.PartnerCode.Active,
 		&a.BookingItems,
+		&a.OffersBookings,
 		&a.CreatedAt, &a.UpdatedAt,
 	)
 	if err != nil {
@@ -188,11 +190,12 @@ func (s *AttractionStore) Create(ctx context.Context, in *appdb.AttractionData) 
 			official_holding_company, official_contact_name, official_contact_number, official_email, official_rep_code,
 			official_rep_name, company_reg_number, company_vat_number,
 			guest_type, access_level, partner_code, partner_code_active, booking_items,
-			local_discount_offered, local_discount_code
+			local_discount_offered, local_discount_code,
+			offers_bookings
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,
 			$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,
-			$56,$57
+			$56,$57,$58
 		)
 		RETURNING `+attractionColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -210,6 +213,7 @@ func (s *AttractionStore) Create(ctx context.Context, in *appdb.AttractionData) 
 		in.GuestType, in.AccessLevel, in.PartnerCode.Code, in.PartnerCode.Active,
 		in.BookingItems,
 		in.LocalDiscountOffered, in.LocalDiscountCode,
+		in.OffersBookings,
 	)
 	return scanAttraction(row)
 }
@@ -228,6 +232,7 @@ type AttractionPatch struct {
 	Description   *string
 
 	AttractionType         []string
+	OffersBookings         *bool
 	LittleExplorerApproved *bool
 
 	PaymentCard     *bool
@@ -321,6 +326,9 @@ func (s *AttractionStore) Update(ctx context.Context, id int64, patch Attraction
 	}
 	if patch.AttractionType != nil {
 		sets = append(sets, "attraction_type = "+arg(pq.Array(patch.AttractionType)))
+	}
+	if patch.OffersBookings != nil {
+		sets = append(sets, "offers_bookings = "+arg(*patch.OffersBookings))
 	}
 	if patch.LittleExplorerApproved != nil {
 		sets = append(sets, "little_explorer_approved = "+arg(*patch.LittleExplorerApproved))

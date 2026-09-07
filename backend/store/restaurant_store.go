@@ -77,6 +77,8 @@ const restaurantColumns = `
 	COALESCE(partner_code, '') as partner_code,
 	partner_code_active,
 		COALESCE(booking_items, '[]'::jsonb) as booking_items,
+	COALESCE(dietary_options, '{}') as dietary_options,
+	offers_bookings,
 	created_at, updated_at
 `
 
@@ -109,6 +111,8 @@ func scanRestaurant(row restaurantScanner) (*appdb.Restaurant, error) {
 		&r.GuestType, &r.AccessLevel,
 		&r.PartnerCode.Code, &r.PartnerCode.Active,
 		&r.BookingItems,
+		pq.Array(&r.DietaryOptions),
+		&r.OffersBookings,
 		&r.CreatedAt, &r.UpdatedAt,
 	)
 	if err != nil {
@@ -203,11 +207,12 @@ func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*ap
 			official_rep_name, company_reg_number, company_vat_number,
 			guest_type, access_level, partner_code, partner_code_active, booking_items, restaurant_type,
 			atmosphere, features,
-			local_discount_offered, local_discount_code
+			local_discount_offered, local_discount_code,
+			dietary_options, offers_bookings
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,
 			$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,$56,$57,
-			$58,$59
+			$58,$59,$60,$61
 		)
 		RETURNING `+restaurantColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -226,6 +231,7 @@ func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*ap
 		in.BookingItems, pq.Array(nonNilSlice(in.RestaurantType)),
 		pq.Array(nonNilSlice(in.Atmosphere)), pq.Array(nonNilSlice(in.Features)),
 		in.LocalDiscountOffered, in.LocalDiscountCode,
+		pq.Array(nonNilSlice(in.DietaryOptions)), in.OffersBookings,
 	)
 	return scanRestaurant(row)
 }
@@ -250,6 +256,8 @@ type RestaurantPatch struct {
 	RestaurantType         []string
 	Atmosphere             []string
 	Features               []string
+	DietaryOptions         []string
+	OffersBookings         *bool
 	MenuLink               *string
 	ServiceDineIn          *bool
 	ServiceTakeaway        *bool
@@ -351,6 +359,12 @@ func (s *RestaurantStore) Update(ctx context.Context, id int64, patch Restaurant
 	}
 	if patch.Features != nil {
 		sets = append(sets, "features = "+arg(pq.Array(patch.Features)))
+	}
+	if patch.DietaryOptions != nil {
+		sets = append(sets, "dietary_options = "+arg(pq.Array(patch.DietaryOptions)))
+	}
+	if patch.OffersBookings != nil {
+		sets = append(sets, "offers_bookings = "+arg(*patch.OffersBookings))
 	}
 	if patch.MenuLink != nil {
 		sets = append(sets, "menu_link = "+arg(*patch.MenuLink))

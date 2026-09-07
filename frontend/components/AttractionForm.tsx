@@ -98,6 +98,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
     wheelchairAccess: false,
     parkingAvailability: false,
     littleExplorerApproved: false,
+    offersBookings: false,
     isActive: false,
     bookingItems: [] as { name: string; price: number; duration: number }[],
   });
@@ -175,6 +176,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
         wheelchairAccess: data.wheelchairAccess || false,
         parkingAvailability: data.parkingAvailability || false,
         littleExplorerApproved: data.littleExplorerApproved || false,
+        offersBookings: data.offersBookings || false,
         isActive: data.isActive,
         bookingItems: data.bookingItems || [],
       });
@@ -250,6 +252,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           wheelchairAccess: formData.wheelchairAccess,
           parkingAvailability: formData.parkingAvailability,
           littleExplorerApproved: formData.littleExplorerApproved,
+          offersBookings: formData.offersBookings,
           isActive: formData.isActive,
           officialHoldingCompany: officialUse.officialHoldingCompany || undefined,
           officialContactName: officialUse.officialContactName || undefined,
@@ -311,6 +314,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           wheelchairAccess: formData.wheelchairAccess,
           parkingAvailability: formData.parkingAvailability,
           littleExplorerApproved: formData.littleExplorerApproved,
+          offersBookings: formData.offersBookings,
           isActive: formData.isActive,
           officialHoldingCompany: officialUse.officialHoldingCompany || undefined,
           officialContactName: officialUse.officialContactName || undefined,
@@ -739,6 +743,14 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
                   onCheckedChange={(checked) => setFormData({ ...formData, parkingAvailability: checked })}
                 />
                 <Label htmlFor="parkingAvailability">Parking Available</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="offersBookings"
+                  checked={formData.offersBookings}
+                  onCheckedChange={(checked) => setFormData({ ...formData, offersBookings: checked })}
+                />
+                <Label htmlFor="offersBookings">Offers bookings</Label>
               </div>
             </div>
           </div>

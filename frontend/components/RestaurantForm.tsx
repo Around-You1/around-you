@@ -67,6 +67,7 @@ const CUISINE_TYPES = [
 const RESTAURANT_TYPES = ["Food Truck", "Home Meals", "Take Away", "Pop Up", "Restaurant"];
 const ATMOSPHERE_OPTIONS = ["Family-friendly", "Romantic", "Trendy / Modern", "Quiet", "Lively", "Outdoor Seating", "Sea View", "Mountain View", "Rooftop", "Garden"];
 const RESTAURANT_FEATURES = ["Walk-ins Welcome", "Live Music", "Free Wi-Fi"];
+const DIETARY_OPTIONS = ["Gluten Free", "Halaal", "Kosher", "Nut Free", "Signature Dish", "Chef Recommendation"];
 const DEFAULT_TABLE_ITEMS: { name: string; price: number; duration: number }[] = [
   ["Table for 1", 10], ["Table for 2", 20], ["Table for 4", 40], ["Table for 6", 60],
   ["Table for 8", 80], ["Table for 10", 100], ["Table for 12", 120], ["Table for 14", 140],
@@ -102,6 +103,8 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
     restaurantType: [] as string[],
     atmosphere: [] as string[],
     features: [] as string[],
+    dietaryOptions: [] as string[],
+    offersBookings: false,
     menuLink: "",
     imageUrl: "",
     imageUrls: [] as string[],
@@ -186,6 +189,8 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
         restaurantType: data.restaurantType || [],
         atmosphere: data.atmosphere || [],
         features: data.features || [],
+        dietaryOptions: data.dietaryOptions || [],
+        offersBookings: data.offersBookings ?? false,
         menuLink: data.menuLink || "",
         imageUrl: data.imageUrl || "",
         imageUrls: data.imageUrls || [],
@@ -601,6 +606,28 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="space-y-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
+            <Label>Dietary Options</Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {DIETARY_OPTIONS.map((d) => (
+                <div key={d} className="flex items-center space-x-2">
+                  <Checkbox id={`diet-${d}`} checked={formData.dietaryOptions.includes(d)}
+                    onCheckedChange={() => setFormData({ ...formData, dietaryOptions: formData.dietaryOptions.includes(d) ? formData.dietaryOptions.filter((x) => x !== d) : [...formData.dietaryOptions, d] })} />
+                  <Label htmlFor={`diet-${d}`} className="cursor-pointer font-normal">{d}</Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="offersBookings"
+              checked={formData.offersBookings}
+              onCheckedChange={(checked) => setFormData({ ...formData, offersBookings: !!checked })}
+            />
+            <Label htmlFor="offersBookings" className="cursor-pointer">Offers bookings</Label>
           </div>
 
           <div className="space-y-2" style={{ display: tierNum >= 1 ? undefined : "none" }}>
