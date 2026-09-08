@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import backend from "~backend/client";
+import AppLogo from "../components/AppLogo";
+
+const LUMO = "#39FF14";
 
 // Public self-service partner application. A rep shares a link like
 //   /apply?type=restaurant&rep=Rep00000002
@@ -175,11 +178,11 @@ function specsFor(cat: string): Section[] {
   ];
 }
 
-const wrap: React.CSSProperties = { minHeight: "100vh", background: "#f3f5f7", padding: "24px 12px" };
-const card: React.CSSProperties = { maxWidth: 640, margin: "0 auto", background: "#fff", borderRadius: 14, padding: "24px 22px", boxShadow: "0 2px 18px rgba(0,0,0,0.08)" };
-const input: React.CSSProperties = { width: "100%", padding: "10px 12px", border: "1px solid #cfd4da", borderRadius: 8, fontSize: 14, marginTop: 4, boxSizing: "border-box" };
-const labelSt: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: "#333" };
-const secSt: React.CSSProperties = { fontSize: 15, fontWeight: 800, color: "#159a53", margin: "18px 0 4px", borderBottom: "1px solid #e5e7eb", paddingBottom: 4 };
+const wrap: React.CSSProperties = { minHeight: "100vh", background: "#0a0a0a", padding: "24px 12px" };
+const card: React.CSSProperties = { maxWidth: 640, margin: "0 auto", background: "#111111", color: "#d5d8d5", borderRadius: 14, padding: "24px 22px", border: "1px solid rgba(57,255,20,0.18)", boxShadow: "0 0 40px rgba(57,255,20,0.06)" };
+const input: React.CSSProperties = { width: "100%", padding: "10px 12px", border: "1px solid rgba(57,255,20,0.25)", background: "rgba(255,255,255,0.04)", color: "#fff", borderRadius: 8, fontSize: 14, marginTop: 4, boxSizing: "border-box" };
+const labelSt: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: "#cfd3cf" };
+const secSt: React.CSSProperties = { fontSize: 15, fontWeight: 800, color: LUMO, margin: "18px 0 4px", borderBottom: "1px solid rgba(57,255,20,0.2)", paddingBottom: 4 };
 
 export default function PartnerApplyForm() {
   const [cat, setCat] = useState<string>("");
@@ -194,7 +197,9 @@ export default function PartnerApplyForm() {
     const q = new URLSearchParams(window.location.search);
     const t = (q.get("type") || "").toLowerCase();
     if (CATEGORIES.some((c) => c.key === t)) setCat(t);
-    setRep(q.get("rep") || "");
+    // Default to the internal/test rep so a self-onboarding partner always has a
+    // rep code; they (or a real rep) can change it in the field below.
+    setRep(q.get("rep") || "Rep00000001");
   }, []);
 
   const sections = useMemo(() => (cat ? specsFor(cat) : []), [cat]);
@@ -251,9 +256,10 @@ export default function PartnerApplyForm() {
   if (done) {
     return (
       <div style={wrap}><div style={{ ...card, textAlign: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><AppLogo /></div>
         <div style={{ fontSize: 40 }}>✅</div>
-        <h2 style={{ color: "#159a53", margin: "8px 0" }}>Thank you!</h2>
-        <p style={{ color: "#444", fontSize: 15 }}>Your application has been received. An Around You representative will be in touch to complete your listing.</p>
+        <h2 style={{ color: LUMO, margin: "8px 0" }}>Thank you!</h2>
+        <p style={{ color: "#a0a0a0", fontSize: 15 }}>Your application has been received. An Around You representative will be in touch to complete your listing.</p>
       </div></div>
     );
   }
@@ -261,12 +267,13 @@ export default function PartnerApplyForm() {
   if (!cat) {
     return (
       <div style={wrap}><div style={card}>
-        <h1 style={{ color: "#159a53", fontSize: 22, textAlign: "center", margin: "0 0 4px" }}>Join Around You</h1>
-        <p style={{ color: "#555", fontSize: 14, textAlign: "center", marginTop: 0 }}>What kind of business are you listing?</p>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><AppLogo /></div>
+        <h1 style={{ color: LUMO, fontSize: 22, textAlign: "center", margin: "0 0 4px" }}>Join Around You</h1>
+        <p style={{ color: "#a0a0a0", fontSize: 14, textAlign: "center", marginTop: 0 }}>What kind of business are you listing?</p>
         <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
           {CATEGORIES.map((c) => (
             <button key={c.key} onClick={() => setCat(c.key)}
-              style={{ padding: "16px", borderRadius: 10, border: "2px solid #159a53", background: "#fff", color: "#159a53", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
+              style={{ padding: "16px", borderRadius: 10, border: `2px solid ${LUMO}`, background: "#000", color: LUMO, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
               {c.label}
             </button>
           ))}
@@ -277,17 +284,23 @@ export default function PartnerApplyForm() {
 
   return (
     <div style={wrap}><div style={card}>
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><AppLogo /></div>
       <button
         onClick={() => { setCat(""); setVals({}); setAgree(false); setErr(""); }}
-        style={{ background: "transparent", border: "none", color: "#159a53", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0, marginBottom: 8 }}
+        style={{ background: "transparent", border: "none", color: LUMO, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0, marginBottom: 8 }}
       >
         ← Change category
       </button>
-      <h1 style={{ color: "#159a53", fontSize: 22, textAlign: "center", margin: "0 0 2px" }}>Around You — {catLabel} Application</h1>
-      <p style={{ color: "#555", fontSize: 13, textAlign: "center", marginTop: 0 }}>
+      <h1 style={{ color: LUMO, fontSize: 22, textAlign: "center", margin: "0 0 2px" }}>Around You — {catLabel} Application</h1>
+      <p style={{ color: "#a0a0a0", fontSize: 13, textAlign: "center", marginTop: 0 }}>
         Please complete the fields below. Fields marked * are required.
-        {rep ? <><br />Referred by rep {rep}.</> : null}
       </p>
+
+      <div style={{ marginTop: 12 }}>
+        <label style={labelSt}>Rep Code</label>
+        <input style={input} value={rep} onChange={(e) => setRep(e.target.value)} placeholder="Rep00000001" />
+        <p style={{ color: "#7f857f", fontSize: 11, marginTop: 4 }}>Leave this as Rep00000001 unless a representative gave you their own code.</p>
+      </div>
 
       {sections.map((sec) => (
         <div key={sec.title}>
@@ -329,7 +342,7 @@ export default function PartnerApplyForm() {
                 <div style={{ marginTop: 6 }}>
                   {f.groups!.map((g) => (
                     <div key={g.label} style={{ marginBottom: 6 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: "#555" }}>{g.label}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#9aa39a" }}>{g.label}</div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px" }}>
                         {g.options.map((o) => (
                           <label key={o} style={{ fontSize: 13, display: "flex", gap: 5, alignItems: "center" }}>
@@ -346,18 +359,18 @@ export default function PartnerApplyForm() {
         </div>
       ))}
 
-      <label style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 18, fontSize: 13, color: "#333" }}>
+      <label style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 18, fontSize: 13, color: "#cfd3cf" }}>
         <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} style={{ marginTop: 3 }} />
         I agree to all of the Around You Terms &amp; Conditions and confirm that the information provided above is true and correct.
       </label>
 
-      {err ? <p style={{ color: "#c0392b", fontSize: 13, marginTop: 10 }}>{err}</p> : null}
+      {err ? <p style={{ color: "#ff6b6b", fontSize: 13, marginTop: 10 }}>{err}</p> : null}
 
       <button onClick={submit} disabled={submitting}
-        style={{ marginTop: 16, width: "100%", padding: "14px", borderRadius: 10, border: "none", background: submitting ? "#9bd8b6" : "#159a53", color: "#fff", fontWeight: 800, fontSize: 16, cursor: submitting ? "not-allowed" : "pointer" }}>
+        style={{ marginTop: 16, width: "100%", padding: "14px", borderRadius: 10, border: "none", background: submitting ? "#1f5c33" : LUMO, color: "#000", fontWeight: 800, fontSize: 16, cursor: submitting ? "not-allowed" : "pointer" }}>
         {submitting ? "Submitting…" : "Submit application"}
       </button>
-      <p style={{ color: "#8a8f96", fontSize: 11, textAlign: "center", marginTop: 10 }}>
+      <p style={{ color: "#7f857f", fontSize: 11, textAlign: "center", marginTop: 10 }}>
         Your logo and photos will be arranged with your Around You representative.
       </p>
     </div></div>

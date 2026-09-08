@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 import backend from "~backend/client";
 import AppLogo from "../components/AppLogo";
@@ -37,9 +37,14 @@ const emptyApp = {
 export default function RepLoginPage() {
   const router = useRouter();
   const navigate = (to: string) => router.push(to);
+  const searchParams = useSearchParams();
   const { toast, dismiss } = useToast();
 
-  const [mode, setMode] = useState<"signin" | "apply">("signin");
+  // Landing-page "Sell for Us" links here with ?mode=apply to open the rep
+  // application directly; otherwise we default to sign-in.
+  const [mode, setMode] = useState<"signin" | "apply">(
+    searchParams.get("mode") === "apply" ? "apply" : "signin"
+  );
   const [fullName, setFullName] = useState("");
   const [repCode, setRepCode] = useState("");
   const [repAccessCode, setRepAccessCode] = useState("");

@@ -8,6 +8,18 @@ import { Facebook, Linkedin } from "lucide-react";
 const LUMO = "#39FF14";
 const LUMO_DARK = "#2dd10f";
 
+// Lumo call-to-action used inside expandable sections (onboard / register links).
+const ctaStyle: React.CSSProperties = {
+  display: "inline-block",
+  marginTop: 6,
+  background: `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`,
+  color: "#000",
+  fontWeight: 700,
+  borderRadius: 8,
+  padding: "10px 16px",
+  textDecoration: "none",
+};
+
 interface Section {
   id: string;
   title: string;
@@ -17,25 +29,30 @@ interface Section {
 function InfoSquareBtn({
   title,
   isOpen,
+  dimmed,
   onToggle,
 }: {
   title: string;
   isOpen: boolean;
+  dimmed: boolean;
   onToggle: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onToggle}
+      disabled={dimmed}
       aria-expanded={isOpen}
       style={{
         background: "#000",
-        border: `2px solid ${isOpen ? "#5fff3a" : LUMO}`,
-        color: isOpen ? "#5fff3a" : LUMO,
+        border: `2px solid ${dimmed ? "#3a3a3a" : isOpen ? "#5fff3a" : LUMO}`,
+        color: dimmed ? "#555" : isOpen ? "#5fff3a" : LUMO,
+        opacity: dimmed ? 0.55 : 1,
+        pointerEvents: dimmed ? "none" : "auto",
         borderRadius: 10,
         fontWeight: 700,
         fontSize: "0.65rem",
-        cursor: "pointer",
+        cursor: dimmed ? "default" : "pointer",
         textAlign: "center",
         letterSpacing: "0.03em",
         transition: "all 0.2s ease",
@@ -154,7 +171,7 @@ export default function AboutYouPage() {
     },
     {
       id: "partner",
-      title: "Partner With Us",
+      title: "Promote your Business",
       content: (
         <>
           <p>Become part of the Around You Partner Family and choose the package that suits you best. Each package gives you access to our tools, marketing support, and exclusive partner benefits, so you can grow your reach and earnings.</p>
@@ -165,12 +182,15 @@ export default function AboutYouPage() {
             </a>
             , where we will assist you in selecting a plan, completing a questionnaire for onboarding purposes, and starting to promote right away.
           </p>
+          <p>Ready to get started? Onboard your business online — choose your category and complete the short application.</p>
+          <a href="/apply?rep=Rep00000001" style={ctaStyle}>Onboard your business →</a>
         </>
       ),
     },
+    { id: "support", title: "Contact Support", href: "mailto:support@aroundyou.co.za" },
     {
       id: "sales",
-      title: "Become a Seller",
+      title: "Sell for Us",
       content: (
         <>
           <p>Become part of our sales family and earn BIG commission on all sales every month.</p>
@@ -183,10 +203,11 @@ export default function AboutYouPage() {
             </a>
             .
           </p>
+          <p>Ready to join? Register your rep application below.</p>
+          <a href="/rep-login?mode=apply" style={ctaStyle}>Register as a rep →</a>
         </>
       ),
     },
-    { id: "support", title: "Contact Support", href: "mailto:support@aroundyou.co.za" },
   ];
 
   return (
@@ -208,15 +229,20 @@ export default function AboutYouPage() {
           }}
         >
           <div className="grid grid-cols-3 gap-1.5">
-            {sections.map((section) => (
+            {sections.map((section) => {
+              const dimmed = openId !== null && openId !== section.id;
+              return (
               <Fragment key={section.id}>
                 {"href" in section ? (
                   <a
-                    href={section.href}
+                    href={dimmed ? undefined : section.href}
+                    aria-disabled={dimmed}
                     style={{
                       background: "#000",
-                      border: `2px solid ${LUMO}`,
-                      color: LUMO,
+                      border: `2px solid ${dimmed ? "#3a3a3a" : LUMO}`,
+                      color: dimmed ? "#555" : LUMO,
+                      opacity: dimmed ? 0.55 : 1,
+                      pointerEvents: dimmed ? "none" : "auto",
                       borderRadius: 10,
                       fontWeight: 700,
                       fontSize: "0.65rem",
@@ -246,6 +272,7 @@ export default function AboutYouPage() {
                   <InfoSquareBtn
                     title={section.title}
                     isOpen={openId === section.id}
+                    dimmed={dimmed}
                     onToggle={() => handleToggle(section.id)}
                   />
                 )}
@@ -271,7 +298,8 @@ export default function AboutYouPage() {
                   </div>
                 )}
               </Fragment>
-            ))}
+              );
+            })}
           </div>
 
           <button
