@@ -548,6 +548,7 @@ export default function RepOnboardingApp() {
   const [visibility, setVisibility] = useState([]);
   const [booking, setBooking] = useState(false);
   const [bookingItems, setBookingItems] = useState<Array<{ name: string; price: string; duration: string }>>([]);
+  const [preOrderItems, setPreOrderItems] = useState<Array<{ name: string; description: string; price: string; leadTimeMinutes: string }>>([]);
   const [country, setCountry] = useState([]);
   const [province, setProvince] = useState([]);
   const [data, setData] = useState<Record<string, any>>({});
@@ -568,7 +569,7 @@ export default function RepOnboardingApp() {
     setAutoSaveStatus("Saving…");
     const t = setTimeout(() => setAutoSaveStatus("Auto-saved to Admin Dashboard ✓"), 500);
     return () => clearTimeout(t);
-  }, [data, emergency, doctorsList, vetsList, images, country, province, visibility, tier, booking, bookingItems, partnerType]);
+  }, [data, emergency, doctorsList, vetsList, images, country, province, visibility, tier, booking, bookingItems, preOrderItems, partnerType]);
 
   const isAccommodation = partnerType === "Accommodations";
   const isRestaurant = partnerType === "Restaurants";
@@ -583,7 +584,7 @@ export default function RepOnboardingApp() {
     : "Attraction Name";
 
   const reset = () => {
-    setPartnerType(null); setTier(0); setVisibility([]); setBooking(false); setBookingItems([]); setCountry([]); setProvince([]);
+    setPartnerType(null); setTier(0); setVisibility([]); setBooking(false); setBookingItems([]); setPreOrderItems([]); setCountry([]); setProvince([]);
     setData({}); setEmergency({}); setDoctorsList([]); setVetsList([]); setImages([]); setCharity([]); setSubmitted(null);
   };
 
@@ -744,6 +745,9 @@ export default function RepOnboardingApp() {
                 .filter((it) => it.name.trim())
                 .map((it) => ({ name: it.name.trim(), price: Number(it.price) || 0, duration: Number(it.duration) || 0 }))
             : [],
+          preOrderItems: preOrderItems
+            .filter((it) => it.name.trim())
+            .map((it) => ({ name: it.name.trim(), description: it.description.trim(), price: Number(it.price) || 0, leadTimeMinutes: Number(it.leadTimeMinutes) || 0 })),
           accessLevel: resolveAccessLevel(),
         });
       } else if (isService) {
@@ -1101,6 +1105,39 @@ export default function RepOnboardingApp() {
                       onClick={() => setBookingItems((rows) => [...rows, { name: "", price: "", duration: "" }])}
                       style={{ background: colors.surface2, border: `1px solid ${colors.primary}`, color: colors.primary, borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                       + Add Item
+                    </button>
+                  </div>
+                )}
+
+                {isRestaurant && (
+                  <div style={{ marginBottom: 12 }}>
+                    <SectionTitle>Pre-Orders (Takeaway / Delivery)</SectionTitle>
+                    <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: -4, marginBottom: 8 }}>
+                      Items a guest can pre-order for collection or delivery. Name, optional description, price (Rand) and lead time (minutes to prepare). The guest picks collection/delivery and a time at checkout, and the order is emailed to the bookings email.
+                    </p>
+                    {preOrderItems.map((it, i) => (
+                      <div key={i} style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center", flexWrap: "wrap" }}>
+                        <input placeholder="Item name" value={it.name}
+                          onChange={(e) => setPreOrderItems((rows) => rows.map((r, idx) => (idx === i ? { ...r, name: e.target.value } : r)))}
+                          style={{ ...inputStyle, marginBottom: 0, flex: 2, minWidth: 120 }} />
+                        <input placeholder="Description" value={it.description}
+                          onChange={(e) => setPreOrderItems((rows) => rows.map((r, idx) => (idx === i ? { ...r, description: e.target.value } : r)))}
+                          style={{ ...inputStyle, marginBottom: 0, flex: 2, minWidth: 120 }} />
+                        <input placeholder="Price" inputMode="decimal" value={it.price}
+                          onChange={(e) => setPreOrderItems((rows) => rows.map((r, idx) => (idx === i ? { ...r, price: e.target.value } : r)))}
+                          style={{ ...inputStyle, marginBottom: 0, flex: 1, minWidth: 70 }} />
+                        <input placeholder="Lead min" inputMode="numeric" value={it.leadTimeMinutes}
+                          onChange={(e) => setPreOrderItems((rows) => rows.map((r, idx) => (idx === i ? { ...r, leadTimeMinutes: e.target.value } : r)))}
+                          style={{ ...inputStyle, marginBottom: 0, width: 80 }} />
+                        <button type="button"
+                          onClick={() => setPreOrderItems((rows) => rows.filter((_, idx) => idx !== i))}
+                          style={{ background: colors.error, color: "#000", border: "none", borderRadius: 8, width: 32, height: 40, cursor: "pointer", fontSize: 14, flexShrink: 0 }}>✗</button>
+                      </div>
+                    ))}
+                    <button type="button"
+                      onClick={() => setPreOrderItems((rows) => [...rows, { name: "", description: "", price: "", leadTimeMinutes: "30" }])}
+                      style={{ background: colors.surface2, border: `1px solid ${colors.primary}`, color: colors.primary, borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                      + Add pre-order item
                     </button>
                   </div>
                 )}

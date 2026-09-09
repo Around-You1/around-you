@@ -115,6 +115,9 @@ function specsFor(cat: string): Section[] {
       { key: "Service options", type: "multi", options: ["Dine-in", "Takeaway", "Delivery"] },
       { key: "Wi-Fi network name", type: "text" }, { key: "Wi-Fi password", type: "text" },
     ] },
+    { title: "Pre-orders (takeaway / delivery)", fields: [
+      { key: "Pre-order items", type: "textarea", note: "if you offer takeaway/delivery — one per line: item, description, price, prep minutes" },
+    ] },
     appearSection(cat), discountsSection, paymentsSection, socialsSection, accessibilitySection, charitySection,
   ];
   if (cat === "service") return [

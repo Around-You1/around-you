@@ -215,6 +215,13 @@ rest = business() + location() + visibility() + [PageBreak(), *section("Restaura
     para("Standard table options and prices (R10 per seat). Tick the tables you offer; adjust prices only if different.", lbl),
     *ticks("Tables offered", [f"{n} = {p}" for n,p in TABLES], cols=3),
     fill("Bookings email address"), fill("Bookings contact number"),
+] + [*section("Pre-Orders (Takeaway / Delivery)"),
+    para("Items guests can pre-order for collection or delivery (if you offer takeaway/delivery). For each: name, a short description, the price (Rand) and the lead/prep time in minutes.", lbl),
+    fill("Item 1 — name / description / price / prep minutes"),
+    fill("Item 2 — name / description / price / prep minutes"),
+    fill("Item 3 — name / description / price / prep minutes"),
+    fill("Item 4 — name / description / price / prep minutes"),
+    fill("Item 5 — name / description / price / prep minutes"),
 ] + discounts() + payments() + socials() + accessibility() + [PageBreak()] + charity()
 build("restaurant-onboarding.pdf", "Around You — Restaurant Onboarding", rest)
 
