@@ -145,6 +145,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Restaurant, error) 
 		ImageUrls:           req.ImageUrls,
 		IsActive:            req.IsActive,
 		BookingItems:        req.BookingItems,
+		PreOrderItems:       req.PreOrderItems,
 		OfficialUse: appdb.OfficialUse{
 			OfficialHoldingCompany: req.OfficialHoldingCompany,
 			OfficialContactName:    req.OfficialContactName,
@@ -247,6 +248,7 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.Restaurant, error) 
 		GuestType:              req.GuestType,
 		AccessLevel:            req.AccessLevel,
 		BookingItems:           req.BookingItems,
+		PreOrderItems:          req.PreOrderItems,
 	}
 	r, err := restaurants.Update(ctx, req.ID, patch)
 	if err != nil {

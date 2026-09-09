@@ -95,6 +95,7 @@ type CreateRequest struct {
 	GuestType              string `json:"guestType,omitempty"`
 	AccessLevel            string `json:"accessLevel,omitempty"`
 	BookingItems           []appdb.BookingItem `json:"bookingItems,omitempty"`
+	PreOrderItems          appdb.PreOrderItems `json:"preOrderItems,omitempty"`
 }
 
 type UpdateRequest struct {
@@ -170,6 +171,7 @@ type UpdateRequest struct {
 	GuestType              *string `json:"guestType,omitempty"`
 	AccessLevel            *string `json:"accessLevel,omitempty"`
 	BookingItems           []appdb.BookingItem `json:"bookingItems,omitempty"`
+	PreOrderItems          appdb.PreOrderItems `json:"preOrderItems,omitempty"`
 }
 
 type DeleteRequest struct {

@@ -138,6 +138,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
     littleExplorerApproved: false,
     isActive: false,
     bookingItems: [] as { name: string; price: number; duration: number }[],
+    preOrderItems: [] as { name: string; description: string; price: number; leadTimeMinutes: number }[],
   });
 
   const [loading, setLoading] = useState(false);
@@ -224,6 +225,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
         littleExplorerApproved: data.littleExplorerApproved,
         isActive: data.isActive,
         bookingItems: data.bookingItems || [],
+        preOrderItems: data.preOrderItems || [],
       });
       console.log("[RestaurantForm] Form data populated:", {
         name: data.name,
@@ -835,6 +837,45 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
                 Load default tables
               </Button>
             </div>
+          </div>
+
+          <div className="space-y-4" style={{ display: (formData.serviceTakeaway || formData.serviceDelivery) ? undefined : "none" }}>
+            <Label className="text-base font-semibold">Pre-Orders (Takeaway / Delivery)</Label>
+            <p className="text-sm text-muted-foreground">
+              Items guests can pre-order for collection or delivery. Set a name, an optional description, the price, and the lead time (minutes to prepare). Guests choose collection or delivery and a preferred time at checkout, and the order is emailed to your Bookings email.
+            </p>
+            {formData.preOrderItems.map((item, i) => (
+              <div key={i} className="grid grid-cols-1 sm:grid-cols-[2fr_2fr_1fr_1fr_auto] gap-2 items-end">
+                <div className="space-y-1">
+                  <Label className="text-xs">Item</Label>
+                  <Input value={item.name}
+                    onChange={(e) => setFormData({ ...formData, preOrderItems: formData.preOrderItems.map((r, idx) => (idx === i ? { ...r, name: e.target.value } : r)) })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Description</Label>
+                  <Input value={item.description}
+                    onChange={(e) => setFormData({ ...formData, preOrderItems: formData.preOrderItems.map((r, idx) => (idx === i ? { ...r, description: e.target.value } : r)) })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Price (R)</Label>
+                  <Input type="number" step="any" value={item.price}
+                    onChange={(e) => setFormData({ ...formData, preOrderItems: formData.preOrderItems.map((r, idx) => (idx === i ? { ...r, price: parseFloat(e.target.value) || 0 } : r)) })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Lead (min)</Label>
+                  <Input type="number" step="1" value={item.leadTimeMinutes}
+                    onChange={(e) => setFormData({ ...formData, preOrderItems: formData.preOrderItems.map((r, idx) => (idx === i ? { ...r, leadTimeMinutes: parseInt(e.target.value) || 0 } : r)) })} />
+                </div>
+                <Button type="button" variant="outline"
+                  onClick={() => setFormData({ ...formData, preOrderItems: formData.preOrderItems.filter((_, idx) => idx !== i) })}>
+                  Remove
+                </Button>
+              </div>
+            ))}
+            <Button type="button" variant="outline"
+              onClick={() => setFormData({ ...formData, preOrderItems: [...formData.preOrderItems, { name: "", description: "", price: 0, leadTimeMinutes: 30 }] })}>
+              + Add pre-order item
+            </Button>
           </div>
 
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>

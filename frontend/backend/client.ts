@@ -381,6 +381,10 @@ export const backend = {
     update: (req: any) => request("POST", "/booking/update", { body: req }),
   },
 
+  preorder: {
+    submit: (req: any) => request("POST", "/preorder", { body: req }),
+  },
+
   // Partner "edit code" — a secret (separate from the partner/view code) that
   // lets a partner unlock editing of their own profile. get/regenerate are
   // admin-only; verify is what the partner calls before the edit form opens.

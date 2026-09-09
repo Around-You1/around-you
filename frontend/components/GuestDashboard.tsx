@@ -15,6 +15,7 @@ import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 import { useSwipe } from "../lib/useSwipe";
 import ImageCarousel from "../components/ImageCarousel";
+import RestaurantPreOrder from "../components/RestaurantPreOrder";
 import { EstateAgenciesBrowse } from "../components/EstatePublic";
 import SwipeIndicator from "../components/SwipeIndicator";
 import type { Accommodation } from "~backend/accommodation/types";
@@ -936,6 +937,8 @@ export default function GuestDashboard() {
                                 <span className="inline-block px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-medium">Takes bookings</span>
                               </div>
                             )}
+
+                            <RestaurantPreOrder restaurant={restaurant as any} />
 
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>

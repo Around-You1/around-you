@@ -121,6 +121,54 @@ func (b *BookingItems) Scan(src interface{}) error {
 	}
 }
 
+// PreOrderItem is one restaurant pre-order (takeaway/delivery) menu item. The
+// restaurant sets name, description, price and a lead time (prep/ready minutes,
+// editable per item since it varies by dish/kitchen).
+type PreOrderItem struct {
+	Name            string  `json:"name"`
+	Description     string  `json:"description,omitempty"`
+	Price           float64 `json:"price"`
+	LeadTimeMinutes int     `json:"leadTimeMinutes"`
+}
+
+// PreOrderItems is a list of PreOrderItem stored as a single jsonb column
+// (same pattern as BookingItems).
+type PreOrderItems []PreOrderItem
+
+func (p PreOrderItems) Value() (driver.Value, error) {
+	if p == nil {
+		return "[]", nil
+	}
+	data, err := json.Marshal([]PreOrderItem(p))
+	if err != nil {
+		return nil, err
+	}
+	return string(data), nil
+}
+
+func (p *PreOrderItems) Scan(src interface{}) error {
+	if src == nil {
+		*p = PreOrderItems{}
+		return nil
+	}
+	switch v := src.(type) {
+	case []byte:
+		if len(v) == 0 {
+			*p = PreOrderItems{}
+			return nil
+		}
+		return json.Unmarshal(v, p)
+	case string:
+		if v == "" {
+			*p = PreOrderItems{}
+			return nil
+		}
+		return json.Unmarshal([]byte(v), p)
+	default:
+		return fmt.Errorf("appdb: cannot scan %T into PreOrderItems", src)
+	}
+}
+
 // EmergencyEntry is one doctor / vet entry: an optional name, a phone number,
 // and an optional address (so guests can get directions).
 type EmergencyEntry struct {
@@ -270,6 +318,7 @@ type Restaurant struct {
 	Features               []string `json:"features,omitempty"`
 	DietaryOptions         []string `json:"dietaryOptions,omitempty"`
 	OffersBookings         bool     `json:"offersBookings"`
+	PreOrderItems          PreOrderItems `json:"preOrderItems,omitempty"`
 	MenuLink               string   `json:"menuLink,omitempty"`
 	ServiceDineIn          bool     `json:"serviceDineIn"`
 	ServiceTakeaway        bool     `json:"serviceTakeaway"`

@@ -6,6 +6,13 @@ export interface BookingItem {
   duration: number; // minutes
 }
 
+export interface PreOrderItem {
+  name: string;
+  description?: string;
+  price: number;
+  leadTimeMinutes: number;
+}
+
 export interface Restaurant {
   id: number;
   name: string;
@@ -77,6 +84,7 @@ export interface Restaurant {
   accessLevel?: string;
 
   bookingItems?: BookingItem[];
+  preOrderItems?: PreOrderItem[];
 
   createdAt: string;
   updatedAt: string;

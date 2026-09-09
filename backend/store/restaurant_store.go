@@ -79,6 +79,7 @@ const restaurantColumns = `
 		COALESCE(booking_items, '[]'::jsonb) as booking_items,
 	COALESCE(dietary_options, '{}') as dietary_options,
 	offers_bookings,
+	COALESCE(pre_order_items, '[]'::jsonb) as pre_order_items,
 	created_at, updated_at
 `
 
@@ -113,6 +114,7 @@ func scanRestaurant(row restaurantScanner) (*appdb.Restaurant, error) {
 		&r.BookingItems,
 		pq.Array(&r.DietaryOptions),
 		&r.OffersBookings,
+		&r.PreOrderItems,
 		&r.CreatedAt, &r.UpdatedAt,
 	)
 	if err != nil {
@@ -208,11 +210,12 @@ func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*ap
 			guest_type, access_level, partner_code, partner_code_active, booking_items, restaurant_type,
 			atmosphere, features,
 			local_discount_offered, local_discount_code,
-			dietary_options, offers_bookings
+			dietary_options, offers_bookings,
+			pre_order_items
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,
 			$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,$56,$57,
-			$58,$59,$60,$61
+			$58,$59,$60,$61,$62
 		)
 		RETURNING `+restaurantColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -232,6 +235,7 @@ func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*ap
 		pq.Array(nonNilSlice(in.Atmosphere)), pq.Array(nonNilSlice(in.Features)),
 		in.LocalDiscountOffered, in.LocalDiscountCode,
 		pq.Array(nonNilSlice(in.DietaryOptions)), in.OffersBookings,
+		in.PreOrderItems,
 	)
 	return scanRestaurant(row)
 }
@@ -258,6 +262,7 @@ type RestaurantPatch struct {
 	Features               []string
 	DietaryOptions         []string
 	OffersBookings         *bool
+	PreOrderItems          appdb.PreOrderItems
 	MenuLink               *string
 	ServiceDineIn          *bool
 	ServiceTakeaway        *bool
@@ -488,6 +493,9 @@ func (s *RestaurantStore) Update(ctx context.Context, id int64, patch Restaurant
 	}
 	if patch.AccessLevel != nil {
 		sets = append(sets, "access_level = "+arg(*patch.AccessLevel))
+	}
+	if patch.PreOrderItems != nil {
+		sets = append(sets, "pre_order_items = "+arg(patch.PreOrderItems))
 	}
 	if patch.BookingItems != nil {
 		sets = append(sets, "booking_items = "+arg(patch.BookingItems))
