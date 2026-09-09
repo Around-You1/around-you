@@ -992,6 +992,19 @@ export default function RepOnboardingApp() {
                 ▶ Rep Sign In
               </a>
             </div>
+
+            <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: colors.textSecondary, margin: 0 }}>Onboarding forms (PDF)</p>
+              <p style={{ fontSize: 11, color: colors.textSecondary, margin: 0 }}>
+                Blank forms to email a prospective partner. Always the latest version.
+              </p>
+              {Object.entries(ONBOARDING_PDF).map(([label, href]) => (
+                <a key={label} href={href} target="_blank" rel="noopener noreferrer"
+                  style={{ color: colors.primary, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
+                  ⬇ {label}
+                </a>
+              ))}
+            </div>
           </>
         ) : partnerType === "Real Estate & Rentals" ? (
           <>
