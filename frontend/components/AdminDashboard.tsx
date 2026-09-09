@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Home, UtensilsCrossed, Scissors, Camera, BarChart3, Building2, UserRound } from "lucide-react";
+import { Home, UtensilsCrossed, Scissors, Camera, BarChart3, Building2, UserRound, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
@@ -43,6 +43,7 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState("accommodations");
   const [modOpenCount, setModOpenCount] = useState(0);
   const [pendingByCat, setPendingByCat] = useState<Record<string, number>>({});
+  const [metricsOpen, setMetricsOpen] = useState(false);
 
   useEffect(() => {
     loadStats();
@@ -111,6 +112,19 @@ export default function AdminDashboard() {
   };
 
   const pendingTotal = Object.values(pendingByCat).reduce((a, b) => a + b, 0);
+
+  // Aggregate totals across all six partner categories for the collapsed summary.
+  const metricsAgg = [
+    stats.accommodationStats, stats.restaurantStats, stats.serviceStats, stats.attractionStats,
+    estateStats.agencies, estateStats.agents,
+  ].reduce(
+    (a, s) => ({
+      total: a.total + (s?.totalCount || 0),
+      active: a.active + (s?.activeCount || 0),
+      inactive: a.inactive + (s?.inactiveCount || 0),
+    }),
+    { total: 0, active: 0, inactive: 0 }
+  );
   // Small red count badge shown to the right of a tab name.
   const catBadge = (key: string) => {
     const n = pendingByCat[key] || 0;
@@ -150,7 +164,21 @@ export default function AdminDashboard() {
 
         <div className="space-y-2">
           <h2 className="text-lg font-bold text-foreground">Partner Metrics by Category</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2">
+
+          <button
+            onClick={() => setMetricsOpen((v) => !v)}
+            aria-expanded={metricsOpen}
+            className="w-full flex items-center justify-between gap-4 rounded-xl border-2 border-green-500 bg-background px-5 py-3 text-left hover:bg-green-500/5 transition-colors"
+          >
+            <span className="flex flex-wrap items-center gap-x-8 gap-y-1 text-sm sm:text-base">
+              <span className="font-semibold text-foreground">Total {metricsAgg.total}</span>
+              <span className="text-green-600 font-medium">Active {metricsAgg.active}</span>
+              <span className="text-red-500 font-medium">Inactive {metricsAgg.inactive}</span>
+            </span>
+            <ChevronDown className={`w-5 h-5 shrink-0 text-muted-foreground transition-transform ${metricsOpen ? "rotate-180" : ""}`} />
+          </button>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2" style={{ display: metricsOpen ? undefined : "none" }}>
             <PartnerCategoryMetrics
               title="Acc"
               icon={Home}
