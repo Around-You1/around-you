@@ -980,6 +980,18 @@ export default function RepOnboardingApp() {
             <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: 8, textAlign: "center" }}>
               Send this to a potential partner (even outside your area). They fill it in online and it comes back to you and Accounts.
             </p>
+
+            <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: colors.textSecondary, margin: 0 }}>Tutorial videos</p>
+              <a href="https://youtube.com/shorts/acLSZ6CN7TI" target="_blank" rel="noreferrer"
+                style={{ color: colors.primary, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
+                ▶ Rep Application
+              </a>
+              <a href="https://youtube.com/shorts/V_8TQL_O6iw" target="_blank" rel="noreferrer"
+                style={{ color: colors.primary, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
+                ▶ Rep Sign In
+              </a>
+            </div>
           </>
         ) : partnerType === "Real Estate & Rentals" ? (
           <>

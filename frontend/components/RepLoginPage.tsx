@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 import backend from "~backend/client";
 import AppLogo from "../components/AppLogo";
-import RepSignupVideo from "../components/RepSignupVideo";
 
 const LUMO = "#39FF14";
 const LUMO_DARK = "#2dd10f";
@@ -190,7 +189,6 @@ export default function RepLoginPage() {
             </form>
           ) : !agreedTerms ? (
             <div className="space-y-3">
-              <RepSignupVideo />
               <h3 style={{ color: LUMO, fontWeight: 800, fontSize: "1rem" }}>Rep Responsibility &amp; Payment Terms</h3>
               <p className="text-xs" style={{ color: "#888" }}>Please read and accept before entering your details.</p>
               <div
