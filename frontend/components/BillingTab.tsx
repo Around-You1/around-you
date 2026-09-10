@@ -595,7 +595,7 @@ export default function BillingTab() {
                   {commissions.map((c) => (
                     <tr key={c.id} className="border-b border-border/50">
                       <td className="py-2 pr-3 font-mono">{c.repCode}</td>
-                      <td className="py-2 pr-3">{c.type === "override" ? "Override (10%)" : "Own (30%)"}</td>
+                      <td className="py-2 pr-3">{c.type === "override" ? "Override (10%)" : "Own (25%)"}</td>
                       <td className="py-2 pr-3 font-mono">{c.sourceRepCode || "—"}</td>
                       <td className="py-2 pr-3">{c.partnerType} #{c.partnerId}</td>
                       <td className="py-2 pr-3">{c.periodStart || "—"}</td>
@@ -648,7 +648,7 @@ export default function BillingTab() {
                 <thead>
                   <tr className="text-left text-muted-foreground border-b border-border">
                     <th className="py-2 pr-3">Rep</th>
-                    <th className="py-2 pr-3">Own 30%</th>
+                    <th className="py-2 pr-3">Own 25%</th>
                     <th className="py-2 pr-3">Override 10%</th>
                     <th className="py-2 pr-3">Total</th>
                     <th className="py-2 pr-3">Accrued</th>
@@ -704,7 +704,7 @@ export default function BillingTab() {
                     <thead>
                       <tr className="text-left text-muted-foreground border-b border-border">
                         <th className="py-2 pr-3">Rep</th>
-                        <th className="py-2 pr-3">Own (30%)</th>
+                        <th className="py-2 pr-3">Own (25%)</th>
                         <th className="py-2 pr-3">Override (10%)</th>
                         <th className="py-2 pr-3">Total</th>
                         <th className="py-2 pr-3">Paid</th>

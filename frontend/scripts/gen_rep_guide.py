@@ -119,14 +119,15 @@ Pre-Orders (restaurants) are separate again — see section 4.
 
 ## Your commission — always be up-selling
 
-You earn **25% of every partner you sign — every month they stay active**. That means the bigger the plan, the bigger (and more repeatable) your income, so always aim **up**:
+You earn **25% of every sale you make yourself — every month the partner stays active**. If you're a **Team Leader**, you also earn **10% of every sale made by each rep in your downline**, on top of your own 25%.
+
+Either way, the bigger the plan, the bigger (and more repeatable) your income, so always aim **up**:
 
 - Go for **Both** (guest + local) rather than a single audience.
 - Go for **Tier 2** (full profile) rather than Tier 1.
-- Add **Bookings** wherever the partner takes reservations.
-- Add **Pre-Orders** for any restaurant doing takeaway or delivery.
+- Add **Bookings** where the partner takes reservations, or **Pre-Orders** for a restaurant doing takeaway/delivery (Pre-Orders also opens Tier 2).
 
-A partner on **Both + Tier 2 + Bookings + Pre-Orders** is worth far more to you than a bare listing — and gets you to your rep targets much quicker.
+A partner on **Both + Tier 2** with **Bookings or Pre-Orders** is worth far more to you than a bare listing — and gets you to your rep targets much quicker.
 
 ---
 
@@ -173,17 +174,16 @@ How to explain it: *You pay R200 a month, and only a small amount each time some
 
 ---
 
-## 4. Pre-Orders (Restaurants only — separate from everything above)
+## 4. Pre-Orders (Restaurants only)
 
 - Only relevant if the restaurant does **Takeaway or Delivery**.
-- **Turning Pre-Orders on automatically makes the restaurant a Booking partner** — Tier 2, shown to **Both**, on the **R200/month** base (exactly like ticking Bookings). So Pre-Orders always come with that R200 base fee.
-- On top of the R200, **Around You earns 5% of every pre-order** taken through the app. Every pre-order is logged — **what was ordered, when, and the amount** — so the 5% can be billed each month, even though the restaurant can change its menu daily.
-- If a restaurant does **both table bookings and pre-orders**, they still pay just **one R200 base** — R10 per cover on tables and 5% on pre-orders both sit on top of it.
+- **Choosing Pre-Orders automatically moves the restaurant to Tier 2** — the full-information fields open up. Pre-Orders and Bookings are **separate, mutually-exclusive choices**: turning on Pre-Orders does **not** make the restaurant a Booking partner. A restaurant is either a Booking partner **or** a Pre-Orders (Tier 2) restaurant — choosing one means the other is ignored, and nothing changes on the accounting side because of the second choice.
+- The restaurant pays a flat **R200/month** base, plus **5% of every pre-order** taken through the app. Every pre-order is logged — **what was ordered, when, and the amount** — so the 5% can be billed each month, even though the restaurant can change its menu daily.
 - List each pre-order item: **name, description, price, and lead time in minutes** (how long the kitchen needs — 30 min, 45 min, etc.; set it honestly, per dish).
-- The guest chooses **Collection or Delivery** and a **preferred time** at checkout — the app only offers the options the restaurant actually supports (tick Takeaway and/or Delivery correctly).
+- **Collection / Delivery** — the restaurant sets whether it offers **Takeaway (collection)** and/or **Delivery**. At checkout the guest can only pick an option the restaurant actually offers, then chooses a **preferred date and time**.
 - The order is **emailed to the restaurant's Bookings email**. The restaurant confirms with the customer and takes payment their side; the 5% is Around You's commission, billed monthly.
 
-How to explain it: *List the meals people can order ahead and how long each takes. Offering pre-orders puts you on the R200 Booking plan and we take 5% of each pre-order — you get an email for every order with the customer's chosen collection/delivery time, then you confirm and take payment your side.*
+How to explain it: *List the meals people can order ahead and how long each takes. Offering pre-orders opens your full Tier 2 profile, and we take 5% of each pre-order — you get an email for every order with the customer's chosen collection/delivery date and time, then you confirm and take payment your side.*
 
 ---
 
@@ -191,7 +191,7 @@ How to explain it: *List the meals people can order ahead and how long each take
 
 - **Rep Code** — must be your rep code so the partner (and commission) is linked to you. On the online form it pre-fills to Rep00000001 (the free/internal code); a real rep must replace it with their own. Leaving Rep00000001 means the partner is treated as free.
 - **GPS / location (Latitude & Longitude)** — capture this while standing at the venue. On the onboarding app, tap "Use my current location" just below the Latitude/Longitude fields: allow location access when your phone asks, and the two coordinates fill in automatically from the phone's GPS. Do this outside or near the entrance for the best accuracy, and you can still hand-edit the numbers if needed. The partner doesn't need to know these. (Onboarding remotely rather than on site? Read the coordinates off Google Maps and type them in.)
-- **Images** — the onboarding app has an **Images** field (up to 10 photos) that you upload while onboarding. **Logo & menu PDF** aren't on the form — arrange those with head office by email. The rep app is for **new onboarding only**; to add or change a partner's images afterwards, that's done from the **Admin Dashboard** (or by the partner themselves using their Edit Code) — not by revisiting the rep app.
+- **Images** — the onboarding app has an **Images** field (up to 10 photos) that you upload while onboarding. **Logo & menu PDF** aren't on the form — arrange those with head office by email. The rep app is for **new onboarding only**; to add or change images afterwards, the **partner does it themselves using their Edit Code**.
 - **Discounts** — there are two separate discount options: a Guest discount and a Local discount. Fill in only the audience(s) they're offering to depending who the Partner wishes to target. Each has an optional code.
 - **Charity** — pick one group (Adults / Children / Animals) and one focus (Health / Homes / Food) — e.g. Children – Food. Around You will tally up at the end of each month and a percentage of the total income will go to a charity we deem fit according to the selection.
 - **Payment methods** — tick everything they accept.

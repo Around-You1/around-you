@@ -26,7 +26,7 @@ type Commission struct {
 }
 
 // accrueCommissions records the rep commissions for a freshly-issued invoice:
-//   - the signing rep earns 30% of the full amount the partner paid;
+//   - the signing rep earns 25% of the full amount the partner paid;
 //   - that rep's upline (Team Leader), if any, earns an extra 10%.
 // Idempotent per (invoice, rep, type) via the unique constraint.
 func accrueCommissions(ctx context.Context, invoiceID int64, partnerType string, partnerID int64, repCode string, totalCents int, periodStart time.Time) error {
@@ -35,11 +35,11 @@ func accrueCommissions(ctx context.Context, invoiceID int64, partnerType string,
 		return nil // no signing rep or nothing billed → nothing to accrue
 	}
 
-	own := totalCents * 30 / 100
+	own := totalCents * 25 / 100
 	if _, err := appdb.SQLDB.ExecContext(ctx, `
 		INSERT INTO commission
 		  (rep_code, type, source_partner_type, source_partner_id, invoice_id, period_start, base_cents, rate_bps, amount_cents)
-		VALUES ($1, 'own', $2, $3, $4, $5, $6, 3000, $7)
+		VALUES ($1, 'own', $2, $3, $4, $5, $6, 2500, $7)
 		ON CONFLICT (invoice_id, rep_code, type) DO NOTHING`,
 		repCode, partnerType, partnerID, invoiceID, periodStart, totalCents, own,
 	); err != nil {

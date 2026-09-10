@@ -388,7 +388,7 @@ export default function AnalyticsDashboard() {
                       <th className="py-2 pr-3">Status</th>
                       <th className="py-2 pr-3">Partners</th>
                       <th className="py-2 pr-3">MRR</th>
-                      <th className="py-2 pr-3">Own 30%</th>
+                      <th className="py-2 pr-3">Own 25%</th>
                       <th className="py-2 pr-3">Override 10%</th>
                       <th className="py-2 pr-3">Total</th>
                       <th className="py-2 pr-3">Downline</th>

@@ -550,6 +550,10 @@ export default function RepOnboardingApp() {
   const [booking, setBooking] = useState(false);
   const [bookingItems, setBookingItems] = useState<Array<{ name: string; price: string; duration: string }>>([]);
   const [preOrderItems, setPreOrderItems] = useState<Array<{ name: string; description: string; price: string; leadTimeMinutes: string }>>([]);
+  // Restaurant service options — which fulfilment the restaurant actually offers.
+  // Pre-Orders are only offered when Takeaway and/or Delivery is ticked, so a
+  // guest can never pick a fulfilment the restaurant doesn't do.
+  const [serviceOptions, setServiceOptions] = useState<string[]>(["Dine-in"]);
   const [country, setCountry] = useState([]);
   const [province, setProvince] = useState([]);
   const [data, setData] = useState<Record<string, any>>({});
@@ -589,7 +593,7 @@ export default function RepOnboardingApp() {
     setAutoSaveStatus("Saving…");
     const t = setTimeout(() => setAutoSaveStatus("Auto-saved to Admin Dashboard ✓"), 500);
     return () => clearTimeout(t);
-  }, [data, emergency, doctorsList, vetsList, images, country, province, visibility, tier, booking, bookingItems, preOrderItems, partnerType]);
+  }, [data, emergency, doctorsList, vetsList, images, country, province, visibility, tier, booking, bookingItems, preOrderItems, serviceOptions, partnerType]);
 
   const isAccommodation = partnerType === "Accommodations";
   const isRestaurant = partnerType === "Restaurants";
@@ -604,7 +608,7 @@ export default function RepOnboardingApp() {
     : "Attraction Name";
 
   const reset = () => {
-    setPartnerType(null); setTier(0); setVisibility([]); setBooking(false); setBookingItems([]); setPreOrderItems([]); setCountry([]); setProvince([]);
+    setPartnerType(null); setTier(0); setVisibility([]); setBooking(false); setBookingItems([]); setPreOrderItems([]); setServiceOptions(["Dine-in"]); setCountry([]); setProvince([]);
     setData({}); setEmergency({}); setDoctorsList([]); setVetsList([]); setImages([]); setCharity([]); setSubmitted(null);
   };
 
@@ -722,9 +726,9 @@ export default function RepOnboardingApp() {
           atmosphere: data.atmosphere || [],
           features: data.features || [],
           menuLink: data.menuLink || "",
-          serviceDineIn: true,
-          serviceTakeaway: true,
-          serviceDelivery: false,
+          serviceDineIn: serviceOptions.includes("Dine-in"),
+          serviceTakeaway: serviceOptions.includes("Takeaway"),
+          serviceDelivery: serviceOptions.includes("Delivery"),
           littleExplorerApproved: (data.childFriendly || []).includes("Child Friendly"),
           paymentCard: (data.paymentOptions || []).includes("Card"),
           paymentCash: (data.paymentOptions || []).includes("Cash"),
@@ -765,9 +769,11 @@ export default function RepOnboardingApp() {
                 .filter((it) => it.name.trim())
                 .map((it) => ({ name: it.name.trim(), price: Number(it.price) || 0, duration: Number(it.duration) || 0 }))
             : [],
-          preOrderItems: preOrderItems
-            .filter((it) => it.name.trim())
-            .map((it) => ({ name: it.name.trim(), description: it.description.trim(), price: Number(it.price) || 0, leadTimeMinutes: Number(it.leadTimeMinutes) || 0 })),
+          preOrderItems: (serviceOptions.includes("Takeaway") || serviceOptions.includes("Delivery"))
+            ? preOrderItems
+                .filter((it) => it.name.trim())
+                .map((it) => ({ name: it.name.trim(), description: it.description.trim(), price: Number(it.price) || 0, leadTimeMinutes: Number(it.leadTimeMinutes) || 0 }))
+            : [],
           accessLevel: resolveAccessLevel(),
         });
       } else if (isService) {
@@ -1188,6 +1194,23 @@ export default function RepOnboardingApp() {
                 )}
 
                 {isRestaurant && (
+                  <div style={{ marginBottom: 12 }}>
+                    <CheckboxGroup
+                      label="Service Options"
+                      options={["Dine-in", "Takeaway", "Delivery"]}
+                      selected={serviceOptions}
+                      onChange={(next) => {
+                        setServiceOptions(next);
+                        if (!next.includes("Takeaway") && !next.includes("Delivery")) setPreOrderItems([]);
+                      }}
+                    />
+                    <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: -4, marginBottom: 4 }}>
+                      Tick only what the restaurant offers. Pre-Orders below open only if Takeaway and/or Delivery is ticked.
+                    </p>
+                  </div>
+                )}
+
+                {isRestaurant && (serviceOptions.includes("Takeaway") || serviceOptions.includes("Delivery")) && (
                   <div style={{ marginBottom: 12 }}>
                     <SectionTitle>Pre-Orders (Takeaway / Delivery)</SectionTitle>
                     <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: -4, marginBottom: 8 }}>

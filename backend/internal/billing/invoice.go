@@ -277,7 +277,7 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 		}
 	}
 
-	// Accrue rep commissions for this invoice (30% own + 10% upline override) on
+	// Accrue rep commissions for this invoice (25% own + 10% upline override) on
 	// the full invoiced total (base + any booking usage). Test reps earn nothing
 	// — their partners are excluded from all metrics.
 	if !isTestRep(repCode) {

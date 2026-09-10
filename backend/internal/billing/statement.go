@@ -100,7 +100,7 @@ func renderStatementHTML(name, repCode, period string, s RepStatement) string {
   <p>Hi %s (%s),</p>
   <p>Your commissions for %s:</p>
   <table style="width:100%%;border-collapse:collapse" cellpadding="6">
-    <tr><td>Own (30%%)</td><td style="text-align:right">%s</td></tr>
+    <tr><td>Own (25%%)</td><td style="text-align:right">%s</td></tr>
     <tr><td>Team-leader override (10%%)</td><td style="text-align:right">%s</td></tr>
     <tr><td><strong>Total</strong></td><td style="text-align:right"><strong>%s</strong></td></tr>
     <tr><td>Paid</td><td style="text-align:right">%s</td></tr>
