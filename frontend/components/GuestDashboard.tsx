@@ -827,9 +827,9 @@ export default function GuestDashboard() {
                               entityId={Number(restaurant.id)}
                               summary={ratings[ratingKey("restaurant", restaurant.id)]}
                               onRated={applyRatingSummary}
-                              readOnly={restaurant.accessLevel === "Booking"}
+                              readOnly={restaurant.accessLevel === "Booking" && (restaurant.bookingItems?.length ?? 0) > 0}
                             />
-                            {restaurant.accessLevel === "Booking" && (
+                            {restaurant.accessLevel === "Booking" && (restaurant.bookingItems?.length ?? 0) > 0 && (
                               <Button
                                 size="sm"
                                 className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black w-full sm:w-auto"

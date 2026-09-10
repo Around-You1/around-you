@@ -96,9 +96,15 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Restaurant, error) 
 	// Booking partner: Tier 2, shown to Both, R200/month base. The accounting
 	// differs (R10/cover for table bookings, 5% for pre-orders) but the plan is
 	// the same single Booking subscription.
-	if req.OffersBookings || len(req.PreOrderItems) > 0 {
+	if req.OffersBookings {
+		// Table-booking partner: shown to Both, R200 Booking plan.
 		req.AccessLevel = "Booking"
 		req.GuestType = "Both"
+	} else if len(req.PreOrderItems) > 0 {
+		// Pre-orders bill on the R200 Booking plan too, but the restaurant stays
+		// a normal display listing: shown to its chosen audience (NOT forced to
+		// Both) and with no table-booking button (it has no bookingItems).
+		req.AccessLevel = "Booking"
 	}
 	in := &appdb.Restaurant{
 		Name:                   req.Name,
@@ -200,11 +206,17 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.Restaurant, error) 
 	// Same rule on edit: switching table bookings or pre-orders on forces the
 	// Booking plan (Tier 2 / Both / R200 base). We only force it on — turning
 	// the flags off does not auto-downgrade an existing plan.
-	if (req.OffersBookings != nil && *req.OffersBookings) || len(req.PreOrderItems) > 0 {
+	if req.OffersBookings != nil && *req.OffersBookings {
+		// Table-booking partner: shown to Both on the R200 Booking plan.
 		booking := "Booking"
 		both := "Both"
 		req.AccessLevel = &booking
 		req.GuestType = &both
+	} else if len(req.PreOrderItems) > 0 {
+		// Pre-orders bill on the R200 Booking plan but keep the chosen audience
+		// (not forced to Both) — a normal display listing with no table-booking.
+		booking := "Booking"
+		req.AccessLevel = &booking
 	}
 	patch := store.RestaurantPatch{
 		Name:                   req.Name,

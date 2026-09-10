@@ -554,6 +554,7 @@ export default function RepOnboardingApp() {
   // Pre-Orders are only offered when Takeaway and/or Delivery is ticked, so a
   // guest can never pick a fulfilment the restaurant doesn't do.
   const [serviceOptions, setServiceOptions] = useState<string[]>(["Dine-in"]);
+  const [openPreOrders, setOpenPreOrders] = useState(false);
   const [country, setCountry] = useState([]);
   const [province, setProvince] = useState([]);
   const [data, setData] = useState<Record<string, any>>({});
@@ -599,6 +600,12 @@ export default function RepOnboardingApp() {
   const isRestaurant = partnerType === "Restaurants";
   const isService = partnerType === "Services";
   const isAttraction = partnerType === "Attractions";
+
+  // Adding pre-order items opens Tier 2 automatically (a pre-order restaurant is
+  // a full-information listing).
+  useEffect(() => {
+    if (isRestaurant && preOrderItems.length > 0 && tier < 2) setTier(2);
+  }, [isRestaurant, preOrderItems, tier]);
   const nameLabel = isAccommodation
     ? "Accommodation Name"
     : isRestaurant
@@ -1212,7 +1219,15 @@ export default function RepOnboardingApp() {
 
                 {isRestaurant && (serviceOptions.includes("Takeaway") || serviceOptions.includes("Delivery")) && (
                   <div style={{ marginBottom: 12 }}>
-                    <SectionTitle>Pre-Orders (Takeaway / Delivery)</SectionTitle>
+                    <button type="button" onClick={() => setOpenPreOrders((v) => !v)}
+                      style={{ width: "100%", textAlign: "left", background: "transparent", border: `1px solid ${colors.border}`,
+                        borderRadius: 10, padding: "12px 14px", cursor: "pointer", color: colors.primary,
+                        fontWeight: 800, fontSize: 15, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span>Pre-Orders (Takeaway / Delivery){preOrderItems.length > 0 ? ` — ${preOrderItems.length}` : ""}</span>
+                      <span>{openPreOrders ? "▾" : "▸"}</span>
+                    </button>
+                    {openPreOrders && (
+                    <div style={{ marginTop: 8 }}>
                     <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: -4, marginBottom: 8 }}>
                       Items a guest can pre-order for collection or delivery. Name, optional description, price (Rand) and lead time (minutes to prepare). The guest picks collection/delivery and a time at checkout, and the order is emailed to the bookings email.
                     </p>
@@ -1240,6 +1255,8 @@ export default function RepOnboardingApp() {
                       style={{ background: colors.surface2, border: `1px solid ${colors.primary}`, color: colors.primary, borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                       + Add pre-order item
                     </button>
+                    </div>
+                    )}
                   </div>
                 )}
 
