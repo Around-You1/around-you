@@ -9,7 +9,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.lib import colors
 from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer, HRFlowable,
-                                Table, TableStyle, ListFlowable, ListItem)
+                                Table, TableStyle, ListFlowable, ListItem, PageBreak)
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 GREEN = colors.HexColor("#159a53")
@@ -51,6 +51,8 @@ def build(md, out):
             flow.append(Paragraph(inline(s[4:]), h3))
         elif s == "---":
             flow.append(Spacer(1, 4)); flow.append(HRFlowable(width="100%", color=GREEN, thickness=0.6)); flow.append(Spacer(1, 4))
+        elif s == "@@PAGEBREAK@@":
+            flow.append(PageBreak())
         elif s == "@@ORGANOGRAM@@":
             try:
                 from svglib.svglib import svg2rlg
@@ -182,7 +184,7 @@ How to explain it to a partner: *R200 gets you listed with the basics per user. 
 
 How to explain it: *You pay R300 a month, and only a small amount each time someone actually books through the app — so it scales with real bookings.*
 
----
+@@PAGEBREAK@@
 
 ## 4. Pre-Orders (Restaurants only)
 
