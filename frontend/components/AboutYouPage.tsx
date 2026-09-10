@@ -3,7 +3,6 @@
 import { useState, useEffect, Fragment } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppLogo from "../components/AppLogo";
-import RepSignupVideo from "../components/RepSignupVideo";
 import { Facebook, Linkedin } from "lucide-react";
 
 const LUMO = "#39FF14";
@@ -206,7 +205,6 @@ export default function AboutYouPage() {
           </p>
           <p>Ready to join? Register your rep application below.</p>
           <a href="/rep-login?mode=apply" style={ctaStyle}>Register as a rep →</a>
-          <RepSignupVideo />
         </>
       ),
     },
