@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getAuthenticatedBackend } from "../lib/backend";
 import EstateRepFlow from "./EstateRepFlow";
 import { saveCharity } from "../lib/charity";
+import { getCurrentPosition } from "../lib/geolocation";
 
 const CHARITY_OPTIONS = ["Adults", "Children", "Animals", "Health", "Homes", "Food"];
 const CHARITY_GROUPS = ["Adults", "Children", "Animals"];
@@ -563,6 +564,25 @@ export default function RepOnboardingApp() {
 
   const set = (id) => (val) => setData((d) => ({ ...d, [id]: val }));
 
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState("");
+  const captureLocation = async () => {
+    setLocateError("");
+    setLocating(true);
+    try {
+      const pos = await getCurrentPosition();
+      setData((d) => ({
+        ...d,
+        latitude: pos.latitude.toFixed(6),
+        longitude: pos.longitude.toFixed(6),
+      }));
+    } catch (e: any) {
+      setLocateError(e?.message || "Could not get your location. Allow location access and try again, or enter the coordinates manually.");
+    } finally {
+      setLocating(false);
+    }
+  };
+
   // Auto-save simulation: debounce on any change
   useEffect(() => {
     if (!partnerType) return;
@@ -1074,6 +1094,27 @@ export default function RepOnboardingApp() {
             <TextField label="Postal Code" value={data.postalCode} onChange={set("postalCode")} />
             <TextField label="Latitude" value={data.latitude} onChange={set("latitude")} />
             <TextField label="Longitude" value={data.longitude} onChange={set("longitude")} />
+
+            <button
+              type="button"
+              onClick={captureLocation}
+              disabled={locating}
+              style={{
+                width: "100%", textAlign: "center", padding: "14px 16px", borderRadius: 12,
+                fontWeight: 800, fontSize: 15, marginTop: 2, marginBottom: 6,
+                cursor: locating ? "wait" : "pointer",
+                background: "transparent", color: colors.primary,
+                border: `2px solid ${colors.primary}`,
+              }}
+            >
+              {locating ? "Getting your location…" : "📍 Use my current location"}
+            </button>
+            <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: -2, marginBottom: 12 }}>
+              Stand at the venue and tap this to fill the coordinates from your phone's GPS. Allow location access when asked. You can still edit them by hand.
+            </p>
+            {locateError !== "" && (
+              <p style={{ fontSize: 12, color: "#ef4444", marginTop: -6, marginBottom: 12 }}>{locateError}</p>
+            )}
 
             {!isAccommodation && (
               <>

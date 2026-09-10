@@ -175,7 +175,7 @@ How to explain it: *List the meals people can order ahead. Tell us how long each
 ## 5. Things every form needs (and the small gotchas)
 
 - **Rep Code** — must be your rep code so the partner (and commission) is linked to you. On the online form it pre-fills to Rep00000001 (the free/internal code); a real rep must replace it with their own. Leaving Rep00000001 means the partner is treated as free.
-- **GPS / location** — the rep captures this on site; the partner doesn't need to know it.
+- **GPS / location (Latitude & Longitude)** — capture this while standing at the venue. On the onboarding app, tap "Use my current location" just below the Latitude/Longitude fields: allow location access when your phone asks, and the two coordinates fill in automatically from the phone's GPS. Do this outside or near the entrance for the best accuracy, and you can still hand-edit the numbers if needed. The partner doesn't need to know these. (Onboarding remotely rather than on site? Read the coordinates off Google Maps and type them in.)
 - **Images / logo / menu PDF** — not on the form; arranged with the rep by email.
 - **Discounts** — there are two separate ones: a Guest discount and a Local discount. Fill in only the audience(s) they're offering to. Each has an optional code.
 - **Charity** — pick one group (Adults / Children / Animals) and one focus (Health / Homes / Food) — e.g. Children – Food.

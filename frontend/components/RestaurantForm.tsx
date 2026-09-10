@@ -13,6 +13,7 @@ import MultiPdfUpload from "./MultiPdfUpload";
 import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
 import { loadCharity, saveCharity } from "../lib/charity";
 import { getAuthenticatedBackend } from "../lib/backend";
+import { getCurrentPosition } from "../lib/geolocation";
 import type { Restaurant } from "~backend/restaurant/types";
 import { useToast } from "@/components/ui/use-toast";
 import { SA_PROVINCES } from "../lib/saRegions";
@@ -143,7 +144,29 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
   const { toast } = useToast();
+
+  const captureLocation = async () => {
+    setLocating(true);
+    try {
+      const pos = await getCurrentPosition();
+      setFormData((f) => ({
+        ...f,
+        latitude: pos.latitude.toFixed(6),
+        longitude: pos.longitude.toFixed(6),
+      }));
+      toast({ title: "Location captured", description: "Latitude and longitude filled from your device." });
+    } catch (e: any) {
+      toast({
+        title: "Could not get location",
+        description: e?.message || "Allow location access and try again, or enter the coordinates manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setLocating(false);
+    }
+  };
 
   useEffect(() => {
     if (restaurantId) {
@@ -406,6 +429,15 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
                 value={formData.longitude}
                 onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
               />
+            </div>
+
+            <div className="space-y-1 md:col-span-2">
+              <Button type="button" variant="outline" onClick={captureLocation} disabled={locating}>
+                {locating ? "Getting your location…" : "📍 Use my current location"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                On site at the venue, tap this to fill the coordinates from your device's GPS. Allow location access when prompted; you can still edit them by hand.
+              </p>
             </div>
 
             <div className="space-y-2">
