@@ -101,6 +101,11 @@ type BookingLedgerRow struct {
 	CommissionCents int    `json:"commissionCents"`
 	Status          string `json:"status"`
 	CreatedAt       string `json:"createdAt"`
+	// Kind separates restaurant pre-orders (party_size = 0, commission = 5% of
+	// the order) from table bookings (party_size > 0, R10/cover) and the item
+	// bookings of services/attractions. Items lists what was ordered.
+	Kind  string `json:"kind"`  // "Pre-Order" | "Table Booking" | "Booking"
+	Items string `json:"items"` // human-readable summary of the ordered items
 }
 
 type BookingLedger struct {
@@ -127,7 +132,14 @@ func LoadBookingLedger(ctx context.Context) (*BookingLedger, error) {
 		       COALESCE(ROUND(total * 100), 0)::bigint,
 		       COALESCE(ROUND(commission * 100), 0)::bigint,
 		       COALESCE(status, ''),
-		       to_char(created_at, 'YYYY-MM-DD')
+		       to_char(created_at, 'YYYY-MM-DD'),
+		       CASE
+		           WHEN entity_type = 'restaurant' AND COALESCE(party_size, 0) = 0 THEN 'Pre-Order'
+		           WHEN entity_type = 'restaurant' THEN 'Table Booking'
+		           ELSE 'Booking'
+		       END,
+		       COALESCE((SELECT string_agg(elem->>'name', ', ')
+		                 FROM jsonb_array_elements(items) elem), '')
 		FROM bookings ORDER BY created_at DESC LIMIT 500`)
 	if err != nil {
 		return nil, err
@@ -136,7 +148,8 @@ func LoadBookingLedger(ctx context.Context) (*BookingLedger, error) {
 	for rows.Next() {
 		var b BookingLedgerRow
 		if err := rows.Scan(&b.ID, &b.EntityType, &b.EntityName, &b.CustomerName,
-			&b.BookingDate, &b.TotalCents, &b.CommissionCents, &b.Status, &b.CreatedAt); err != nil {
+			&b.BookingDate, &b.TotalCents, &b.CommissionCents, &b.Status, &b.CreatedAt,
+			&b.Kind, &b.Items); err != nil {
 			return nil, err
 		}
 		l.Rows = append(l.Rows, b)

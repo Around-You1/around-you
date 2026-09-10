@@ -74,6 +74,8 @@ interface BookingRow {
   commissionCents: number;
   status: string;
   createdAt: string;
+  kind?: string;
+  items?: string;
 }
 
 interface BookingLedger {
@@ -760,7 +762,8 @@ export default function BillingTab() {
                     <thead>
                       <tr className="text-left text-muted-foreground border-b border-border">
                         <th className="py-2 pr-3">Partner</th>
-                        <th className="py-2 pr-3">Type</th>
+                        <th className="py-2 pr-3">Kind</th>
+                        <th className="py-2 pr-3">Items</th>
                         <th className="py-2 pr-3">Customer</th>
                         <th className="py-2 pr-3">Date</th>
                         <th className="py-2 pr-3">Value</th>
@@ -772,7 +775,12 @@ export default function BillingTab() {
                       {bookingLedger.rows.map((b) => (
                         <tr key={b.id} className="border-b border-border/50">
                           <td className="py-2 pr-3">{b.entityName}</td>
-                          <td className="py-2 pr-3">{b.entityType}</td>
+                          <td className="py-2 pr-3">
+                            <span className={b.kind === "Pre-Order" ? "text-purple-600 font-medium" : ""}>
+                              {b.kind || b.entityType}
+                            </span>
+                          </td>
+                          <td className="py-2 pr-3 max-w-[220px] truncate" title={b.items}>{b.items || "—"}</td>
                           <td className="py-2 pr-3">{b.customerName}</td>
                           <td className="py-2 pr-3">{b.bookingDate}</td>
                           <td className="py-2 pr-3">{rand(b.totalCents)}</td>

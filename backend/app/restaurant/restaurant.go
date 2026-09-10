@@ -92,6 +92,14 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Restaurant, error) 
 	); err != nil {
 		return nil, err
 	}
+	// Enabling table bookings OR pre-orders auto-registers the restaurant as a
+	// Booking partner: Tier 2, shown to Both, R200/month base. The accounting
+	// differs (R10/cover for table bookings, 5% for pre-orders) but the plan is
+	// the same single Booking subscription.
+	if req.OffersBookings || len(req.PreOrderItems) > 0 {
+		req.AccessLevel = "Booking"
+		req.GuestType = "Both"
+	}
 	in := &appdb.Restaurant{
 		Name:                   req.Name,
 		Address:                req.Address,
@@ -188,6 +196,15 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.Restaurant, error) 
 		moderation.PtrField("discountOffered", req.DiscountOffered),
 	); err != nil {
 		return nil, err
+	}
+	// Same rule on edit: switching table bookings or pre-orders on forces the
+	// Booking plan (Tier 2 / Both / R200 base). We only force it on — turning
+	// the flags off does not auto-downgrade an existing plan.
+	if (req.OffersBookings != nil && *req.OffersBookings) || len(req.PreOrderItems) > 0 {
+		booking := "Booking"
+		both := "Both"
+		req.AccessLevel = &booking
+		req.GuestType = &both
 	}
 	patch := store.RestaurantPatch{
 		Name:                   req.Name,

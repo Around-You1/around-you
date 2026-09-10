@@ -18,6 +18,10 @@ import (
 )
 
 var restaurants = store.NewRestaurantStore()
+var bookings = store.NewBookingStore()
+
+// preOrderCommissionRate is the platform's cut of every restaurant pre-order.
+const preOrderCommissionRate = 0.05
 
 type SubmitItem struct {
 	Name     string `json:"name"`
@@ -107,6 +111,36 @@ func Submit(ctx context.Context, req *SubmitRequest) (*SubmitResponse, error) {
 	}
 	if len(lines) == 0 {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "the selected items are not offered by this restaurant"}
+	}
+
+	// Store the pre-order as a bookings row so it flows into monthly billing
+	// (RunMonthlyBilling sums bookings.commission for booking-plan partners),
+	// the accountant ledger, and rep commission — exactly like a table booking,
+	// but distinguished by party_size = 0 and a 5%-of-total commission.
+	commission := total * preOrderCommissionRate
+	orderItems := appdb.BookingItems{}
+	for _, l := range lines {
+		orderItems = append(orderItems, appdb.BookingItem{
+			Name:  fmt.Sprintf("%d × %s", l.qty, l.item.Name),
+			Price: l.item.Price * float64(l.qty),
+		})
+	}
+	if _, err := bookings.Create(ctx, &appdb.Booking{
+		EntityType:    "restaurant",
+		EntityID:      r.ID,
+		EntityName:    r.Name,
+		CustomerName:  strings.TrimSpace(req.CustomerName),
+		CustomerEmail: strings.TrimSpace(req.CustomerEmail),
+		CustomerPhone: strings.TrimSpace(req.CustomerPhone),
+		BookingDate:   strings.TrimSpace(req.PreferredDate),
+		BookingTime:   strings.TrimSpace(req.PreferredTime),
+		Items:         orderItems,
+		Total:         total,
+		Commission:    commission,
+		PartySize:     0, // 0 marks this as a pre-order, not a table booking
+		Status:        "pending",
+	}); err != nil {
+		return nil, &errs.Error{Code: errs.Internal, Message: "could not record the pre-order"}
 	}
 
 	recipient := strings.TrimSpace(r.BookingsEmail)
