@@ -12,7 +12,7 @@ const (
 	Tier1Cents   = 20000 // R200 — Tier 1
 	Tier2Cents   = 30000 // R300 — Tier 2 (the former top tier)
 	BothCents    = 40000 // R400 — audience "Both" (forces Tier 2) at this flat price
-	BookingBase  = 20000 // R200/month base for Booking partners (+ per-cover/per-booking charge added per billing period: restaurants R10/cover, services/attractions 10%)
+	BookingBase  = 30000 // R300/month base for Booking / Pre-Order partners (+ per-cover/per-booking charge added per billing period: restaurants R10/cover, services/attractions 10%, pre-orders 5%)
 	RealEstateCents = 30000 // R300 — flat per real-estate page (agency or agent), no tiers
 
 	// Accommodation Option-A unit bands (6+ units); 1–5 units use tier pricing.
@@ -37,7 +37,7 @@ type Plan struct {
 //
 // Rules: two tiers (Tier 1 R200, Tier 2 R300); audience "Both" forces
 // Tier 2 at R400; accommodations sit on Tier 2 (unit pricing for 6+ units);
-// the Booking plan is R200/month + a per-booking charge
+// the Booking plan is R300/month + a per-booking charge
 // (restaurants R10/cover, services/attractions 10%), applied per period during
 // billing, not here. Unknown/blank tier defaults to Tier 1
 // (Free) — deliberately the safe direction (never over-charge on bad data).
@@ -132,7 +132,7 @@ func InvoiceItem(partnerType string, tier int, audience string, units int) (code
 }
 
 // BookingItemCodes returns the two invoice line codes/descriptions for a
-// Booking-plan partner: the fixed monthly base (…BookM, R200) and the variable
+// Booking-plan partner: the fixed monthly base (…BookM, R300) and the variable
 // usage line (…BookC / …Book — restaurant covers at R10 each, service/attraction
 // bookings at 10% of the chosen items). Accommodation/estate never use the
 // Booking plan, so they fall back to the restaurant labels defensively.

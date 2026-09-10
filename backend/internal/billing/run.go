@@ -53,7 +53,7 @@ func RunMonthlyBilling(ctx context.Context) (int, error) {
 		covers := 0
 		if d.plan == "booking" {
 			// The per-booking charge for the month just ended, billed in arrears
-			// as its own invoice line on top of the R200 base: restaurants = R10
+			// as its own invoice line on top of the R300 base: restaurants = R10
 			// per cover (party_size × R10), services/attractions = 10% of item
 			// value. Both are stored on each booking's `commission` field.
 			bc, err := bookingCommissionCents(ctx, d.partnerType, d.partnerID, start.AddDate(0, -1, 0), start)

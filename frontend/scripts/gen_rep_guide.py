@@ -51,6 +51,20 @@ def build(md, out):
             flow.append(Paragraph(inline(s[4:]), h3))
         elif s == "---":
             flow.append(Spacer(1, 4)); flow.append(HRFlowable(width="100%", color=GREEN, thickness=0.6)); flow.append(Spacer(1, 4))
+        elif s == "@@ORGANOGRAM@@":
+            try:
+                from svglib.svglib import svg2rlg
+                here = os.path.dirname(os.path.abspath(__file__))
+                d = svg2rlg(os.path.join(here, "pricing-organogram.svg"))
+                avail = A4[0] - 36 * mm
+                sc = avail / d.width
+                d.width *= sc
+                d.height *= sc
+                d.scale(sc, sc)
+                d.hAlign = "CENTER"
+                flow.append(Spacer(1, 4)); flow.append(d); flow.append(Spacer(1, 6))
+            except Exception as e:
+                flow.append(Paragraph("[pricing organogram — see app]", body))
         elif s.startswith(">"):
             flow.append(Paragraph(inline(s.lstrip("> ").strip()), quote))
         elif s.startswith("|"):
@@ -151,11 +165,7 @@ This only applies to **Display partners** (not Booking partners).
 - If Shown to is **Guest only** or **Local only**, they may pick **Tier 1 (R200)** or **Tier 2 (R300)**.
 - If Shown to is **Both**, it is **always Tier 2**, and the price is **R400/month**. You cannot pick Tier 1 with Both.
 
-| Shown to | Tier 1 (Partial) | Tier 2 (Full) |
-| --- | --- | --- |
-| Guest only | R200 | R300 |
-| Local only | R200 | R300 |
-| Both | not allowed | R400 |
+@@ORGANOGRAM@@
 
 How to explain it to a partner: *R200 gets you listed with the basics per user. R300 gives the full profile with your address and directions per user. R400 gives the full profile to both holiday guests and locals.*
 
@@ -164,13 +174,13 @@ How to explain it to a partner: *R200 gets you listed with the basics per user. 
 ## 3. Bookings (if you ticked Booking Partner)
 
 - The **Tier / Guest-Local-Both** section disappears — don't look for it.
-- Base fee is **R200/month**, plus a per-booking charge:
+- Base fee is **R300/month**, plus a per-booking charge:
 - **Restaurants:** R10 per cover (per seat booked).
-- **Services:** 10% per order (of the items booked).
+- **Services:** 10% per service (of the items booked).
 - **Attractions:** 10% per person.
 - You list **Bookable Items**. Restaurant = tables — the standard covers (Table for 1 = R10, Table for 2 = R20, …) are pre-set by Around You and are **fixed on the app**: you can't change a table price or remove a table (only head office can, from the Admin Dashboard). Service / Attraction = the products/experiences a guest can book — each with a **name, price, and duration (minutes)** that you enter.
 
-How to explain it: *You pay R200 a month, and only a small amount each time someone actually books through the app — so it scales with real bookings.*
+How to explain it: *You pay R300 a month, and only a small amount each time someone actually books through the app — so it scales with real bookings.*
 
 ---
 
@@ -178,7 +188,7 @@ How to explain it: *You pay R200 a month, and only a small amount each time some
 
 - Only relevant if the restaurant does **Takeaway or Delivery**.
 - **Choosing Pre-Orders automatically moves the restaurant to Tier 2** — the full-information fields open up. Pre-Orders and Bookings are **separate, mutually-exclusive choices**: turning on Pre-Orders does **not** make the restaurant a Booking partner. A restaurant is either a Booking partner **or** a Pre-Orders (Tier 2) restaurant — choosing one means the other is ignored, and nothing changes on the accounting side because of the second choice.
-- The restaurant pays a flat **R200/month** base, plus **5% of every pre-order** taken through the app. Every pre-order is logged — **what was ordered, when, and the amount** — so the 5% can be billed each month, even though the restaurant can change its menu daily.
+- The restaurant pays a flat **R300/month** base, plus **5% of every pre-order** taken through the app. Every pre-order is logged — **what was ordered, when, and the amount** — so the 5% can be billed each month, even though the restaurant can change its menu daily.
 - List each pre-order item: **name, description, price, and lead time in minutes** (how long the kitchen needs — 30 min, 45 min, etc.; set it honestly, per dish).
 - **Collection / Delivery** — the restaurant sets whether it offers **Takeaway (collection)** and/or **Delivery**. At checkout the guest can only pick an option the restaurant actually offers, then chooses a **preferred date and time**.
 - The order is **emailed to the restaurant's Bookings email**. The restaurant confirms with the customer and takes payment their side; the 5% is Around You's commission, billed monthly.
@@ -218,7 +228,7 @@ How to explain it: *List the meals people can order ahead and how long each take
 
 1. Business & company details, location.
 2. Display or Booking partner?
-3. If Display: Shown to + Tier. If Booking: Bookable items (name / price / minutes), 10% per order.
+3. If Display: Shown to + Tier. If Booking: Bookable items (name / price / minutes), 10% per service.
 4. Service category(ies) — multi-select from the groups.
 5. Good-to-know: safety info, age restrictions, fitness level, best time of day, what to bring.
 6. Discounts, payments, socials, accessibility, charity, signature.

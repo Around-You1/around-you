@@ -61,9 +61,9 @@ const businessSection = (nameLabel: string): Section => ({
 });
 // Per-category booking charge shown on the "How you'd like to appear" section.
 const BOOKING_NOTE: Record<string, string> = {
-  restaurant: "R200/month + R10 per cover",
-  service: "R200/month + 10% per order",
-  attraction: "R200/month + 10% per person",
+  restaurant: "R300/month + R10 per cover",
+  service: "R300/month + 10% per service",
+  attraction: "R300/month + 10% per person",
 };
 function appearSection(cat: string): Section {
   return {
@@ -79,7 +79,7 @@ function appearSection(cat: string): Section {
         "Both (Tier 2 R400)",
       ] },
       { key: "Or, if you take bookings", type: "multi", options: [
-        `Booking listing — ${BOOKING_NOTE[cat] || "R200/month"}`,
+        `Booking listing — ${BOOKING_NOTE[cat] || "R300/month"}`,
       ] },
     ],
   };

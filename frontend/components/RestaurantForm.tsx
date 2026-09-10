@@ -839,7 +839,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Bookable Items (Restaurants)</Label>
             <p className="text-sm text-muted-foreground">
-              Tables a guest can book (name and price in Rand). Booking partners pay R200/month plus R10 per cover.
+              Tables a guest can book (name and price in Rand). Booking partners pay R300/month plus R10 per cover.
             </p>
             {formData.bookingItems.map((item, i) => (
               <div key={i} className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_auto] gap-2 items-end">

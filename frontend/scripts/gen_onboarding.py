@@ -156,7 +156,7 @@ def accessibility():
 def visibility():
     return [*section("How You'd Like to Appear"),
         *ticks("Shown to (tick one)", ["Guest only","Local only","Both"], cols=3),
-        para("Or, if you take bookings, ask your rep about a Booking listing (R200/month + R10 per cover). Your rep will confirm the tier and monthly price.", lbl)]
+        para("Or, if you take bookings, ask your rep about a Booking listing (R300/month + R10 per cover). Your rep will confirm the tier and monthly price.", lbl)]
 
 
 def _pageno(canvas, doc):
