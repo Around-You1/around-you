@@ -186,6 +186,10 @@ export default function RepLoginPage() {
                 className="touch-manipulation">
                 {loading ? "Signing in…" : "Sign In"}
               </button>
+              <a href="https://youtube.com/shorts/V_8TQL_O6iw" target="_blank" rel="noreferrer"
+                style={{ display: "block", textAlign: "center", marginTop: 12, color: LUMO, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
+                ▶ Watch: how to sign in
+              </a>
             </form>
           ) : !agreedTerms ? (
             <div className="space-y-3">

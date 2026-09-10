@@ -1015,14 +1015,10 @@ export default function RepOnboardingApp() {
             </p>
 
             <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: colors.textSecondary, margin: 0 }}>Tutorial videos</p>
+              <p style={{ fontSize: 12, fontWeight: 700, color: colors.textSecondary, margin: 0 }}>Tutorial video</p>
               <a href="https://youtube.com/shorts/acLSZ6CN7TI" target="_blank" rel="noreferrer"
                 style={{ color: colors.primary, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
                 ▶ Rep Application
-              </a>
-              <a href="https://youtube.com/shorts/V_8TQL_O6iw" target="_blank" rel="noreferrer"
-                style={{ color: colors.primary, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
-                ▶ Rep Sign In
               </a>
             </div>
 
