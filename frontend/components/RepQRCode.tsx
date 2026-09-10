@@ -2,32 +2,29 @@ import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
 
-interface ProfileQRCodeProps {
-  profileName: string;
-  profileCode: string;
-  entityType: "accommodation" | "restaurant" | "service" | "attraction";
+interface RepQRCodeProps {
+  // The heading shown above the QR. Kept as a prop so the same card can be
+  // reused for other rep campaigns; defaults to the recruitment wording.
+  title?: string;
 }
 
-export default function ProfileQRCode({ profileName, profileCode, entityType }: ProfileQRCodeProps) {
+// RepQRCode mirrors ProfileQRCode's neon look, but instead of logging a guest
+// into a partner profile it sends the scanner to the Rep Sign In page so they
+// can submit a New Rep Application. Used for advertising / recruiting reps.
+export default function RepQRCode({ title = "Become an Around You Rep" }: RepQRCodeProps) {
   const printRef = useRef<HTMLDivElement>(null);
 
-  const loginUrl =
-    entityType === "accommodation"
-      ? `https://aroundyou.co.za/?code=${encodeURIComponent(profileCode)}`
-      : `https://aroundyou.co.za/?code=${encodeURIComponent(profileCode)}&role=partner`;
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(loginUrl)}&bgcolor=000000&color=39FF14&margin=10`;
+  // Plain /rep-login lands on the Rep Sign In screen showing both tabs, so the
+  // steps below ("click New Rep Application") match exactly what the user sees.
+  const applyUrl = "https://aroundyou.co.za/rep-login";
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(applyUrl)}&bgcolor=000000&color=39FF14&margin=10`;
 
   const description =
-    entityType === "accommodation"
-      ? "Scan this QR code, then click “Log In” and then click “Sign In” to automatically log in so as to be able to see all that the Guesthouse has to offer. You will also be able to view Restaurants, Services and Attractions in and 'Around You' up to 150 kilometers."
-      : "Scan this QR code, then click “Log In” and then click “Sign In” to automatically log in so as to be able to see all that this business has to offer.";
+    "Scan this QR code, click “New Rep Application”, tick the box to accept the Rep Responsibility & Payment Terms, then click “I Agree & Continue”. Complete all of the fields, then click “Submit Application”.";
 
   const handleDownload = async () => {
-    const qrDownloadUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(loginUrl)}&bgcolor=000000&color=39FF14&margin=10`;
+    const qrDownloadUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(applyUrl)}&bgcolor=000000&color=39FF14&margin=10`;
 
-    // Compose the same title + QR + description card the Print button
-    // produces, onto a canvas, so Download gives the full page rather than
-    // just the bare QR square underneath it.
     const qrImage = new Image();
     qrImage.crossOrigin = "anonymous";
 
@@ -38,7 +35,7 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
     });
 
     const width = 640;
-    const height = 900;
+    const height = 920;
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
@@ -56,7 +53,7 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
     ctx.fillStyle = "#39FF14";
     ctx.font = "bold 32px system-ui, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(profileName, width / 2, 70);
+    ctx.fillText(title, width / 2, 70);
 
     // QR image, centered.
     const qrSize = 460;
@@ -64,18 +61,13 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
     const qrY = 110;
     ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
 
-    // Access code, monospace, right under the QR.
-    ctx.fillStyle = "#39FF14";
-    ctx.font = "18px monospace";
-    ctx.fillText(profileCode, width / 2, qrY + qrSize + 40);
-
     // Description, word-wrapped.
     ctx.fillStyle = "#aaaaaa";
     ctx.font = "16px system-ui, sans-serif";
     const maxLineWidth = width - 100;
     const words = description.split(" ");
     let line = "";
-    let y = qrY + qrSize + 80;
+    let y = qrY + qrSize + 56;
     const lineHeight = 24;
     for (const word of words) {
       const testLine = line ? `${line} ${word}` : word;
@@ -96,7 +88,7 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = blobUrl;
-      a.download = `${profileName.replace(/\s+/g, "-")}-QR-Code.png`;
+      a.download = `Around-You-Rep-Application-QR-Code.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -107,12 +99,12 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
   const handlePrint = () => {
     const win = window.open("", "_blank");
     if (!win) return;
-    const printUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(loginUrl)}&bgcolor=000000&color=39FF14&margin=20`;
+    const printUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(applyUrl)}&bgcolor=000000&color=39FF14&margin=20`;
     win.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>QR Code – ${profileName}</title>
+          <title>QR Code – ${title}</title>
           <style>
             * { box-sizing: border-box; margin: 0; padding: 0; }
             body {
@@ -129,15 +121,13 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
             }
             h1 { font-size: 22px; font-weight: 700; margin-bottom: 24px; color: #39FF14; }
             img { border: 2px solid #39FF14; border-radius: 8px; max-width: 300px; }
-            .code { font-family: monospace; font-size: 18px; letter-spacing: 0.15em; margin-top: 20px; color: #39FF14; }
             p { margin-top: 16px; font-size: 13px; color: #aaa; max-width: 340px; line-height: 1.5; }
             @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
           </style>
         </head>
         <body>
-          <h1>${profileName}</h1>
+          <h1>${title}</h1>
           <img src="${printUrl}" alt="QR Code" onload="window.print()" />
-          <div class="code">${profileCode}</div>
           <p>${description}</p>
         </body>
       </html>
@@ -158,7 +148,7 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
         className="text-sm font-bold text-center"
         style={{ color: "#39FF14" }}
       >
-        {profileName}
+        {title}
       </p>
 
       <div
@@ -167,7 +157,7 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
       >
         <img
           src={qrUrl}
-          alt={`QR Code for ${profileName}`}
+          alt={`QR Code for ${title}`}
           width={180}
           height={180}
           className="block"

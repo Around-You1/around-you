@@ -1155,27 +1155,35 @@ export default function RepOnboardingApp() {
                     </p>
                     {bookingItems.map((it, i) => (
                       <div key={i} style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center" }}>
-                        <input placeholder="Item name" value={it.name}
+                        <input placeholder="Item name" value={it.name} readOnly={isRestaurant}
                           onChange={(e) => setBookingItems((rows) => rows.map((r, idx) => (idx === i ? { ...r, name: e.target.value } : r)))}
-                          style={{ ...inputStyle, marginBottom: 0, flex: 2 }} />
-                        <input placeholder="Price" inputMode="decimal" value={it.price}
+                          style={{ ...inputStyle, marginBottom: 0, flex: 2, ...(isRestaurant ? { opacity: 0.7, cursor: "default" } : {}) }} />
+                        <input placeholder="Price" inputMode="decimal" value={it.price} readOnly={isRestaurant}
                           onChange={(e) => setBookingItems((rows) => rows.map((r, idx) => (idx === i ? { ...r, price: e.target.value } : r)))}
-                          style={{ ...inputStyle, marginBottom: 0, flex: 1 }} />
+                          style={{ ...inputStyle, marginBottom: 0, flex: 1, ...(isRestaurant ? { opacity: 0.7, cursor: "default" } : {}) }} />
                         {!isRestaurant && (
                           <input placeholder="Mins" inputMode="numeric" value={it.duration}
                             onChange={(e) => setBookingItems((rows) => rows.map((r, idx) => (idx === i ? { ...r, duration: e.target.value } : r)))}
                             style={{ ...inputStyle, marginBottom: 0, width: 70 }} />
                         )}
-                        <button type="button"
-                          onClick={() => setBookingItems((rows) => rows.filter((_, idx) => idx !== i))}
-                          style={{ background: colors.error, color: "#000", border: "none", borderRadius: 8, width: 32, height: 40, cursor: "pointer", fontSize: 14, flexShrink: 0 }}>✗</button>
+                        {!isRestaurant && (
+                          <button type="button"
+                            onClick={() => setBookingItems((rows) => rows.filter((_, idx) => idx !== i))}
+                            style={{ background: colors.error, color: "#000", border: "none", borderRadius: 8, width: 32, height: 40, cursor: "pointer", fontSize: 14, flexShrink: 0 }}>✗</button>
+                        )}
                       </div>
                     ))}
-                    <button type="button"
-                      onClick={() => setBookingItems((rows) => [...rows, { name: "", price: "", duration: "" }])}
-                      style={{ background: colors.surface2, border: `1px solid ${colors.primary}`, color: colors.primary, borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                      + Add Item
-                    </button>
+                    {isRestaurant ? (
+                      <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
+                        These are the standard table covers (R10 per seat) and are fixed — only head office can change them.
+                      </p>
+                    ) : (
+                      <button type="button"
+                        onClick={() => setBookingItems((rows) => [...rows, { name: "", price: "", duration: "" }])}
+                        style={{ background: colors.surface2, border: `1px solid ${colors.primary}`, color: colors.primary, borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                        + Add Item
+                      </button>
+                    )}
                   </div>
                 )}
 

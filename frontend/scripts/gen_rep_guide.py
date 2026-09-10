@@ -117,6 +117,19 @@ Pre-Orders (restaurants) are separate again — see section 4.
 
 ---
 
+## Your commission — always be up-selling
+
+You earn **25% of every partner you sign — every month they stay active**. That means the bigger the plan, the bigger (and more repeatable) your income, so always aim **up**:
+
+- Go for **Both** (guest + local) rather than a single audience.
+- Go for **Tier 2** (full profile) rather than Tier 1.
+- Add **Bookings** wherever the partner takes reservations.
+- Add **Pre-Orders** for any restaurant doing takeaway or delivery.
+
+A partner on **Both + Tier 2 + Bookings + Pre-Orders** is worth far more to you than a bare listing — and gets you to your rep targets much quicker.
+
+---
+
 ## 2. Guest / Local / Both — and how it sets the Tier and price
 
 This only applies to **Display partners** (not Booking partners).
@@ -143,7 +156,7 @@ This only applies to **Display partners** (not Booking partners).
 | Local only | R200 | R300 |
 | Both | not allowed | R400 |
 
-How to explain it to a partner: *R200 gets you listed with the basics for one audience. R300 gives the full profile with your address and directions for one audience. R400 gives the full profile to both holiday guests and locals.*
+How to explain it to a partner: *R200 gets you listed with the basics per user. R300 gives the full profile with your address and directions per user. R400 gives the full profile to both holiday guests and locals.*
 
 ---
 
@@ -154,7 +167,7 @@ How to explain it to a partner: *R200 gets you listed with the basics for one au
 - **Restaurants:** R10 per cover (per seat booked).
 - **Services:** 10% per order (of the items booked).
 - **Attractions:** 10% per person.
-- You list **Bookable Items**. Restaurant = tables (Table for 1 = R10, Table for 2 = R20 … defaults are pre-filled; only change a price if theirs differs). Service / Attraction = the products/experiences a guest can book — each with a name, price, and duration (minutes).
+- You list **Bookable Items**. Restaurant = tables — the standard covers (Table for 1 = R10, Table for 2 = R20, …) are pre-set by Around You and are **fixed on the app**: you can't change a table price or remove a table (only head office can, from the Admin Dashboard). Service / Attraction = the products/experiences a guest can book — each with a **name, price, and duration (minutes)** that you enter.
 
 How to explain it: *You pay R200 a month, and only a small amount each time someone actually books through the app — so it scales with real bookings.*
 
@@ -163,12 +176,14 @@ How to explain it: *You pay R200 a month, and only a small amount each time some
 ## 4. Pre-Orders (Restaurants only — separate from everything above)
 
 - Only relevant if the restaurant does **Takeaway or Delivery**.
-- It is **independent** of Tier and Bookings — a Tier 1 restaurant can still offer pre-orders.
-- List each pre-order item: **name, description, price, and lead time in minutes** (how long the kitchen needs — 30 min, 45 min, etc.; this varies per dish, so set it honestly).
-- The guest chooses **Collection or Delivery** and a **preferred time** at checkout — but the app only offers the options the restaurant actually supports (tick Takeaway and/or Delivery correctly).
-- A pre-order is **emailed to the restaurant's Bookings email**; no money moves in the app — the restaurant confirms and arranges payment.
+- **Turning Pre-Orders on automatically makes the restaurant a Booking partner** — Tier 2, shown to **Both**, on the **R200/month** base (exactly like ticking Bookings). So Pre-Orders always come with that R200 base fee.
+- On top of the R200, **Around You earns 5% of every pre-order** taken through the app. Every pre-order is logged — **what was ordered, when, and the amount** — so the 5% can be billed each month, even though the restaurant can change its menu daily.
+- If a restaurant does **both table bookings and pre-orders**, they still pay just **one R200 base** — R10 per cover on tables and 5% on pre-orders both sit on top of it.
+- List each pre-order item: **name, description, price, and lead time in minutes** (how long the kitchen needs — 30 min, 45 min, etc.; set it honestly, per dish).
+- The guest chooses **Collection or Delivery** and a **preferred time** at checkout — the app only offers the options the restaurant actually supports (tick Takeaway and/or Delivery correctly).
+- The order is **emailed to the restaurant's Bookings email**. The restaurant confirms with the customer and takes payment their side; the 5% is Around You's commission, billed monthly.
 
-How to explain it: *List the meals people can order ahead. Tell us how long each takes to prepare. When someone orders, you get an email with the order and their chosen collection/delivery time — you then confirm and take payment your side.*
+How to explain it: *List the meals people can order ahead and how long each takes. Offering pre-orders puts you on the R200 Booking plan and we take 5% of each pre-order — you get an email for every order with the customer's chosen collection/delivery time, then you confirm and take payment your side.*
 
 ---
 
@@ -176,9 +191,9 @@ How to explain it: *List the meals people can order ahead. Tell us how long each
 
 - **Rep Code** — must be your rep code so the partner (and commission) is linked to you. On the online form it pre-fills to Rep00000001 (the free/internal code); a real rep must replace it with their own. Leaving Rep00000001 means the partner is treated as free.
 - **GPS / location (Latitude & Longitude)** — capture this while standing at the venue. On the onboarding app, tap "Use my current location" just below the Latitude/Longitude fields: allow location access when your phone asks, and the two coordinates fill in automatically from the phone's GPS. Do this outside or near the entrance for the best accuracy, and you can still hand-edit the numbers if needed. The partner doesn't need to know these. (Onboarding remotely rather than on site? Read the coordinates off Google Maps and type them in.)
-- **Images / logo / menu PDF** — not on the form; arranged with the rep by email.
-- **Discounts** — there are two separate ones: a Guest discount and a Local discount. Fill in only the audience(s) they're offering to. Each has an optional code.
-- **Charity** — pick one group (Adults / Children / Animals) and one focus (Health / Homes / Food) — e.g. Children – Food.
+- **Images** — the onboarding app has an **Images** field (up to 10 photos) that you upload while onboarding. **Logo & menu PDF** aren't on the form — arrange those with head office by email. The rep app is for **new onboarding only**; to add or change a partner's images afterwards, that's done from the **Admin Dashboard** (or by the partner themselves using their Edit Code) — not by revisiting the rep app.
+- **Discounts** — there are two separate discount options: a Guest discount and a Local discount. Fill in only the audience(s) they're offering to depending who the Partner wishes to target. Each has an optional code.
+- **Charity** — pick one group (Adults / Children / Animals) and one focus (Health / Homes / Food) — e.g. Children – Food. Around You will tally up at the end of each month and a percentage of the total income will go to a charity we deem fit according to the selection.
 - **Payment methods** — tick everything they accept.
 - **Accessibility & child-friendly** — tick what applies.
 - **Signature & T&Cs** — the partner must sign and confirm the info is correct at the bottom.
@@ -186,6 +201,8 @@ How to explain it: *List the meals people can order ahead. Tell us how long each
 ---
 
 ## 6. Per-category checklists
+
+**Office Use (top of every form).** At the top of each category form in the onboarding app there is an **Office Use** section that must be completed — in particular **who the invoice is directed to and the email address it will be sent to**. This is **highly sensitive and must be accurate**: it decides who gets billed and where the invoice lands.
 
 ### Restaurant
 
