@@ -127,8 +127,12 @@ func InvoiceItem(partnerType string, tier int, audience string, units int) (code
 	case "Local":
 		audLetter, audWord = "L", "Local"
 	}
+	tierWord := "Premium"
+	if tier < 2 {
+		tierWord = "Basic"
+	}
 	return fmt.Sprintf("%sT%d%s", prefix, tier, audLetter),
-		fmt.Sprintf("%s Tier %d %s", typeName, tier, audWord)
+		fmt.Sprintf("%s %s %s", typeName, tierWord, audWord)
 }
 
 // BookingItemCodes returns the two invoice line codes/descriptions for a

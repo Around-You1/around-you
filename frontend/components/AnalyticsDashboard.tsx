@@ -89,6 +89,8 @@ interface EventsSummary {
 }
 
 const TIER_ORDER = ["Tier 1", "Tier 2", "Tier 3", "Tier 4", "N/A"];
+// Display label for a stored tier key. Data keys stay "Tier 1".."Tier 4".
+const tierLabel = (k: string) => (k === "Tier 1" ? "Basic" : k === "Tier 2" ? "Premium" : k);
 
 const rand = (cents: number) => `R${(cents / 100).toFixed(2)}`;
 
@@ -262,7 +264,7 @@ export default function AnalyticsDashboard() {
               <div className="flex flex-wrap gap-2">
                 {Object.entries(bizStats.tierMix).map(([k, v]) => (
                   <span key={k} className="text-xs px-2 py-1 rounded border bg-muted/40 border-border">
-                    {k}: <span className="font-semibold">{v}</span>
+                    {tierLabel(k)}: <span className="font-semibold">{v}</span>
                   </span>
                 ))}
               </div>
@@ -462,7 +464,7 @@ export default function AnalyticsDashboard() {
                             key={tier}
                             className="text-xs px-2 py-1 rounded border bg-muted/40 border-border"
                           >
-                            {tier}: <span className="font-semibold">{rep.byTier[tier]}</span>
+                            {tierLabel(tier)}: <span className="font-semibold">{rep.byTier[tier]}</span>
                           </span>
                         ))}
                       </div>

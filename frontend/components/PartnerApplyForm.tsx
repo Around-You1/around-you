@@ -70,13 +70,13 @@ function appearSection(cat: string): Section {
     title: "How you'd like to appear",
     fields: [
       { key: "Pricing structure (tick one)", type: "radio", options: [
-        "Tier 1 — R200/month (Partial Information)",
-        "Tier 2 — R300/month (Full Information)",
+        "Basic — R200/month (Partial Information)",
+        "Premium — R300/month (Full Information)",
       ] },
       { key: "Shown to (tick one)", type: "radio", options: [
-        "Guest only (Tier 1 R200 or Tier 2 R300)",
-        "Local only (Tier 1 R200 or Tier 2 R300)",
-        "Both (Tier 2 R400)",
+        "Guest only (Basic R200 or Premium R300)",
+        "Local only (Basic R200 or Premium R300)",
+        "Both (Premium R400)",
       ] },
       { key: "Or, if you take bookings", type: "multi", options: [
         `Booking listing — ${BOOKING_NOTE[cat] || "R300/month"}`,

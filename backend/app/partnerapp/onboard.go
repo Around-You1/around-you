@@ -106,9 +106,9 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 	accessLevel := ""
 	pricing := a.f("Pricing structure (tick one)")
 	switch {
-	case has(pricing, "Tier 2"):
+	case has(pricing, "Premium") || has(pricing, "Tier 2"):
 		accessLevel = "Tier 2"
-	case has(pricing, "Tier 1"):
+	case has(pricing, "Basic") || has(pricing, "Tier 1"):
 		accessLevel = "Tier 1"
 	}
 	if guestType == "Both" {

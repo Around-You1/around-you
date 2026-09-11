@@ -520,7 +520,7 @@ function TierButtons({ tier, setTier }) {
             border: `2px solid ${tier >= t ? colors.primary : colors.border}`,
           }}
         >
-          Tier {t}
+          {t === 1 ? "Basic" : "Premium"}
         </button>
       ))}
     </div>
@@ -1291,7 +1291,7 @@ export default function RepOnboardingApp() {
 
             {(isAccommodation || booking || tier >= 1) && (
               <>
-                <SectionTitle>{isAccommodation ? "Accommodation Details" : booking ? "Profile Details" : "Tier 1"}</SectionTitle>
+                <SectionTitle>{isAccommodation ? "Accommodation Details" : booking ? "Profile Details" : "Basic"}</SectionTitle>
                 <ImageUpload images={images} setImages={setImages} />
                 <TextField label={nameLabel} value={data.name} onChange={set("name")} />
                 {!isAccommodation && (
@@ -1370,14 +1370,14 @@ export default function RepOnboardingApp() {
 
             {!isAccommodation && (booking || tier >= 2) && (
               <>
-                <SectionTitle>{booking ? "Location & Access" : "Tier 2"}</SectionTitle>
+                <SectionTitle>{booking ? "Location & Access" : "Premium"}</SectionTitle>
                 {!isRestaurant && <TextField label="Address (public listing)" value={data.publicAddress} onChange={set("publicAddress")} />}
               </>
             )}
 
             {!isAccommodation && (booking || tier >= 2) && (
               <>
-                <SectionTitle>{booking ? "Categories & Description" : "Tier 2 — Details"}</SectionTitle>
+                <SectionTitle>{booking ? "Categories & Description" : "Premium — Details"}</SectionTitle>
                 {isRestaurant && (
                   <CheckboxGroup label="Cuisine Types" options={CUISINE_TYPES} selected={data.cuisineTypes || []} onChange={set("cuisineTypes")} />
                 )}
@@ -1416,7 +1416,7 @@ export default function RepOnboardingApp() {
 
             {!isAccommodation && (booking || tier >= 2) && (
               <>
-                <SectionTitle>{booking ? "Extras" : "Tier 2 — Extras"}</SectionTitle>
+                <SectionTitle>{booking ? "Extras" : "Premium — Extras"}</SectionTitle>
                 {isRestaurant && (
                   <>
                     <TextField label="Booking Email Address" value={data.bookingEmail} onChange={set("bookingEmail")} />

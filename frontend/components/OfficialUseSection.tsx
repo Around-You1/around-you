@@ -32,6 +32,9 @@ interface OfficialUseSectionProps {
 
 const GUEST_TYPE_OPTIONS = ["Guest Only", "Local", "Both"] as const;
 const ACCESS_LEVEL_OPTIONS = ["Tier 1", "Tier 2"] as const;
+// Display names for the stored access-level values. Values stay "Tier 1"/"Tier 2"
+// (billing + data rely on them); only the labels shown to users changed.
+const TIER_LABELS: Record<string, string> = { "Tier 1": "Basic", "Tier 2": "Premium" };
 
 function RadioGroup({
   label,
@@ -39,12 +42,14 @@ function RadioGroup({
   value,
   onChange,
   name,
+  labels,
 }: {
   label: string;
   options: readonly string[];
   value: string;
   onChange: (val: string) => void;
   name: string;
+  labels?: Record<string, string>;
 }) {
   return (
     <div className="space-y-2">
@@ -60,7 +65,7 @@ function RadioGroup({
               onChange={() => onChange(option)}
               className="accent-amber-600"
             />
-            <span className="text-sm">{option}</span>
+            <span className="text-sm">{labels?.[option] ?? option}</span>
           </label>
         ))}
       </div>
@@ -125,6 +130,7 @@ export default function OfficialUseSection({ data, onChange, showTierFields = tr
               label="Access Level"
               name="officialAccessLevel"
               options={ACCESS_LEVEL_OPTIONS}
+              labels={TIER_LABELS}
               value={data.accessLevel}
               onChange={(val) => onChange({ ...data, accessLevel: val })}
             />

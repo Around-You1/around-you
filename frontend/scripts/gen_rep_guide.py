@@ -140,10 +140,10 @@ You earn **25% of every sale you make yourself — every month the partner stays
 Either way, the bigger the plan, the bigger (and more repeatable) your income, so always aim **up**:
 
 - Go for **Both** (guest + local) rather than a single audience.
-- Go for **Tier 2** (full profile) rather than Tier 1.
-- Add **Bookings** where the partner takes reservations, or **Pre-Orders** for a restaurant doing takeaway/delivery (Pre-Orders also opens Tier 2).
+- Go for **Premium** (full profile) rather than Basic.
+- Add **Bookings** where the partner takes reservations, or **Pre-Orders** for a restaurant doing takeaway/delivery (Pre-Orders also opens Premium).
 
-A partner on **Both + Tier 2** with **Bookings or Pre-Orders** is worth far more to you than a bare listing — and gets you to your rep targets much quicker.
+A partner on **Both + Premium** with **Bookings or Pre-Orders** is worth far more to you than a bare listing — and gets you to your rep targets much quicker.
 
 ---
 
@@ -159,13 +159,13 @@ This only applies to **Display partners** (not Booking partners).
 
 **Step 2 — Tier (how much detail shows):**
 
-- **Tier 1 — R200/month — Partial Information**: a basic listing (name, category, contact, the essentials).
-- **Tier 2 — R300/month — Full Information**: the complete profile — physical address, one-tap directions, full detail, all the extras.
+- **Basic — R200/month — Partial Information**: a basic listing (name, category, contact, the essentials).
+- **Premium — R300/month — Full Information**: the complete profile — physical address, one-tap directions, full detail, all the extras.
 
 **The catch that trips people up:**
 
-- If Shown to is **Guest only** or **Local only**, they may pick **Tier 1 (R200)** or **Tier 2 (R300)**.
-- If Shown to is **Both**, it is **always Tier 2**, and the price is **R400/month**. You cannot pick Tier 1 with Both.
+- If Shown to is **Guest only** or **Local only**, they may pick **Basic (R200)** or **Premium (R300)**.
+- If Shown to is **Both**, it is **always Premium**, and the price is **R400/month**. You cannot pick Basic with Both.
 
 @@ORGANOGRAM@@
 
@@ -189,13 +189,13 @@ How to explain it: *You pay R300 a month, and only a small amount each time some
 ## 4. Pre-Orders (Restaurants only)
 
 - Only relevant if the restaurant does **Takeaway or Delivery**.
-- **Choosing Pre-Orders automatically moves the restaurant to Tier 2** — the full-information fields open up. Pre-Orders and Bookings are **separate, mutually-exclusive choices**: turning on Pre-Orders does **not** make the restaurant a Booking partner. A restaurant is either a Booking partner **or** a Pre-Orders (Tier 2) restaurant — choosing one means the other is ignored, and nothing changes on the accounting side because of the second choice.
+- **Choosing Pre-Orders automatically moves the restaurant to Premium** — the full-information fields open up. Pre-Orders and Bookings are **separate, mutually-exclusive choices**: turning on Pre-Orders does **not** make the restaurant a Booking partner. A restaurant is either a Booking partner **or** a Pre-Orders (Premium) restaurant — choosing one means the other is ignored, and nothing changes on the accounting side because of the second choice.
 - The restaurant pays a flat **R300/month** base, plus **5% of every pre-order** taken through the app. Every pre-order is logged — **what was ordered, when, and the amount** — so the 5% can be billed each month, even though the restaurant can change its menu daily.
 - List each pre-order item: **name, description, price, and lead time in minutes** (how long the kitchen needs — 30 min, 45 min, etc.; set it honestly, per dish).
 - **Collection / Delivery** — the restaurant sets whether it offers **Takeaway (collection)** and/or **Delivery**. At checkout the guest can only pick an option the restaurant actually offers, then chooses a **preferred date and time**.
 - The order is **emailed to the restaurant's Bookings email**. The restaurant confirms with the customer and takes payment their side; the 5% is Around You's commission, billed monthly.
 
-How to explain it: *List the meals people can order ahead and how long each takes. Offering pre-orders opens your full Tier 2 profile, and we take 5% of each pre-order — you get an email for every order with the customer's chosen collection/delivery date and time, then you confirm and take payment your side.*
+How to explain it: *List the meals people can order ahead and how long each takes. Offering pre-orders opens your full Premium profile, and we take 5% of each pre-order — you get an email for every order with the customer's chosen collection/delivery date and time, then you confirm and take payment your side.*
 
 ---
 
