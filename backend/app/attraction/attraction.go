@@ -132,6 +132,8 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.AttractionData, err
 		DiscountCode:        req.DiscountCode,
 		LocalDiscountOffered: req.LocalDiscountOffered,
 		LocalDiscountCode:    req.LocalDiscountCode,
+		DiscountEnabled:      req.DiscountEnabled,
+		LocalDiscountEnabled: req.LocalDiscountEnabled,
 		ExperienceInfo: appdb.ExperienceInfo{
 			SafetyInfo:      req.SafetyInfo,
 			AgeRestrictions: req.AgeRestrictions,
@@ -200,6 +202,24 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.AttractionData, err
 	); err != nil {
 		return nil, err
 	}
+
+	// Authorisation: staff (SuperAdmin/Admin/Rep) may edit any profile. A
+	// Partner — including a session obtained by scanning this profile's QR —
+	// may edit ONLY their own profile, and ONLY with a valid Edit Code. This
+	// is the server-side gate; the dashboard's edit-code prompt is just the UI.
+	if !auth.IsPrivileged(ctx) {
+		d := auth.FromContext(ctx)
+		if d == nil || d.User == nil || d.User.Role != "Partner" || d.User.EntityType != "attraction" || d.User.EntityID != id {
+			return nil, &errs.Error{Code: errs.PermissionDenied, Message: "you can only edit your own profile"}
+		}
+		storedEditCode, ecErr := attractions.GetEditCode(ctx, id)
+		if ecErr != nil {
+			return nil, &errs.Error{Code: errs.NotFound, Message: "partner not found"}
+		}
+		if strings.TrimSpace(req.EditCode) == "" || !strings.EqualFold(strings.TrimSpace(req.EditCode), strings.TrimSpace(storedEditCode)) {
+			return nil, &errs.Error{Code: errs.PermissionDenied, Message: "a valid edit code is required to edit this profile"}
+		}
+	}
 	patch := store.AttractionPatch{
 		Name:                   req.Name,
 		Address:                req.Address,
@@ -227,6 +247,8 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.AttractionData, err
 		DiscountCode:           req.DiscountCode,
 		LocalDiscountOffered:   req.LocalDiscountOffered,
 		LocalDiscountCode:      req.LocalDiscountCode,
+		DiscountEnabled:      req.DiscountEnabled,
+		LocalDiscountEnabled: req.LocalDiscountEnabled,
 		SafetyInfo:             req.SafetyInfo,
 		AgeRestrictions:        req.AgeRestrictions,
 		FitnessLevel:           req.FitnessLevel,
@@ -450,6 +472,8 @@ func ImportAttractions(ctx context.Context, req *ImportRequest) (*ImportResponse
 			ImageUrls:              splitCSVList(row.ImageUrls),
 			LocalDiscountOffered:   row.LocalDiscountOffered,
 			LocalDiscountCode:      row.LocalDiscountCode,
+			DiscountEnabled:      row.DiscountOffered != "",
+			LocalDiscountEnabled: row.LocalDiscountOffered != "",
 			TrailDifficulty:        row.TrailDifficulty,
 			WildlifeCautions:       row.WildlifeCautions,
 			TideWarnings:           row.TideWarnings,

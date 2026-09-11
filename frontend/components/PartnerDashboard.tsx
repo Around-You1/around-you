@@ -200,6 +200,7 @@ export default function PartnerDashboard() {
   const [editing, setEditing] = useState(false);
   const [showGate, setShowGate] = useState(false);
   const [editCodeInput, setEditCodeInput] = useState("");
+  const [verifiedEditCode, setVerifiedEditCode] = useState("");
   const [verifying, setVerifying] = useState(false);
   const router = useRouter();
   const navigate = (to: string, opts?: { replace?: boolean }) =>
@@ -286,6 +287,7 @@ export default function PartnerDashboard() {
       });
       if ((res as { valid?: boolean }).valid) {
         setShowGate(false);
+        setVerifiedEditCode(editCodeInput.trim());
         setEditCodeInput("");
         setEditing(true);
       } else {
@@ -341,13 +343,13 @@ export default function PartnerDashboard() {
       <div className="min-h-screen bg-gradient-to-br from-[#AEECE4]/20 to-background p-6">
         <div className="max-w-4xl mx-auto py-8">
           {entityType === "restaurant" && (
-            <RestaurantForm restaurantId={(entity as Restaurant).id} onClose={closeAndReload} partnerEdit />
+            <RestaurantForm restaurantId={(entity as Restaurant).id} onClose={closeAndReload} partnerEdit editCode={verifiedEditCode} />
           )}
           {entityType === "service" && (
-            <ServiceForm serviceId={(entity as ServiceData).serviceId} onClose={closeAndReload} partnerEdit />
+            <ServiceForm serviceId={(entity as ServiceData).serviceId} onClose={closeAndReload} partnerEdit editCode={verifiedEditCode} />
           )}
           {entityType === "attraction" && (
-            <AttractionForm attractionId={(entity as AttractionData).attractionId} onClose={closeAndReload} partnerEdit />
+            <AttractionForm attractionId={(entity as AttractionData).attractionId} onClose={closeAndReload} partnerEdit editCode={verifiedEditCode} />
           )}
         </div>
       </div>

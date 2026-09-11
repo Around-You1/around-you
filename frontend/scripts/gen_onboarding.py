@@ -11,8 +11,9 @@ pdfmetrics.registerFont(TTFont("DejaVu","/usr/share/fonts/truetype/dejavu/DejaVu
 pdfmetrics.registerFont(TTFont("DejaVu-Bold","/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"))
 pdfmetrics.registerFontFamily("DejaVu", normal="DejaVu", bold="DejaVu-Bold", italic="DejaVu", boldItalic="DejaVu-Bold")
 
-OUT = "/sessions/brave-wizardly-fermi/mnt/1au/frontend/public/onboarding"
-LOGO = "/sessions/brave-wizardly-fermi/mnt/1au/frontend/public/around-you-logo.png"
+_BASE = os.path.dirname(os.path.abspath(__file__))
+OUT = os.path.join(_BASE, "..", "public", "onboarding")
+LOGO = os.path.join(_BASE, "..", "public", "around-you-logo.png")
 GREEN = colors.HexColor("#159a53")
 DARK = colors.HexColor("#1a1f2e")
 GREY = colors.HexColor("#9aa0a6")
@@ -138,8 +139,9 @@ def socials():
         fill("Website"), fill("Facebook"), fill("Instagram"), fill("TikTok"), fill("X (Twitter)")]
 
 def discounts():
-    return [*section("Discounts for Around You Users (required)"),
-        para("These discounts are what attract guests and locals to you. Complete the discount(s) for the audience you'll be shown to.", lbl),
+    return [*section("Discounts for Around You Users"),
+        para("Discounts attract guests and locals. Tick the audience(s) you want to offer a discount to, then complete that discount. Leave a box unticked and no discount shows for that audience — the business can still be rated.", lbl),
+        *ticks("Offer a discount to", ["Guests", "Locals"], cols=2),
         fill("Guest discount — describe the offer"), fill("Guest discount code"),
         fill("Local discount — describe the offer"), fill("Local discount code")]
 

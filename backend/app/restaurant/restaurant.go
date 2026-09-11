@@ -146,6 +146,8 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Restaurant, error) 
 		DiscountCode:        req.DiscountCode,
 		LocalDiscountOffered: req.LocalDiscountOffered,
 		LocalDiscountCode:    req.LocalDiscountCode,
+		DiscountEnabled:      req.DiscountEnabled,
+		LocalDiscountEnabled: req.LocalDiscountEnabled,
 		BookingsEmail:         req.BookingsEmail,
 		BookingsContactNumber: req.BookingsContactNumber,
 		Socials: appdb.Socials{
@@ -203,6 +205,24 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.Restaurant, error) 
 	); err != nil {
 		return nil, err
 	}
+
+	// Authorisation: staff (SuperAdmin/Admin/Rep) may edit any profile. A
+	// Partner — including a session obtained by scanning this profile's QR —
+	// may edit ONLY their own profile, and ONLY with a valid Edit Code. This
+	// is the server-side gate; the dashboard's edit-code prompt is just the UI.
+	if !auth.IsPrivileged(ctx) {
+		d := auth.FromContext(ctx)
+		if d == nil || d.User == nil || d.User.Role != "Partner" || d.User.EntityType != "restaurant" || d.User.EntityID != req.ID {
+			return nil, &errs.Error{Code: errs.PermissionDenied, Message: "you can only edit your own profile"}
+		}
+		storedEditCode, ecErr := restaurants.GetEditCode(ctx, req.ID)
+		if ecErr != nil {
+			return nil, &errs.Error{Code: errs.NotFound, Message: "partner not found"}
+		}
+		if strings.TrimSpace(req.EditCode) == "" || !strings.EqualFold(strings.TrimSpace(req.EditCode), strings.TrimSpace(storedEditCode)) {
+			return nil, &errs.Error{Code: errs.PermissionDenied, Message: "a valid edit code is required to edit this profile"}
+		}
+	}
 	// Same rule on edit: switching table bookings or pre-orders on forces the
 	// Booking plan (Tier 2 / Both / R300 base). We only force it on — turning
 	// the flags off does not auto-downgrade an existing plan.
@@ -255,6 +275,8 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.Restaurant, error) 
 		DiscountCode:           req.DiscountCode,
 		LocalDiscountOffered:   req.LocalDiscountOffered,
 		LocalDiscountCode:      req.LocalDiscountCode,
+		DiscountEnabled:      req.DiscountEnabled,
+		LocalDiscountEnabled: req.LocalDiscountEnabled,
 		BookingsEmail:          req.BookingsEmail,
 		BookingsContactNumber:  req.BookingsContactNumber,
 		SocialsWebsite:         req.SocialsWebsite,
@@ -478,6 +500,8 @@ func ImportRestaurants(ctx context.Context, req *ImportRequest) (*ImportResponse
 			MenuPdfUrls:            splitCSVList(row.MenuPdfUrls),
 			LocalDiscountOffered:   row.LocalDiscountOffered,
 			LocalDiscountCode:      row.LocalDiscountCode,
+			DiscountEnabled:      row.DiscountOffered != "",
+			LocalDiscountEnabled: row.LocalDiscountOffered != "",
 			BookingsEmail:          row.BookingsEmail,
 			BookingsContactNumber:  row.BookingsContactNumber,
 			Socials: appdb.Socials{

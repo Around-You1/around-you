@@ -279,6 +279,15 @@ function TextField({ label, value, onChange, area }: { label?: any; value?: any;
   );
 }
 
+function ToggleField({ label, checked, onChange }: { label?: any; checked?: boolean; onChange?: (val: boolean) => void }) {
+  return (
+    <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: colors.textPrimary, cursor: "pointer", marginBottom: 8 }}>
+      <input type="checkbox" checked={!!checked} onChange={(e) => onChange && onChange(e.target.checked)} style={{ accentColor: colors.primary }} />
+      {label}
+    </label>
+  );
+}
+
 function CheckboxGroup({ label, options, selected = [], onChange, single = false }) {
   const toggle = (opt) => {
     let next;
@@ -752,6 +761,8 @@ export default function RepOnboardingApp() {
           discountCode: data.discountCode || "",
           localDiscountOffered: data.localDiscountOffered || "",
           localDiscountCode: data.localDiscountCode || "",
+          discountEnabled: Boolean(data.discountEnabled),
+          localDiscountEnabled: Boolean(data.localDiscountEnabled),
           bookingsEmail: data.bookingEmail || "",
           bookingsContactNumber: data.bookingContact || "",
           socialsWebsite: (data.socialLinks || {}).Website || "",
@@ -809,6 +820,8 @@ export default function RepOnboardingApp() {
           discountCode: data.discountCode || "",
           localDiscountOffered: data.localDiscountOffered || "",
           localDiscountCode: data.localDiscountCode || "",
+          discountEnabled: Boolean(data.discountEnabled),
+          localDiscountEnabled: Boolean(data.localDiscountEnabled),
           socialsWebsite: (data.socialLinks || {}).Website || "",
           socialsFacebook: (data.socialLinks || {}).Facebook || "",
           socialsInstagram: (data.socialLinks || {}).Instagram || "",
@@ -864,6 +877,8 @@ export default function RepOnboardingApp() {
           discountCode: data.discountCode || "",
           localDiscountOffered: data.localDiscountOffered || "",
           localDiscountCode: data.localDiscountCode || "",
+          discountEnabled: Boolean(data.discountEnabled),
+          localDiscountEnabled: Boolean(data.localDiscountEnabled),
           socialsWebsite: (data.socialLinks || {}).Website || "",
           socialsFacebook: (data.socialLinks || {}).Facebook || "",
           socialsInstagram: (data.socialLinks || {}).Instagram || "",
@@ -1435,15 +1450,25 @@ export default function RepOnboardingApp() {
                 {(resolveGuestType() === "Guest Only" || resolveGuestType() === "Both") && (
                   <>
                     <SectionTitle>Discount – Guest</SectionTitle>
-                    <TextField label="Discount Offered" value={data.discountOffered} onChange={set("discountOffered")} />
-                    <TextField label="Discount Code" value={data.discountCode} onChange={set("discountCode")} />
+                    <ToggleField label="Offer a discount to Guests" checked={data.discountEnabled} onChange={set("discountEnabled")} />
+                    {data.discountEnabled && (
+                      <>
+                        <TextField label="Discount Offered" value={data.discountOffered} onChange={set("discountOffered")} />
+                        <TextField label="Discount Code" value={data.discountCode} onChange={set("discountCode")} />
+                      </>
+                    )}
                   </>
                 )}
                 {(resolveGuestType() === "Local" || resolveGuestType() === "Both") && (
                   <>
                     <SectionTitle>Discount – Local</SectionTitle>
-                    <TextField label="Discount Offered" value={data.localDiscountOffered} onChange={set("localDiscountOffered")} />
-                    <TextField label="Discount Code" value={data.localDiscountCode} onChange={set("localDiscountCode")} />
+                    <ToggleField label="Offer a discount to Locals" checked={data.localDiscountEnabled} onChange={set("localDiscountEnabled")} />
+                    {data.localDiscountEnabled && (
+                      <>
+                        <TextField label="Discount Offered" value={data.localDiscountOffered} onChange={set("localDiscountOffered")} />
+                        <TextField label="Discount Code" value={data.localDiscountCode} onChange={set("localDiscountCode")} />
+                      </>
+                    )}
                   </>
                 )}
                 <SocialLinksField value={data.socialLinks || {}} onChange={set("socialLinks")} />

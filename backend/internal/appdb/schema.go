@@ -342,6 +342,13 @@ type Restaurant struct {
 	LocalDiscountOffered string `json:"localDiscountOffered,omitempty"`
 	LocalDiscountCode    string `json:"localDiscountCode,omitempty"`
 
+	// Per-audience discount toggles. When false, that audience (Guest =
+	// Discount*, Local = LocalDiscount*) sees NO discount on their page even if
+	// the text fields hold leftover values. Backfilled true for pre-existing
+	// non-empty discounts by migration 000063.
+	DiscountEnabled      bool `json:"discountEnabled"`
+	LocalDiscountEnabled bool `json:"localDiscountEnabled"`
+
 	BookingsEmail         string `json:"bookingsEmail,omitempty"`
 	BookingsContactNumber string `json:"bookingsContactNumber,omitempty"`
 
@@ -405,6 +412,13 @@ type ServiceData struct {
 	LocalDiscountOffered string `json:"localDiscountOffered,omitempty"`
 	LocalDiscountCode    string `json:"localDiscountCode,omitempty"`
 
+	// Per-audience discount toggles. When false, that audience (Guest =
+	// Discount*, Local = LocalDiscount*) sees NO discount on their page even if
+	// the text fields hold leftover values. Backfilled true for pre-existing
+	// non-empty discounts by migration 000063.
+	DiscountEnabled      bool `json:"discountEnabled"`
+	LocalDiscountEnabled bool `json:"localDiscountEnabled"`
+
 	ExperienceInfo
 	Socials
 
@@ -458,6 +472,13 @@ type AttractionData struct {
 	// Separate discount shown to Locals (see Restaurant note).
 	LocalDiscountOffered string `json:"localDiscountOffered,omitempty"`
 	LocalDiscountCode    string `json:"localDiscountCode,omitempty"`
+
+	// Per-audience discount toggles. When false, that audience (Guest =
+	// Discount*, Local = LocalDiscount*) sees NO discount on their page even if
+	// the text fields hold leftover values. Backfilled true for pre-existing
+	// non-empty discounts by migration 000063.
+	DiscountEnabled      bool `json:"discountEnabled"`
+	LocalDiscountEnabled bool `json:"localDiscountEnabled"`
 
 	ExperienceInfo
 	Socials

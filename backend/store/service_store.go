@@ -40,6 +40,8 @@ const serviceColumns = `
 	COALESCE(discount_code, '') as discount_code,
 	COALESCE(local_discount_offered, '') as local_discount_offered,
 	COALESCE(local_discount_code, '') as local_discount_code,
+	COALESCE(discount_enabled, false) as discount_enabled,
+	COALESCE(local_discount_enabled, false) as local_discount_enabled,
 	COALESCE(safety_info, '') as safety_info,
 	COALESCE(age_restrictions, '') as age_restrictions,
 	COALESCE(fitness_level, '') as fitness_level,
@@ -86,6 +88,7 @@ func scanService(row serviceScanner) (*appdb.ServiceData, error) {
 		&s.WheelchairAccess, &s.ParkingAvailability,
 		&s.DiscountOffered, &s.DiscountCode,
 		&s.LocalDiscountOffered, &s.LocalDiscountCode,
+		&s.DiscountEnabled, &s.LocalDiscountEnabled,
 		&s.SafetyInfo, &s.AgeRestrictions, &s.FitnessLevel, &s.BestTimeOfDay, &s.WhatToBring,
 		&s.SocialsWebsite, &s.SocialsFacebook, &s.SocialsInstagram, &s.SocialsTiktok, &s.SocialsTwitter,
 		&s.ImageUrl, pq.Array(&s.ImageUrls), &s.IsActive,
@@ -185,11 +188,12 @@ func (s *ServiceStore) Create(ctx context.Context, in *appdb.ServiceData) (*appd
 			official_rep_name, company_reg_number, company_vat_number,
 			guest_type, access_level, partner_code, partner_code_active, booking_items,
 			local_discount_offered, local_discount_code,
-			offers_bookings
+			offers_bookings,
+			discount_enabled, local_discount_enabled
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,
 			$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,
-			$51,$52,$53
+			$51,$52,$53,$54,$55
 		)
 		RETURNING `+serviceColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -207,6 +211,7 @@ func (s *ServiceStore) Create(ctx context.Context, in *appdb.ServiceData) (*appd
 		in.BookingItems,
 		in.LocalDiscountOffered, in.LocalDiscountCode,
 		in.OffersBookings,
+		in.DiscountEnabled, in.LocalDiscountEnabled,
 	)
 	return scanService(row)
 }
@@ -243,6 +248,8 @@ type ServicePatch struct {
 	DiscountCode         *string
 	LocalDiscountOffered *string
 	LocalDiscountCode    *string
+	DiscountEnabled      *bool
+	LocalDiscountEnabled *bool
 
 	SafetyInfo      *string
 	AgeRestrictions *string
@@ -358,6 +365,12 @@ func (s *ServiceStore) Update(ctx context.Context, id int64, patch ServicePatch)
 	}
 	if patch.LocalDiscountCode != nil {
 		sets = append(sets, "local_discount_code = "+arg(*patch.LocalDiscountCode))
+	}
+	if patch.DiscountEnabled != nil {
+		sets = append(sets, "discount_enabled = "+arg(*patch.DiscountEnabled))
+	}
+	if patch.LocalDiscountEnabled != nil {
+		sets = append(sets, "local_discount_enabled = "+arg(*patch.LocalDiscountEnabled))
 	}
 	if patch.SafetyInfo != nil {
 		sets = append(sets, "safety_info = "+arg(*patch.SafetyInfo))

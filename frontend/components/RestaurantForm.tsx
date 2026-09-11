@@ -25,6 +25,7 @@ interface RestaurantFormProps {
   // admin: admin-only sections (Official Use, access/edit codes, Active toggle)
   // are hidden and their existing values pass through the save untouched.
   partnerEdit?: boolean;
+  editCode?: string;
 }
 
 const CUISINE_TYPES = [
@@ -75,7 +76,7 @@ const DEFAULT_TABLE_ITEMS: { name: string; price: number; duration: number }[] =
   ["Table for 16", 160], ["Table for 20", 200], ["Table for 20+", 250],
 ].map(([name, price]) => ({ name: name as string, price: price as number, duration: 0 }));
 
-export default function RestaurantForm({ restaurantId, onClose, partnerEdit = false }: RestaurantFormProps) {
+export default function RestaurantForm({ restaurantId, onClose, partnerEdit = false, editCode }: RestaurantFormProps) {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [officialUse, setOfficialUse] = useState<OfficialUseData>({
     officialHoldingCompany: "",
@@ -114,6 +115,8 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
     discountCode: "",
     localDiscountOffered: "",
     localDiscountCode: "",
+    discountEnabled: false,
+    localDiscountEnabled: false,
     description: "",
     paymentCard: false,
     paymentCash: false,
@@ -223,6 +226,8 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
         discountCode: data.discountCode || "",
         localDiscountOffered: data.localDiscountOffered || "",
         localDiscountCode: data.localDiscountCode || "",
+        discountEnabled: data.discountEnabled ?? Boolean(data.discountOffered),
+        localDiscountEnabled: data.localDiscountEnabled ?? Boolean(data.localDiscountOffered),
         description: data.description || "",
         paymentCard: data.paymentCard || false,
         paymentCash: data.paymentCash || false,
@@ -285,6 +290,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
       if (restaurantId) {
         await backend.restaurant.update({
           id: restaurantId,
+          editCode: editCode || undefined,
           ...formData,
           latitude: formData.latitude ? parseFloat(String(formData.latitude)) : null,
           longitude: formData.longitude ? parseFloat(String(formData.longitude)) : null,
@@ -525,11 +531,18 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             {(officialUse.guestType === "Guest Only" || officialUse.guestType === "Both" || !officialUse.guestType) && (
               <div className="space-y-2 rounded-lg border p-4">
-                <div>
-                  <h4 className="font-semibold text-sm">Discount – Guest</h4>
-                  <p className="text-xs text-muted-foreground">Shown on the Guest page only.</p>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="discountEnabled"
+                    checked={formData.discountEnabled}
+                    onCheckedChange={(v) => setFormData({ ...formData, discountEnabled: v === true })}
+                  />
+                  <div>
+                    <h4 className="font-semibold text-sm">Discount – Guest</h4>
+                    <p className="text-xs text-muted-foreground">Tick to offer a discount on the Guest page.</p>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ display: formData.discountEnabled ? undefined : "none" }}>
                   <div className="space-y-2">
                     <Label htmlFor="discountOffered">Discount Offered</Label>
                     <Input
@@ -553,11 +566,18 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
 
             {(officialUse.guestType === "Local" || officialUse.guestType === "Both") && (
               <div className="space-y-2 rounded-lg border p-4">
-                <div>
-                  <h4 className="font-semibold text-sm">Discount – Local</h4>
-                  <p className="text-xs text-muted-foreground">Shown on the Local page only.</p>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="localDiscountEnabled"
+                    checked={formData.localDiscountEnabled}
+                    onCheckedChange={(v) => setFormData({ ...formData, localDiscountEnabled: v === true })}
+                  />
+                  <div>
+                    <h4 className="font-semibold text-sm">Discount – Local</h4>
+                    <p className="text-xs text-muted-foreground">Tick to offer a discount on the Local page.</p>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ display: formData.localDiscountEnabled ? undefined : "none" }}>
                   <div className="space-y-2">
                     <Label htmlFor="localDiscountOffered">Discount Offered</Label>
                     <Input

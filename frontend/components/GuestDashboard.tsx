@@ -157,8 +157,15 @@ export default function GuestDashboard() {
   };
 
   // Guests see discountOffered/discountCode; Locals see the local_* variants.
-  const discOffered = (e: any): string => String((isLocalMode ? e.localDiscountOffered : e.discountOffered) || "");
-  const discCode = (e: any): string => String((isLocalMode ? e.localDiscountCode : e.discountCode) || "");
+  // A discount only appears when the partner has ticked the enable-checkbox for
+  // that audience (discountEnabled / localDiscountEnabled). Older API responses
+  // that predate the flag are treated as enabled so nothing silently vanishes.
+  const discEnabled = (e: any): boolean => {
+    const flag = isLocalMode ? e.localDiscountEnabled : e.discountEnabled;
+    return flag === undefined || flag === null ? true : Boolean(flag);
+  };
+  const discOffered = (e: any): string => (discEnabled(e) ? String((isLocalMode ? e.localDiscountOffered : e.discountOffered) || "") : "");
+  const discCode = (e: any): string => (discEnabled(e) ? String((isLocalMode ? e.localDiscountCode : e.discountCode) || "") : "");
 
   const hasDiscount = (e: any): boolean => !!discOffered(e).trim();
 

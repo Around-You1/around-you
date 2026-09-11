@@ -59,6 +59,8 @@ type CreateRequest struct {
 
 	LocalDiscountOffered string `json:"localDiscountOffered,omitempty"`
 	LocalDiscountCode    string `json:"localDiscountCode,omitempty"`
+	DiscountEnabled      bool `json:"discountEnabled,omitempty"`
+	LocalDiscountEnabled bool `json:"localDiscountEnabled,omitempty"`
 
 	SafetyInfo      string `json:"safetyInfo,omitempty"`
 	AgeRestrictions string `json:"ageRestrictions,omitempty"`
@@ -131,6 +133,12 @@ type UpdateRequest struct {
 
 	LocalDiscountOffered *string `json:"localDiscountOffered,omitempty"`
 	LocalDiscountCode    *string `json:"localDiscountCode,omitempty"`
+	DiscountEnabled      *bool `json:"discountEnabled,omitempty"`
+	LocalDiscountEnabled *bool `json:"localDiscountEnabled,omitempty"`
+
+	// Edit Code the partner typed to unlock editing. Required (and checked
+	// server-side) when a Partner edits their own profile; ignored for staff.
+	EditCode string `json:"editCode,omitempty"`
 
 	SafetyInfo      *string `json:"safetyInfo,omitempty"`
 	AgeRestrictions *string `json:"ageRestrictions,omitempty"`

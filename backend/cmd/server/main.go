@@ -99,11 +99,11 @@ func main() {
 	r.auth("POST /auth/accountant/update", httpx.Body(auth.UpdateAccountant))
 	r.auth("GET /moderation/flags", httpx.Empty(moderation.ListFlags))
 	r.auth("POST /moderation/flag-status", httpx.Body(moderation.SetFlagStatus))
-	r.auth("POST /admin/bulk-set-active", httpx.Body(admin.BulkSetActive))
-	r.auth("POST /admin/bulk-delete", httpx.Body(admin.BulkDelete))
+	r.staff("POST /admin/bulk-set-active", httpx.Body(admin.BulkSetActive))
+	r.staff("POST /admin/bulk-delete", httpx.Body(admin.BulkDelete))
 	r.auth("GET /admin/archived", httpx.Empty(admin.ListArchived))
-	r.auth("POST /admin/reinstate", httpx.Body(admin.Reinstate))
-	r.auth("POST /admin/purge", httpx.Body(admin.PurgeArchived))
+	r.staff("POST /admin/reinstate", httpx.Body(admin.Reinstate))
+	r.staff("POST /admin/purge", httpx.Body(admin.PurgeArchived))
 
 	// Real Estate & Rentals (isolated category)
 	r.auth("POST /estate/agency", httpx.Body(estate.CreateAgency))
@@ -163,45 +163,45 @@ func main() {
 	r.auth("GET /restaurant/by-municipality", httpx.Query(restaurant.ListByMunicipality))
 	r.auth("GET /restaurant/nearby", httpx.Query(restaurant.ListNearby))
 	r.auth("GET /restaurant/get", httpx.Query(restaurant.Get))
-	r.auth("POST /restaurant", httpx.Body(restaurant.Create))
+	r.staff("POST /restaurant", httpx.Body(restaurant.Create))
 	r.auth("PUT /restaurant", httpx.Body(restaurant.Update))
-	r.auth("DELETE /restaurant", httpx.Body(restaurant.DeleteRestaurant))
+	r.staff("DELETE /restaurant", httpx.Body(restaurant.DeleteRestaurant))
 	r.auth("GET /restaurant/partner-code", httpx.Query(restaurant.GetPartnerCode))
-	r.auth("POST /restaurant/partner-code/regenerate", httpx.Body(restaurant.RegeneratePartnerCode))
-	r.auth("POST /restaurant/partner-code/toggle", httpx.Body(restaurant.TogglePartnerCode))
+	r.staff("POST /restaurant/partner-code/regenerate", httpx.Body(restaurant.RegeneratePartnerCode))
+	r.staff("POST /restaurant/partner-code/toggle", httpx.Body(restaurant.TogglePartnerCode))
 	r.auth("GET /restaurant/template", httpx.Empty(restaurant.Template))
 	r.auth("GET /restaurant/export", httpx.Empty(restaurant.ExportRestaurants))
-	r.auth("POST /restaurant/import", httpx.Body(restaurant.ImportRestaurants))
+	r.staff("POST /restaurant/import", httpx.Body(restaurant.ImportRestaurants))
 
 	// ---- Service (auth) ----------------------------------------------------
 	r.auth("GET /service", httpx.Query(service.List))
 	r.auth("GET /service/by-municipality", httpx.Query(service.ListByMunicipality))
 	r.auth("GET /service/nearby", httpx.Query(service.ListNearby))
 	r.auth("GET /service/get", httpx.Query(service.Get))
-	r.auth("POST /service", httpx.Body(service.Create))
+	r.staff("POST /service", httpx.Body(service.Create))
 	r.auth("PUT /service", httpx.Body(service.Update))
-	r.auth("DELETE /service", httpx.Body(service.DeleteService))
+	r.staff("DELETE /service", httpx.Body(service.DeleteService))
 	r.auth("GET /service/partner-code", httpx.Query(service.GetPartnerCode))
-	r.auth("POST /service/partner-code/regenerate", httpx.Body(service.RegeneratePartnerCode))
-	r.auth("POST /service/partner-code/toggle", httpx.Body(service.TogglePartnerCode))
+	r.staff("POST /service/partner-code/regenerate", httpx.Body(service.RegeneratePartnerCode))
+	r.staff("POST /service/partner-code/toggle", httpx.Body(service.TogglePartnerCode))
 	r.auth("GET /service/template", httpx.Empty(service.Template))
 	r.auth("GET /service/export", httpx.Empty(service.ExportServices))
-	r.auth("POST /service/import", httpx.Body(service.ImportServices))
+	r.staff("POST /service/import", httpx.Body(service.ImportServices))
 
 	// ---- Attraction (auth) -------------------------------------------------
 	r.auth("GET /attraction", httpx.Query(attraction.List))
 	r.auth("GET /attraction/by-municipality", httpx.Query(attraction.ListByMunicipality))
 	r.auth("GET /attraction/nearby", httpx.Query(attraction.ListNearby))
 	r.auth("GET /attraction/get", httpx.Query(attraction.Get))
-	r.auth("POST /attraction", httpx.Body(attraction.Create))
+	r.staff("POST /attraction", httpx.Body(attraction.Create))
 	r.auth("PUT /attraction", httpx.Body(attraction.Update))
-	r.auth("DELETE /attraction", httpx.Body(attraction.DeleteAttraction))
+	r.staff("DELETE /attraction", httpx.Body(attraction.DeleteAttraction))
 	r.auth("GET /attraction/partner-code", httpx.Query(attraction.GetPartnerCode))
-	r.auth("POST /attraction/partner-code/regenerate", httpx.Body(attraction.RegeneratePartnerCode))
-	r.auth("POST /attraction/partner-code/toggle", httpx.Body(attraction.TogglePartnerCode))
+	r.staff("POST /attraction/partner-code/regenerate", httpx.Body(attraction.RegeneratePartnerCode))
+	r.staff("POST /attraction/partner-code/toggle", httpx.Body(attraction.TogglePartnerCode))
 	r.auth("GET /attraction/template", httpx.Empty(attraction.Template))
 	r.auth("GET /attraction/export", httpx.Empty(attraction.ExportAttractions))
-	r.auth("POST /attraction/import", httpx.Body(attraction.ImportAttractions))
+	r.staff("POST /attraction/import", httpx.Body(attraction.ImportAttractions))
 
 	// ---- Booking (auth) ----------------------------------------------------
 	r.auth("POST /booking", httpx.Body(booking.Create))
@@ -297,6 +297,14 @@ func (r router) auth(pattern string, h http.HandlerFunc) {
 	r.mux.Handle(pattern, requireAuth(r.lim, h))
 }
 
+// staff registers an authenticated route that additionally requires an internal
+// role (SuperAdmin / Admin / Rep). A Guest or Partner session — including one
+// obtained by scanning a partner QR — is rejected, so create/delete/bulk
+// endpoints can never be driven from a public login.
+func (r router) staff(pattern string, h http.HandlerFunc) {
+	r.mux.Handle(pattern, requireAuth(r.lim, requireStaff(h)))
+}
+
 // login registers a PUBLIC auth endpoint behind a per-IP rate limit. These are
 // the login routes themselves, so there is no bearer token to key on — the
 // limit is keyed on the caller's IP to slow brute-forcing of access/edit codes.
@@ -356,6 +364,19 @@ func requireAuth(lim *ratelimit.Limiter, next http.HandlerFunc) http.HandlerFunc
 			return
 		}
 		next(w, req.WithContext(auth.WithData(req.Context(), data)))
+	}
+}
+
+// requireStaff wraps an already-authenticated handler and rejects any caller
+// that is not an internal role (SuperAdmin / Admin / Rep). Runs after
+// requireAuth, so the auth data is already on the context.
+func requireStaff(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		if !auth.IsPrivileged(req.Context()) {
+			writeErr(w, &errs.Error{Code: errs.PermissionDenied, Message: "staff access required"})
+			return
+		}
+		next(w, req)
 	}
 }
 

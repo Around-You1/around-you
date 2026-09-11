@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +21,7 @@ interface ServiceFormProps {
   serviceId: string | null;
   onClose: () => void;
   partnerEdit?: boolean;
+  editCode?: string;
 }
 
 interface CategoryGroup {
@@ -155,7 +157,7 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
   },
 ];
 
-export default function ServiceForm({ serviceId, onClose, partnerEdit = false }: ServiceFormProps) {
+export default function ServiceForm({ serviceId, onClose, partnerEdit = false, editCode }: ServiceFormProps) {
   const [loading, setLoading] = useState(false);
   // Gate the form render until the record has loaded. The Province <Select>
   // reads its value when it mounts and does not re-sync if the value arrives a
@@ -192,6 +194,8 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
     discountCode: "",
     localDiscountOffered: "",
     localDiscountCode: "",
+    discountEnabled: false,
+    localDiscountEnabled: false,
     description: "",
     paymentCard: false,
     paymentCash: false,
@@ -265,6 +269,8 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
         discountCode: data.discountCode || "",
         localDiscountOffered: data.localDiscountOffered || "",
         localDiscountCode: data.localDiscountCode || "",
+        discountEnabled: data.discountEnabled ?? Boolean(data.discountOffered),
+        localDiscountEnabled: data.localDiscountEnabled ?? Boolean(data.localDiscountOffered),
         description: data.description || "",
         paymentCard: data.paymentCard || false,
         paymentCash: data.paymentCash || false,
@@ -320,6 +326,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
       if (serviceId) {
         await backend.service.update({
           serviceId,
+          editCode: editCode || undefined,
           name: formData.name,
           address: formData.address,
           latitude: formData.latitude ? parseFloat(formData.latitude) : null,
@@ -336,6 +343,8 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
           discountCode: formData.discountCode || undefined,
           localDiscountOffered: formData.localDiscountOffered || undefined,
           localDiscountCode: formData.localDiscountCode || undefined,
+          discountEnabled: formData.discountEnabled,
+          localDiscountEnabled: formData.localDiscountEnabled,
           description: formData.description || undefined,
           paymentCard: formData.paymentCard,
           paymentCash: formData.paymentCash,
@@ -393,6 +402,8 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
           discountCode: formData.discountCode || undefined,
           localDiscountOffered: formData.localDiscountOffered || undefined,
           localDiscountCode: formData.localDiscountCode || undefined,
+          discountEnabled: formData.discountEnabled,
+          localDiscountEnabled: formData.localDiscountEnabled,
           description: formData.description || undefined,
           paymentCard: formData.paymentCard,
           paymentCash: formData.paymentCash,
@@ -649,11 +660,18 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             {(officialUse.guestType === "Guest Only" || officialUse.guestType === "Both" || !officialUse.guestType) && (
               <div className="space-y-2 rounded-lg border p-4">
-                <div>
-                  <h4 className="font-semibold text-sm">Discount – Guest</h4>
-                  <p className="text-xs text-muted-foreground">Shown on the Guest page only.</p>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="discountEnabled"
+                    checked={formData.discountEnabled}
+                    onCheckedChange={(v) => setFormData({ ...formData, discountEnabled: v === true })}
+                  />
+                  <div>
+                    <h4 className="font-semibold text-sm">Discount – Guest</h4>
+                    <p className="text-xs text-muted-foreground">Tick to offer a discount on the Guest page.</p>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ display: formData.discountEnabled ? undefined : "none" }}>
                   <div className="space-y-2">
                     <Label htmlFor="discountOffered">Discount Offered</Label>
                     <Input
@@ -676,11 +694,18 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false }:
 
             {(officialUse.guestType === "Local" || officialUse.guestType === "Both") && (
               <div className="space-y-2 rounded-lg border p-4">
-                <div>
-                  <h4 className="font-semibold text-sm">Discount – Local</h4>
-                  <p className="text-xs text-muted-foreground">Shown on the Local page only.</p>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="localDiscountEnabled"
+                    checked={formData.localDiscountEnabled}
+                    onCheckedChange={(v) => setFormData({ ...formData, localDiscountEnabled: v === true })}
+                  />
+                  <div>
+                    <h4 className="font-semibold text-sm">Discount – Local</h4>
+                    <p className="text-xs text-muted-foreground">Tick to offer a discount on the Local page.</p>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ display: formData.localDiscountEnabled ? undefined : "none" }}>
                   <div className="space-y-2">
                     <Label htmlFor="localDiscountOffered">Discount Offered</Label>
                     <Input
