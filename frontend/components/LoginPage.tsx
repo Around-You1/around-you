@@ -267,7 +267,15 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const { toast, dismiss } = useToast();
   const [loading, setLoading] = useState(false);
-  const [activePanel, setActivePanel] = useState<ActivePanel>(null);
+  const scannedCode = searchParams.get("code");
+  const scannedRole = searchParams.get("role");
+  // When arriving from a scanned QR (a code is present in the URL) we skip the
+  // Holiday/Local/Partner chooser and open the matching sign-in form directly.
+  const [activePanel, setActivePanel] = useState<ActivePanel>(
+    scannedCode ? (scannedRole === "partner" ? "partner" : "holiday") : null,
+  );
+  const [showChooser, setShowChooser] = useState(false);
+  const qrMode = Boolean(scannedCode) && !showChooser;
 
   const [holidayCode, setHolidayCode] = useState("");
   const [holidayCodeError, setHolidayCodeError] = useState(false);
@@ -292,14 +300,19 @@ export default function LoginPage() {
   useEffect(() => {
     const code = searchParams.get("code");
     if (code) {
-      const clean = code.replace(/[^A-Za-z0-9]/g, "").slice(0, 12);
-      if (clean.length === 12) {
+      // Accept a scanned code of any reasonable length (generated codes are 12,
+      // but older/seeded profiles may differ) — prefill it and open the right
+      // panel so the guest/partner only has to tap Sign In.
+      const clean = code.replace(/[^A-Za-z0-9]/g, "").slice(0, 16);
+      if (clean.length > 0) {
         const role = searchParams.get("role");
         if (role === "partner") {
           setPartnerCode(clean);
+          setPartnerMethod("code");
           setActivePanel("partner");
         } else {
           setHolidayCode(clean);
+          setHolidayMethod("code");
           setActivePanel("holiday");
         }
       }
@@ -336,8 +349,8 @@ export default function LoginPage() {
       toast({ title: "Validation Error", description: "Access code must contain letters and numbers only", variant: "destructive" });
       return false;
     }
-    if (code.length !== 12) {
-      toast({ title: "Validation Error", description: `Access code must be exactly 12 characters (currently ${code.length})`, variant: "destructive" });
+    if (code.length < 8 || code.length > 16) {
+      toast({ title: "Validation Error", description: `Access code looks ${code.length < 8 ? "too short" : "too long"} (${code.length} characters)`, variant: "destructive" });
       return false;
     }
     return true;
@@ -510,6 +523,8 @@ export default function LoginPage() {
           className="rounded-2xl p-6 space-y-3"
           style={{ background: "#111111", border: "1px solid rgba(57,255,20,0.18)", boxShadow: "0 0 40px rgba(57,255,20,0.06)" }}
         >
+          {!qrMode && (
+          <>
           <p className="text-center text-sm font-semibold uppercase tracking-widest" style={{ color: "#666" }}>
             Sign in as a …
           </p>
@@ -519,6 +534,18 @@ export default function LoginPage() {
             <SignInSquareBtn label="Local Guest" isOpen={activePanel === "local"} onToggle={() => togglePanel("local")} />
             <SignInSquareBtn label="Partner" isOpen={activePanel === "partner"} onToggle={() => togglePanel("partner")} />
           </div>
+          </>
+          )}
+          {qrMode && (
+            <button
+              type="button"
+              onClick={() => setShowChooser(true)}
+              className="w-full text-center text-xs underline"
+              style={{ color: "#666" }}
+            >
+              Not you? Choose a different sign-in option
+            </button>
+          )}
 
           <PanelWrap id="holiday" activePanel={activePanel}>
             <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: LUMO }}>Holiday Guest</p>
