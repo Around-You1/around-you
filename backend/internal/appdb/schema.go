@@ -349,6 +349,11 @@ type Restaurant struct {
 	DiscountEnabled      bool `json:"discountEnabled"`
 	LocalDiscountEnabled bool `json:"localDiscountEnabled"`
 
+	// Set when the partner travels to the client (mobile service) and has no
+	// fixed address/coordinates. Such partners are ALWAYS included in radius/
+	// nearby searches, never filtered out for missing coordinates.
+	WorksFromClientAddress bool `json:"worksFromClientAddress"`
+
 	BookingsEmail         string `json:"bookingsEmail,omitempty"`
 	BookingsContactNumber string `json:"bookingsContactNumber,omitempty"`
 
@@ -419,6 +424,11 @@ type ServiceData struct {
 	DiscountEnabled      bool `json:"discountEnabled"`
 	LocalDiscountEnabled bool `json:"localDiscountEnabled"`
 
+	// Set when the partner travels to the client (mobile service) and has no
+	// fixed address/coordinates. Such partners are ALWAYS included in radius/
+	// nearby searches, never filtered out for missing coordinates.
+	WorksFromClientAddress bool `json:"worksFromClientAddress"`
+
 	ExperienceInfo
 	Socials
 
@@ -479,6 +489,11 @@ type AttractionData struct {
 	// non-empty discounts by migration 000063.
 	DiscountEnabled      bool `json:"discountEnabled"`
 	LocalDiscountEnabled bool `json:"localDiscountEnabled"`
+
+	// Set when the partner travels to the client (mobile service) and has no
+	// fixed address/coordinates. Such partners are ALWAYS included in radius/
+	// nearby searches, never filtered out for missing coordinates.
+	WorksFromClientAddress bool `json:"worksFromClientAddress"`
 
 	ExperienceInfo
 	Socials

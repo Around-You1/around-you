@@ -670,6 +670,7 @@ export default function RepOnboardingApp() {
           name: data.name || data.companyName,
           address: data.address || "",
           latitude,
+          worksFromClientAddress: Boolean(data.worksFromClientAddress),
           longitude,
           country: resolvedCountry,
           province: resolvedProvince,
@@ -708,6 +709,7 @@ export default function RepOnboardingApp() {
           name: data.name || data.companyName,
           address: data.address || "",
           latitude,
+          worksFromClientAddress: Boolean(data.worksFromClientAddress),
           longitude,
           country: resolvedCountry,
           province: resolvedProvince,
@@ -776,6 +778,7 @@ export default function RepOnboardingApp() {
           name: data.name || data.companyName,
           address: data.address || "",
           latitude,
+          worksFromClientAddress: Boolean(data.worksFromClientAddress),
           longitude,
           country: resolvedCountry,
           province: resolvedProvince,
@@ -833,6 +836,7 @@ export default function RepOnboardingApp() {
           name: data.name || data.companyName,
           address: data.address || "",
           latitude,
+          worksFromClientAddress: Boolean(data.worksFromClientAddress),
           longitude,
           country: resolvedCountry,
           province: resolvedProvince,
@@ -1086,6 +1090,13 @@ export default function RepOnboardingApp() {
               </p>
             )}
             <TextField label="Postal Code" value={data.postalCode} onChange={set("postalCode")} />
+            {!isAccommodation && (
+              <ToggleField
+                label="Do you offer to work from different addresses?"
+                checked={data.worksFromClientAddress}
+                onChange={set("worksFromClientAddress")}
+              />
+            )}
             <TextField label="Latitude" value={data.latitude} onChange={set("latitude")} />
             <TextField label="Longitude" value={data.longitude} onChange={set("longitude")} />
 

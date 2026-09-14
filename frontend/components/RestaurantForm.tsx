@@ -107,6 +107,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
     features: [] as string[],
     dietaryOptions: [] as string[],
     offersBookings: false,
+    worksFromClientAddress: false,
     menuLink: "",
     imageUrl: "",
     imageUrls: [] as string[],
@@ -219,6 +220,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
         features: data.features || [],
         dietaryOptions: data.dietaryOptions || [],
         offersBookings: data.offersBookings ?? false,
+        worksFromClientAddress: data.worksFromClientAddress ?? false,
         menuLink: data.menuLink || "",
         imageUrl: data.imageUrl || "",
         imageUrls: data.imageUrls || [],
@@ -415,6 +417,18 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               />
+            </div>
+
+            <div className="space-y-2 md:col-span-2 rounded-md border p-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="worksFromClientAddress"
+                  checked={formData.worksFromClientAddress}
+                  onCheckedChange={(c) => setFormData({ ...formData, worksFromClientAddress: c === true })}
+                />
+                <Label htmlFor="worksFromClientAddress" className="cursor-pointer">Do you offer to work from different addresses?</Label>
+              </div>
+              <p className="text-xs text-muted-foreground">Tick if you travel to the client and have no fixed address. You'll still appear in every nearby/radius search even without coordinates.</p>
             </div>
 
             <div className="space-y-2">

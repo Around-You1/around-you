@@ -83,6 +83,15 @@ func ListNearby(ctx context.Context, req *ListNearbyRequest) (*ListResponse, err
 	}
 	out := make([]appdb.ServiceData, 0, len(all))
 	for _, s := range all {
+		// Mobile partners (work from the client's address) have no coordinates
+		// but must still appear in every radius search.
+		if s.WorksFromClientAddress {
+			out = append(out, s)
+			continue
+		}
+		if s.Latitude == nil || s.Longitude == nil {
+			continue
+		}
 		if appdb.HaversineKm(req.Latitude, req.Longitude, *s.Latitude, *s.Longitude) <= req.RadiusKm {
 			out = append(out, s)
 		}
@@ -153,6 +162,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.ServiceData, error)
 		LocalDiscountCode:    req.LocalDiscountCode,
 		DiscountEnabled:      req.DiscountEnabled,
 		LocalDiscountEnabled: req.LocalDiscountEnabled,
+		WorksFromClientAddress: req.WorksFromClientAddress,
 		ExperienceInfo: appdb.ExperienceInfo{
 			SafetyInfo:      req.SafetyInfo,
 			AgeRestrictions: req.AgeRestrictions,
@@ -263,6 +273,7 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.ServiceData, error)
 		LocalDiscountCode:      req.LocalDiscountCode,
 		DiscountEnabled:      req.DiscountEnabled,
 		LocalDiscountEnabled: req.LocalDiscountEnabled,
+		WorksFromClientAddress: req.WorksFromClientAddress,
 		SafetyInfo:             req.SafetyInfo,
 		AgeRestrictions:        req.AgeRestrictions,
 		FitnessLevel:           req.FitnessLevel,
@@ -479,6 +490,7 @@ func ImportServices(ctx context.Context, req *ImportRequest) (*ImportResponse, e
 			LocalDiscountCode:      row.LocalDiscountCode,
 			DiscountEnabled:      row.DiscountOffered != "",
 			LocalDiscountEnabled: row.LocalDiscountOffered != "",
+			WorksFromClientAddress: false,
 			ExperienceInfo: appdb.ExperienceInfo{
 				SafetyInfo:      row.SafetyInfo,
 				AgeRestrictions: row.AgeRestrictions,

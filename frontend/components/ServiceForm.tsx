@@ -181,6 +181,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
     name: "",
     address: "",
     latitude: "",
+    worksFromClientAddress: false,
     longitude: "",
     country: "South Africa",
     province: "",
@@ -256,6 +257,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
         name: data.name,
         address: data.address,
         latitude: data.latitude != null ? String(data.latitude) : "",
+        worksFromClientAddress: data.worksFromClientAddress ?? false,
         longitude: data.longitude != null ? String(data.longitude) : "",
         country: data.country,
         province: data.province,
@@ -330,6 +332,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           name: formData.name,
           address: formData.address,
           latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+          worksFromClientAddress: formData.worksFromClientAddress,
           longitude: formData.longitude ? parseFloat(formData.longitude) : null,
           country: formData.country,
           province: formData.province,
@@ -390,6 +393,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           name: formData.name,
           address: formData.address,
           latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
+          worksFromClientAddress: formData.worksFromClientAddress,
           longitude: formData.longitude ? parseFloat(formData.longitude) : undefined,
           country: formData.country,
           province: formData.province,
@@ -530,6 +534,18 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           </div>
 
           <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2 md:col-span-2 rounded-md border p-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="worksFromClientAddress"
+                  checked={formData.worksFromClientAddress}
+                  onCheckedChange={(c) => setFormData({ ...formData, worksFromClientAddress: c === true })}
+                />
+                <Label htmlFor="worksFromClientAddress" className="cursor-pointer">Do you offer to work from different addresses?</Label>
+              </div>
+              <p className="text-xs text-muted-foreground">Tick if you travel to the client and have no fixed address. You'll still appear in every nearby/radius search even without coordinates.</p>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="latitude">Latitude</Label>
               <Input

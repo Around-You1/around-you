@@ -77,6 +77,15 @@ func ListNearby(ctx context.Context, req *ListNearbyRequest) (*ListResponse, err
 	}
 	out := make([]appdb.Restaurant, 0, len(all))
 	for _, r := range all {
+		// Mobile partners (work from the client's address) have no coordinates
+		// but must still appear in every radius search.
+		if r.WorksFromClientAddress {
+			out = append(out, r)
+			continue
+		}
+		if r.Latitude == nil || r.Longitude == nil {
+			continue
+		}
 		if appdb.HaversineKm(req.Latitude, req.Longitude, *r.Latitude, *r.Longitude) <= req.RadiusKm {
 			out = append(out, r)
 		}
@@ -167,6 +176,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Restaurant, error) 
 		LocalDiscountCode:    req.LocalDiscountCode,
 		DiscountEnabled:      req.DiscountEnabled,
 		LocalDiscountEnabled: req.LocalDiscountEnabled,
+		WorksFromClientAddress: req.WorksFromClientAddress,
 		BookingsEmail:         req.BookingsEmail,
 		BookingsContactNumber: req.BookingsContactNumber,
 		Socials: appdb.Socials{
@@ -296,6 +306,7 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.Restaurant, error) 
 		LocalDiscountCode:      req.LocalDiscountCode,
 		DiscountEnabled:      req.DiscountEnabled,
 		LocalDiscountEnabled: req.LocalDiscountEnabled,
+		WorksFromClientAddress: req.WorksFromClientAddress,
 		BookingsEmail:          req.BookingsEmail,
 		BookingsContactNumber:  req.BookingsContactNumber,
 		SocialsWebsite:         req.SocialsWebsite,
@@ -521,6 +532,7 @@ func ImportRestaurants(ctx context.Context, req *ImportRequest) (*ImportResponse
 			LocalDiscountCode:      row.LocalDiscountCode,
 			DiscountEnabled:      row.DiscountOffered != "",
 			LocalDiscountEnabled: row.LocalDiscountOffered != "",
+			WorksFromClientAddress: false,
 			BookingsEmail:          row.BookingsEmail,
 			BookingsContactNumber:  row.BookingsContactNumber,
 			Socials: appdb.Socials{

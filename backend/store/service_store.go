@@ -42,6 +42,7 @@ const serviceColumns = `
 	COALESCE(local_discount_code, '') as local_discount_code,
 	COALESCE(discount_enabled, false) as discount_enabled,
 	COALESCE(local_discount_enabled, false) as local_discount_enabled,
+	COALESCE(works_from_client_address, false) as works_from_client_address,
 	COALESCE(safety_info, '') as safety_info,
 	COALESCE(age_restrictions, '') as age_restrictions,
 	COALESCE(fitness_level, '') as fitness_level,
@@ -89,6 +90,7 @@ func scanService(row serviceScanner) (*appdb.ServiceData, error) {
 		&s.DiscountOffered, &s.DiscountCode,
 		&s.LocalDiscountOffered, &s.LocalDiscountCode,
 		&s.DiscountEnabled, &s.LocalDiscountEnabled,
+		&s.WorksFromClientAddress,
 		&s.SafetyInfo, &s.AgeRestrictions, &s.FitnessLevel, &s.BestTimeOfDay, &s.WhatToBring,
 		&s.SocialsWebsite, &s.SocialsFacebook, &s.SocialsInstagram, &s.SocialsTiktok, &s.SocialsTwitter,
 		&s.ImageUrl, pq.Array(&s.ImageUrls), &s.IsActive,
@@ -144,7 +146,7 @@ func (s *ServiceStore) ListByMunicipality(ctx context.Context, area string) ([]a
 
 func (s *ServiceStore) ListNearby(ctx context.Context) ([]appdb.ServiceData, error) {
 	rows, err := appdb.SQLDB.QueryContext(ctx,
-		"SELECT "+serviceColumns+" FROM services WHERE is_active = true AND latitude IS NOT NULL AND longitude IS NOT NULL")
+		"SELECT "+serviceColumns+" FROM services WHERE is_active = true AND (works_from_client_address = true OR (latitude IS NOT NULL AND longitude IS NOT NULL))")
 	if err != nil {
 		return nil, err
 	}
@@ -189,11 +191,11 @@ func (s *ServiceStore) Create(ctx context.Context, in *appdb.ServiceData) (*appd
 			guest_type, access_level, partner_code, partner_code_active, booking_items,
 			local_discount_offered, local_discount_code,
 			offers_bookings,
-			discount_enabled, local_discount_enabled
+			discount_enabled, local_discount_enabled, works_from_client_address
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,
 			$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,
-			$51,$52,$53,$54,$55
+			$51,$52,$53,$54,$55,$56
 		)
 		RETURNING `+serviceColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -212,6 +214,7 @@ func (s *ServiceStore) Create(ctx context.Context, in *appdb.ServiceData) (*appd
 		in.LocalDiscountOffered, in.LocalDiscountCode,
 		in.OffersBookings,
 		in.DiscountEnabled, in.LocalDiscountEnabled,
+		in.WorksFromClientAddress,
 	)
 	return scanService(row)
 }
@@ -250,6 +253,7 @@ type ServicePatch struct {
 	LocalDiscountCode    *string
 	DiscountEnabled      *bool
 	LocalDiscountEnabled *bool
+	WorksFromClientAddress *bool
 
 	SafetyInfo      *string
 	AgeRestrictions *string
@@ -371,6 +375,9 @@ func (s *ServiceStore) Update(ctx context.Context, id int64, patch ServicePatch)
 	}
 	if patch.LocalDiscountEnabled != nil {
 		sets = append(sets, "local_discount_enabled = "+arg(*patch.LocalDiscountEnabled))
+	}
+	if patch.WorksFromClientAddress != nil {
+		sets = append(sets, "works_from_client_address = "+arg(*patch.WorksFromClientAddress))
 	}
 	if patch.SafetyInfo != nil {
 		sets = append(sets, "safety_info = "+arg(*patch.SafetyInfo))

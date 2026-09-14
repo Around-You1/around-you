@@ -279,6 +279,11 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
                           Duplicate
                         </Badge>
                       )}
+                      {(attraction.latitude == null || attraction.longitude == null) && !(attraction as any).worksFromClientAddress && (
+                        <Badge variant="outline" className="text-xs shrink-0 border-amber-500 text-amber-600" title="No GPS coordinates — won't appear in radius searches. Add coordinates, or tick 'works from different addresses' on the profile.">
+                          ⚠ No GPS
+                        </Badge>
+                      )}
                       <span className="hidden sm:inline text-xs text-muted-foreground truncate">{attraction.postalCode}</span>
                       {Array.isArray(attraction.attractionType) && attraction.attractionType.length > 0 && (
                         <span className="text-xs text-muted-foreground truncate">{attraction.attractionType.slice(0, 1).join(", ")}</span>

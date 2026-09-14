@@ -40,6 +40,7 @@ const attractionColumns = `
 	COALESCE(local_discount_code, '') as local_discount_code,
 	COALESCE(discount_enabled, false) as discount_enabled,
 	COALESCE(local_discount_enabled, false) as local_discount_enabled,
+	COALESCE(works_from_client_address, false) as works_from_client_address,
 	COALESCE(safety_info, '') as safety_info,
 	COALESCE(age_restrictions, '') as age_restrictions,
 	COALESCE(fitness_level, '') as fitness_level,
@@ -92,6 +93,7 @@ func scanAttraction(row attractionScanner) (*appdb.AttractionData, error) {
 		&a.DiscountOffered, &a.DiscountCode,
 		&a.LocalDiscountOffered, &a.LocalDiscountCode,
 		&a.DiscountEnabled, &a.LocalDiscountEnabled,
+		&a.WorksFromClientAddress,
 		&a.SafetyInfo, &a.AgeRestrictions, &a.FitnessLevel, &a.BestTimeOfDay, &a.WhatToBring,
 		&a.TrailDifficulty, &a.WildlifeCautions, &a.TideWarnings, &a.ParkingNotes, &a.PhotographySpots,
 		&a.SocialsWebsite, &a.SocialsFacebook, &a.SocialsInstagram, &a.SocialsTiktok, &a.SocialsTwitter,
@@ -149,7 +151,7 @@ func (s *AttractionStore) ListByMunicipality(ctx context.Context, area string) (
 
 func (s *AttractionStore) ListNearby(ctx context.Context) ([]appdb.AttractionData, error) {
 	rows, err := appdb.SQLDB.QueryContext(ctx,
-		"SELECT "+attractionColumns+" FROM attractions WHERE is_active = true AND latitude IS NOT NULL AND longitude IS NOT NULL")
+		"SELECT "+attractionColumns+" FROM attractions WHERE is_active = true AND (works_from_client_address = true OR (latitude IS NOT NULL AND longitude IS NOT NULL))")
 	if err != nil {
 		return nil, err
 	}
@@ -195,11 +197,11 @@ func (s *AttractionStore) Create(ctx context.Context, in *appdb.AttractionData) 
 			guest_type, access_level, partner_code, partner_code_active, booking_items,
 			local_discount_offered, local_discount_code,
 			offers_bookings,
-			discount_enabled, local_discount_enabled
+			discount_enabled, local_discount_enabled, works_from_client_address
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,
 			$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,
-			$56,$57,$58,$59,$60
+			$56,$57,$58,$59,$60,$61
 		)
 		RETURNING `+attractionColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -219,6 +221,7 @@ func (s *AttractionStore) Create(ctx context.Context, in *appdb.AttractionData) 
 		in.LocalDiscountOffered, in.LocalDiscountCode,
 		in.OffersBookings,
 		in.DiscountEnabled, in.LocalDiscountEnabled,
+		in.WorksFromClientAddress,
 	)
 	return scanAttraction(row)
 }
@@ -257,6 +260,7 @@ type AttractionPatch struct {
 	LocalDiscountCode    *string
 	DiscountEnabled      *bool
 	LocalDiscountEnabled *bool
+	WorksFromClientAddress *bool
 
 	SafetyInfo      *string
 	AgeRestrictions *string
@@ -384,6 +388,9 @@ func (s *AttractionStore) Update(ctx context.Context, id int64, patch Attraction
 	}
 	if patch.LocalDiscountEnabled != nil {
 		sets = append(sets, "local_discount_enabled = "+arg(*patch.LocalDiscountEnabled))
+	}
+	if patch.WorksFromClientAddress != nil {
+		sets = append(sets, "works_from_client_address = "+arg(*patch.WorksFromClientAddress))
 	}
 	if patch.SafetyInfo != nil {
 		sets = append(sets, "safety_info = "+arg(*patch.SafetyInfo))

@@ -278,6 +278,11 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortSt
                           Duplicate
                         </Badge>
                       )}
+                      {(service.latitude == null || service.longitude == null) && !(service as any).worksFromClientAddress && (
+                        <Badge variant="outline" className="text-xs shrink-0 border-amber-500 text-amber-600" title="No GPS coordinates — won't appear in radius searches. Add coordinates, or tick 'works from different addresses' on the profile.">
+                          ⚠ No GPS
+                        </Badge>
+                      )}
                       <span className="hidden sm:inline text-xs text-muted-foreground truncate">{service.postalCode}</span>
                       {service.serviceCategories.length > 0 && (
                         <span className="text-xs text-muted-foreground truncate">{service.serviceCategories.slice(0, 1).join(", ")}</span>

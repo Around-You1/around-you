@@ -113,6 +113,9 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 	// The applicant ticked the "Bookings" option (older forms: "Or, if you take bookings").
 	offersBookings := a.f("Bookings") != "" || a.f("Or, if you take bookings") != ""
 
+	// Mobile partner: travels to the client, no fixed address/coordinates.
+	worksFromClient := a.f("Works from client address") != "" || a.f("Works from different addresses") != ""
+
 	var partnerID int64
 	var charityType string
 	switch a.Category {
@@ -153,6 +156,7 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			LocalDiscountCode:      a.f("Local discount code"),
 			DiscountEnabled:        a.f("Guest discount — offer") != "",
 			LocalDiscountEnabled:   a.f("Local discount — offer") != "",
+			WorksFromClientAddress: worksFromClient,
 			SocialsWebsite:         a.f("Website"),
 			SocialsFacebook:        a.f("Facebook"),
 			SocialsInstagram:       a.f("Instagram"),
@@ -201,6 +205,7 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			LocalDiscountCode:      a.f("Local discount code"),
 			DiscountEnabled:        a.f("Guest discount — offer") != "",
 			LocalDiscountEnabled:   a.f("Local discount — offer") != "",
+			WorksFromClientAddress: worksFromClient,
 			SafetyInfo:             a.f("Safety information"),
 			AgeRestrictions:        a.f("Age restrictions"),
 			FitnessLevel:           a.f("Fitness level"),
@@ -254,6 +259,7 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			LocalDiscountCode:      a.f("Local discount code"),
 			DiscountEnabled:        a.f("Guest discount — offer") != "",
 			LocalDiscountEnabled:   a.f("Local discount — offer") != "",
+			WorksFromClientAddress: worksFromClient,
 			SafetyInfo:             a.f("Safety information"),
 			AgeRestrictions:        a.f("Age restrictions"),
 			FitnessLevel:           a.f("Fitness level"),

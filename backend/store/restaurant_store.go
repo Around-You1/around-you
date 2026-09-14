@@ -55,6 +55,7 @@ const restaurantColumns = `
 	COALESCE(local_discount_code, '') as local_discount_code,
 	COALESCE(discount_enabled, false) as discount_enabled,
 	COALESCE(local_discount_enabled, false) as local_discount_enabled,
+	COALESCE(works_from_client_address, false) as works_from_client_address,
 	COALESCE(bookings_email, '') as bookings_email,
 	COALESCE(bookings_contact_number, '') as bookings_contact_number,
 	COALESCE(socials_website, '') as socials_website,
@@ -107,6 +108,7 @@ func scanRestaurant(row restaurantScanner) (*appdb.Restaurant, error) {
 		&r.DiscountOffered, &r.DiscountCode,
 		&r.LocalDiscountOffered, &r.LocalDiscountCode,
 		&r.DiscountEnabled, &r.LocalDiscountEnabled,
+		&r.WorksFromClientAddress,
 		&r.BookingsEmail, &r.BookingsContactNumber,
 		&r.SocialsWebsite, &r.SocialsFacebook, &r.SocialsInstagram, &r.SocialsTiktok, &r.SocialsTwitter,
 		&r.ImageUrl, pq.Array(&r.ImageUrls), pq.Array(&r.MenuPdfUrls), &r.IsActive,
@@ -167,7 +169,7 @@ func (s *RestaurantStore) ListByMunicipality(ctx context.Context, area string) (
 // this always worked; only the storage moved from a map to SQL.
 func (s *RestaurantStore) ListNearby(ctx context.Context) ([]appdb.Restaurant, error) {
 	rows, err := appdb.SQLDB.QueryContext(ctx,
-		"SELECT "+restaurantColumns+" FROM restaurants WHERE is_active = true AND latitude IS NOT NULL AND longitude IS NOT NULL")
+		"SELECT "+restaurantColumns+" FROM restaurants WHERE is_active = true AND (works_from_client_address = true OR (latitude IS NOT NULL AND longitude IS NOT NULL))")
 	if err != nil {
 		return nil, err
 	}
@@ -215,11 +217,11 @@ func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*ap
 			local_discount_offered, local_discount_code,
 			dietary_options, offers_bookings,
 			pre_order_items,
-			discount_enabled, local_discount_enabled
+			discount_enabled, local_discount_enabled, works_from_client_address
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,
 			$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,$56,$57,
-			$58,$59,$60,$61,$62,$63,$64
+			$58,$59,$60,$61,$62,$63,$64,$65
 		)
 		RETURNING `+restaurantColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -241,6 +243,7 @@ func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*ap
 		pq.Array(nonNilSlice(in.DietaryOptions)), in.OffersBookings,
 		in.PreOrderItems,
 		in.DiscountEnabled, in.LocalDiscountEnabled,
+		in.WorksFromClientAddress,
 	)
 	return scanRestaurant(row)
 }
@@ -294,6 +297,7 @@ type RestaurantPatch struct {
 	LocalDiscountCode    *string
 	DiscountEnabled      *bool
 	LocalDiscountEnabled *bool
+	WorksFromClientAddress *bool
 
 	BookingsEmail         *string
 	BookingsContactNumber *string
@@ -443,6 +447,9 @@ func (s *RestaurantStore) Update(ctx context.Context, id int64, patch Restaurant
 	}
 	if patch.LocalDiscountEnabled != nil {
 		sets = append(sets, "local_discount_enabled = "+arg(*patch.LocalDiscountEnabled))
+	}
+	if patch.WorksFromClientAddress != nil {
+		sets = append(sets, "works_from_client_address = "+arg(*patch.WorksFromClientAddress))
 	}
 	if patch.BookingsEmail != nil {
 		sets = append(sets, "bookings_email = "+arg(*patch.BookingsEmail))

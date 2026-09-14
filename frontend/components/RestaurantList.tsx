@@ -242,6 +242,11 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
                           Duplicate
                         </Badge>
                       )}
+                      {(restaurant.latitude == null || restaurant.longitude == null) && !(restaurant as any).worksFromClientAddress && (
+                        <Badge variant="outline" className="text-xs shrink-0 border-amber-500 text-amber-600" title="No GPS coordinates — won't appear in radius searches. Add coordinates, or tick 'works from different addresses' on the profile.">
+                          ⚠ No GPS
+                        </Badge>
+                      )}
                       <span className="hidden sm:inline text-xs text-muted-foreground truncate">{restaurant.postalCode}</span>
                       {restaurant.cuisineTypes.length > 0 && (
                         <span className="hidden sm:inline text-xs text-muted-foreground truncate">{restaurant.cuisineTypes.slice(0, 1).join(", ")}</span>

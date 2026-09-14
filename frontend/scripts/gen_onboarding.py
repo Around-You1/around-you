@@ -140,7 +140,8 @@ def location():
         *ticks("Country", COUNTRY, cols=4),
         *ticks("Province (if South Africa)", PROVINCE, cols=3),
         fill("Physical address"), fill("Postal code"),
-        fill("GPS location", "your representative can capture this on site")]
+        *ticks("Do you offer to work from different addresses?", ["Yes \u2014 I travel to the client (no fixed address)"], cols=1),
+        fill("GPS location", "your representative can capture this on site \u2014 leave blank if you travel to the client")]
 
 def photos():
     return [*section("Photos & Branding"),

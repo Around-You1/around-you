@@ -77,6 +77,9 @@ function appearSection(cat: string): Section {
       { key: "Bookings", type: "multi", options: [
         `We take bookings — ${BOOKING_NOTE[cat] || "R300/month"}`,
       ], note: "tick if guests can reserve or book with you" },
+      { key: "Works from different addresses", type: "multi", options: [
+        "Yes — I travel to the client (no fixed address)",
+      ], note: "tick if you have no fixed address; you'll still appear in nearby searches" },
     ],
   };
 }
