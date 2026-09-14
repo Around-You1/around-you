@@ -69,18 +69,14 @@ function appearSection(cat: string): Section {
   return {
     title: "How you'd like to appear",
     fields: [
-      { key: "Pricing structure (tick one)", type: "radio", options: [
-        "Basic — R200/month (Partial Information)",
-        "Premium — R300/month (Full Information)",
-      ] },
-      { key: "Shown to (tick one)", type: "radio", options: [
-        "Guest only (Basic R200 or Premium R300)",
-        "Local only (Basic R200 or Premium R300)",
-        "Both (Premium R400)",
-      ] },
-      { key: "Or, if you take bookings", type: "multi", options: [
-        `Booking listing — ${BOOKING_NOTE[cat] || "R300/month"}`,
-      ] },
+      { key: "Show profile to (tick one)", type: "radio", options: [
+        "Guest only — R300/month",
+        "Local only — R300/month",
+        "Both guests and locals — R400/month",
+      ], note: "R300/month to reach either guests or locals; R400/month to reach both" },
+      { key: "Bookings", type: "multi", options: [
+        `We take bookings — ${BOOKING_NOTE[cat] || "R300/month"}`,
+      ], note: "tick if guests can reserve or book with you" },
     ],
   };
 }

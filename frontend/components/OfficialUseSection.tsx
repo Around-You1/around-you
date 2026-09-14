@@ -31,7 +31,7 @@ interface OfficialUseSectionProps {
 }
 
 const GUEST_TYPE_OPTIONS = ["Guest Only", "Local", "Both"] as const;
-const ACCESS_LEVEL_OPTIONS = ["Tier 1", "Tier 2"] as const;
+const ACCESS_LEVEL_OPTIONS = ["Tier 2"] as const; // Premium only — Basic (Tier 1) retired for new partners
 // Display names for the stored access-level values. Values stay "Tier 1"/"Tier 2"
 // (billing + data rely on them); only the labels shown to users changed.
 const TIER_LABELS: Record<string, string> = { "Tier 1": "Basic", "Tier 2": "Premium" };

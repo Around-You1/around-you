@@ -90,7 +90,10 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 
 	// Audience (Guest Only / Local / Both) + tier from the applicant's answers.
 	// Newer forms use "Shown to (tick one)"; older ones stored "Audience".
-	appear := a.f("Shown to (tick one)")
+	appear := a.f("Show profile to (tick one)")
+	if appear == "" {
+		appear = a.f("Shown to (tick one)")
+	}
 	if appear == "" {
 		appear = a.f("Audience")
 	}
@@ -103,20 +106,12 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 	case has(appear, "Guest"):
 		guestType = "Guest Only"
 	}
-	accessLevel := ""
-	pricing := a.f("Pricing structure (tick one)")
-	switch {
-	case has(pricing, "Premium") || has(pricing, "Tier 2"):
-		accessLevel = "Tier 2"
-	case has(pricing, "Basic") || has(pricing, "Tier 1"):
-		accessLevel = "Tier 1"
-	}
-	if guestType == "Both" {
-		accessLevel = "Tier 2" // "Both" is always the top tier
-	}
+	// Premium is the only plan going forward — R300 for a single audience,
+	// R400 for Both (priced by guestType in pricing.go). Always stored Tier 2.
+	accessLevel := "Tier 2"
 
-	// The applicant ticked the "if you take bookings" option.
-	offersBookings := a.f("Or, if you take bookings") != ""
+	// The applicant ticked the "Bookings" option (older forms: "Or, if you take bookings").
+	offersBookings := a.f("Bookings") != "" || a.f("Or, if you take bookings") != ""
 
 	var partnerID int64
 	var charityType string

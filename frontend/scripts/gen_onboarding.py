@@ -157,8 +157,10 @@ def accessibility():
 
 def visibility():
     return [*section("How You'd Like to Appear"),
-        *ticks("Shown to (tick one)", ["Guest only","Local only","Both"], cols=3),
-        para("Or, if you take bookings, ask your rep about a Booking listing (R300/month + R10 per cover). Your rep will confirm the tier and monthly price.", lbl)]
+        *ticks("Show profile to (tick one)", ["Guest only \u2014 R300/month", "Local only \u2014 R300/month", "Both guests and locals \u2014 R400/month"], cols=1),
+        para("R300/month to show your profile to either Guests or Locals, or R400/month to show it to Both.", lbl),
+        *ticks("Bookings", ["We take bookings \u2014 R300/month + a per-booking fee"], cols=1),
+        para("Tick 'Bookings' if guests can reserve or book with you \u2014 your rep will confirm your category's booking fee.", lbl)]
 
 
 def _pageno(canvas, doc):

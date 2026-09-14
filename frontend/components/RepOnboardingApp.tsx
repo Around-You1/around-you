@@ -513,29 +513,6 @@ function ImageUpload({ images, setImages }) {
   );
 }
 
-// ---------- Tier button ----------
-function TierButtons({ tier, setTier }) {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 6 }}>
-      {[1, 2].map((t) => (
-        <button
-          key={t}
-          type="button"
-          onClick={() => setTier(t)}
-          style={{
-            padding: "20px 4px", borderRadius: 14, fontWeight: 800, fontSize: 16, cursor: "pointer",
-            background: tier >= t ? colors.primary : "transparent",
-            color: tier >= t ? "#000" : colors.textSecondary,
-            border: `2px solid ${tier >= t ? colors.primary : colors.border}`,
-          }}
-        >
-          {t === 1 ? "Basic" : "Premium"}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 // =========================================================
 // Main app
 // =========================================================
@@ -554,7 +531,7 @@ export default function RepOnboardingApp() {
       window.prompt("Copy this application link to send to a partner:", url);
     }
   };
-  const [tier, setTier] = useState(0);
+  const [tier, setTier] = useState(2); // Premium is the only plan going forward
   const [visibility, setVisibility] = useState([]);
   const [booking, setBooking] = useState(false);
   const [bookingItems, setBookingItems] = useState<Array<{ name: string; price: string; duration: string }>>([]);
@@ -624,7 +601,7 @@ export default function RepOnboardingApp() {
     : "Attraction Name";
 
   const reset = () => {
-    setPartnerType(null); setTier(0); setVisibility([]); setBooking(false); setBookingItems([]); setPreOrderItems([]); setServiceOptions(["Dine-in"]); setCountry([]); setProvince([]);
+    setPartnerType(null); setTier(2); setVisibility([]); setBooking(false); setBookingItems([]); setPreOrderItems([]); setServiceOptions(["Dine-in"]); setCountry([]); setProvince([]);
     setData({}); setEmergency({}); setDoctorsList([]); setVetsList([]); setImages([]); setCharity([]); setSubmitted(null);
   };
 
@@ -945,7 +922,7 @@ export default function RepOnboardingApp() {
           <h2 style={{ color: colors.primary, fontSize: 18, marginBottom: 6 }}>Profile Submitted</h2>
           <p style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 16 }}>
             {submitted.companyName} was created under {submitted.partnerType}
-            {submitted.booking ? " — Booking Partner (15% commission)" : submitted.tier ? ` — Tier ${submitted.tier}` : ""}, status: <b style={{ color: colors.error }}>Non-Active</b>.
+            {submitted.booking ? " — Booking Partner" : " — Premium"}, status: <b style={{ color: colors.error }}>Non-Active</b>.
           </p>
 
           <div style={{ background: colors.surface2, borderRadius: 10, padding: 14, marginBottom: 16, textAlign: "left" }}>
@@ -1271,34 +1248,11 @@ export default function RepOnboardingApp() {
                       options={["Guest", "Local", "Both"]}
                       selected={visibility}
                       single
-                      onChange={(next) => {
-                        setVisibility(next);
-                        // Choosing "Both" = the top tier, so auto-select Tier 2.
-                        if (next.includes("Both")) setTier(2);
-                      }}
+                      onChange={(next) => setVisibility(next)}
                     />
-
-                    <div
-                      style={{
-                        position: "sticky",
-                        top: 0,
-                        zIndex: 10,
-                        background: colors.background,
-                        paddingTop: 8,
-                        paddingBottom: 4,
-                        marginLeft: -4,
-                        marginRight: -4,
-                        paddingLeft: 4,
-                        paddingRight: 4,
-                        borderBottom: `1px solid ${colors.border}`,
-                      }}
-                    >
-                      <SectionTitle>Tier Selection</SectionTitle>
-                      <TierButtons tier={tier} setTier={setTier} />
-                      <p style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 6 }}>
-                        Tap a tier → its fields open, plus every tier below it. You can change this at any time — it stays here as you scroll.
-                      </p>
-                    </div>
+                    <p style={{ fontSize: 12, color: colors.textSecondary, marginTop: 6, marginBottom: 10 }}>
+                      <b style={{ color: colors.textPrimary }}>Monthly cost:</b> R300/month to show your profile to either Guests or Locals, or R400/month to show it to Both.
+                    </p>
                   </>
                 )}
               </>
@@ -1306,7 +1260,7 @@ export default function RepOnboardingApp() {
 
             {(isAccommodation || booking || tier >= 1) && (
               <>
-                <SectionTitle>{isAccommodation ? "Accommodation Details" : booking ? "Profile Details" : "Basic"}</SectionTitle>
+                <SectionTitle>{isAccommodation ? "Accommodation Details" : booking ? "Profile Details" : "Details"}</SectionTitle>
                 <ImageUpload images={images} setImages={setImages} />
                 <TextField label={nameLabel} value={data.name} onChange={set("name")} />
                 {!isAccommodation && (
@@ -1385,14 +1339,14 @@ export default function RepOnboardingApp() {
 
             {!isAccommodation && (booking || tier >= 2) && (
               <>
-                <SectionTitle>{booking ? "Location & Access" : "Premium"}</SectionTitle>
+                <SectionTitle>{"Location & Access"}</SectionTitle>
                 {!isRestaurant && <TextField label="Address (public listing)" value={data.publicAddress} onChange={set("publicAddress")} />}
               </>
             )}
 
             {!isAccommodation && (booking || tier >= 2) && (
               <>
-                <SectionTitle>{booking ? "Categories & Description" : "Premium — Details"}</SectionTitle>
+                <SectionTitle>{"Categories & Description"}</SectionTitle>
                 {isRestaurant && (
                   <CheckboxGroup label="Cuisine Types" options={CUISINE_TYPES} selected={data.cuisineTypes || []} onChange={set("cuisineTypes")} />
                 )}
@@ -1431,7 +1385,7 @@ export default function RepOnboardingApp() {
 
             {!isAccommodation && (booking || tier >= 2) && (
               <>
-                <SectionTitle>{booking ? "Extras" : "Premium — Extras"}</SectionTitle>
+                <SectionTitle>{"Extras"}</SectionTitle>
                 {isRestaurant && (
                   <>
                     <TextField label="Booking Email Address" value={data.bookingEmail} onChange={set("bookingEmail")} />
