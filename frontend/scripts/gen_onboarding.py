@@ -220,12 +220,13 @@ rest = business() + location() + visibility() + [PageBreak(), *section("Restaura
     *ticks("Tables offered", [f"{n} = {p}" for n,p in TABLES], cols=3),
     fill("Bookings email address"), fill("Bookings contact number"),
 ] + [*section("Pre-Orders (Takeaway / Delivery)"),
-    para("Items guests can pre-order for collection or delivery (if you offer takeaway/delivery). For each: name, a short description, the price (Rand) and the lead/prep time in minutes.", lbl),
-    fill("Item 1 — name / description / price / prep minutes"),
-    fill("Item 2 — name / description / price / prep minutes"),
-    fill("Item 3 — name / description / price / prep minutes"),
-    fill("Item 4 — name / description / price / prep minutes"),
-    fill("Item 5 — name / description / price / prep minutes"),
+    *ticks("Pre-Orders", ["We take pre-orders \u2014 10% of the sale"], cols=1),
+    para("If ticked, list the items guests can pre-order for collection/delivery. For each: item name, price (Rand) and duration (prep minutes).", lbl),
+    fill("Item 1 — name / price / duration (mins)"),
+    fill("Item 2 — name / price / duration (mins)"),
+    fill("Item 3 — name / price / duration (mins)"),
+    fill("Item 4 — name / price / duration (mins)"),
+    fill("Item 5 — name / price / duration (mins)"),
 ] + discounts() + payments() + socials() + accessibility() + [PageBreak()] + charity()
 build("restaurant-onboarding.pdf", "Around You — Restaurant Onboarding", rest)
 

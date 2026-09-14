@@ -112,7 +112,8 @@ function specsFor(cat: string): Section[] {
       { key: "Wi-Fi network name", type: "text" }, { key: "Wi-Fi password", type: "text" },
     ] },
     { title: "Pre-orders (takeaway / delivery)", fields: [
-      { key: "Pre-order items", type: "textarea", note: "if you offer takeaway/delivery — one per line: item, description, price, prep minutes" },
+      { key: "Pre Orders", type: "multi", options: ["We take pre-orders — 10% of the sale"], note: "tick if guests can pre-order takeaway/delivery items" },
+      { key: "Pre-order items", type: "textarea", note: "if ticked above — one item per line: item, price, duration (prep minutes)" },
     ] },
     appearSection(cat), discountsSection, paymentsSection, socialsSection, accessibilitySection, charitySection,
   ];

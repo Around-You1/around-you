@@ -147,6 +147,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(false);
+  const [offersPreOrders, setOffersPreOrders] = useState(false);
   const [locating, setLocating] = useState(false);
   const { toast } = useToast();
 
@@ -255,6 +256,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
         bookingItems: data.bookingItems || [],
         preOrderItems: data.preOrderItems || [],
       });
+      setOffersPreOrders((data.preOrderItems || []).length > 0);
       console.log("[RestaurantForm] Form data populated:", {
         name: data.name,
         cuisineTypes: data.cuisineTypes,
@@ -892,7 +894,20 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
           </div>
 
           <div className="space-y-4" style={{ display: (formData.serviceTakeaway || formData.serviceDelivery) ? undefined : "none" }}>
-            <Label className="text-base font-semibold">Pre-Orders (Takeaway / Delivery)</Label>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="offersPreOrders"
+                checked={offersPreOrders}
+                onCheckedChange={(c) => {
+                  const on = c === true;
+                  setOffersPreOrders(on);
+                  if (!on) setFormData((f) => ({ ...f, preOrderItems: [] }));
+                }}
+              />
+              <Label htmlFor="offersPreOrders" className="text-base font-semibold cursor-pointer">Pre-Orders (Takeaway / Delivery) — 10% of the sale</Label>
+            </div>
+            {offersPreOrders && (
+            <>
             <p className="text-sm text-muted-foreground">
               Items guests can pre-order for collection or delivery. Set a name, an optional description, the price, and the lead time (minutes to prepare). Guests choose collection or delivery and a preferred time at checkout, and the order is emailed to your Bookings email.
             </p>
@@ -928,6 +943,8 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
               onClick={() => setFormData({ ...formData, preOrderItems: [...formData.preOrderItems, { name: "", description: "", price: 0, leadTimeMinutes: 30 }] })}>
               + Add pre-order item
             </Button>
+            </>
+            )}
           </div>
 
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>

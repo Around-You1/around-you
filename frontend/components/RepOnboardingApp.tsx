@@ -1200,13 +1200,11 @@ export default function RepOnboardingApp() {
 
                 {isRestaurant && (serviceOptions.includes("Takeaway") || serviceOptions.includes("Delivery")) && (
                   <div style={{ marginBottom: 12 }}>
-                    <button type="button" onClick={() => setOpenPreOrders((v) => !v)}
-                      style={{ width: "100%", textAlign: "left", background: "transparent", border: `1px solid ${colors.border}`,
-                        borderRadius: 10, padding: "12px 14px", cursor: "pointer", color: colors.primary,
-                        fontWeight: 800, fontSize: 15, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span>Pre-Orders (Takeaway / Delivery){preOrderItems.length > 0 ? ` — ${preOrderItems.length}` : ""}</span>
-                      <span>{openPreOrders ? "▾" : "▸"}</span>
-                    </button>
+                    <ToggleField
+                      label="Pre-Orders (Takeaway / Delivery) — 10% of the sale"
+                      checked={openPreOrders}
+                      onChange={(v) => { setOpenPreOrders(v); if (!v) setPreOrderItems([]); }}
+                    />
                     {openPreOrders && (
                     <div style={{ marginTop: 8 }}>
                     <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: -4, marginBottom: 8 }}>
