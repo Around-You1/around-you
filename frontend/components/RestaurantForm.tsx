@@ -909,19 +909,14 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
             {offersPreOrders && (
             <>
             <p className="text-sm text-muted-foreground">
-              Items guests can pre-order for collection or delivery. Set a name, an optional description, the price, and the lead time (minutes to prepare). Guests choose collection or delivery and a preferred time at checkout, and the order is emailed to your Bookings email.
+              Items guests can pre-order for collection or delivery. Set the item, the price, and the duration (how long the food takes to prepare, in minutes). Guests choose collection or delivery and a preferred time at checkout, and the order is emailed to your Bookings email.
             </p>
             {formData.preOrderItems.map((item, i) => (
-              <div key={i} className="grid grid-cols-1 sm:grid-cols-[2fr_2fr_1fr_1fr_auto] gap-2 items-end">
+              <div key={i} className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_auto] gap-2 items-end">
                 <div className="space-y-1">
                   <Label className="text-xs">Item</Label>
                   <Input value={item.name}
                     onChange={(e) => setFormData({ ...formData, preOrderItems: formData.preOrderItems.map((r, idx) => (idx === i ? { ...r, name: e.target.value } : r)) })} />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Description</Label>
-                  <Input value={item.description}
-                    onChange={(e) => setFormData({ ...formData, preOrderItems: formData.preOrderItems.map((r, idx) => (idx === i ? { ...r, description: e.target.value } : r)) })} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Price (R)</Label>
@@ -929,7 +924,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
                     onChange={(e) => setFormData({ ...formData, preOrderItems: formData.preOrderItems.map((r, idx) => (idx === i ? { ...r, price: parseFloat(e.target.value) || 0 } : r)) })} />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Lead (min)</Label>
+                  <Label className="text-xs">Duration (how long good food takes)</Label>
                   <Input type="number" step="1" value={item.leadTimeMinutes}
                     onChange={(e) => setFormData({ ...formData, preOrderItems: formData.preOrderItems.map((r, idx) => (idx === i ? { ...r, leadTimeMinutes: parseInt(e.target.value) || 0 } : r)) })} />
                 </div>

@@ -7,6 +7,7 @@ import type { Accommodation } from "~backend/accommodation/types";
 import { useToast } from "@/components/ui/use-toast";
 import AccommodationList from "./AccommodationList";
 import AccommodationForm from "./AccommodationForm";
+import PendingApplications from "./PendingApplications";
 import BulkImportDialog from "./BulkImportDialog";
 import SortControls, { SortState, DEFAULT_SORT_STATE, applySortState } from "./SortControls";
 
@@ -167,6 +168,8 @@ export default function AccommodationTab({ onUpdate }: AccommodationTabProps) {
           <SortControls state={sortState} onChange={setSortState} />
         </div>
       </div>
+
+      {!showForm && <PendingApplications category="accommodation" />}
 
       {showForm ? (
         <AccommodationForm

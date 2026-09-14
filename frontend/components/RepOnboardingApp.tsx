@@ -1208,22 +1208,19 @@ export default function RepOnboardingApp() {
                     {openPreOrders && (
                     <div style={{ marginTop: 8 }}>
                     <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: -4, marginBottom: 8 }}>
-                      Items a guest can pre-order for collection or delivery. Name, optional description, price (Rand) and lead time (minutes to prepare). The guest picks collection/delivery and a time at checkout, and the order is emailed to the bookings email.
+                      Items a guest can pre-order for collection or delivery. Set the item, price (Rand) and duration (how long the food takes to prepare, in minutes). The guest picks collection/delivery and a time at checkout, and the order is emailed to the bookings email.
                     </p>
                     {preOrderItems.map((it, i) => (
                       <div key={i} style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center", flexWrap: "wrap" }}>
                         <input placeholder="Item name" value={it.name}
                           onChange={(e) => setPreOrderItems((rows) => rows.map((r, idx) => (idx === i ? { ...r, name: e.target.value } : r)))}
                           style={{ ...inputStyle, marginBottom: 0, flex: 2, minWidth: 120 }} />
-                        <input placeholder="Description" value={it.description}
-                          onChange={(e) => setPreOrderItems((rows) => rows.map((r, idx) => (idx === i ? { ...r, description: e.target.value } : r)))}
-                          style={{ ...inputStyle, marginBottom: 0, flex: 2, minWidth: 120 }} />
                         <input placeholder="Price" inputMode="decimal" value={it.price}
                           onChange={(e) => setPreOrderItems((rows) => rows.map((r, idx) => (idx === i ? { ...r, price: e.target.value } : r)))}
                           style={{ ...inputStyle, marginBottom: 0, flex: 1, minWidth: 70 }} />
-                        <input placeholder="Lead min" inputMode="numeric" value={it.leadTimeMinutes}
+                        <input placeholder="Duration (mins)" inputMode="numeric" value={it.leadTimeMinutes}
                           onChange={(e) => setPreOrderItems((rows) => rows.map((r, idx) => (idx === i ? { ...r, leadTimeMinutes: e.target.value } : r)))}
-                          style={{ ...inputStyle, marginBottom: 0, width: 80 }} />
+                          style={{ ...inputStyle, marginBottom: 0, flex: 1, minWidth: 110 }} />
                         <button type="button"
                           onClick={() => setPreOrderItems((rows) => rows.filter((_, idx) => idx !== i))}
                           style={{ background: colors.error, color: "#000", border: "none", borderRadius: 8, width: 32, height: 40, cursor: "pointer", fontSize: 14, flexShrink: 0 }}>✗</button>

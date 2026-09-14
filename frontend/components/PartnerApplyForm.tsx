@@ -41,7 +41,7 @@ const SERVICE_GROUPS = [
   { label: "Community & Local", options: ["Charity & Non Profit Services", "Community Centres", "Local Events & Activities", "Religious Organizations"] },
 ];
 
-type Field = { key: string; type: "text" | "textarea" | "select" | "multi" | "multigroup" | "radio"; options?: string[]; groups?: { label: string; options: string[] }[]; top?: string; required?: boolean; note?: string; priceRows?: string[] };
+type Field = { key: string; type: "text" | "textarea" | "select" | "multi" | "multigroup" | "radio" | "itemrows"; options?: string[]; groups?: { label: string; options: string[] }[]; top?: string; required?: boolean; note?: string; priceRows?: string[] };
 type Section = { title: string; fields: Field[] };
 
 const businessSection = (nameLabel: string): Section => ({
@@ -113,7 +113,7 @@ function specsFor(cat: string): Section[] {
     ] },
     { title: "Pre-orders (takeaway / delivery)", fields: [
       { key: "Pre Orders", type: "multi", options: ["We take pre-orders — 10% of the sale"], note: "tick if guests can pre-order takeaway/delivery items" },
-      { key: "Pre-order items", type: "textarea", note: "if ticked above — one item per line: item, price, duration (prep minutes)" },
+      { key: "Pre-order items", type: "itemrows", note: "if ticked above — add each item with its price and duration" },
     ] },
     appearSection(cat), discountsSection, paymentsSection, socialsSection, accessibilitySection, charitySection,
   ];
@@ -231,7 +231,15 @@ export default function PartnerApplyForm() {
     for (const s of sections) for (const f of s.fields) {
       if (topKeys.has(f.key)) continue;
       const v = vals[f.key];
-      const str = Array.isArray(v) ? v.join(", ") : (v || "").toString().trim();
+      let str = "";
+      if (f.type === "itemrows") {
+        str = (Array.isArray(v) ? v : [])
+          .filter((r: any) => (r.item || "").toString().trim())
+          .map((r: any) => `${(r.item || "").toString().trim()} — R${(r.price || "").toString().trim()}, ${(r.duration || "").toString().trim()} min`)
+          .join("; ");
+      } else {
+        str = Array.isArray(v) ? v.join(", ") : (v || "").toString().trim();
+      }
       if (str) fields[f.key] = str;
     }
 
@@ -322,6 +330,27 @@ export default function PartnerApplyForm() {
               )}
               {f.type === "textarea" && (
                 <textarea style={{ ...input, minHeight: 64 }} value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)} />
+              )}
+              {f.type === "itemrows" && (
+                <div style={{ marginTop: 6 }}>
+                  {(Array.isArray(vals[f.key]) ? vals[f.key] : []).map((row: any, i: number) => (
+                    <div key={i} style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
+                      <input style={{ ...input, marginTop: 0, flex: 2, minWidth: 120 }} placeholder="Item" value={row.item || ""}
+                        onChange={(e) => { const rows = [...(vals[f.key] || [])]; rows[i] = { ...rows[i], item: e.target.value }; set(f.key, rows); }} />
+                      <input style={{ ...input, marginTop: 0, flex: 1, minWidth: 80 }} placeholder="Price (R)" inputMode="decimal" value={row.price || ""}
+                        onChange={(e) => { const rows = [...(vals[f.key] || [])]; rows[i] = { ...rows[i], price: e.target.value }; set(f.key, rows); }} />
+                      <input style={{ ...input, marginTop: 0, flex: 1, minWidth: 150 }} placeholder="Duration (how long good food takes)" value={row.duration || ""}
+                        onChange={(e) => { const rows = [...(vals[f.key] || [])]; rows[i] = { ...rows[i], duration: e.target.value }; set(f.key, rows); }} />
+                      <button type="button" onClick={() => { const rows = [...(vals[f.key] || [])]; rows.splice(i, 1); set(f.key, rows); }}
+                        style={{ background: "#7a1f1f", color: "#fff", border: "none", borderRadius: 8, width: 34, cursor: "pointer" }}>✗</button>
+                    </div>
+                  ))}
+                  <button type="button"
+                    onClick={() => set(f.key, [...(Array.isArray(vals[f.key]) ? vals[f.key] : []), { item: "", price: "", duration: "" }])}
+                    style={{ background: "transparent", color: "#39FF14", border: "1px solid rgba(57,255,20,0.4)", borderRadius: 8, padding: "6px 12px", fontSize: 13, cursor: "pointer", marginTop: 2 }}>
+                    + Add item
+                  </button>
+                </div>
               )}
               {f.type === "select" && (
                 <select style={{ ...input, color: "#39FF14" }} value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)}>

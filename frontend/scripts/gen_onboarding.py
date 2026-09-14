@@ -44,6 +44,21 @@ def fill(label, note_txt=None):
                            ("BOTTOMPADDING",(0,0),(-1,-1),4),("TOPPADDING",(0,0),(-1,-1),5)]))
     return t
 
+def itemtable(headers, colws, n=5):
+    # A small write-on grid: a header row of column labels, then n blank rows,
+    # each cell with its own underline — so Item / Price / Duration are separate.
+    head = [Paragraph("<b>" + h + "</b>", lbl) for h in headers]
+    rows = [head] + [[Paragraph("", lbl) for _ in headers] for _ in range(n)]
+    t = Table(rows, colWidths=[w * mm for w in colws])
+    style = [("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
+             ("BOTTOMPADDING", (0, 0), (-1, -1), 6), ("TOPPADDING", (0, 0), (-1, -1), 6)]
+    for r in range(1, n + 1):
+        for c in range(len(headers)):
+            style.append(("LINEBELOW", (c, r), (c, r), 0.5, LINEGREY))
+    t.setStyle(TableStyle(style))
+    return t
+
+
 def bigfill(label, lines=2):
     rows = [[Paragraph(label, lbl)]]
     for _ in range(lines):
@@ -221,12 +236,8 @@ rest = business() + location() + visibility() + [PageBreak(), *section("Restaura
     fill("Bookings email address"), fill("Bookings contact number"),
 ] + [*section("Pre-Orders (Takeaway / Delivery)"),
     *ticks("Pre-Orders", ["We take pre-orders \u2014 10% of the sale"], cols=1),
-    para("If ticked, list the items guests can pre-order for collection/delivery. For each: item name, price (Rand) and duration (prep minutes).", lbl),
-    fill("Item 1 — name / price / duration (mins)"),
-    fill("Item 2 — name / price / duration (mins)"),
-    fill("Item 3 — name / price / duration (mins)"),
-    fill("Item 4 — name / price / duration (mins)"),
-    fill("Item 5 — name / price / duration (mins)"),
+    para("If ticked, list the items guests can pre-order for collection/delivery — the item, its price (Rand) and the duration (how long the food takes to prepare, in minutes).", lbl),
+    itemtable(["Item", "Price (R)", "Duration (how long good food takes)"], [78, 28, 70], 5),
 ] + discounts() + payments() + socials() + accessibility() + [PageBreak()] + charity()
 build("restaurant-onboarding.pdf", "Around You — Restaurant Onboarding", rest)
 
