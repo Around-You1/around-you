@@ -33,6 +33,7 @@ import (
 	"strings"
 
 	"encoding/base64"
+	"encoding/json"
 
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/errs"
@@ -186,4 +187,84 @@ func SetProfileSettings(ctx context.Context, req *appdb.ProfileSettings) (*appdb
 	settings := appdb.DB.ProfileSettings
 	appdb.DB.Unlock()
 	return &settings, nil
+}
+
+
+// RepDocumentBucket is the PRIVATE Supabase Storage bucket that holds sensitive
+// rep documents (SA ID / passport copies). It must be created in Supabase and
+// left NON-public — objects are only ever reached through a short-lived signed
+// URL (see SignedURL), never a public link.
+const RepDocumentBucket = "rep-documents"
+
+// UploadPrivate stores a data URL in the given bucket and returns ONLY the
+// stored object filename (never a public URL). Use for sensitive documents that
+// must not be publicly reachable.
+func UploadPrivate(ctx context.Context, dataURL, bucket string) (string, error) {
+	supabaseURL := strings.TrimRight(os.Getenv("SUPABASE_URL"), "/")
+	serviceRoleKey := os.Getenv("SUPABASE_SERVICE_ROLE_KEY")
+	if supabaseURL == "" || serviceRoleKey == "" {
+		return "", &errs.Error{Code: errs.Internal, Message: "document storage isn't configured — SUPABASE_URL and/or SUPABASE_SERVICE_ROLE_KEY are not set"}
+	}
+	contentType, rawBase64, err := parseDataURL(dataURL)
+	if err != nil {
+		return "", &errs.Error{Code: errs.InvalidArgument, Message: err.Error()}
+	}
+	fileBytes, err := base64.StdEncoding.DecodeString(rawBase64)
+	if err != nil {
+		return "", &errs.Error{Code: errs.InvalidArgument, Message: "invalid base64 document data"}
+	}
+	filename := appdb.RandomCode(20) + extensionForContentType(contentType)
+	uploadURL := fmt.Sprintf("%s/storage/v1/object/%s/%s", supabaseURL, bucket, filename)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, uploadURL, bytes.NewReader(fileBytes))
+	if err != nil {
+		return "", err
+	}
+	httpReq.Header.Set("Authorization", "Bearer "+serviceRoleKey)
+	httpReq.Header.Set("apikey", serviceRoleKey)
+	httpReq.Header.Set("Content-Type", contentType)
+	resp, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		return "", &errs.Error{Code: errs.Internal, Message: "document upload failed: " + err.Error()}
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		return "", &errs.Error{Code: errs.Internal, Message: fmt.Sprintf("storage upload failed (%d): %s", resp.StatusCode, string(body))}
+	}
+	return filename, nil
+}
+
+// SignedURL returns a time-limited URL (expiresSec seconds) to view a private
+// object — used so a SuperAdmin can open a rep's ID copy without the object ever
+// being public.
+func SignedURL(ctx context.Context, bucket, filename string, expiresSec int) (string, error) {
+	supabaseURL := strings.TrimRight(os.Getenv("SUPABASE_URL"), "/")
+	serviceRoleKey := os.Getenv("SUPABASE_SERVICE_ROLE_KEY")
+	if supabaseURL == "" || serviceRoleKey == "" {
+		return "", &errs.Error{Code: errs.Internal, Message: "document storage isn't configured"}
+	}
+	signURL := fmt.Sprintf("%s/storage/v1/object/sign/%s/%s", supabaseURL, bucket, filename)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, signURL, strings.NewReader(fmt.Sprintf(`{"expiresIn":%d}`, expiresSec)))
+	if err != nil {
+		return "", err
+	}
+	httpReq.Header.Set("Authorization", "Bearer "+serviceRoleKey)
+	httpReq.Header.Set("apikey", serviceRoleKey)
+	httpReq.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		return "", &errs.Error{Code: errs.Internal, Message: "document sign failed: " + err.Error()}
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 300 {
+		return "", &errs.Error{Code: errs.Internal, Message: fmt.Sprintf("storage sign failed (%d): %s", resp.StatusCode, string(body))}
+	}
+	var out struct {
+		SignedURL string `json:"signedURL"`
+	}
+	if err := json.Unmarshal(body, &out); err != nil || strings.TrimSpace(out.SignedURL) == "" {
+		return "", &errs.Error{Code: errs.Internal, Message: "could not read signed URL from storage response"}
+	}
+	return supabaseURL + "/storage/v1" + out.SignedURL, nil
 }

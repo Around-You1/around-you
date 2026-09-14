@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 import backend from "~backend/client";
@@ -32,6 +32,7 @@ const emptyApp = {
   residentialAddress: "", postalCode: "", province: "", taxNumber: "", vatNumber: "",
   bankAccountName: "", bankName: "", bankAccountNumber: "", bankBranchCode: "", bankAccountType: "",
   uplineRepCode: "", popiaConsent: false, agreementConsent: false, signatureName: "",
+  idDocument: "",
 };
 
 export default function RepLoginPage() {
@@ -58,6 +59,7 @@ export default function RepLoginPage() {
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [termsChecked, setTermsChecked] = useState(false);
   const setA = (k: keyof typeof emptyApp) => (v: any) => setApp((s) => ({ ...s, [k]: v }));
+  const [idDocName, setIdDocName] = useState("");
 
   async function handleRepLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -234,6 +236,14 @@ export default function RepLoginPage() {
                 <Field label="SA ID / Passport No. *" value={app.idNumber} onChange={setA("idNumber")} />
                 <Field label="Date of Birth *" type="date" value={app.dateOfBirth} onChange={setA("dateOfBirth")} />
               </div>
+              <IdDocUpload
+                value={app.idDocument}
+                fileName={idDocName}
+                onChange={(url, name) => {
+                  setA("idDocument")(url);
+                  setIdDocName(name);
+                }}
+              />
               <div style={{ display: "flex", gap: 8 }}>
                 <Field label="Mobile *" value={app.phone} onChange={setA("phone")} />
                 <Field label="Email *" value={app.email} onChange={setA("email")} />
@@ -300,6 +310,49 @@ export default function RepLoginPage() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function IdDocUpload({ value, fileName, onChange }: { value: string; fileName: string; onChange: (dataUrl: string, name: string) => void }) {
+  const [drag, setDrag] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const handleFile = (file?: File | null) => {
+    if (!file) return;
+    if (file.size > 6 * 1024 * 1024) {
+      alert("Please upload a file smaller than 6 MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => onChange(String(reader.result || ""), file.name);
+    reader.readAsDataURL(file);
+  };
+  return (
+    <div className="space-y-1.5">
+      <label className={labelCls} style={labelStyle}>Upload a copy of your SA ID / Passport</label>
+      <div
+        onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+        onDragLeave={() => setDrag(false)}
+        onDrop={(e) => { e.preventDefault(); setDrag(false); handleFile(e.dataTransfer.files?.[0]); }}
+        role="button"
+        tabIndex={0}
+        style={{
+          border: `1px dashed ${drag ? LUMO : "#3a3f4a"}`,
+          borderRadius: 8,
+          padding: "14px 12px",
+          textAlign: "center",
+          cursor: "pointer",
+          fontSize: 13,
+          color: value ? LUMO : "#9aa",
+          background: drag ? "rgba(57,255,20,0.06)" : "transparent",
+        }}
+      >
+        {value
+          ? <span>✓ {fileName || "File attached"} — click to replace</span>
+          : <span>Drag &amp; drop, or <b>click to upload</b> (JPG, PNG or PDF, max 6 MB)</span>}
+      </div>
+      <input ref={inputRef} type="file" accept="image/*,application/pdf" style={{ display: "none" }} onChange={(e) => handleFile(e.target.files?.[0])} />
     </div>
   );
 }

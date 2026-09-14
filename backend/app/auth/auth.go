@@ -16,12 +16,14 @@ import (
 	"errors"
 	"fmt"
 	htmlpkg "html"
+	"log"
 	"os"
 	"strconv"
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 
+	"backend_encore/app/storage"
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/errs"
 	"backend_encore/internal/mailer"
@@ -1010,6 +1012,7 @@ const repApplicationRecipient = "accounts@aroundyou.co.za"
 type RepApplicationRequest struct {
 	FullName           string `json:"fullName"`
 	IDNumber           string `json:"idNumber"`
+	IDDocument         string `json:"idDocument,omitempty"` // data URL of the SA ID/passport copy
 	DateOfBirth        string `json:"dateOfBirth"`
 	Phone              string `json:"phone"`
 	Email              string `json:"email"`
@@ -1105,21 +1108,36 @@ func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*Rep
 	// activates them (see UpdateRep). Kept on file until then.
 	loginCode := appdb.RandomCode(12)
 
+	// Store the SA ID / passport copy (if supplied) in the PRIVATE rep-documents
+	// bucket. Best-effort: a storage hiccup must not block a valid application —
+	// the admin can request the document later if it's missing.
+	idDocPath := ""
+	if strings.TrimSpace(req.IDDocument) != "" {
+		if fn, upErr := storage.UploadPrivate(ctx, req.IDDocument, storage.RepDocumentBucket); upErr != nil {
+			log.Printf("rep application %s: ID document upload failed: %v", repCode, upErr)
+		} else {
+			idDocPath = fn
+		}
+	}
+
 	// New applications are created Inactive (pending). A SuperAdmin activates
 	// them on the Reps tab before the applicant can sign in.
 	if _, err := appdb.SQLDB.ExecContext(ctx, `
 		INSERT INTO users (email, role, full_name, rep_code, rep_email, upline_rep_code, rep_status,
 		   id_number, login_code, phone, residential_address, province, postal_code,
 		   date_of_birth, tax_number, vat_number,
-		   bank_account_name, bank_name, bank_account_number, bank_branch_code, bank_account_type)
+		   bank_account_name, bank_name, bank_account_number, bank_branch_code, bank_account_type,
+		   id_document_path)
 		VALUES ($1, 'Rep', $2, $3, NULLIF($4,''), NULLIF($5,''), 'Inactive',
 		   $6, $7, $8, $9, NULLIF($10,''), $11,
-		   $12, $13, $14, $15, $16, $17, $18, $19)`,
+		   $12, $13, $14, $15, $16, $17, $18, $19,
+		   NULLIF($20,''))`,
 		loginEmail, fullName, repCode, strings.TrimSpace(req.Email), strings.TrimSpace(req.UplineRepCode), strings.TrimSpace(req.IDNumber), loginCode,
 		strings.TrimSpace(req.Phone), strings.TrimSpace(req.ResidentialAddress), strings.TrimSpace(req.Province), strings.TrimSpace(req.PostalCode),
 		strings.TrimSpace(req.DateOfBirth), strings.TrimSpace(req.TaxNumber), strings.TrimSpace(req.VatNumber),
 		strings.TrimSpace(req.BankAccountName), strings.TrimSpace(req.BankName), strings.TrimSpace(req.BankAccountNumber),
 		strings.TrimSpace(req.BankBranchCode), strings.TrimSpace(req.BankAccountType),
+		idDocPath,
 	); err != nil {
 		return nil, err
 	}
@@ -1134,6 +1152,49 @@ func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*Rep
 	)
 
 	return &RepApplicationResponse{FullName: fullName, RepCode: repCode}, nil
+}
+
+type RepIDDocumentRequest struct {
+	RepCode string `query:"repCode"`
+}
+
+type RepIDDocumentResponse struct {
+	URL string `json:"url"`
+}
+
+// RepIDDocument returns a short-lived signed URL to a rep's stored SA ID /
+// passport copy. SuperAdmin/Admin only — the document lives in a private bucket
+// and is never publicly reachable.
+//
+//encore:api auth method=GET path=/auth/rep/id-document
+func RepIDDocument(ctx context.Context, req *RepIDDocumentRequest) (*RepIDDocumentResponse, error) {
+	d := FromContext(ctx)
+	if d == nil || d.User == nil || (d.User.Role != "SuperAdmin" && d.User.Role != "Admin") {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only an admin can view rep documents"}
+	}
+	code := strings.TrimSpace(req.RepCode)
+	if code == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "repCode is required"}
+	}
+	var path string
+	err := appdb.SQLDB.QueryRowContext(ctx,
+		"SELECT COALESCE(id_document_path,'') FROM users WHERE role = 'Rep' AND lower(rep_code) = lower($1)",
+		code,
+	).Scan(&path)
+	if err != nil {
+		if isNoRows(err) {
+			return nil, &errs.Error{Code: errs.NotFound, Message: "rep not found"}
+		}
+		return nil, err
+	}
+	if strings.TrimSpace(path) == "" {
+		return nil, &errs.Error{Code: errs.NotFound, Message: "no ID document on file for this rep"}
+	}
+	url, err := storage.SignedURL(ctx, storage.RepDocumentBucket, path, 300)
+	if err != nil {
+		return nil, err
+	}
+	return &RepIDDocumentResponse{URL: url}, nil
 }
 
 // renderRepWelcomeHTML is the email a rep receives when a SuperAdmin activates

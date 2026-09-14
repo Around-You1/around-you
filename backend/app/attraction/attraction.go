@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"backend_encore/app/auth"
+	"backend_encore/internal/demovis"
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/billing"
 	"backend_encore/internal/dedupe"
@@ -21,6 +22,16 @@ var attractions = store.NewAttractionStore()
 
 // publicize strips sensitive fields for non-internal callers (anti-scraping).
 func publicize(ctx context.Context, items []appdb.AttractionData) []appdb.AttractionData {
+	// Demo guests (Test Guesthouse) are limited to the fixed demo partners.
+	if demovis.IsRestrictedGuest(ctx) {
+		kept := make([]appdb.AttractionData, 0, len(items))
+		for _, it := range items {
+			if appdb.DemoGuestAllowsPartner(it.ProfileReferenceCode) {
+				kept = append(kept, it)
+			}
+		}
+		items = kept
+	}
 	if auth.IsPrivileged(ctx) {
 		return items
 	}
@@ -49,6 +60,10 @@ func List(ctx context.Context, req *ListRequest) (*ListResponse, error) {
 
 //encore:api auth method=GET path=/attraction/by-municipality
 func ListByMunicipality(ctx context.Context, req *ListByMunicipalityRequest) (*ListResponse, error) {
+	// A demo (Test Guesthouse) guest sees only the demo partners, ignoring area.
+	if demovis.IsRestrictedGuest(ctx) {
+		return List(ctx, &ListRequest{})
+	}
 	items, err := attractions.ListByMunicipality(ctx, req.Area)
 	if err != nil {
 		return nil, err
@@ -58,6 +73,10 @@ func ListByMunicipality(ctx context.Context, req *ListByMunicipalityRequest) (*L
 
 //encore:api auth method=GET path=/attraction/nearby
 func ListNearby(ctx context.Context, req *ListNearbyRequest) (*ListResponse, error) {
+	// A demo (Test Guesthouse) guest sees only the demo partners, ignoring distance.
+	if demovis.IsRestrictedGuest(ctx) {
+		return List(ctx, &ListRequest{})
+	}
 	all, err := attractions.ListNearby(ctx)
 	if err != nil {
 		return nil, err

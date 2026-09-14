@@ -254,6 +254,22 @@ export default function RepsTab() {
                       <div className="space-y-1">
                         <Label className="text-xs">SA ID / Passport Number</Label>
                         <Input value={rep.idNumber || ""} onChange={(e) => setRepField(rep.id, { idNumber: e.target.value })} placeholder="ID / Passport" />
+                        <button
+                          type="button"
+                          className="text-xs text-[#159a53] underline"
+                          onClick={async () => {
+                            try {
+                              const backend = getAuthenticatedBackend();
+                              const res: any = await backend.auth.repIdDocument({ repCode: rep.repCode });
+                              if (res?.url) window.open(res.url, "_blank", "noopener,noreferrer");
+                              else toast({ title: "No document", description: "No ID document on file for this rep.", variant: "destructive" });
+                            } catch (err: any) {
+                              toast({ title: "No document", description: err?.message || "No ID document on file for this rep.", variant: "destructive" });
+                            }
+                          }}
+                        >
+                          View uploaded SA ID / Passport copy
+                        </button>
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">Mobile</Label>
