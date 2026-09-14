@@ -21,8 +21,8 @@ var restaurants = store.NewRestaurantStore()
 var bookings = store.NewBookingStore()
 
 // preOrderCommissionRate is the platform's cut of every restaurant pre-order:
-// 10% of the sale.
-const preOrderCommissionRate = 0.10
+// 5% of the sale.
+const preOrderCommissionRate = 0.05
 
 type SubmitItem struct {
 	Name     string `json:"name"`

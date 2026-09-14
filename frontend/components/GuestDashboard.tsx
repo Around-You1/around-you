@@ -12,6 +12,7 @@ import AddressDropdown from "../components/AddressDropdown";
 import DirectionsDropdown from "../components/DirectionsDropdown";
 import AddressDirectionsButton from "../components/AddressDirectionsButton";
 import { getAuthenticatedBackend } from "../lib/backend";
+import { getCurrentPosition } from "../lib/geolocation";
 import { useToast } from "@/components/ui/use-toast";
 import { useSwipe } from "../lib/useSwipe";
 import ImageCarousel from "../components/ImageCarousel";
@@ -284,24 +285,46 @@ export default function GuestDashboard() {
     }
   };
 
+  // Locals see every partner within a fixed 50 km radius of where they are.
+  // We centre the search on the browser's GPS position; if that's unavailable
+  // (permission denied / no GPS) we fall back to a municipality-name match.
+  const LOCAL_RADIUS_KM = 50;
   const loadPartnersByArea = async () => {
+    const backend = getAuthenticatedBackend();
+    const apply = (r: any, s: any, a: any) => {
+      setRestaurants(r.restaurants);
+      setServices(s.services);
+      setAttractions(a.attractions);
+      setFilteredRestaurants(r.restaurants);
+      setFilteredServices(s.services);
+      setFilteredAttractions(a.attractions);
+      void loadRatings(r.restaurants, s.services, a.attractions);
+    };
     try {
-      const backend = getAuthenticatedBackend();
-      const [restaurantData, serviceData, attractionData] = await Promise.all([
-        backend.restaurant.listByMunicipality({ area: localArea }),
-        backend.service.listByMunicipality({ area: localArea }),
-        backend.attraction.listByMunicipality({ area: localArea }),
-      ]);
-      setRestaurants(restaurantData.restaurants);
-      setServices(serviceData.services);
-      setAttractions(attractionData.attractions);
-      setFilteredRestaurants(restaurantData.restaurants);
-      setFilteredServices(serviceData.services);
-      setFilteredAttractions(attractionData.attractions);
-      void loadRatings(restaurantData.restaurants, serviceData.services, attractionData.attractions);
+      let coords: { latitude: number; longitude: number } | null = null;
+      try {
+        coords = await getCurrentPosition();
+      } catch {
+        coords = null;
+      }
+      if (coords) {
+        const [r, s, a] = await Promise.all([
+          backend.restaurant.listNearby({ latitude: coords.latitude, longitude: coords.longitude, radiusKm: LOCAL_RADIUS_KM }),
+          backend.service.listNearby({ latitude: coords.latitude, longitude: coords.longitude, radiusKm: LOCAL_RADIUS_KM }),
+          backend.attraction.listNearby({ latitude: coords.latitude, longitude: coords.longitude, radiusKm: LOCAL_RADIUS_KM }),
+        ]);
+        apply(r, s, a);
+      } else {
+        const [r, s, a] = await Promise.all([
+          backend.restaurant.listByMunicipality({ area: localArea }),
+          backend.service.listByMunicipality({ area: localArea }),
+          backend.attraction.listByMunicipality({ area: localArea }),
+        ]);
+        apply(r, s, a);
+      }
     } catch (error) {
-      console.error("Failed to load area partners:", error);
-      toast({ title: "Error", description: "Failed to load area partners", variant: "destructive" });
+      console.error("Failed to load local partners:", error);
+      toast({ title: "Error", description: "Failed to load local partners", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -364,17 +387,6 @@ export default function GuestDashboard() {
               <h1 className="text-4xl font-bold text-foreground">Around You</h1>
               <p className="text-lg text-muted-foreground">Local Guest</p>
             </div>
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#AEECE4]/30 flex items-center justify-center flex-shrink-0">
-                  <MapPin className="h-5 w-5 text-[#AEECE4]" />
-                </div>
-                <div>
-                  <p className="font-semibold text-sm">Your Area</p>
-                  <p className="text-sm text-muted-foreground">{localArea}</p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         ) : (
           <>
@@ -807,7 +819,7 @@ export default function GuestDashboard() {
               {filteredRestaurants.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
-                    {searchQuery.trim() ? "No restaurants match your search" : isLocalMode ? `No restaurants found in ${localArea}` : `No restaurants found within ${radiusKm[0]}km`}
+                    {searchQuery.trim() ? "No restaurants match your search" : isLocalMode ? "No restaurants found within 50km" : `No restaurants found within ${radiusKm[0]}km`}
                   </CardContent>
                 </Card>
               ) : (
@@ -1256,7 +1268,7 @@ export default function GuestDashboard() {
               {filteredServices.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
-                    {searchQuery.trim() ? "No services match your search" : isLocalMode ? `No services found in ${localArea}` : `No services found within ${radiusKm[0]}km`}
+                    {searchQuery.trim() ? "No services match your search" : isLocalMode ? "No services found within 50km" : `No services found within ${radiusKm[0]}km`}
                   </CardContent>
                 </Card>
               ) : (
@@ -1470,7 +1482,7 @@ export default function GuestDashboard() {
               {filteredAttractions.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
-                    {searchQuery.trim() ? "No attractions match your search" : isLocalMode ? `No attractions found in ${localArea}` : `No attractions found within ${radiusKm[0]}km`}
+                    {searchQuery.trim() ? "No attractions match your search" : isLocalMode ? "No attractions found within 50km" : `No attractions found within ${radiusKm[0]}km`}
                   </CardContent>
                 </Card>
               ) : (
