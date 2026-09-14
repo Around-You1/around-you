@@ -270,6 +270,34 @@ export default function RepsTab() {
                         >
                           View uploaded SA ID / Passport copy
                         </button>
+                        <label className="text-xs text-[#159a53] underline cursor-pointer block">
+                          Upload / replace ID copy
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              e.target.value = "";
+                              if (!file) return;
+                              if (file.size > 6 * 1024 * 1024) {
+                                toast({ title: "File too large", description: "Please use a file under 6 MB.", variant: "destructive" });
+                                return;
+                              }
+                              const reader = new FileReader();
+                              reader.onload = async () => {
+                                try {
+                                  const backend = getAuthenticatedBackend();
+                                  await backend.auth.setRepIdDocument({ repCode: rep.repCode, idDocument: String(reader.result || "") });
+                                  toast({ title: "ID uploaded", description: `Saved for ${rep.fullName || rep.repCode}.` });
+                                } catch (err: any) {
+                                  toast({ title: "Upload failed", description: err?.message || "Please try again.", variant: "destructive" });
+                                }
+                              };
+                              reader.readAsDataURL(file);
+                            }}
+                          />
+                        </label>
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">Mobile</Label>

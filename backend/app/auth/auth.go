@@ -1197,6 +1197,49 @@ func RepIDDocument(ctx context.Context, req *RepIDDocumentRequest) (*RepIDDocume
 	return &RepIDDocumentResponse{URL: url}, nil
 }
 
+type SetRepIDDocumentRequest struct {
+	RepCode    string `json:"repCode"`
+	IDDocument string `json:"idDocument"` // data URL of the SA ID/passport copy
+}
+
+type SetRepIDDocumentResponse struct {
+	OK bool `json:"ok"`
+}
+
+// SetRepIDDocument lets a SuperAdmin/Admin upload or replace a rep's SA ID /
+// passport copy from the Reps tab. The file goes to the PRIVATE rep-documents
+// bucket; only the stored filename is kept on the rep row.
+//
+//encore:api auth method=POST path=/auth/rep/id-document
+func SetRepIDDocument(ctx context.Context, req *SetRepIDDocumentRequest) (*SetRepIDDocumentResponse, error) {
+	d := FromContext(ctx)
+	if d == nil || d.User == nil || (d.User.Role != "SuperAdmin" && d.User.Role != "Admin") {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only an admin can upload rep documents"}
+	}
+	code := strings.TrimSpace(req.RepCode)
+	if code == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "repCode is required"}
+	}
+	if strings.TrimSpace(req.IDDocument) == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "a document is required"}
+	}
+	filename, err := storage.UploadPrivate(ctx, req.IDDocument, storage.RepDocumentBucket)
+	if err != nil {
+		return nil, err
+	}
+	res, err := appdb.SQLDB.ExecContext(ctx,
+		"UPDATE users SET id_document_path = $1 WHERE role = 'Rep' AND lower(rep_code) = lower($2)",
+		filename, code,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return nil, &errs.Error{Code: errs.NotFound, Message: "rep not found"}
+	}
+	return &SetRepIDDocumentResponse{OK: true}, nil
+}
+
 // renderRepWelcomeHTML is the email a rep receives when a SuperAdmin activates
 // their account — it carries their sign-in access code.
 func renderRepWelcomeHTML(fullName, repCode, loginCode string) string {
