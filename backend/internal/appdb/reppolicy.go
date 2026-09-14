@@ -37,6 +37,38 @@ func IsTestRep(code string) bool {
 	return false
 }
 
+// No-commission reps: unlike test reps, their partners ARE real, billed and
+// counted profiles treated exactly like any other partner (first invoice now,
+// September-2026 promo R0, normal recurring from October). The ONLY difference
+// is that the rep earns NO commission — used for the internal "Around You"
+// company account (Rep00000005) that onboards partners directly. Rep00000005 is
+// the default; add more via NO_COMMISSION_REP_CODES (comma-separated,
+// case-insensitive).
+func NoCommissionRepCodesLower() []string {
+	out := []string{"rep00000005"} // internal "Around You" company account
+	for _, c := range strings.Split(os.Getenv("NO_COMMISSION_REP_CODES"), ",") {
+		if c = strings.ToLower(strings.TrimSpace(c)); c != "" {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// IsNoCommissionRep reports whether a rep code earns no commission (its
+// partners are still billed and counted normally).
+func IsNoCommissionRep(code string) bool {
+	code = strings.ToLower(strings.TrimSpace(code))
+	if code == "" {
+		return false
+	}
+	for _, t := range NoCommissionRepCodesLower() {
+		if code == t {
+			return true
+		}
+	}
+	return false
+}
+
 // quotedTestRepList renders the test-rep codes as a SQL value list, e.g.
 // 'rep00000001','rep00000007'. Codes are operator-controlled (constant + env),
 // never user input; single quotes are still escaped defensively.

@@ -22,6 +22,11 @@ import (
 // TEST_REP_CODES env var (comma-separated, case-insensitive).
 func isTestRep(code string) bool { return appdb.IsTestRep(code) }
 
+// isNoCommissionRep delegates to appdb.IsNoCommissionRep — reps whose partners
+// bill normally but who earn no commission (e.g. the internal "Around You"
+// account, Rep00000005).
+func isNoCommissionRep(code string) bool { return appdb.IsNoCommissionRep(code) }
+
 // isPromoMonth reports whether a billing period falls in the free introductory
 // promotional month (September 2026), when every invoice is issued at R0.
 func isPromoMonth(periodStart time.Time) bool {
@@ -279,8 +284,10 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 
 	// Accrue rep commissions for this invoice (25% own + 10% upline override) on
 	// the full invoiced total (base + any booking usage). Test reps earn nothing
-	// — their partners are excluded from all metrics.
-	if !isTestRep(repCode) {
+	// (their partners are excluded from all metrics); no-commission reps like the
+	// internal "Around You" account (Rep00000005) also earn nothing, but their
+	// partners ARE billed and counted normally.
+	if !isTestRep(repCode) && !isNoCommissionRep(repCode) {
 		if err := accrueCommissions(ctx, invID, partnerType, partnerID, repCode, totalCents, start); err != nil {
 			log.Printf("commission accrual for invoice %s failed: %v", number, err)
 		}
