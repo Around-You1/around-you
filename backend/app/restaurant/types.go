@@ -18,7 +18,8 @@ type ListByMunicipalityRequest struct {
 type ListNearbyRequest struct {
 	Latitude  float64 `query:"latitude"`
 	Longitude float64 `query:"longitude"`
-	RadiusKm  float64 `query:"radiusKm"`
+	RadiusKm   float64 `query:"radiusKm"`
+	PostalCode string  `query:"postalCode"`
 }
 
 type GetRequest struct {

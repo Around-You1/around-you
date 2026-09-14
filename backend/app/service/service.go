@@ -81,18 +81,30 @@ func ListNearby(ctx context.Context, req *ListNearbyRequest) (*ListResponse, err
 	if err != nil {
 		return nil, err
 	}
+	hasCoords := req.Latitude != 0 || req.Longitude != 0
+	wantPostal := strings.ToLower(strings.TrimSpace(req.PostalCode))
 	out := make([]appdb.ServiceData, 0, len(all))
 	for _, s := range all {
-		// Mobile partners (work from the client's address) have no coordinates
-		// but must still appear in every radius search.
+		// Mobile partners (work from the client's address) have no fixed
+		// coordinates, so they are matched to the searcher by postal code.
+		// This keeps them inside the search area (holiday 150km / local 50km)
+		// without showing a map pin.
 		if s.WorksFromClientAddress {
-			out = append(out, s)
+			if wantPostal != "" && strings.ToLower(strings.TrimSpace(s.PostalCode)) == wantPostal {
+				out = append(out, s)
+			}
 			continue
 		}
 		if s.Latitude == nil || s.Longitude == nil {
 			continue
 		}
-		if appdb.HaversineKm(req.Latitude, req.Longitude, *s.Latitude, *s.Longitude) <= req.RadiusKm {
+		if hasCoords {
+			if appdb.HaversineKm(req.Latitude, req.Longitude, *s.Latitude, *s.Longitude) <= req.RadiusKm {
+				out = append(out, s)
+			}
+		} else if wantPostal != "" && strings.ToLower(strings.TrimSpace(s.PostalCode)) == wantPostal {
+			// No coordinates from the searcher (e.g. geolocation blocked):
+			// fall back to a postal-code match so results are not empty.
 			out = append(out, s)
 		}
 	}

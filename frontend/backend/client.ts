@@ -119,6 +119,7 @@ function partnerEntity(
           latitude: req?.latitude,
           longitude: req?.longitude,
           radiusKm: req?.radiusKm,
+          postalCode: req?.postalCode,
         },
       }),
     get: (req: any) => request("GET", `${base}/get`, { query: { [idParam]: req?.[idParam] } }),

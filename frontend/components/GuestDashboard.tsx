@@ -102,7 +102,7 @@ export default function GuestDashboard() {
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isLocalMode = user.role === "LocalGuest";
-  const localArea: string = user.area || user.municipality || "";
+  const localPostal: string = user.postalCode || "";
 
   const tabOrder = ["restaurants", "services", "attractions"];
 
@@ -286,8 +286,10 @@ export default function GuestDashboard() {
   };
 
   // Locals see every partner within a fixed 50 km radius of where they are.
-  // We centre the search on the browser's GPS position; if that's unavailable
-  // (permission denied / no GPS) we fall back to a municipality-name match.
+  // We centre the search on the browser's GPS position. Mobile partners (who
+  // work from the client's address and have no coordinates) are matched to the
+  // local's own postal code. If GPS is unavailable, the backend falls back to
+  // a postal-code match for everyone.
   const LOCAL_RADIUS_KM = 50;
   const loadPartnersByArea = async () => {
     const backend = getAuthenticatedBackend();
@@ -307,21 +309,14 @@ export default function GuestDashboard() {
       } catch {
         coords = null;
       }
-      if (coords) {
-        const [r, s, a] = await Promise.all([
-          backend.restaurant.listNearby({ latitude: coords.latitude, longitude: coords.longitude, radiusKm: LOCAL_RADIUS_KM }),
-          backend.service.listNearby({ latitude: coords.latitude, longitude: coords.longitude, radiusKm: LOCAL_RADIUS_KM }),
-          backend.attraction.listNearby({ latitude: coords.latitude, longitude: coords.longitude, radiusKm: LOCAL_RADIUS_KM }),
-        ]);
-        apply(r, s, a);
-      } else {
-        const [r, s, a] = await Promise.all([
-          backend.restaurant.listByMunicipality({ area: localArea }),
-          backend.service.listByMunicipality({ area: localArea }),
-          backend.attraction.listByMunicipality({ area: localArea }),
-        ]);
-        apply(r, s, a);
-      }
+      const lat = coords ? coords.latitude : 0;
+      const lng = coords ? coords.longitude : 0;
+      const [r, s, a] = await Promise.all([
+        backend.restaurant.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal }),
+        backend.service.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal }),
+        backend.attraction.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal }),
+      ]);
+      apply(r, s, a);
     } catch (error) {
       console.error("Failed to load local partners:", error);
       toast({ title: "Error", description: "Failed to load local partners", variant: "destructive" });
@@ -336,9 +331,9 @@ export default function GuestDashboard() {
     try {
       const backend = getAuthenticatedBackend();
       const [restaurantData, serviceData, attractionData] = await Promise.all([
-        backend.restaurant.listNearby({ latitude: accommodation!.latitude, longitude: accommodation!.longitude, radiusKm: radiusKm[0] }),
-        backend.service.listNearby({ latitude: accommodation!.latitude, longitude: accommodation!.longitude, radiusKm: radiusKm[0] }),
-        backend.attraction.listNearby({ latitude: accommodation!.latitude, longitude: accommodation!.longitude, radiusKm: radiusKm[0] }),
+        backend.restaurant.listNearby({ latitude: accommodation!.latitude, longitude: accommodation!.longitude, radiusKm: radiusKm[0], postalCode: accommodation!.postalCode || "" }),
+        backend.service.listNearby({ latitude: accommodation!.latitude, longitude: accommodation!.longitude, radiusKm: radiusKm[0], postalCode: accommodation!.postalCode || "" }),
+        backend.attraction.listNearby({ latitude: accommodation!.latitude, longitude: accommodation!.longitude, radiusKm: radiusKm[0], postalCode: accommodation!.postalCode || "" }),
       ]);
       setRestaurants(restaurantData.restaurants);
       setServices(serviceData.services);
