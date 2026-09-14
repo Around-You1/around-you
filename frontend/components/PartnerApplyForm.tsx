@@ -41,16 +41,16 @@ const SERVICE_GROUPS = [
   { label: "Community & Local", options: ["Charity & Non Profit Services", "Community Centres", "Local Events & Activities", "Religious Organizations"] },
 ];
 
-type Field = { key: string; type: "text" | "textarea" | "select" | "multi" | "multigroup" | "radio"; options?: string[]; groups?: { label: string; options: string[] }[]; top?: string; required?: boolean; note?: string };
+type Field = { key: string; type: "text" | "textarea" | "select" | "multi" | "multigroup" | "radio"; options?: string[]; groups?: { label: string; options: string[] }[]; top?: string; required?: boolean; note?: string; priceRows?: string[] };
 type Section = { title: string; fields: Field[] };
 
 const businessSection = (nameLabel: string): Section => ({
   title: "Your business",
   fields: [
     { key: nameLabel, type: "text", top: "businessName", required: true },
-    { key: "Contact person", type: "text", top: "contactName" },
-    { key: "Contact email", type: "text", top: "contactEmail" },
-    { key: "Contact number", type: "text", top: "contactNumber" },
+    { key: "Contact person", type: "text", top: "contactName", required: true },
+    { key: "Contact email", type: "text", top: "contactEmail", required: true },
+    { key: "Contact number", type: "text", top: "contactNumber", required: true },
     { key: "Province", type: "select", options: PROVINCES, top: "province", required: true },
     { key: "Physical address", type: "text" },
     { key: "Postal code", type: "text" },
@@ -148,7 +148,7 @@ function specsFor(cat: string): Section[] {
   if (cat === "accommodation") return [
     businessSection("Accommodation name"),
     { title: "Accommodation details", fields: [
-      { key: "Number of units / rooms", type: "text", note: "sets your monthly price" },
+      { key: "Number of units / rooms", type: "text", note: "sets your monthly price", priceRows: ["1–5 units — R300", "6–10 units — R500", "11–20 units — R800", "21–40 units — R1,200", "40+ units — Custom quote"] },
       { key: "Contact", type: "text" }, { key: "Description", type: "textarea" },
       { key: "Check-in instructions", type: "textarea" }, { key: "Check-out instructions", type: "textarea" },
       { key: "Amenities", type: "textarea" }, { key: "House guidelines", type: "textarea" },
@@ -202,7 +202,7 @@ export default function PartnerApplyForm() {
     if (CATEGORIES.some((c) => c.key === t)) setCat(t);
     // Default to the internal/test rep so a self-onboarding partner always has a
     // rep code; they (or a real rep) can change it in the field below.
-    setRep(q.get("rep") || "Rep00000001");
+    setRep(q.get("rep") || "Rep00000005");
   }, []);
 
   const sections = useMemo(() => (cat ? specsFor(cat) : []), [cat]);
@@ -223,6 +223,9 @@ export default function PartnerApplyForm() {
     const province = (vals["Province"] || "").trim();
     if (!businessName) { setErr("Please enter your business name."); return; }
     if (!province) { setErr("Please choose your province."); return; }
+    if (!(vals["Contact person"] || "").trim()) { setErr("Please enter a contact person."); return; }
+    if (!(vals["Contact email"] || "").trim()) { setErr("Please enter a contact email."); return; }
+    if (!(vals["Contact number"] || "").trim()) { setErr("Please enter a contact number."); return; }
     if (!agree) { setErr("Please tick the agreement box to submit."); return; }
 
     // Build fields (everything except the top-level five) using the label as key.
@@ -301,8 +304,8 @@ export default function PartnerApplyForm() {
 
       <div style={{ marginTop: 12 }}>
         <label style={labelSt}>Rep Code</label>
-        <input style={input} value={rep} onChange={(e) => setRep(e.target.value)} placeholder="Rep00000001" />
-        <p style={{ color: "#7f857f", fontSize: 11, marginTop: 4 }}>Leave this as Rep00000001 unless a representative gave you their own code.</p>
+        <input style={input} value={rep} onChange={(e) => setRep(e.target.value)} placeholder="Rep00000005" />
+        <p style={{ color: "#7f857f", fontSize: 11, marginTop: 4 }}>Leave this as Rep00000005 unless a representative gave you their own code, then please change accordingly.</p>
       </div>
 
       {sections.map((sec) => (
@@ -311,6 +314,12 @@ export default function PartnerApplyForm() {
           {sec.fields.map((f) => (
             <div key={f.key} style={{ marginTop: 10 }}>
               <label style={labelSt}>{f.key}{f.required ? " *" : ""}{f.note ? <span style={{ color: "#8a8f96", fontWeight: 400 }}> ({f.note})</span> : null}</label>
+              {f.priceRows && (
+                <ul style={{ margin: "4px 0 0", paddingLeft: 0, listStyle: "none", fontSize: 12, color: "#9aa" }}>
+                  <li style={{ fontWeight: 600, color: "#cfd3cf" }}>Monthly price by units:</li>
+                  {f.priceRows.map((r) => (<li key={r}>{r}</li>))}
+                </ul>
+              )}
               {f.type === "text" && (
                 <input style={input} value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)} />
               )}
@@ -318,9 +327,9 @@ export default function PartnerApplyForm() {
                 <textarea style={{ ...input, minHeight: 64 }} value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)} />
               )}
               {f.type === "select" && (
-                <select style={input} value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)}>
-                  <option value="">Select…</option>
-                  {f.options!.map((o) => <option key={o} value={o}>{o}</option>)}
+                <select style={{ ...input, color: "#39FF14" }} value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)}>
+                  <option value="" style={{ color: "#39FF14", background: "#111" }}>Select…</option>
+                  {f.options!.map((o) => <option key={o} value={o} style={{ color: "#39FF14", background: "#111" }}>{o}</option>)}
                 </select>
               )}
               {f.type === "radio" && (
