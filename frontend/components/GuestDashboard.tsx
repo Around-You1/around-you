@@ -374,20 +374,20 @@ export default function GuestDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#AEECE4]/20 to-background px-6 pt-3 pb-6">
-      <div className="max-w-7xl mx-auto space-y-8 pt-3 pb-8">
+      <div className="max-w-7xl mx-auto space-y-6 pt-3 pb-8">
         {isLocalMode ? (
           <div className="space-y-4">
             <div className="text-center space-y-2">
-              <div className="flex justify-center mb-2"><AppLogo src="/logo-dark.png" /></div>
-              <h1 className="text-4xl font-bold text-foreground">Around You</h1>
+              <div className="flex justify-center mb-1"><AppLogo src="/logo-dark.png" size={150} /></div>
+              <h1 className="text-3xl font-bold text-foreground">Around You</h1>
               <p className="text-lg text-muted-foreground">Local Guest</p>
             </div>
           </div>
         ) : (
           <>
             <div className="text-center space-y-2">
-              <div className="flex justify-center mb-2"><AppLogo src="/logo-dark.png" /></div>
-              <h1 className="text-4xl font-bold text-foreground">Welcome to</h1>
+              <div className="flex justify-center mb-1"><AppLogo src="/logo-dark.png" size={150} /></div>
+              <h1 className="text-3xl font-bold text-foreground">Welcome to</h1>
               <p className="text-lg text-muted-foreground">{accommodation!.name}</p>
             </div>
             <Card>
