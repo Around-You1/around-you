@@ -12,6 +12,14 @@ import (
 	"backend_encore/app/auth"
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/errs"
+	"backend_encore/internal/mailer"
+	"backend_encore/store"
+)
+
+var (
+	restaurants = store.NewRestaurantStore()
+	services    = store.NewServiceStore()
+	attractions = store.NewAttractionStore()
 )
 
 var validEntities = map[string]bool{"restaurant": true, "service": true, "attraction": true}
@@ -102,6 +110,68 @@ type RedeemResponse struct {
 	EntityID   int64  `json:"entityId"`
 }
 
+// partnerNameEmail resolves a partner's display name and notification email.
+func partnerNameEmail(ctx context.Context, entityType string, entityID int64) (name, email string) {
+	switch entityType {
+	case "restaurant":
+		if r, e := restaurants.Get(ctx, entityID); e == nil {
+			return r.Name, r.OfficialEmail
+		}
+	case "service":
+		if svc, e := services.Get(ctx, entityID); e == nil {
+			return svc.Name, svc.OfficialEmail
+		}
+	case "attraction":
+		if a, e := attractions.Get(ctx, entityID); e == nil {
+			return a.Name, a.OfficialEmail
+		}
+	}
+	return "", ""
+}
+
+// guestAccommodationName returns the name of the accommodation a holiday guest
+// (identified by their rating/voter key = user id) is booked into, or "".
+func guestAccommodationName(ctx context.Context, voterKey string) string {
+	id, err := strconv.ParseInt(voterKey, 10, 64)
+	if err != nil {
+		return ""
+	}
+	var name string
+	_ = appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT COALESCE(a.name, '') FROM users u LEFT JOIN accommodations a ON a.id = u.accommodation_id WHERE u.id = $1`,
+		id,
+	).Scan(&name)
+	return name
+}
+
+// notifyPartnerOfRedemption emails the partner that a guest/local has redeemed
+// their discount. Best-effort: runs in its own goroutine with a background
+// context and never affects the redemption result.
+func notifyPartnerOfRedemption(entityType string, entityID int64, voterKey, voterType string) {
+	ctx := context.Background()
+	name, email := partnerNameEmail(ctx, entityType, entityID)
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return
+	}
+	var msg string
+	if voterType == "local_guest" {
+		msg = "The discount offer and code you have on your Around You Partner portal for Local has been redeemed."
+	} else {
+		acc := strings.TrimSpace(guestAccommodationName(ctx, voterKey))
+		if acc == "" {
+			acc = "an accommodation"
+		}
+		msg = "The discount offer and code you have on your Around You Partner portal for Guest has been redeemed by a guest booked into " + acc + "."
+	}
+	greeting := "Hi,"
+	if strings.TrimSpace(name) != "" {
+		greeting = "Hi " + strings.TrimSpace(name) + ","
+	}
+	html := "<p>" + greeting + "</p><p>" + msg + "</p><p>— Around You</p>"
+	_ = mailer.Send(email, "Your Around You discount was redeemed", html)
+}
+
 // Redeem marks a scanned token as redeemed. Any signed-in caller may redeem (the
 // token itself is the unguessable secret produced by the guest's app), so a
 // restaurant scanning a guest's QR completes the redemption.
@@ -139,5 +209,6 @@ func Redeem(ctx context.Context, req *RedeemRequest) (*RedeemResponse, error) {
 	); err != nil {
 		return nil, err
 	}
+	go notifyPartnerOfRedemption(entityType, entityID, voterKey, voterType)
 	return &RedeemResponse{OK: true, EntityType: entityType, EntityID: entityID}, nil
 }
