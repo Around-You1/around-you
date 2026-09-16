@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
-const RepOnboardingApp = dynamic(() => import("@/components/RepOnboardingApp"), {
+const RepAcademy = dynamic(() => import("@/components/RepAcademy"), {
   ssr: false,
   loading: () => (
     <div className="min-h-screen flex items-center justify-center text-muted-foreground">
@@ -46,5 +46,5 @@ export default function RepOnboardingPage() {
     );
   }
 
-  return <RepOnboardingApp />;
+  return <RepAcademy />;
 }
