@@ -63,12 +63,12 @@ def _pricing_organogram():
         d.add(r)
     texts = [
         (410,38,14,"#2C2C2A","Partner pricing"),(410,54,11,"#5F5E5A","all prices per month"),
-        (140,122,14,"#26215C","Display partner"),(140,139,11,"#534AB7","listed — by audience + tier"),
+        (140,122,14,"#26215C","Display partner"),(140,139,11,"#534AB7","listed — by audience"),
         (410,122,14,"#04342C","Booking partner"),(410,139,11,"#0F6E56","reserve in-app"),
         (680,122,14,"#4A1B0C","Pre-orders"),(680,139,11,"#993C1D","restaurants only"),
-        (140,197,13,"#26215C","Guest only"),(140,215,11,"#534AB7","Basic R200 · Premium R300"),
-        (140,261,13,"#26215C","Local only"),(140,279,11,"#534AB7","Basic R200 · Premium R300"),
-        (140,325,13,"#26215C","Both"),(140,343,11,"#534AB7","Premium only — R400"),
+        (140,197,13,"#26215C","Guest only"),(140,215,11,"#534AB7","R300 / month"),
+        (140,261,13,"#26215C","Local only"),(140,279,11,"#534AB7","R300 / month"),
+        (140,325,13,"#26215C","Both"),(140,343,11,"#534AB7","R400 / month"),
         (410,200,13,"#04342C","R300 / month base"),(410,226,11,"#0F6E56","Restaurants: + R10 / cover"),
         (410,248,11,"#0F6E56","Business/Services: + 10% / service"),(410,270,11,"#0F6E56","Attractions: + 10% / person"),
         (410,300,11,"#0F6E56","shown to Both"),
@@ -169,9 +169,9 @@ A plain-English walkthrough of the onboarding forms for reps. Read the first two
 
 Every partner is **one of two things**. Decide this first, because it changes the rest of the form.
 
-**A. Display partner (the normal one).** The partner pays a flat monthly fee to be *listed* so guests/locals can find them, see their info, and get directions. You then choose **who sees them** (Guest / Local / Both) and a **Tier** (how much info shows). Use this for most partners.
+**A. Display partner (the normal one).** The partner pays a flat monthly fee to be *listed* so guests/locals can find them, see their info, and get directions. You then choose **who sees them** (Guest / Local / Both), which sets the price. Use this for most partners.
 
-**B. Booking partner.** The partner wants guests to actually **book or reserve** through the app (a restaurant table, a spa slot, an activity). Turning this on **removes the Tier and Guest/Local/Both choices** — a Booking partner is automatically shown to **both** guests and locals. They pay the base monthly fee **plus** a small per-booking charge.
+**B. Booking partner.** The partner wants guests to actually **book or reserve** through the app (a restaurant table, a spa slot, an activity). Turning this on **removes the Guest/Local/Both choice** — a Booking partner is automatically shown to **both** guests and locals. They pay the base monthly fee **plus** a small per-booking charge.
 
 > Rule of thumb: "Do they just want to be found?" then Display partner. "Do they want people to book/reserve?" then Booking partner.
 
@@ -186,14 +186,13 @@ You earn **25% of every sale you make yourself — every month the partner stays
 Either way, the bigger the plan, the bigger (and more repeatable) your income, so always aim **up**:
 
 - Go for **Both** (guest + local) rather than a single audience.
-- Go for **Premium** (full profile) rather than Basic.
-- Add **Bookings** where the partner takes reservations, or **Pre-Orders** for a restaurant doing takeaway/delivery (Pre-Orders also opens Premium).
+- Add **Bookings** where the partner takes reservations, or **Pre-Orders** for a restaurant doing takeaway/delivery.
 
 A partner on **Both + Premium** with **Bookings or Pre-Orders** is worth far more to you than a bare listing — and gets you to your rep targets much quicker.
 
 ---
 
-## 2. Guest / Local / Both — and how it sets the Tier and price
+## 2. Guest / Local / Both — and how it sets the price
 
 This only applies to **Display partners** (not Booking partners).
 
@@ -203,25 +202,25 @@ This only applies to **Display partners** (not Booking partners).
 - **Local only** — only signed-in locals in the area see it.
 - **Both** — everyone sees it.
 
-**Step 2 — Tier (how much detail shows):**
+**Step 2 — What every partner gets:**
 
-- **Basic — R200/month — Partial Information**: a basic listing (name, category, contact, the essentials).
-- **Premium — R300/month — Full Information**: the complete profile — physical address, one-tap directions, full detail, all the extras.
+Every partner gets the **full profile** — physical address, one-tap directions, full detail, all the extras. There is no partial listing; the price depends only on who sees it.
 
-**The catch that trips people up:**
+**How the price is set:**
 
-- If Shown to is **Guest only** or **Local only**, they may pick **Basic (R200)** or **Premium (R300)**.
-- If Shown to is **Both**, it is **always Premium**, and the price is **R400/month**. You cannot pick Basic with Both.
+- **Guest only** or **Local only** — **R300/month**.
+- **Both** (guests + locals) — **R400/month**.
+- **Accommodation, Real Estate Agencies and Real Estate Agents** — **R300/month** (single option).
 
 @@ORGANOGRAM@@
 
-How to explain it to a partner: *R200 gets you listed with the basics per user. R300 gives the full profile with your address and directions per user. R400 gives the full profile to both holiday guests and locals.*
+How to explain it to a partner: *R300 gives the full profile to one audience — holiday guests or locals. R400 gives the full profile to both.*
 
 ---
 
 ## 3. Bookings (if you ticked Booking Partner)
 
-- The **Tier / Guest-Local-Both** section disappears — don't look for it.
+- The **Guest / Local / Both** section disappears — don't look for it.
 - Base fee is **R300/month**, plus a per-booking charge:
 - **Restaurants:** R10 per cover (per seat booked).
 - **Business/Services:** 10% per service (of the items booked).
@@ -266,7 +265,7 @@ How to explain it: *List the meals people can order ahead and how long each take
 
 1. Business & company details, location.
 2. Display or Booking partner? (section 1)
-3. If Display: Shown to + Tier (section 2). If Booking: Bookable tables (section 3).
+3. If Display: Shown to (section 2). If Booking: Bookable tables (section 3).
 4. Cuisine type(s), Restaurant type, Atmosphere, Features, Dietary options — all multi-select, tick all that apply.
 5. Description, menu link, service options (Dine-in / Takeaway / Delivery), Wi-Fi.
 6. Pre-Orders — only if Takeaway/Delivery (section 4).
@@ -276,7 +275,7 @@ How to explain it: *List the meals people can order ahead and how long each take
 
 1. Business & company details, location.
 2. Display or Booking partner?
-3. If Display: Shown to + Tier. If Booking: Bookable items (name / price / minutes), 10% per service.
+3. If Display: Shown to. If Booking: Bookable items (name / price / minutes), 10% per service.
 4. Business/Service category(ies) — multi-select from the groups.
 5. Good-to-know: safety info, age restrictions, fitness level, best time of day, what to bring.
 6. Discounts, payments, socials, accessibility, charity, signature.
@@ -285,7 +284,7 @@ How to explain it: *List the meals people can order ahead and how long each take
 
 1. Business & company details, location.
 2. Display or Booking partner?
-3. If Display: Shown to + Tier. If Booking: Bookable items (name / price / minutes), 10% per person.
+3. If Display: Shown to. If Booking: Bookable items (name / price / minutes), 10% per person.
 4. Attraction category(ies) — multi-select.
 5. Good-to-know: safety, age, fitness, best time, what to bring, trail difficulty, wildlife/tide/parking/photography notes.
 6. Discounts, payments, socials, accessibility, charity, signature.
@@ -293,7 +292,7 @@ How to explain it: *List the meals people can order ahead and how long each take
 ### Accommodation
 
 1. Business & company details, location.
-2. Shown to + Tier (accommodations are Display partners).
+2. Shown to (accommodations are Display partners).
 3. Number of units/rooms (this sets the monthly price), contact, description.
 4. Check-in / check-out instructions, amenities, house guidelines, facilities, Wi-Fi.
 5. Emergency contacts — police, ambulance, fire, nearest hospital (number + address), doctor(s), vet(s), NSRI/sea rescue, snake catcher, community watch, local security. These power the guest emergency-directions buttons, so get as many as possible.
