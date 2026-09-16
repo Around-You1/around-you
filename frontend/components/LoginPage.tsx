@@ -513,9 +513,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "#0a0a0a" }}>
+    <div className="min-h-screen flex items-start justify-center p-4" style={{ background: "#0a0a0a" }}>
       <div className="w-full max-w-md">
-        <div className="mb-6 pt-4">
+        <div className="mb-4 pt-2">
           <AppLogo />
         </div>
 

@@ -212,10 +212,10 @@ export default function AboutYouPage() {
 
   return (
     <div
-      className="min-h-screen p-5 pb-20"
+      className="min-h-screen px-5 pt-3 pb-20"
       style={{ background: "#0a0a0a" }}
     >
-      <div className="max-w-md mx-auto space-y-5 py-8">
+      <div className="max-w-md mx-auto space-y-5 pt-1 pb-8">
         <div className="flex justify-center">
           <AppLogo />
         </div>

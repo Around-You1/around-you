@@ -373,8 +373,8 @@ export default function GuestDashboard() {
   const fallbackSpan = <span className="text-sm text-muted-foreground italic">{FALLBACK}</span>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#AEECE4]/20 to-background p-6">
-      <div className="max-w-7xl mx-auto space-y-8 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#AEECE4]/20 to-background px-6 pt-3 pb-6">
+      <div className="max-w-7xl mx-auto space-y-8 pt-3 pb-8">
         {isLocalMode ? (
           <div className="space-y-4">
             <div className="text-center space-y-2">
