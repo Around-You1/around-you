@@ -63,7 +63,7 @@ export default function ServiceTab({ onUpdate }: ServiceTabProps) {
       window.URL.revokeObjectURL(url);
       toast({
         title: "Success",
-        description: "Services exported successfully",
+        description: "Business/Services exported successfully",
       });
     } catch (error) {
       console.error("Export failed:", error);
@@ -116,7 +116,7 @@ export default function ServiceTab({ onUpdate }: ServiceTabProps) {
             className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add Service
+            Add Business/Service
           </Button>
         </div>
 

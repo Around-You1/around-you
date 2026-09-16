@@ -35,6 +35,9 @@ const ONBOARDING_PDF: Record<string, string> = {
   "Real Estate & Rentals": "/onboarding/real-estate-onboarding.pdf",
 };
 
+// Display-only category label; the internal partner-type key stays "Services".
+const typeLabel = (t: string) => (t === "Services" ? "Business/Services" : t);
+
 const colors = {
   background: "#000000",
   surface: "#0A0A0A",
@@ -597,7 +600,7 @@ export default function RepOnboardingApp() {
     : isRestaurant
     ? "Restaurant Name"
     : isService
-    ? "Service Name"
+    ? "Business/Service Name"
     : "Attraction Name";
 
   const reset = () => {
@@ -992,7 +995,7 @@ export default function RepOnboardingApp() {
                     gridColumn: type === "Real Estate & Rentals" ? "1 / -1" : undefined,
                   }}
                 >
-                  {type}
+                  {typeLabel(type)}
                 </button>
               ))}
             </div>
@@ -1019,7 +1022,7 @@ export default function RepOnboardingApp() {
               {Object.entries(ONBOARDING_PDF).map(([label, href]) => (
                 <a key={label} href={href} target="_blank" rel="noopener noreferrer"
                   style={{ color: colors.primary, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
-                  ⬇ {label}
+                  ⬇ {typeLabel(label)}
                 </a>
               ))}
               <a href="/onboarding/rep-guide.pdf" target="_blank" rel="noopener noreferrer"
@@ -1056,7 +1059,7 @@ export default function RepOnboardingApp() {
               onClick={reset}
               style={{ background: "transparent", border: `1px solid ${colors.border}`, color: colors.textSecondary, borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer", marginBottom: 14 }}
             >
-              ← Change Partner Type ({partnerType})
+              ← Change Partner Type ({typeLabel(partnerType)})
             </button>
             {ONBOARDING_PDF[partnerType] && (
               <div style={{ marginBottom: 14 }}>
@@ -1313,7 +1316,7 @@ export default function RepOnboardingApp() {
                   <a href="https://www.yr.no/en" target="_blank" rel="noreferrer" style={{ color: colors.accent }}>https://www.yr.no/en</a>
                 </p>
                 <SectionTitle>Emergency Contacts</SectionTitle>
-                {["Primary", "Police", "Ambulance", "Fire Department"].map((k) => (
+                {["Ambulance", "Police", "Fire Department", "Primary"].map((k) => (
                   <TextField key={k} label={k} value={emergency[k]} onChange={(v) => setEmergency((e) => ({ ...e, [k]: v }))} />
                 ))}
                 <TextField label="Hospital" value={emergency["Hospital"]} onChange={(v) => setEmergency((e) => ({ ...e, Hospital: v }))} />
@@ -1367,7 +1370,7 @@ export default function RepOnboardingApp() {
                 )}
                 {isService && (
                   <>
-                    <SectionTitle>Service Categories</SectionTitle>
+                    <SectionTitle>Business/Service Categories</SectionTitle>
                     {CATEGORY_GROUPS.map((group) => (
                       <CheckboxGroup
                         key={group.label}

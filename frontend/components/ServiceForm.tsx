@@ -386,7 +386,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
         await saveCharity("service", serviceData?.id, officialUse.charity || []);
         toast({
           title: "Success",
-          description: "Service updated successfully",
+          description: "Business/Service updated successfully",
         });
       } else {
         const createdSvc: any = await backend.service.create({
@@ -446,7 +446,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
         await saveCharity("service", createdSvc.id, officialUse.charity || []);
         toast({
           title: "Success",
-          description: "Service created successfully",
+          description: "Business/Service created successfully",
         });
       }
       onClose();
@@ -482,7 +482,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Loading Service...</CardTitle>
+          <CardTitle>Loading Business/Service...</CardTitle>
         </CardHeader>
         <CardContent className="flex justify-center items-center py-12">
           <div className="text-muted-foreground">Loading service details...</div>
@@ -498,7 +498,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${serviceId ? "Edit" : "Add"} Service`}</CardTitle>
+        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${serviceId ? "Edit" : "Add"} Business/Service`}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -506,7 +506,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Service Name *</Label>
+              <Label htmlFor="name">Business/Service Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -614,7 +614,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           </div>
 
           <div className="space-y-3" style={{ display: tierNum >= 2 ? undefined : "none" }}>
-            <Label>Service Categories</Label>
+            <Label>Business/Service Categories</Label>
             <div className="space-y-2">
               {CATEGORY_GROUPS.map((group) => {
                 const selectedInGroup = formData.serviceCategories.filter((c) =>
@@ -668,7 +668,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           </div>
 
           <MultiImageUpload
-            label="Service Images"
+            label="Business/Service Images"
             images={formData.imageUrls}
             onChange={(urls) => setFormData({ ...formData, imageUrls: urls, imageUrl: urls[0] || "" })}
           />

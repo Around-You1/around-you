@@ -19,7 +19,7 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
 
   const description =
     entityType === "accommodation"
-      ? "Scan this QR code, then click “Log In” and then click “Sign In” to automatically log in so as to be able to see all that the Guesthouse has to offer. You will also be able to view Restaurants, Services and Attractions in and 'Around You' up to 150 kilometers."
+      ? "Scan this QR code, then click “Log In” and then click “Sign In” to automatically log in so as to be able to see all that the Guesthouse has to offer. You will also be able to view Restaurants, Business/Services and Attractions in and 'Around You' up to 150 kilometers."
       : "Scan this QR code, then click “Log In” and then click “Sign In” to automatically log in so as to be able to see all that this business has to offer.";
 
   const handleDownload = async () => {

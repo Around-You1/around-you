@@ -15,7 +15,7 @@ const LUMO = "#39FF14";
 const CATEGORIES: { key: string; label: string }[] = [
   { key: "accommodation", label: "Accommodation" },
   { key: "restaurant", label: "Restaurant" },
-  { key: "service", label: "Service" },
+  { key: "service", label: "Business/Service" },
   { key: "attraction", label: "Attraction" },
   { key: "estate", label: "Real Estate & Rentals" },
 ];
@@ -41,7 +41,7 @@ const SERVICE_GROUPS = [
   { label: "Community & Local", options: ["Charity & Non Profit Services", "Community Centres", "Local Events & Activities", "Religious Organizations"] },
 ];
 
-type Field = { key: string; type: "text" | "textarea" | "select" | "multi" | "multigroup" | "radio" | "itemrows"; options?: string[]; groups?: { label: string; options: string[] }[]; top?: string; required?: boolean; note?: string; priceRows?: string[] };
+type Field = { key: string; type: "text" | "textarea" | "select" | "multi" | "multigroup" | "radio" | "itemrows"; options?: string[]; groups?: { label: string; options: string[] }[]; top?: string; required?: boolean; note?: string; priceRows?: string[]; label?: string };
 type Section = { title: string; fields: Field[] };
 
 const businessSection = (nameLabel: string): Section => ({
@@ -121,9 +121,9 @@ function specsFor(cat: string): Section[] {
     appearSection(cat), discountsSection, paymentsSection, socialsSection, accessibilitySection, charitySection,
   ];
   if (cat === "service") return [
-    businessSection("Service name"),
-    { title: "Service details", fields: [
-      { key: "Service category(ies)", type: "multigroup", groups: SERVICE_GROUPS },
+    businessSection("Business/Service name"),
+    { title: "Business/Service details", fields: [
+      { key: "Service category(ies)", label: "Business/Service category(ies)", type: "multigroup", groups: SERVICE_GROUPS },
       { key: "Description", type: "textarea" },
     ] },
     { title: "Good-to-know info", fields: [
@@ -156,7 +156,7 @@ function specsFor(cat: string): Section[] {
       { key: "Wi-Fi network name", type: "text" }, { key: "Wi-Fi password", type: "text" },
     ] },
     { title: "Emergency contacts (shown to guests)", fields: [
-      { key: "Police", type: "text" }, { key: "Ambulance", type: "text" }, { key: "Fire department", type: "text" },
+      { key: "Ambulance", type: "text" }, { key: "Police", type: "text" }, { key: "Fire department", type: "text" },
       { key: "Nearest hospital — number", type: "text" }, { key: "Nearest hospital — address", type: "text" },
       { key: "Doctor — name / number / address", type: "text" }, { key: "Vet — name / number / address", type: "text" },
       { key: "Sea Rescue / NSRI", type: "text" }, { key: "Snake catcher", type: "text" }, { key: "Community watch", type: "text" }, { key: "Local security", type: "text" },
@@ -321,7 +321,7 @@ export default function PartnerApplyForm() {
           <div style={secSt}>{sec.title}</div>
           {sec.fields.map((f) => (
             <div key={f.key} style={{ marginTop: 10 }}>
-              <label style={labelSt}>{f.key}{f.required ? " *" : ""}{f.note ? <span style={{ color: "#8a8f96", fontWeight: 400 }}> ({f.note})</span> : null}</label>
+              <label style={labelSt}>{f.label ?? f.key}{f.required ? " *" : ""}{f.note ? <span style={{ color: "#8a8f96", fontWeight: 400 }}> ({f.note})</span> : null}</label>
               {f.priceRows && (
                 <ul style={{ margin: "4px 0 0", paddingLeft: 0, listStyle: "none", fontSize: 12, color: "#9aa" }}>
                   <li style={{ fontWeight: 600, color: "#cfd3cf" }}>Monthly price by units:</li>

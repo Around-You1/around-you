@@ -243,9 +243,9 @@ rest = business() + location() + visibility() + [PageBreak(), *section("Restaura
 build("restaurant-onboarding.pdf", "Around You — Restaurant Onboarding", rest)
 
 # ===== Service =====
-serv = business() + location() + visibility() + [PageBreak(), *section("Service Details"),
-    fill("Service name"),
-    *grouped_ticks("Service category(ies)", CATEGORY_GROUPS),
+serv = business() + location() + visibility() + [PageBreak(), *section("Business/Service Details"),
+    fill("Business/Service name"),
+    *grouped_ticks("Business/Service category(ies)", CATEGORY_GROUPS),
     bigfill("Description", 2),
 ] + [PageBreak(), *section("Good-to-know Info"),
     fill("Safety information"), fill("Age restrictions"), fill("Fitness level required"),
@@ -255,7 +255,7 @@ serv = business() + location() + visibility() + [PageBreak(), *section("Service 
     fill("Item 1 — name / price / minutes"), fill("Item 2 — name / price / minutes"),
     fill("Item 3 — name / price / minutes"), fill("Item 4 — name / price / minutes"),
 ] + discounts() + payments() + socials() + [PageBreak()] + accessibility() + charity()
-build("service-onboarding.pdf", "Around You — Service Onboarding", serv)
+build("service-onboarding.pdf", "Around You — Business/Service Onboarding", serv)
 
 # ===== Attraction =====
 attr = business() + location() + visibility() + [PageBreak(), *section("Attraction Details"),
@@ -288,7 +288,7 @@ acc = business() + location() + [*section("Accommodation Details"),
     *ticks("Facilities", FACILITIES, cols=3),
     fill("Wi-Fi network name"), fill("Wi-Fi password"),
 ] + [*section("Emergency Contacts (shown to your guests)"),
-    fill("Police"), fill("Ambulance"), fill("Fire department"),
+    fill("Ambulance"), fill("Police"), fill("Fire department"),
     fill("Nearest hospital — number"), fill("Nearest hospital — address"),
     fill("Doctor — name / number / address"), fill("Doctor 2 — name / number / address"),
     fill("Vet — name / number / address"), fill("Vet 2 — name / number / address"),

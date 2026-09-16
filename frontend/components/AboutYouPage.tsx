@@ -123,7 +123,7 @@ export default function AboutYouPage() {
         <>
           <p>Around You welcomes guests with instant access to verified accommodation info, curated local partners, and exclusive perks.</p>
           <p>As a Holiday Guest, log in with the accommodation's unique QR Code or Access Code to unlock seamless navigation, trusted recommendations, and meaningful savings.</p>
-          <p>As a Local, log in with your email address, province, and municipal area to search for restaurants, services, and attractions 'Around You.'</p>
+          <p>As a Local, log in with your email address, province, and municipal area to search for restaurants, business/services, and attractions 'Around You.'</p>
           <p>Everything you need—where to go, what to enjoy, and how to get there—is just one tap away.</p>
           <p>It's hospitality, elevated.</p>
         </>
@@ -144,7 +144,7 @@ export default function AboutYouPage() {
       title: "How It Works",
       content: (
         <>
-          <p>Around You gives you instant access to everything worth knowing near where you're staying — verified accommodation info, trusted local restaurants, services and attractions, exclusive discounts, and one-tap directions. Here's how to get started.</p>
+          <p>Around You gives you instant access to everything worth knowing near where you're staying — verified accommodation info, trusted local restaurants, business/services and attractions, exclusive discounts, and one-tap directions. Here's how to get started.</p>
 
           <p className="font-semibold" style={{ color: LUMO }}>For Holiday Guests</p>
           <p>Your accommodation gives you an Access Code or a QR code when you arrive.</p>
@@ -152,7 +152,7 @@ export default function AboutYouPage() {
             <li>Open Around You and tap <strong>Guest</strong> on the sign-in screen.</li>
             <li>Enter your 12-character <strong>Access Code</strong> (or scan the QR code — it fills the code in for you), then tap <strong>Sign In</strong>. You can also sign in with your accommodation's name, address, province and postal code.</li>
             <li>You'll land on your accommodation's page with everything you need — Wi-Fi, check-in and check-out details, house rules, amenities, emergency contacts and directions.</li>
-            <li>Explore what's Around You: browse restaurants, services and attractions near your stay using the radius slider (from 10 km up to 150 km). Search by cuisine, category or keyword.</li>
+            <li>Explore what's Around You: browse restaurants, business/services and attractions near your stay using the radius slider (from 10 km up to 150 km). Search by cuisine, category or keyword.</li>
             <li>Save money: when a place offers a discount, tap <strong>Redeem discount</strong> to get your QR code — show it to the venue to redeem. You can also book a restaurant table right in the app.</li>
             <li>After you've visited, leave a star rating to help other guests.</li>
           </ol>
@@ -163,7 +163,7 @@ export default function AboutYouPage() {
             <li>Tap <strong>Locals</strong> on the sign-in screen.</li>
             <li>Sign in with your email, province and postal code. The first time, we'll email you a one-time code (OTP) to verify it's you.</li>
             <li>After that, you can sign in without the code — up to 5 times a month (or 10 if you're awarded <strong>Super Local</strong> status).</li>
-            <li>Browse restaurants, services and attractions near you with the radius slider (up to 50 km), search, and grab exclusive discounts the same way — tap <strong>Redeem discount</strong> and show your QR to the venue.</li>
+            <li>Browse restaurants, business/services and attractions near you with the radius slider (up to 50 km), search, and grab exclusive discounts the same way — tap <strong>Redeem discount</strong> and show your QR to the venue.</li>
             <li>Rate the places you visit to help your community.</li>
           </ol>
         </>

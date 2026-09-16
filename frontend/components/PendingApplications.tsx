@@ -20,7 +20,7 @@ interface Application {
 }
 
 const CAT_LABEL: Record<string, string> = {
-  restaurant: "Restaurant", service: "Service", attraction: "Attraction",
+  restaurant: "Restaurant", service: "Business/Service", attraction: "Attraction",
   accommodation: "Accommodation", estate: "Real Estate & Rentals",
 };
 

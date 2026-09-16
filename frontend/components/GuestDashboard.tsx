@@ -595,11 +595,11 @@ export default function GuestDashboard() {
                     <CollapsibleContent className={`${contentClass} space-y-2`}>
                       {accommodation!.primaryContact || accommodation!.policeContact || accommodation!.doctorContact || (accommodation!.doctors && accommodation!.doctors.length > 0) || accommodation!.ambulanceContact || accommodation!.hospitalContact || accommodation!.fireDepartmentContact || accommodation!.snakeCatchersContact || accommodation!.nsriContact || accommodation!.vetContact || (accommodation!.vets && accommodation!.vets.length > 0) || accommodation!.communityWatchContact || accommodation!.localSecurityContact ? (
                         <>
-                          {accommodation!.primaryContact && (
+                          {accommodation!.ambulanceContact && (
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Primary Contact:</span>
-                              <a href={`tel:${accommodation!.primaryContact}`} className="font-medium text-purple-600 hover:underline">
-                                {accommodation!.primaryContact}
+                              <span className="text-muted-foreground">Ambulance Contact:</span>
+                              <a href={`tel:${accommodation!.ambulanceContact}`} className="font-medium text-purple-600 hover:underline">
+                                {accommodation!.ambulanceContact}
                               </a>
                             </div>
                           )}
@@ -608,6 +608,22 @@ export default function GuestDashboard() {
                               <span className="text-muted-foreground">Police Contact:</span>
                               <a href={`tel:${accommodation!.policeContact}`} className="font-medium text-purple-600 hover:underline">
                                 {accommodation!.policeContact}
+                              </a>
+                            </div>
+                          )}
+                          {accommodation!.fireDepartmentContact && (
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Fire Department:</span>
+                              <a href={`tel:${accommodation!.fireDepartmentContact}`} className="font-medium text-purple-600 hover:underline">
+                                {accommodation!.fireDepartmentContact}
+                              </a>
+                            </div>
+                          )}
+                          {accommodation!.primaryContact && (
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Primary Contact:</span>
+                              <a href={`tel:${accommodation!.primaryContact}`} className="font-medium text-purple-600 hover:underline">
+                                {accommodation!.primaryContact}
                               </a>
                             </div>
                           )}
@@ -638,14 +654,6 @@ export default function GuestDashboard() {
                                   </a>
                                 </div>
                               )}
-                          {accommodation!.ambulanceContact && (
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Ambulance Contact:</span>
-                              <a href={`tel:${accommodation!.ambulanceContact}`} className="font-medium text-purple-600 hover:underline">
-                                {accommodation!.ambulanceContact}
-                              </a>
-                            </div>
-                          )}
                           {accommodation!.hospitalContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Hospital Contact:</span>
@@ -658,14 +666,6 @@ export default function GuestDashboard() {
                             <div className="flex items-center justify-between pl-2">
                               <span className="text-xs text-muted-foreground">{accommodation!.hospitalAddress}</span>
                               <AddressDirectionsButton address={accommodation!.hospitalAddress} />
-                            </div>
-                          )}
-                          {accommodation!.fireDepartmentContact && (
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Fire Department:</span>
-                              <a href={`tel:${accommodation!.fireDepartmentContact}`} className="font-medium text-purple-600 hover:underline">
-                                {accommodation!.fireDepartmentContact}
-                              </a>
                             </div>
                           )}
                           {accommodation!.snakeCatchersContact && (
@@ -758,7 +758,7 @@ export default function GuestDashboard() {
               />
             </div>
             <p className="text-xs text-muted-foreground leading-snug whitespace-normal break-words">
-              Search restaurants, services and attractions by name, cuisine, category or description.
+              Search restaurants, business/services and attractions by name, cuisine, category or description.
             </p>
           </div>
 
@@ -801,7 +801,7 @@ export default function GuestDashboard() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-muted rounded-md" style={{ height: "auto" }}>
               <TabsTrigger value="restaurants" className="min-h-[44px] touch-manipulation">Restaurants ({filteredRestaurants.length})</TabsTrigger>
-              <TabsTrigger value="services" className="min-h-[44px] touch-manipulation">Services ({filteredServices.length})</TabsTrigger>
+              <TabsTrigger value="services" className="min-h-[44px] touch-manipulation">Business/Services ({filteredServices.length})</TabsTrigger>
               <TabsTrigger value="attractions" className="min-h-[44px] touch-manipulation">Attractions ({filteredAttractions.length})</TabsTrigger>
               <TabsTrigger value="realestate" className="min-h-[44px] touch-manipulation">Real Estate</TabsTrigger>
             </TabsList>
@@ -1263,7 +1263,7 @@ export default function GuestDashboard() {
               {filteredServices.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
-                    {searchQuery.trim() ? "No services match your search" : isLocalMode ? "No services found within 50km" : `No services found within ${radiusKm[0]}km`}
+                    {searchQuery.trim() ? "No business/services match your search" : isLocalMode ? "No business/services found within 50km" : `No business/services found within ${radiusKm[0]}km`}
                   </CardContent>
                 </Card>
               ) : (
@@ -1327,7 +1327,7 @@ export default function GuestDashboard() {
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
-                                Service Categories
+                                Business/Service Categories
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {service.serviceCategories && service.serviceCategories.length > 0 ? (

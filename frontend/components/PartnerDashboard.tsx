@@ -511,7 +511,7 @@ export default function PartnerDashboard() {
                 <Section title="Cuisine Types"><TagList items={e.cuisineTypes} /></Section>
               )}
               {entityType === "service" && e.serviceCategories?.length > 0 && (
-                <Section title="Service Categories"><TagList items={e.serviceCategories} /></Section>
+                <Section title="Business/Service Categories"><TagList items={e.serviceCategories} /></Section>
               )}
               {entityType === "attraction" && e.attractionType?.length > 0 && (
                 <Section title="Attraction Categories"><TagList items={e.attractionType} /></Section>

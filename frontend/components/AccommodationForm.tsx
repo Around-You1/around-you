@@ -528,14 +528,13 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="primaryContact">Primary Contact</Label>
+              <Label htmlFor="ambulanceContact">Ambulance Contact</Label>
               <Input
-                id="primaryContact"
-                value={formData.primaryContact}
-                onChange={(e) => setFormData({ ...formData, primaryContact: e.target.value })}
+                id="ambulanceContact"
+                value={formData.ambulanceContact}
+                onChange={(e) => setFormData({ ...formData, ambulanceContact: e.target.value })}
                 type="tel"
                 inputMode="tel"
-                autoComplete="tel"
                 enterKeyHint="next"
               />
             </div>
@@ -552,23 +551,36 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
               />
             </div>
 
-            <EmergencyEntryEditor
-              label="Doctors"
-              entries={formData.doctors}
-              onChange={(next) => setFormData({ ...formData, doctors: next })}
-            />
-
             <div className="space-y-2">
-              <Label htmlFor="ambulanceContact">Ambulance Contact</Label>
+              <Label htmlFor="fireDepartmentContact">Fire Department</Label>
               <Input
-                id="ambulanceContact"
-                value={formData.ambulanceContact}
-                onChange={(e) => setFormData({ ...formData, ambulanceContact: e.target.value })}
+                id="fireDepartmentContact"
+                value={formData.fireDepartmentContact}
+                onChange={(e) => setFormData({ ...formData, fireDepartmentContact: e.target.value })}
                 type="tel"
                 inputMode="tel"
                 enterKeyHint="next"
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="primaryContact">Primary Contact</Label>
+              <Input
+                id="primaryContact"
+                value={formData.primaryContact}
+                onChange={(e) => setFormData({ ...formData, primaryContact: e.target.value })}
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                enterKeyHint="next"
+              />
+            </div>
+
+            <EmergencyEntryEditor
+              label="Doctors"
+              entries={formData.doctors}
+              onChange={(next) => setFormData({ ...formData, doctors: next })}
+            />
 
             <div className="space-y-2">
               <Label htmlFor="hospitalContact">Hospital Contact</Label>
@@ -588,18 +600,6 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
                 id="hospitalAddress"
                 value={formData.hospitalAddress}
                 onChange={(e) => setFormData({ ...formData, hospitalAddress: e.target.value })}
-                enterKeyHint="next"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="fireDepartmentContact">Fire Department</Label>
-              <Input
-                id="fireDepartmentContact"
-                value={formData.fireDepartmentContact}
-                onChange={(e) => setFormData({ ...formData, fireDepartmentContact: e.target.value })}
-                type="tel"
-                inputMode="tel"
                 enterKeyHint="next"
               />
             </div>

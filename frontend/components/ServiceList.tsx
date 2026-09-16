@@ -172,7 +172,7 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortSt
     try {
       const backend = getAuthenticatedBackend();
       await backend.service.deleteService({ serviceId });
-      toast({ title: "Success", description: "Service deleted successfully" });
+      toast({ title: "Success", description: "Business/Service deleted successfully" });
       loadServices();
       onUpdate?.();
     } catch (error) {
@@ -235,7 +235,7 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortSt
 
   if (loading) return <div className="text-center py-8">Loading services...</div>;
   if (services.length === 0) return <div className="text-center py-12 text-muted-foreground">No services found. Add your first service to get started.</div>;
-  if (filteredServices.length === 0) return <div className="text-center py-12 text-muted-foreground">No services match your search criteria.</div>;
+  if (filteredServices.length === 0) return <div className="text-center py-12 text-muted-foreground">No business/services match your search criteria.</div>;
 
   return (
     <div className="space-y-1">

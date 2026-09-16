@@ -532,7 +532,7 @@ export default function LoginPage() {
           <div className="grid grid-cols-3 gap-1.5">
             <SignInSquareBtn label="Holiday Guest" isOpen={activePanel === "holiday"} onToggle={() => togglePanel("holiday")} />
             <SignInSquareBtn label="Local Guest" isOpen={activePanel === "local"} onToggle={() => togglePanel("local")} />
-            <SignInSquareBtn label="Partner" isOpen={activePanel === "partner"} onToggle={() => togglePanel("partner")} />
+            <SignInSquareBtn label="Business/Service Partner" isOpen={activePanel === "partner"} onToggle={() => togglePanel("partner")} />
           </div>
           </>
           )}

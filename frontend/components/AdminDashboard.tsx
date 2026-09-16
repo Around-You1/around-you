@@ -240,8 +240,9 @@ export default function AdminDashboard() {
               <TabsList className="grid w-full h-auto grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-1">
                 <TabsTrigger value="accommodations" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Accommodations{catBadge("accommodation")}</TabsTrigger>
                 <TabsTrigger value="restaurants" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Restaurants{catBadge("restaurant")}</TabsTrigger>
-                <TabsTrigger value="services" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Services{catBadge("service")}</TabsTrigger>
+                <TabsTrigger value="services" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Business/Services{catBadge("service")}</TabsTrigger>
                 <TabsTrigger value="attractions" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Attractions{catBadge("attraction")}</TabsTrigger>
+                <TabsTrigger value="realestate" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Real Estate{catBadge("estate")}</TabsTrigger>
                 <TabsTrigger value="reps" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Reps</TabsTrigger>
                 <TabsTrigger value="billing" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Billing</TabsTrigger>
                 <TabsTrigger value="moderation" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">
@@ -253,7 +254,6 @@ export default function AdminDashboard() {
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="archived" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Archived</TabsTrigger>
-                <TabsTrigger value="realestate" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Real Estate{catBadge("estate")}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="accommodations">

@@ -178,9 +178,9 @@ How to explain it to a partner: *R200 gets you listed with the basics per user. 
 - The **Tier / Guest-Local-Both** section disappears — don't look for it.
 - Base fee is **R300/month**, plus a per-booking charge:
 - **Restaurants:** R10 per cover (per seat booked).
-- **Services:** 10% per service (of the items booked).
+- **Business/Services:** 10% per service (of the items booked).
 - **Attractions:** 10% per person.
-- You list **Bookable Items**. Restaurant = tables — the standard covers (Table for 1 = R10, Table for 2 = R20, …) are pre-set by Around You and are **fixed on the app**: you can't change a table price or remove a table (only head office can, from the Admin Dashboard). Service / Attraction = the products/experiences a guest can book — each with a **name, price, and duration (minutes)** that you enter.
+- You list **Bookable Items**. Restaurant = tables — the standard covers (Table for 1 = R10, Table for 2 = R20, …) are pre-set by Around You and are **fixed on the app**: you can't change a table price or remove a table (only head office can, from the Admin Dashboard). Business/Service / Attraction = the products/experiences a guest can book — each with a **name, price, and duration (minutes)** that you enter.
 
 How to explain it: *You pay R300 a month, and only a small amount each time someone actually books through the app — so it scales with real bookings.*
 
@@ -226,12 +226,12 @@ How to explain it: *List the meals people can order ahead and how long each take
 6. Pre-Orders — only if Takeaway/Delivery (section 4).
 7. Guest &/or Local discounts, payments, socials, accessibility, charity, signature.
 
-### Service
+### Business/Service
 
 1. Business & company details, location.
 2. Display or Booking partner?
 3. If Display: Shown to + Tier. If Booking: Bookable items (name / price / minutes), 10% per service.
-4. Service category(ies) — multi-select from the groups.
+4. Business/Service category(ies) — multi-select from the groups.
 5. Good-to-know: safety info, age restrictions, fitness level, best time of day, what to bring.
 6. Discounts, payments, socials, accessibility, charity, signature.
 

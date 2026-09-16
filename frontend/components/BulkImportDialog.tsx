@@ -285,7 +285,7 @@ export default function BulkImportDialog({ open, onClose, onImportComplete, enti
     }
   };
 
-  const entityLabel = entityType === "service" ? "Services"
+  const entityLabel = entityType === "service" ? "Business/Services"
     : entityType === "attraction" ? "Attractions"
     : entityType === "restaurant" ? "Restaurants"
     : entityType === "estate_agency" ? "Estate Agencies"
