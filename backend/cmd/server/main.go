@@ -35,6 +35,7 @@ import (
 	"backend_encore/app/rating"
 	"backend_encore/app/redemption"
 	"backend_encore/app/repinvoice"
+	"backend_encore/app/repnearby"
 	"backend_encore/app/restaurant"
 	"backend_encore/app/service"
 	"backend_encore/app/stats"
@@ -92,6 +93,7 @@ func main() {
 	r.auth("GET /auth/reps", httpx.Empty(auth.ListReps))
 	r.auth("POST /auth/rep/update", httpx.Body(auth.UpdateRep))
 	r.auth("POST /auth/rep/delete", httpx.Body(auth.DeleteRep))
+	r.auth("GET /rep/partners-near", httpx.Query(repnearby.PartnersNear))
 	r.auth("GET /rep-invoice/preview", httpx.Empty(repinvoice.Preview))
 	r.auth("POST /rep-invoice/submit", httpx.Body(repinvoice.Submit))
 	r.auth("POST /auth/acc-code/set", httpx.Body(auth.SetAccCode))

@@ -396,6 +396,9 @@ export const backend = {
     regenerate: (req: any) => request("POST", "/edit-code/regenerate", { body: req }),
     verify: (req: any) => request("POST", "/edit-code/verify", { body: req }),
   },
+  rep: {
+    partnersNear: (req: any) => request("GET", "/rep/partners-near", { query: { postalCode: req?.postalCode } }),
+  },
   repInvoice: {
     preview: () => request("GET", "/rep-invoice/preview"),
     submit: (req: any) => request("POST", "/rep-invoice/submit", { body: req }),

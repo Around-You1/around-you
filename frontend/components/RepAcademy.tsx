@@ -2,17 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { getAuthenticatedBackend } from "../lib/backend";
 
 // Rep Academy — the rep's home screen after sign-in. It holds the reference
 // material a rep needs (the shareable application link, the blank onboarding
-// PDFs and the rep guide) and a Sign In button that opens the public
-// "Join Around You" application form, pre-filled with the rep's own code.
-// This replaces the old tap-based onboarding app; reps now onboard partners
-// through the same /apply form partners use.
+// PDFs and the rep guide), a postal-code partner finder, and a Sign In button
+// that opens the public "Join Around You" application form, pre-filled with the
+// rep's own code. This replaces the old tap-based onboarding app.
 
 const colors = {
   background: "#000000",
   surface: "#0A0A0A",
+  surface2: "#121212",
   primary: "#39FF14",
   accent: "#00FFD1",
   textPrimary: "#E6F7E6",
@@ -30,8 +31,6 @@ function getRepSession() {
   }
 }
 
-// Blank "what we need to onboard you" forms, one per partner type. Always the
-// latest version (regenerated with the app and served from /public).
 const ONBOARDING_PDF: Record<string, string> = {
   Accommodations: "/onboarding/accommodation-onboarding.pdf",
   Restaurants: "/onboarding/restaurant-onboarding.pdf",
@@ -41,10 +40,23 @@ const ONBOARDING_PDF: Record<string, string> = {
 };
 const typeLabel = (t: string) => (t === "Services" ? "Business/Services" : t);
 
+interface NearResults {
+  accommodations: string[];
+  restaurants: string[];
+  services: string[];
+  attractions: string[];
+  realEstate: string[];
+}
+
 export default function RepAcademy() {
   const router = useRouter();
   const rep = getRepSession();
   const [linkCopied, setLinkCopied] = useState(false);
+
+  const [postal, setPostal] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [results, setResults] = useState<NearResults | null>(null);
+  const [searchErr, setSearchErr] = useState("");
 
   const applyUrl = () =>
     `${window.location.origin}/apply?rep=${encodeURIComponent(rep.repCode || "")}`;
@@ -62,6 +74,38 @@ export default function RepAcademy() {
 
   const startApplication = () =>
     router.push(`/apply?rep=${encodeURIComponent(rep.repCode || "")}`);
+
+  const findPartners = async () => {
+    const code = postal.trim();
+    if (!code) {
+      setSearchErr("Please enter a postal code.");
+      return;
+    }
+    setSearchErr("");
+    setSearching(true);
+    setResults(null);
+    try {
+      const backend = getAuthenticatedBackend();
+      const res = await backend.rep.partnersNear({ postalCode: code });
+      setResults(res as NearResults);
+    } catch (e: any) {
+      setSearchErr(e?.message || "Could not load partners — please try again.");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const GROUPS: { heading: string; key: keyof NearResults }[] = [
+    { heading: "Accommodations", key: "accommodations" },
+    { heading: "Restaurants", key: "restaurants" },
+    { heading: "Business/Services", key: "services" },
+    { heading: "Attractions", key: "attractions" },
+    { heading: "Real Estate", key: "realEstate" },
+  ];
+
+  const totalFound = results
+    ? GROUPS.reduce((sum, g) => sum + (results[g.key]?.length || 0), 0)
+    : 0;
 
   return (
     <div style={{ minHeight: "100vh", background: colors.background, color: colors.textPrimary, padding: "24px 16px" }}>
@@ -102,6 +146,65 @@ export default function RepAcademy() {
             style={{ color: colors.accent, fontSize: 15, fontWeight: 700, textDecoration: "none", marginTop: 4 }}>
             📘 Rep guide — how to complete the forms (PDF)
           </a>
+        </div>
+
+        {/* Partner finder by postal code (5km radius) */}
+        <div style={{ marginTop: 28, padding: 16, borderRadius: 16, background: colors.surface, border: `1px solid ${colors.border}` }}>
+          <p style={{ fontSize: 15, fontWeight: 800, color: colors.primary, margin: 0 }}>Find partners near a postal code</p>
+          <p style={{ fontSize: 11, color: colors.textSecondary, margin: "4px 0 12px" }}>
+            See which partners are already on Around You within about 5km of a postal code.
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              value={postal}
+              onChange={(e) => setPostal(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") findPartners(); }}
+              placeholder="Postal code"
+              inputMode="numeric"
+              style={{
+                flex: 1, minWidth: 0, padding: "12px", borderRadius: 10,
+                background: colors.surface2, border: `1px solid ${colors.border}`, color: colors.textPrimary, fontSize: 15,
+              }}
+            />
+            <button
+              onClick={findPartners}
+              disabled={searching}
+              style={{
+                padding: "12px 16px", borderRadius: 10, background: colors.primary, border: "none",
+                color: "#000", fontWeight: 800, fontSize: 15, cursor: "pointer", opacity: searching ? 0.6 : 1,
+              }}
+            >
+              {searching ? "…" : "Search"}
+            </button>
+          </div>
+          {searchErr ? <p style={{ color: "#FF6B6B", fontSize: 12, marginTop: 8 }}>{searchErr}</p> : null}
+
+          {results && (
+            <div style={{ marginTop: 16 }}>
+              {totalFound === 0 ? (
+                <p style={{ fontSize: 13, color: colors.textSecondary }}>
+                  No partners found within 5km of that postal code.
+                </p>
+              ) : (
+                GROUPS.map((g) => (
+                  <div key={g.key} style={{ marginBottom: 14 }}>
+                    <p style={{ fontSize: 13, fontWeight: 800, color: colors.accent, margin: "0 0 4px" }}>
+                      {g.heading} ({results[g.key]?.length || 0})
+                    </p>
+                    {results[g.key] && results[g.key].length > 0 ? (
+                      <ul style={{ margin: 0, paddingLeft: 18 }}>
+                        {results[g.key].map((name) => (
+                          <li key={name} style={{ fontSize: 14, color: colors.textPrimary, lineHeight: 1.6 }}>{name}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p style={{ fontSize: 12, color: colors.textSecondary, margin: 0 }}>None</p>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
 
         {/* Sign In -> Join Around You (pre-filled with the rep's code) */}
