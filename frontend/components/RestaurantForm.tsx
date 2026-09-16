@@ -923,7 +923,9 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
             {offersPreOrders && (
             <>
             <p className="text-sm text-muted-foreground">
-              Items guests can pre-order for collection or delivery. Set the item, the price, and the duration (how long the food takes to prepare, in minutes). Guests choose collection or delivery and a preferred time at checkout, and the order is emailed to your Bookings email.
+              {formData.serviceDelivery
+                ? "Items Guest/Locals can pre-order for collection or delivery. Set the item, the price, and the duration (how long the food takes to prepare, in minutes). Guest/Locals choose collection or delivery and a preferred time at checkout, and the order is emailed to your Bookings email."
+                : "Items Guest/Locals can pre-order for collection. Set the item, the price, and the duration (how long the food takes to prepare, in minutes). Guest/Locals choose collection and a preferred time at checkout, and the order is emailed to your Bookings email."}
             </p>
             {formData.preOrderItems.map((item, i) => (
               <div key={i} className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_auto] gap-2 items-end">

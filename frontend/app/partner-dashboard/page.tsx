@@ -33,7 +33,7 @@ export default function PartnerDashboardPage() {
     }
 
     if (!token || role !== "Partner") {
-      router.replace("/login");
+      router.replace("/portal");
       return;
     }
     setReady(true);

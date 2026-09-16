@@ -49,8 +49,8 @@ function VerifyInner() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
-      toast({ title: "Missing email", description: "Start again from the login page.", variant: "destructive" });
-      router.replace("/login");
+      toast({ title: "Missing email", description: "Start again from the sign-in page.", variant: "destructive" });
+      router.replace("/portal");
       return;
     }
     setLoading(true);

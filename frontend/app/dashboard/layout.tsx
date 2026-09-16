@@ -20,12 +20,12 @@ export default function DashboardLayout({
 
     getSession().then((session) => {
       if (!active) return;
-      if (!session) router.replace("/login");
+      if (!session) router.replace("/portal");
       else setReady(true);
     });
 
     const unsubscribe = onAuthStateChange((session) => {
-      if (!session) router.replace("/login");
+      if (!session) router.replace("/portal");
     });
 
     return () => {

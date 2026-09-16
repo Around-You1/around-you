@@ -45,7 +45,7 @@ export default function AccessCodePage() {
       // Identity gate.
       const session = await getSession();
       if (!session) {
-        router.replace(`/login?code=${encodeURIComponent(code)}`);
+        router.replace(`/portal?code=${encodeURIComponent(code)}`);
         return;
       }
 
