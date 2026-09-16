@@ -11,6 +11,7 @@ from reportlab.lib import colors
 from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer, HRFlowable,
                                 Table, TableStyle, ListFlowable, ListItem, PageBreak)
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.graphics.shapes import Drawing, Rect, String, Line
 
 GREEN = colors.HexColor("#159a53")
 DARK = colors.HexColor("#1a1f2e")
@@ -31,6 +32,56 @@ def inline(s):
     s = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", s)
     s = re.sub(r"`(.+?)`", r'<font face="Courier">\1</font>', s)
     return s
+
+
+
+def _pricing_organogram():
+    """Native reportlab rendering of the partner-pricing organogram
+    (previously an SVG rendered via svglib). Self-contained: needs only
+    reportlab, so it renders anywhere the other PDFs do."""
+    H = 380.0
+    d = Drawing(820, H)
+    def col(c):
+        return colors.HexColor(c)
+    lines = [
+        (410,62,140,100,"#B4B2A9"),(410,62,410,100,"#B4B2A9"),(410,62,680,100,"#B4B2A9"),
+        (140,150,140,330,"#AFA9EC"),(410,150,410,176,"#5DCAA5"),(680,150,680,176,"#F0997B"),
+    ]
+    for x1,y1,x2,y2,c in lines:
+        ln = Line(x1, H-y1, x2, H-y2)
+        ln.strokeColor = col(c); ln.strokeWidth = 1.5
+        d.add(ln)
+    rects = [
+        (310,18,200,44,"#F1EFE8","#5F5E5A"),
+        (30,100,220,50,"#EEEDFE","#534AB7"),(300,100,220,50,"#E1F5EE","#0F6E56"),(570,100,220,50,"#FAECE7","#993C1D"),
+        (40,176,200,50,"#EEEDFE","#534AB7"),(40,240,200,50,"#EEEDFE","#534AB7"),(40,304,200,50,"#EEEDFE","#534AB7"),
+        (300,176,220,178,"#E1F5EE","#0F6E56"),(570,176,220,178,"#FAECE7","#993C1D"),
+    ]
+    for x,y,w,h,fill,stroke in rects:
+        r = Rect(x, H-(y+h), w, h, rx=6, ry=6)
+        r.fillColor = col(fill); r.strokeColor = col(stroke); r.strokeWidth = 1
+        d.add(r)
+    texts = [
+        (410,38,14,"#2C2C2A","Partner pricing"),(410,54,11,"#5F5E5A","all prices per month"),
+        (140,122,14,"#26215C","Display partner"),(140,139,11,"#534AB7","listed — by audience + tier"),
+        (410,122,14,"#04342C","Booking partner"),(410,139,11,"#0F6E56","reserve in-app"),
+        (680,122,14,"#4A1B0C","Pre-orders"),(680,139,11,"#993C1D","restaurants only"),
+        (140,197,13,"#26215C","Guest only"),(140,215,11,"#534AB7","Basic R200 · Premium R300"),
+        (140,261,13,"#26215C","Local only"),(140,279,11,"#534AB7","Basic R200 · Premium R300"),
+        (140,325,13,"#26215C","Both"),(140,343,11,"#534AB7","Premium only — R400"),
+        (410,200,13,"#04342C","R300 / month base"),(410,226,11,"#0F6E56","Restaurants: + R10 / cover"),
+        (410,248,11,"#0F6E56","Business/Services: + 10% / service"),(410,270,11,"#0F6E56","Attractions: + 10% / person"),
+        (410,300,11,"#0F6E56","shown to Both"),
+        (680,200,13,"#4A1B0C","R300 / month + 5%"),(680,226,11,"#993C1D","5% of each pre-order"),
+        (680,248,11,"#993C1D","opens Premium (full info)"),(680,270,11,"#993C1D","chosen audience"),
+        (680,300,11,"#993C1D","takeaway / delivery only"),
+    ]
+    for x,y,size,fill,t in texts:
+        st = String(x, H-y, t)
+        st.textAnchor = "middle"; st.fontName = "Helvetica"; st.fontSize = size
+        st.fillColor = col(fill)
+        d.add(st)
+    return d
 
 
 def build(md, out):
@@ -54,19 +105,14 @@ def build(md, out):
         elif s == "@@PAGEBREAK@@":
             flow.append(PageBreak())
         elif s == "@@ORGANOGRAM@@":
-            try:
-                from svglib.svglib import svg2rlg
-                here = os.path.dirname(os.path.abspath(__file__))
-                d = svg2rlg(os.path.join(here, "pricing-organogram.svg"))
-                avail = A4[0] - 36 * mm
-                sc = avail / d.width
-                d.width *= sc
-                d.height *= sc
-                d.scale(sc, sc)
-                d.hAlign = "CENTER"
-                flow.append(Spacer(1, 4)); flow.append(d); flow.append(Spacer(1, 6))
-            except Exception as e:
-                flow.append(Paragraph("[pricing organogram — see app]", body))
+            d = _pricing_organogram()
+            avail = A4[0] - 36 * mm
+            sc = avail / d.width
+            d.width *= sc
+            d.height *= sc
+            d.scale(sc, sc)
+            d.hAlign = "CENTER"
+            flow.append(Spacer(1, 4)); flow.append(d); flow.append(Spacer(1, 6))
         elif s.startswith(">"):
             flow.append(Paragraph(inline(s.lstrip("> ").strip()), quote))
         elif s.startswith("|"):
