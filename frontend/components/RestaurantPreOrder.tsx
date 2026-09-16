@@ -83,9 +83,9 @@ export default function RestaurantPreOrder({ restaurant }: { restaurant: Restaur
     <div className="mt-2">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="text-sm font-medium px-3 py-1.5 rounded-md bg-orange-50 text-orange-700 hover:bg-orange-100"
+        className="w-full sm:w-auto text-sm font-medium px-4 py-2 rounded-md bg-orange-500 text-white hover:bg-orange-600"
       >
-        {open ? "Hide pre-order" : "Pre-order (takeaway / delivery)"}
+        {open ? "Hide pre-order" : "Click here to pre-order (takeaway / delivery)"}
       </button>
 
       {open && (

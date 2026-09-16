@@ -852,6 +852,7 @@ export default function GuestDashboard() {
                                 Click here to book at this establishment.
                               </Button>
                             )}
+                            <RestaurantPreOrder restaurant={restaurant as any} />
                             {discOffered(restaurant) && (
                               <Button
                                 size="sm"
@@ -951,8 +952,6 @@ export default function GuestDashboard() {
                                 <span className="inline-block px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-medium">Takes bookings</span>
                               </div>
                             )}
-
-                            <RestaurantPreOrder restaurant={restaurant as any} />
 
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
