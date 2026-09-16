@@ -843,7 +843,7 @@ export default function GuestDashboard() {
                               onRated={applyRatingSummary}
                               readOnly={restaurant.accessLevel === "Booking" && (restaurant.bookingItems?.length ?? 0) > 0}
                             />
-                            {restaurant.accessLevel === "Booking" && (restaurant.bookingItems?.length ?? 0) > 0 && (
+                            {(restaurant.offersBookings || restaurant.accessLevel === "Booking") && (restaurant.bookingItems?.length ?? 0) > 0 && (
                               <Button
                                 size="sm"
                                 className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black w-full sm:w-auto"
@@ -1288,7 +1288,7 @@ export default function GuestDashboard() {
                               onRated={applyRatingSummary}
                               readOnly={service.accessLevel === "Booking"}
                             />
-                            {service.accessLevel === "Booking" && (
+                            {(service.offersBookings || service.accessLevel === "Booking") && (service.bookingItems?.length ?? 0) > 0 && (
                               <Button
                                 size="sm"
                                 className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black w-full sm:w-auto"
@@ -1502,7 +1502,7 @@ export default function GuestDashboard() {
                               onRated={applyRatingSummary}
                               readOnly={attraction.accessLevel === "Booking"}
                             />
-                            {attraction.accessLevel === "Booking" && (
+                            {(attraction.offersBookings || attraction.accessLevel === "Booking") && (attraction.bookingItems?.length ?? 0) > 0 && (
                               <Button
                                 size="sm"
                                 className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black w-full sm:w-auto"

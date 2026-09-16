@@ -790,7 +790,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
                   checked={formData.offersBookings}
                   onCheckedChange={(checked) => setFormData({ ...formData, offersBookings: checked })}
                 />
-                <Label htmlFor="offersBookings">Offers bookings</Label>
+                <Label htmlFor="offersBookings">Bookable Items</Label>
               </div>
             </div>
           </div>

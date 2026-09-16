@@ -74,7 +74,7 @@ function appearSection(cat: string): Section {
         "Local only — R300/month",
         "Both guests and locals — R400/month",
       ], note: "R300/month to reach either guests or locals; R400/month to reach both" },
-      { key: "Bookings", type: "multi", options: [
+      { key: "Bookings", label: "Bookable items", type: "multi", options: [
         `We take bookings — ${BOOKING_NOTE[cat] || "R300/month"}`,
       ], note: "tick if guests can reserve or book with you" },
       { key: "Works from different addresses", type: "multi", options: [

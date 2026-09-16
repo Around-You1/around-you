@@ -697,7 +697,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
               checked={formData.offersBookings}
               onCheckedChange={(checked) => setFormData({ ...formData, offersBookings: !!checked })}
             />
-            <Label htmlFor="offersBookings" className="cursor-pointer">Offers bookings</Label>
+            <Label htmlFor="offersBookings" className="cursor-pointer">Bookable Items</Label>
           </div>
 
           <div className="space-y-2" style={{ display: tierNum >= 1 ? undefined : "none" }}>
