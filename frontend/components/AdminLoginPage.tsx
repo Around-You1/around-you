@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import RevealInput from "./RevealInput";
 import { useToast } from "@/components/ui/use-toast";
 import backend from "~backend/client";
 import AppLogo from "../components/AppLogo";
@@ -120,7 +121,7 @@ export default function AdminLoginPage() {
               >
                 Password
               </label>
-              <input
+              <RevealInput
                 id="admin-password"
                 type="password"
                 value={password}
@@ -151,7 +152,7 @@ export default function AdminLoginPage() {
               >
                 Access Code
               </label>
-              <input
+              <RevealInput
                 id="admin-access-code"
                 type="password"
                 value={accessCode}

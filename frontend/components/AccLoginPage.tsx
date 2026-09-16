@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import RevealInput from "./RevealInput";
 import backend from "@/backend/client";
 import { useToast } from "@/components/ui/use-toast";
 import AppLogo from "@/components/AppLogo";
@@ -45,7 +46,7 @@ export default function AccLoginPage() {
           <h1 className="text-2xl font-bold text-center" style={{ color: "#E6F7E6" }}>Accountant Portal</h1>
           <p className="text-center text-sm" style={{ color: "#8a8a8a" }}>Enter your access code to continue.</p>
           <form onSubmit={submit} className="space-y-4">
-            <input
+            <RevealInput
               type="text"
               value={code}
               onChange={(e) => setCode(e.target.value)}

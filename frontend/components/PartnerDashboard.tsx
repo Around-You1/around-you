@@ -200,6 +200,7 @@ export default function PartnerDashboard() {
   const [editing, setEditing] = useState(false);
   const [showGate, setShowGate] = useState(false);
   const [editCodeInput, setEditCodeInput] = useState("");
+  const [showEdit, setShowEdit] = useState(false);
   const [verifiedEditCode, setVerifiedEditCode] = useState("");
   const [verifying, setVerifying] = useState(false);
   const router = useRouter();
@@ -417,14 +418,24 @@ export default function PartnerDashboard() {
               <p className="text-sm text-muted-foreground">Enter the edit code the Around You team gave you to unlock editing of your profile.</p>
               <div className="space-y-1">
                 <Label htmlFor="edit-code-input" className="text-xs">Edit code</Label>
-                <Input
-                  id="edit-code-input"
-                  value={editCodeInput}
-                  onChange={(ev) => setEditCodeInput(ev.target.value)}
-                  placeholder="Edit code"
-                  className="font-mono tracking-widest"
-                  onKeyDown={(ev) => { if (ev.key === "Enter") verifyAndOpen(); }}
-                />
+                <div className="relative">
+                  <Input
+                    id="edit-code-input"
+                    type={showEdit ? "text" : "password"}
+                    value={editCodeInput}
+                    onChange={(ev) => setEditCodeInput(ev.target.value)}
+                    placeholder="Edit code"
+                    className="font-mono tracking-widest pr-10"
+                    onKeyDown={(ev) => { if (ev.key === "Enter") verifyAndOpen(); }}
+                  />
+                  <button type="button" onClick={() => setShowEdit((v) => !v)} aria-label={showEdit ? "Hide" : "Show"} title={showEdit ? "Hide" : "Show"} tabIndex={-1} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    {showEdit ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 8 10 8a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/></svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-8 10-8 10 8 10 8-3 8-10 8-10-8-10-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    )}
+                  </button>
+                </div>
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setShowGate(false)} disabled={verifying}>Cancel</Button>

@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import RevealInput from "./RevealInput";
 import { useToast } from "@/components/ui/use-toast";
 import backend from "~backend/client";
 import AppLogo from "../components/AppLogo";
@@ -181,7 +182,7 @@ export default function RepLoginPage() {
               </div>
               <div className="space-y-1.5">
                 <label htmlFor="rep-access-code" className={labelCls} style={labelStyle}>Access Code</label>
-                <input id="rep-access-code" type="password" value={repAccessCode} onChange={(e) => setRepAccessCode(e.target.value)} placeholder="From your welcome email" autoComplete="one-time-code" style={inputStyle} className="transition-all focus:border-[#39FF14] placeholder-gray-600" />
+                <RevealInput id="rep-access-code" type="password" value={repAccessCode} onChange={(e) => setRepAccessCode(e.target.value)} placeholder="From your welcome email" autoComplete="one-time-code" style={inputStyle} className="transition-all focus:border-[#39FF14] placeholder-gray-600" />
               </div>
               <button id="rep-login-btn" type="submit" disabled={loading}
                 style={{ background: loading ? "#1a3a0a" : `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`, color: "#000", border: "none", borderRadius: 10, padding: "14px 0", width: "100%", fontWeight: 700, fontSize: "1rem", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.5 : 1, minHeight: 48, marginTop: 8 }}
