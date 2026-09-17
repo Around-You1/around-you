@@ -65,10 +65,11 @@ type EstateAgent struct {
 	Latitude   *float64 `json:"latitude,omitempty"`
 	Longitude  *float64 `json:"longitude,omitempty"`
 
-	PhotoURL      string `json:"photoUrl,omitempty"`
-	ContactNumber string `json:"contactNumber,omitempty"`
-	Email         string `json:"email,omitempty"`
-	Bio           string `json:"bio,omitempty"`
+	PhotoURL      string   `json:"photoUrl,omitempty"`
+	ImageURLs     []string `json:"imageUrls,omitempty"` // agent-page carousel (up to 10)
+	ContactNumber string   `json:"contactNumber,omitempty"`
+	Email         string   `json:"email,omitempty"`
+	Bio           string   `json:"bio,omitempty"`
 
 	ProfileReferenceCode string `json:"profileReferenceCode,omitempty"`
 	IsActive             bool   `json:"isActive"`
@@ -121,4 +122,11 @@ type EstateProperty struct {
 	ImageURL     string   `json:"imageUrl,omitempty"`
 	ImageURLs    []string `json:"imageUrls,omitempty"`
 	IsActive     bool     `json:"isActive"`
+
+	// Real Estate redesign extras.
+	PriceText       string `json:"priceText,omitempty"`  // price exactly as typed (free text)
+	Code            string `json:"code,omitempty"`       // agent contact/listing code
+	ShowHouse       bool   `json:"showHouse"`            // one of this week's show houses
+	ShowHouseNumber int    `json:"showHouseNumber,omitempty"` // 1-10 slot when ShowHouse
+	ListingURL      string `json:"listingUrl,omitempty"` // linkable URL for the listing
 }

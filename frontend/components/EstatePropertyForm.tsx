@@ -1,17 +1,16 @@
 "use client";
 
 // -----------------------------------------------------------------------------
-// EstatePropertyForm — Real Estate property criteria for an Estate Agent to
-// populate (Admin › Real Estate tab).
+// Property listing fields — one property an Estate Agent lists (image 1 spec):
+// 10-image carousel, Show House (+1-10) / Sale / Rent, Code, Price, Bedrooms,
+// Bathrooms, Garages, URL.
 //
-// Phase 1: front-end form only. All fields are captured in local state; the
-// "Save listing" button currently just validates and reports the captured
-// values. Backend persistence (storing the listing against an agent) and the
-// public Agencies → Agent → property display pages are the next phases.
+// This is a CONTROLLED component: the parent (EstateAgentForm) owns the array of
+// listings and passes `value` + `onChange`. Saving to the backend happens in the
+// parent when the agent is saved.
 // -----------------------------------------------------------------------------
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,71 +22,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
+import { Trash2 } from "lucide-react";
 import MultiImageUpload from "./MultiImageUpload";
 
-// 1–10 options shared by Bedrooms / Bathrooms / Garages and the show-house number.
 const ONE_TO_TEN = Array.from({ length: 10 }, (_, i) => String(i + 1));
 
-const emptyListing = {
-  images: [] as string[],
+export interface PropertyListing {
+  id?: number; // set for listings already saved in the database
+  images: string[];
+  isShowHouse: boolean;
+  showHouseNumber: string; // "1".."10"
+  listingType: "" | "sale" | "rent";
+  code: string;
+  price: string; // free text
+  bedrooms: string; // "1".."10"
+  bathrooms: string;
+  garages: string;
+  url: string;
+}
+
+export const newListing = (): PropertyListing => ({
+  images: [],
   isShowHouse: false,
   showHouseNumber: "1",
+  listingType: "",
   code: "",
   price: "",
   bedrooms: "",
   bathrooms: "",
   garages: "",
   url: "",
-};
+});
 
-export default function EstatePropertyForm({
-  onSaved,
-}: {
-  onSaved?: (listing: typeof emptyListing) => void;
-}) {
-  const { toast } = useToast();
-  const [listing, setListing] = useState({ ...emptyListing });
-  const [saving, setSaving] = useState(false);
-
-  const set = <K extends keyof typeof emptyListing>(key: K, value: (typeof emptyListing)[K]) =>
-    setListing((s) => ({ ...s, [key]: value }));
-
-  const handleSave = async () => {
-    // Required: code, price, bedrooms, bathrooms, garages.
-    const missing: string[] = [];
-    if (!listing.code.trim()) missing.push("Code");
-    if (!listing.price.trim()) missing.push("Price");
-    if (!listing.bedrooms) missing.push("Bedrooms");
-    if (!listing.bathrooms) missing.push("Bathrooms");
-    if (!listing.garages) missing.push("Garages");
-    if (missing.length > 0) {
-      toast({
-        title: "Please complete all fields",
-        description: `Missing: ${missing.join(", ")}.`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setSaving(true);
-    try {
-      // Phase 2 will send this to the backend (e.g. backend.estate.createProperty).
-      onSaved?.(listing);
-      toast({
-        title: "Listing captured",
-        description: "Saving to the database will be wired up in the next phase.",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const numberSelect = (
-    value: string,
-    onChange: (v: string) => void,
-    placeholder = "Select…",
-  ) => (
+function numberSelect(value: string, onChange: (v: string) => void, placeholder = "Select…") {
+  return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger>
         <SelectValue placeholder={placeholder} />
@@ -101,44 +69,87 @@ export default function EstatePropertyForm({
       </SelectContent>
     </Select>
   );
+}
+
+export default function PropertyListingFields({
+  value,
+  onChange,
+  onRemove,
+  index,
+}: {
+  value: PropertyListing;
+  onChange: (v: PropertyListing) => void;
+  onRemove?: () => void;
+  index?: number;
+}) {
+  const set = <K extends keyof PropertyListing>(key: K, v: PropertyListing[K]) =>
+    onChange({ ...value, [key]: v });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Add Property Listing</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <Card className="border-[#AEECE4]/40">
+      <CardContent className="space-y-6 p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold">
+            Property listing{typeof index === "number" ? ` #${index + 1}` : ""}
+          </p>
+          {onRemove && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={onRemove}
+            >
+              <Trash2 className="mr-1 h-4 w-4" /> Remove
+            </Button>
+          )}
+        </div>
+
         {/* Carousel of up to 10 images (drag & drop) */}
         <MultiImageUpload
           label="Property images"
-          images={listing.images}
+          images={value.images}
           onChange={(urls) => set("images", urls)}
           maxImages={10}
         />
 
-        {/* Show House + number 1/10 */}
-        <div className="flex items-center gap-3">
-          <Checkbox
-            id="showHouse"
-            checked={listing.isShowHouse}
-            onCheckedChange={(v) => set("isShowHouse", v === true)}
-          />
-          <Label htmlFor="showHouse" className="cursor-pointer">
-            Show House
-          </Label>
-          {listing.isShowHouse && (
-            <div className="w-24">
-              {numberSelect(listing.showHouseNumber, (v) => set("showHouseNumber", v), "1")}
-            </div>
-          )}
+        {/* Show House (+1-10), Sale, Rent */}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={value.isShowHouse}
+              onCheckedChange={(v) => set("isShowHouse", v === true)}
+            />
+            <Label className="cursor-pointer">Show House</Label>
+            {value.isShowHouse && (
+              <div className="w-20">
+                {numberSelect(value.showHouseNumber, (v) => set("showHouseNumber", v), "1")}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={value.listingType === "sale"}
+              onCheckedChange={(v) => set("listingType", v === true ? "sale" : "")}
+            />
+            <Label className="cursor-pointer">Sale</Label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={value.listingType === "rent"}
+              onCheckedChange={(v) => set("listingType", v === true ? "rent" : "")}
+            />
+            <Label className="cursor-pointer">Rent</Label>
+          </div>
         </div>
 
         {/* Code */}
         <div className="space-y-1.5">
-          <Label htmlFor="code">Code</Label>
+          <Label>Code</Label>
           <Input
-            id="code"
-            value={listing.code}
+            value={value.code}
             onChange={(e) => set("code", e.target.value)}
             placeholder="Agent contact / listing code"
           />
@@ -146,54 +157,39 @@ export default function EstatePropertyForm({
 
         {/* Price */}
         <div className="space-y-1.5">
-          <Label htmlFor="price">Price</Label>
+          <Label>Price</Label>
           <Input
-            id="price"
-            value={listing.price}
+            value={value.price}
             onChange={(e) => set("price", e.target.value)}
             placeholder="e.g. R 1 200 000 or R 6 000 / month"
           />
         </div>
 
         {/* Bedrooms / Bathrooms / Garages */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="space-y-1.5">
             <Label>Bedrooms</Label>
-            {numberSelect(listing.bedrooms, (v) => set("bedrooms", v))}
+            {numberSelect(value.bedrooms, (v) => set("bedrooms", v))}
           </div>
           <div className="space-y-1.5">
             <Label>Bathrooms</Label>
-            {numberSelect(listing.bathrooms, (v) => set("bathrooms", v))}
+            {numberSelect(value.bathrooms, (v) => set("bathrooms", v))}
           </div>
           <div className="space-y-1.5">
             <Label>Garages</Label>
-            {numberSelect(listing.garages, (v) => set("garages", v))}
+            {numberSelect(value.garages, (v) => set("garages", v))}
           </div>
         </div>
 
         {/* URL */}
         <div className="space-y-1.5">
-          <Label htmlFor="url">URL</Label>
+          <Label>URL</Label>
           <Input
-            id="url"
             type="url"
-            value={listing.url}
+            value={value.url}
             onChange={(e) => set("url", e.target.value)}
             placeholder="https://…"
           />
-        </div>
-
-        <div className="flex gap-2">
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black"
-          >
-            {saving ? "Saving…" : "Save listing"}
-          </Button>
-          <Button variant="outline" onClick={() => setListing({ ...emptyListing })} disabled={saving}>
-            Clear
-          </Button>
         </div>
       </CardContent>
     </Card>
