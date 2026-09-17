@@ -122,7 +122,7 @@ func main() {
 	r.auth("GET /estate/agents/all", httpx.Empty(estate.ListAllAgents))
 	r.auth("POST /charity/set", httpx.Body(charity.Set))
 	r.auth("GET /charity/get", httpx.Query(charity.Get))
-	r.auth("GET /charity/tally", httpx.Query(charity.Tally))
+	r.auth("GET /charity/by-province", httpx.Query(charity.ByProvince))
 	r.auth("POST /estate/agent/active", httpx.Body(estate.SetAgentActive))
 	r.auth("DELETE /estate/agent", httpx.Body(estate.DeleteAgent))
 	r.auth("POST /estate/property", httpx.Body(estate.CreateProperty))

@@ -14,7 +14,7 @@ export interface OfficialUseData {
   companyVatNumber: string;
   guestType: string;
   accessLevel: string;
-  charity?: string[];
+  charity?: { name: string; address: string; contact: string } | string[];
 }
 
 const CHARITY_ROW1 = ["Adults", "Children", "Animals"] as const;
@@ -77,32 +77,14 @@ export default function OfficialUseSection({ data, onChange, showTierFields = tr
   const set = (field: keyof OfficialUseData) => (e: React.ChangeEvent<HTMLInputElement>) =>
     onChange({ ...data, [field]: e.target.value });
 
-  // Charity is a two-level, single-select pick: one group (Adults/Children/
-  // Animals) and — only once a group is chosen — one focus (Health/Homes/Food).
-  // Stored as [group, sub] so the analytics matrix can pair them.
-  const charity = data.charity || [];
-  const charityGroup = charity.find((c) => (CHARITY_ROW1 as readonly string[]).includes(c)) || "";
-  const charitySub = charity.find((c) => (CHARITY_ROW2 as readonly string[]).includes(c)) || "";
-
-  const selectCharityGroup = (g: string) => {
-    const next = charityGroup === g ? "" : g; // click again to clear
-    onChange({ ...data, charity: [...(next ? [next] : []), ...(next && charitySub ? [charitySub] : [])] });
-  };
-  const selectCharitySub = (s: string) => {
-    const next = charitySub === s ? "" : s;
-    onChange({ ...data, charity: [...(charityGroup ? [charityGroup] : []), ...(next ? [next] : [])] });
-  };
-
-  const CharityRow = ({ options, selected, onSelect }: { options: readonly string[]; selected: string; onSelect: (c: string) => void }) => (
-    <div className="flex flex-wrap gap-4">
-      {options.map((c) => (
-        <label key={c} className="flex items-center gap-2 cursor-pointer text-sm">
-          <input type="checkbox" checked={selected === c} onChange={() => onSelect(c)} className="accent-amber-600" />
-          {c}
-        </label>
-      ))}
-    </div>
-  );
+  // Charity the partner nominates: free-text Name / Address / Contact number.
+  const rawCharity = data.charity;
+  const charity =
+    rawCharity && !Array.isArray(rawCharity)
+      ? rawCharity
+      : { name: "", address: "", contact: "" };
+  const setCharity = (field: "name" | "address" | "contact") => (e: any) =>
+    onChange({ ...data, charity: { ...charity, [field]: e.target.value } });
 
   return (
     <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20">
@@ -216,8 +198,20 @@ export default function OfficialUseSection({ data, onChange, showTierFields = tr
 
         <div className="space-y-2 pt-2 border-t border-amber-200/60 dark:border-amber-800/60">
           <Label className="text-sm font-semibold text-amber-800 dark:text-amber-400">Charity</Label>
-          <CharityRow options={CHARITY_ROW1} selected={charityGroup} onSelect={selectCharityGroup} />
-          {charityGroup && <CharityRow options={CHARITY_ROW2} selected={charitySub} onSelect={selectCharitySub} />}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="charity-name" className="text-xs">Name</Label>
+              <Input id="charity-name" value={charity.name} onChange={setCharity("name")} placeholder="Charity name" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="charity-address" className="text-xs">Address</Label>
+              <Input id="charity-address" value={charity.address} onChange={setCharity("address")} placeholder="Charity address" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="charity-contact" className="text-xs">Contact number</Label>
+              <Input id="charity-contact" value={charity.contact} onChange={setCharity("contact")} placeholder="Charity contact number" />
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

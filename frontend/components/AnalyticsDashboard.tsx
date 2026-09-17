@@ -137,9 +137,9 @@ export default function AnalyticsDashboard() {
   const [events, setEvents] = useState<EventsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [printMode, setPrintMode] = useState(false);
-  const [charityTally, setCharityTally] = useState<{ category: string; thisMonth: number; allTime: number }[]>([]);
-  const [charityCombos, setCharityCombos] = useState<{ group: string; sub: string; thisMonth: number; allTime: number }[]>([]);
+  const [charityProvinces, setCharityProvinces] = useState<{ province: string; charities: { name: string; address: string; contact: string; partners: string[] }[] }[]>([]);
   const [charityMonth, setCharityMonth] = useState("");
+  const [openCharity, setOpenCharity] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -169,14 +169,13 @@ export default function AnalyticsDashboard() {
         backend.analytics.reps(),
         backend.analytics.business(),
         backend.analytics.events(),
-        backend.charity.tally().catch(() => ({ rows: [], month: "" })),
+        backend.charity.byProvince().catch(() => ({ provinces: [], month: "" })),
       ]);
       setReps(activity.reps);
       setRepStats(stats);
       setBizStats(biz);
       setEvents(ev);
-      setCharityTally((charity as any).rows || []);
-      setCharityCombos((charity as any).combos || []);
+      setCharityProvinces((charity as any).provinces || []);
       setCharityMonth((charity as any).month || "");
     } catch (error) {
       console.error("Failed to load analytics:", error);
@@ -203,28 +202,50 @@ export default function AnalyticsDashboard() {
 
         <h1 className="text-4xl font-bold text-foreground">Analytics Dashboard</h1>
 
-        <Section title="Charity Support">
-          {!charityCombos.some((c) => c.allTime > 0) ? (
-            <Pending loading={loading} empty="No charity selections yet." />
+        <Section title="Charity Support by Province">
+          {charityProvinces.length === 0 ? (
+            <Pending loading={loading} empty="No charities nominated this month." />
           ) : (
             <>
             <p className="text-xs text-muted-foreground mb-3">
-              What partners chose to support in the Official Use section, broken down by focus area. "This month" counts new selections in {charityMonth || "the current month"}.
+              Charities nominated by partners in {charityMonth || "the current month"}, grouped by province. Tick a charity to see which partners put it forward.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {["Adults", "Children", "Animals"].map((group) => (
-                <div key={group} className="rounded-lg border border-border p-3">
-                  <p className="text-sm font-semibold mb-2">{group}</p>
-                  <div className="space-y-1.5">
-                    {["Health", "Homes", "Food"].map((sub) => {
-                      const combo = charityCombos.find((x) => x.group === group && x.sub === sub);
+            <div className="space-y-4">
+              {charityProvinces.map((prov) => (
+                <div key={prov.province || "—"} className="rounded-lg border border-border p-3">
+                  <p className="text-sm font-semibold mb-2">{prov.province || "(No province)"}</p>
+                  <div className="space-y-2">
+                    {prov.charities.map((ch, ci) => {
+                      const key = `${prov.province}::${ch.name}::${ci}`;
+                      const open = !!openCharity[key];
                       return (
-                        <div key={sub} className="flex items-baseline justify-between text-sm">
-                          <span className="text-muted-foreground">{sub}</span>
-                          <span>
-                            <span className="font-bold text-foreground">{combo?.allTime ?? 0}</span>
-                            <span className="text-xs text-muted-foreground"> all time · {combo?.thisMonth ?? 0} this month</span>
-                          </span>
+                        <div key={key} className="border-b border-border/60 pb-2 last:border-0">
+                          <label className="flex items-start gap-2 cursor-pointer text-sm">
+                            <input
+                              type="checkbox"
+                              checked={open}
+                              onChange={() => setOpenCharity((o) => ({ ...o, [key]: !o[key] }))}
+                              className="mt-1 accent-amber-600"
+                            />
+                            <span>
+                              <span className="font-medium text-foreground">{ch.name}</span>
+                              <span className="text-xs text-muted-foreground"> · {ch.partners.length} partner{ch.partners.length === 1 ? "" : "s"}</span>
+                              {(ch.address || ch.contact) && (
+                                <span className="block text-xs text-muted-foreground">
+                                  {[ch.address, ch.contact].filter(Boolean).join(" · ")}
+                                </span>
+                              )}
+                            </span>
+                          </label>
+                          {open && (
+                            <ul className="mt-1 ml-6 list-disc text-sm text-muted-foreground">
+                              {ch.partners.length > 0 ? (
+                                ch.partners.map((pn, pi) => <li key={pi}>{pn}</li>)
+                              ) : (
+                                <li>(partner name unavailable)</li>
+                              )}
+                            </ul>
+                          )}
                         </div>
                       );
                     })}

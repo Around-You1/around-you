@@ -163,8 +163,7 @@ def discounts():
 
 def charity():
     return [*section("Charity You'd Like to Support"),
-        *ticks("Choose a group (tick one)", ["Adults","Children","Animals"], cols=3),
-        *ticks("Choose a focus (tick one)", ["Health","Homes","Food"], cols=3)]
+        fill("Charity name"), fill("Charity address"), fill("Charity contact number")]
 
 def accessibility():
     return [*section("Accessibility & Family"),
@@ -318,7 +317,7 @@ re_ = [*section("Agency Details"),
     *ticks("Province", PROVINCE, cols=3),
     fill("Postal code"), bigfill("Description",2),
     para("Please attach, by email: photos of the property.", lbl),
-]
+] + [PageBreak()] + charity()
 build("real-estate-onboarding.pdf", "Around You — Real Estate & Rentals Onboarding", re_,
       extra_intro="This covers estate agencies, individual agents, and property listings.")
 print("done")

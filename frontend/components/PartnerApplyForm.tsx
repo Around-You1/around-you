@@ -96,8 +96,9 @@ const accessibilitySection: Section = { title: "Accessibility & family", fields:
   { key: "Child friendly", type: "multi", options: ["Child Friendly"] },
 ] };
 const charitySection: Section = { title: "Charity you'd like to support", fields: [
-  { key: "Charity group", type: "radio", options: ["Adults", "Children", "Animals"] },
-  { key: "Charity focus", type: "radio", options: ["Health", "Homes", "Food"] },
+  { key: "Charity name", type: "text" },
+  { key: "Charity address", type: "text" },
+  { key: "Charity contact number", type: "text" },
 ] };
 
 function specsFor(cat: string): Section[] {

@@ -367,19 +367,15 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 		partnerID, charityType = created.ID, "estate_agency"
 	}
 
-	// Carry over the applicant's charity choice (group + focus). It lives in a
-	// separate table, so we set it after the partner record exists. Best-effort:
-	// a charity write must never undo a successful onboarding.
+	// Carry over the applicant's nominated charity (name / address / contact). It
+	// lives in a separate table, so we set it after the partner record exists.
+	// Best-effort: a charity write must never undo a successful onboarding.
 	if partnerID != 0 {
-		cats := []string{}
-		if g := a.f("Charity group"); g != "" {
-			cats = append(cats, g)
-		}
-		if s := a.f("Charity focus"); s != "" {
-			cats = append(cats, s)
-		}
-		if len(cats) > 0 {
-			_, _ = charity.Set(ctx, &charity.SetRequest{PartnerType: charityType, PartnerID: partnerID, Categories: cats})
+		cName := a.f("Charity name")
+		cAddr := a.f("Charity address")
+		cContact := a.f("Charity contact number")
+		if cName != "" || cAddr != "" || cContact != "" {
+			_, _ = charity.Set(ctx, &charity.SetRequest{PartnerType: charityType, PartnerID: partnerID, Name: cName, Address: cAddr, Contact: cContact})
 		}
 	}
 	return nil

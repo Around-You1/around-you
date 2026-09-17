@@ -1,11 +1,14 @@
-// Package charity records the charity focus areas a partner supports (captured
-// in the Official Use section) and tallies them per month for the Admin
-// Analytics page. Stored in a single partner_charity table so every partner
-// type shares the same shape.
+// Package charity records the charity a partner nominates in the Official Use
+// section — captured as free text (name, address, contact number) — and reports
+// them per province per month for the Admin Analytics page. One row per partner
+// in charity_nominations; province + partner name are denormalised so the
+// per-province report needs no cross-table joins.
 package charity
 
 import (
 	"context"
+	"database/sql"
+	"sort"
 	"strings"
 	"time"
 
@@ -14,23 +17,6 @@ import (
 	"backend_encore/internal/errs"
 )
 
-// Categories is the fixed, ordered set shown as checkboxes and columns.
-var Categories = []string{"Adults", "Children", "Animals", "Health", "Homes", "Food"}
-
-// CharityGroups (who) and CharitySubs (what) form the two-level single-select.
-// A partner picks one of each, so their support is a (group, sub) pair.
-var CharityGroups = []string{"Adults", "Children", "Animals"}
-var CharitySubs = []string{"Health", "Homes", "Food"}
-
-func isValid(c string) bool {
-	for _, v := range Categories {
-		if v == c {
-			return true
-		}
-	}
-	return false
-}
-
 func requirePriv(ctx context.Context) error {
 	if !auth.IsPrivileged(ctx) {
 		return &errs.Error{Code: errs.PermissionDenied, Message: "not permitted"}
@@ -38,12 +24,40 @@ func requirePriv(ctx context.Context) error {
 	return nil
 }
 
-// ---- Set ----------------------------------------------------------------
+// partnerNameProvince resolves a partner's display name and province so the
+// nomination can be grouped by province in the report.
+func partnerNameProvince(ctx context.Context, partnerType string, partnerID int64) (name, province string) {
+	var q string
+	switch partnerType {
+	case "restaurant":
+		q = "SELECT name, COALESCE(province,'') FROM restaurants WHERE id=$1"
+	case "service":
+		q = "SELECT name, COALESCE(province,'') FROM services WHERE id=$1"
+	case "attraction":
+		q = "SELECT name, COALESCE(province,'') FROM attractions WHERE id=$1"
+	case "accommodation":
+		q = "SELECT name, COALESCE(province,'') FROM accommodations WHERE id=$1"
+	case "estate_agency":
+		q = "SELECT name, COALESCE(province,'') FROM estate_agencies WHERE id=$1"
+	case "estate_agent":
+		q = `SELECT ea.name, COALESCE(ag.province,'')
+		     FROM estate_agents ea LEFT JOIN estate_agencies ag ON ag.id = ea.agency_id
+		     WHERE ea.id=$1`
+	default:
+		return "", ""
+	}
+	_ = appdb.SQLDB.QueryRowContext(ctx, q, partnerID).Scan(&name, &province)
+	return name, province
+}
+
+// ---- Set / clear a partner's charity nomination -------------------------
 
 type SetRequest struct {
-	PartnerType string   `json:"partnerType"`
-	PartnerID   int64    `json:"partnerId"`
-	Categories  []string `json:"categories"`
+	PartnerType string `json:"partnerType"`
+	PartnerID   int64  `json:"partnerId"`
+	Name        string `json:"name"`
+	Address     string `json:"address"`
+	Contact     string `json:"contact"`
 }
 type OkResponse struct {
 	OK bool `json:"ok"`
@@ -57,53 +71,37 @@ func Set(ctx context.Context, req *SetRequest) (*OkResponse, error) {
 	if strings.TrimSpace(req.PartnerType) == "" || req.PartnerID == 0 {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "partnerType and partnerId are required"}
 	}
+	name := strings.TrimSpace(req.Name)
+	address := strings.TrimSpace(req.Address)
+	contact := strings.TrimSpace(req.Contact)
 
-	// desired set (valid + deduped)
-	desired := map[string]bool{}
-	for _, c := range req.Categories {
-		if isValid(c) {
-			desired[c] = true
-		}
-	}
-
-	// existing set
-	existing := map[string]bool{}
-	rows, err := appdb.SQLDB.QueryContext(ctx,
-		`SELECT category FROM partner_charity WHERE partner_type=$1 AND partner_id=$2`,
-		req.PartnerType, req.PartnerID)
-	if err != nil {
-		return nil, err
-	}
-	for rows.Next() {
-		var c string
-		if err := rows.Scan(&c); err != nil {
-			rows.Close()
+	// Nothing entered → clear any existing nomination.
+	if name == "" && address == "" && contact == "" {
+		_, err := appdb.SQLDB.ExecContext(ctx,
+			`DELETE FROM charity_nominations WHERE partner_type=$1 AND partner_id=$2`,
+			req.PartnerType, req.PartnerID)
+		if err != nil {
 			return nil, err
 		}
-		existing[c] = true
+		return &OkResponse{OK: true}, nil
 	}
-	rows.Close()
 
-	// delete removed (preserve created_at on unchanged rows)
-	for c := range existing {
-		if !desired[c] {
-			if _, err := appdb.SQLDB.ExecContext(ctx,
-				`DELETE FROM partner_charity WHERE partner_type=$1 AND partner_id=$2 AND category=$3`,
-				req.PartnerType, req.PartnerID, c); err != nil {
-				return nil, err
-			}
-		}
-	}
-	// insert newly added
-	for c := range desired {
-		if !existing[c] {
-			if _, err := appdb.SQLDB.ExecContext(ctx,
-				`INSERT INTO partner_charity (partner_type, partner_id, category) VALUES ($1,$2,$3)
-				 ON CONFLICT DO NOTHING`,
-				req.PartnerType, req.PartnerID, c); err != nil {
-				return nil, err
-			}
-		}
+	partnerName, province := partnerNameProvince(ctx, req.PartnerType, req.PartnerID)
+	if _, err := appdb.SQLDB.ExecContext(ctx, `
+		INSERT INTO charity_nominations
+		  (partner_type, partner_id, partner_name, province, charity_name, charity_address, charity_contact, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7, now(), now())
+		ON CONFLICT (partner_type, partner_id) DO UPDATE SET
+		  partner_name    = EXCLUDED.partner_name,
+		  province        = EXCLUDED.province,
+		  charity_name    = EXCLUDED.charity_name,
+		  charity_address = EXCLUDED.charity_address,
+		  charity_contact = EXCLUDED.charity_contact,
+		  created_at      = now(),
+		  updated_at      = now()`,
+		req.PartnerType, req.PartnerID, partnerName, province, name, address, contact,
+	); err != nil {
+		return nil, err
 	}
 	return &OkResponse{OK: true}, nil
 }
@@ -115,7 +113,9 @@ type GetRequest struct {
 	PartnerID   int64  `query:"partnerId"`
 }
 type GetResponse struct {
-	Categories []string `json:"categories"`
+	Name    string `json:"name"`
+	Address string `json:"address"`
+	Contact string `json:"contact"`
 }
 
 //encore:api auth method=GET path=/charity/get
@@ -123,57 +123,35 @@ func Get(ctx context.Context, req *GetRequest) (*GetResponse, error) {
 	if err := requirePriv(ctx); err != nil {
 		return nil, err
 	}
-	out := []string{}
-	rows, err := appdb.SQLDB.QueryContext(ctx,
-		`SELECT category FROM partner_charity WHERE partner_type=$1 AND partner_id=$2`,
-		req.PartnerType, req.PartnerID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	set := map[string]bool{}
-	for rows.Next() {
-		var c string
-		if err := rows.Scan(&c); err != nil {
-			return nil, err
-		}
-		set[c] = true
-	}
-	// return in canonical order
-	for _, c := range Categories {
-		if set[c] {
-			out = append(out, c)
-		}
-	}
-	return &GetResponse{Categories: out}, rows.Err()
+	var name, address, contact sql.NullString
+	_ = appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT charity_name, charity_address, charity_contact FROM charity_nominations WHERE partner_type=$1 AND partner_id=$2`,
+		req.PartnerType, req.PartnerID).Scan(&name, &address, &contact)
+	return &GetResponse{Name: name.String, Address: address.String, Contact: contact.String}, nil
 }
 
-// ---- Tally (Analytics) --------------------------------------------------
+// ---- By-province monthly report ----------------------------------------
 
-type TallyRow struct {
-	Category  string `json:"category"`
-	ThisMonth int    `json:"thisMonth"`
-	AllTime   int    `json:"allTime"`
+type CharityRow struct {
+	Name     string   `json:"name"`
+	Address  string   `json:"address"`
+	Contact  string   `json:"contact"`
+	Partners []string `json:"partners"`
 }
-type TallyRequest struct {
+type ProvinceCharities struct {
+	Province  string       `json:"province"`
+	Charities []CharityRow `json:"charities"`
+}
+type ByProvinceRequest struct {
 	Month string `query:"month"` // "YYYY-MM"; empty = current month
 }
-// ComboCount pairs a group (Adults/Children/Animals) with a sub focus
-// (Health/Homes/Food) and counts partners who selected both.
-type ComboCount struct {
-	Group     string `json:"group"`
-	Sub       string `json:"sub"`
-	ThisMonth int    `json:"thisMonth"`
-	AllTime   int    `json:"allTime"`
-}
-type TallyResponse struct {
-	Month  string       `json:"month"`
-	Rows   []TallyRow   `json:"rows"`
-	Combos []ComboCount `json:"combos"`
+type ByProvinceResponse struct {
+	Month     string              `json:"month"`
+	Provinces []ProvinceCharities `json:"provinces"`
 }
 
-//encore:api auth method=GET path=/charity/tally
-func Tally(ctx context.Context, req *TallyRequest) (*TallyResponse, error) {
+//encore:api auth method=GET path=/charity/by-province
+func ByProvince(ctx context.Context, req *ByProvinceRequest) (*ByProvinceResponse, error) {
 	if err := requirePriv(ctx); err != nil {
 		return nil, err
 	}
@@ -186,45 +164,62 @@ func Tally(ctx context.Context, req *TallyRequest) (*TallyResponse, error) {
 	}
 	monthEnd := monthStart.AddDate(0, 1, 0)
 
-	rows := make([]TallyRow, 0, len(Categories))
-	for _, c := range Categories {
-		var thisMonth, allTime int
-		_ = appdb.SQLDB.QueryRowContext(ctx,
-			`SELECT COUNT(*) FROM partner_charity WHERE category=$1 AND created_at >= $2 AND created_at < $3
-			   AND (partner_type, partner_id) NOT IN `+appdb.TestRepEntitiesSubquery(),
-			c, monthStart, monthEnd).Scan(&thisMonth)
-		_ = appdb.SQLDB.QueryRowContext(ctx,
-			`SELECT COUNT(*) FROM partner_charity WHERE category=$1
-			   AND (partner_type, partner_id) NOT IN `+appdb.TestRepEntitiesSubquery(), c).Scan(&allTime)
-		rows = append(rows, TallyRow{Category: c, ThisMonth: thisMonth, AllTime: allTime})
+	rows, err := appdb.SQLDB.QueryContext(ctx, `
+		SELECT COALESCE(province,''), charity_name, COALESCE(charity_address,''), COALESCE(charity_contact,''), COALESCE(partner_name,'')
+		FROM charity_nominations
+		WHERE charity_name <> '' AND created_at >= $1 AND created_at < $2
+		  AND (partner_type, partner_id) NOT IN `+appdb.TestRepEntitiesSubquery()+`
+		ORDER BY COALESCE(province,''), lower(charity_name), COALESCE(partner_name,'')`,
+		monthStart, monthEnd)
+	if err != nil {
+		return nil, err
 	}
+	defer rows.Close()
 
-	// Combo matrix: count partners who chose BOTH a group and a sub. A partner
-	// has one row per selected category, so we self-join partner_charity on the
-	// same partner. "This month" keys off when the sub row was created (group +
-	// sub are inserted together, so their timestamps match).
-	combos := make([]ComboCount, 0, len(CharityGroups)*len(CharitySubs))
-	for _, g := range CharityGroups {
-		for _, s := range CharitySubs {
-			var thisMonth, allTime int
-			_ = appdb.SQLDB.QueryRowContext(ctx,
-				`SELECT COUNT(*) FROM partner_charity gc
-				 JOIN partner_charity sc
-				   ON sc.partner_type = gc.partner_type AND sc.partner_id = gc.partner_id
-				 WHERE gc.category = $1 AND sc.category = $2
-				   AND sc.created_at >= $3 AND sc.created_at < $4
-				   AND (gc.partner_type, gc.partner_id) NOT IN `+appdb.TestRepEntitiesSubquery(),
-				g, s, monthStart, monthEnd).Scan(&thisMonth)
-			_ = appdb.SQLDB.QueryRowContext(ctx,
-				`SELECT COUNT(*) FROM partner_charity gc
-				 JOIN partner_charity sc
-				   ON sc.partner_type = gc.partner_type AND sc.partner_id = gc.partner_id
-				 WHERE gc.category = $1 AND sc.category = $2
-				   AND (gc.partner_type, gc.partner_id) NOT IN `+appdb.TestRepEntitiesSubquery(),
-				g, s).Scan(&allTime)
-			combos = append(combos, ComboCount{Group: g, Sub: s, ThisMonth: thisMonth, AllTime: allTime})
+	// province -> ordered charities; keyed by lower(name) to merge duplicates.
+	type provAgg struct {
+		order    []string // charity keys in first-seen order
+		byKey    map[string]*CharityRow
+		province string
+	}
+	provOrder := []string{}
+	provs := map[string]*provAgg{}
+
+	for rows.Next() {
+		var province, cName, cAddr, cContact, pName string
+		if err := rows.Scan(&province, &cName, &cAddr, &cContact, &pName); err != nil {
+			return nil, err
+		}
+		pa := provs[province]
+		if pa == nil {
+			pa = &provAgg{byKey: map[string]*CharityRow{}, province: province}
+			provs[province] = pa
+			provOrder = append(provOrder, province)
+		}
+		key := strings.ToLower(strings.TrimSpace(cName))
+		cr := pa.byKey[key]
+		if cr == nil {
+			cr = &CharityRow{Name: cName, Address: cAddr, Contact: cContact, Partners: []string{}}
+			pa.byKey[key] = cr
+			pa.order = append(pa.order, key)
+		}
+		if strings.TrimSpace(pName) != "" {
+			cr.Partners = append(cr.Partners, pName)
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
-	return &TallyResponse{Month: monthStart.Format("2006-01"), Rows: rows, Combos: combos}, nil
+	sort.Strings(provOrder)
+	out := make([]ProvinceCharities, 0, len(provOrder))
+	for _, p := range provOrder {
+		pa := provs[p]
+		charities := make([]CharityRow, 0, len(pa.order))
+		for _, k := range pa.order {
+			charities = append(charities, *pa.byKey[k])
+		}
+		out = append(out, ProvinceCharities{Province: p, Charities: charities})
+	}
+	return &ByProvinceResponse{Month: monthStart.Format("2006-01"), Provinces: out}, nil
 }

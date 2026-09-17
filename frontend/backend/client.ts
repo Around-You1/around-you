@@ -255,11 +255,11 @@ export const backend = {
       request("POST", "/admin/purge", { body: req }),
   },
   charity: {
-    set: (req: { partnerType: string; partnerId: number; categories: string[] }) =>
+    set: (req: { partnerType: string; partnerId: number; name: string; address: string; contact: string }) =>
       request("POST", "/charity/set", { body: req }),
     get: (req: { partnerType: string; partnerId: number }) =>
       request("GET", "/charity/get", { query: req }),
-    tally: (req?: { month?: string }) => request("GET", "/charity/tally", { query: req || {} }),
+    byProvince: (req?: { month?: string }) => request("GET", "/charity/by-province", { query: req || {} }),
   },
   estate: {
     // Real Estate & Rentals (isolated category). Writes are SuperAdmin/Admin/Rep.
