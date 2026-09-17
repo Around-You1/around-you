@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import RevealInput from "./RevealInput";
 import { useToast } from "@/components/ui/use-toast";
@@ -236,7 +236,7 @@ export default function RepLoginPage() {
               <Field label="Full Legal Name *" value={app.fullName} onChange={setA("fullName")} />
               <div style={{ display: "flex", gap: 8 }}>
                 <Field label="SA ID / Passport No. *" value={app.idNumber} onChange={setA("idNumber")} />
-                <Field label="Date of Birth *" type="date" value={app.dateOfBirth} onChange={setA("dateOfBirth")} />
+                <DateOfBirthField label="Date of Birth *" value={app.dateOfBirth} onChange={setA("dateOfBirth")} />
               </div>
               <IdDocUpload
                 value={app.idDocument}
@@ -356,6 +356,108 @@ function IdDocUpload({ value, fileName, onChange }: { value: string; fileName: s
           : <span>Drag &amp; drop, or <b>click to upload</b> (JPG, PNG or PDF, max 6 MB)</span>}
       </div>
       <input ref={inputRef} type="file" accept="image/*,application/pdf" style={{ display: "none" }} onChange={(e) => handleFile(e.target.files?.[0])} />
+    </div>
+  );
+}
+
+// ---- Date of Birth ---------------------------------------------------------
+// The stored value stays ISO (yyyy-mm-dd) so the backend contract is unchanged,
+// but the person sees and types dd/mm/yyyy. They can either type the date on any
+// device (no endless scrolling to 1955) OR tap the lumo-green calendar to open
+// their phone/PC's native date picker.
+function isoToDisplay(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : "";
+}
+
+function displayToIso(text: string): string {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text || "");
+  if (!m) return "";
+  const d = +m[1];
+  const mo = +m[2];
+  const y = +m[3];
+  const dt = new Date(y, mo - 1, d);
+  const valid =
+    dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === d &&
+    y >= 1900 && dt <= new Date();
+  if (!valid) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${y}-${pad(mo)}-${pad(d)}`;
+}
+
+// Turn raw keystrokes into dd/mm/yyyy, inserting the slashes automatically.
+function formatDobTyping(raw: string): string {
+  const d = raw.replace(/\D/g, "").slice(0, 8);
+  const parts = [d.slice(0, 2)];
+  if (d.length > 2) parts.push(d.slice(2, 4));
+  if (d.length > 4) parts.push(d.slice(4, 8));
+  return parts.join("/");
+}
+
+function DateOfBirthField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const dateRef = useRef<HTMLInputElement>(null);
+  const [text, setText] = useState(() => isoToDisplay(value));
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  // Sync the visible text when the ISO value is set elsewhere (e.g. the picker),
+  // without clobbering a partially-typed entry.
+  useEffect(() => {
+    setText((prev) => (displayToIso(prev) === value ? prev : isoToDisplay(value)));
+  }, [value]);
+
+  return (
+    <div className="space-y-1.5" style={{ flex: 1 }}>
+      <label className={labelCls} style={labelStyle}>{label}</label>
+      <div style={{ position: "relative" }}>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={text}
+          onChange={(e) => {
+            const f = formatDobTyping(e.target.value);
+            setText(f);
+            onChange(displayToIso(f));
+          }}
+          placeholder="dd/mm/yyyy"
+          style={{ ...inputStyle, paddingRight: 44 }}
+          className="transition-all focus:border-[#39FF14] placeholder-gray-600"
+          aria-label={label}
+        />
+        {/* Transparent native date input over the icon — opens the OS picker on tap/click. */}
+        <input
+          ref={dateRef}
+          type="date"
+          value={value}
+          max={todayIso}
+          onChange={(e) => {
+            const iso = e.target.value;
+            onChange(iso);
+            setText(isoToDisplay(iso));
+          }}
+          onClick={() => {
+            try {
+              (dateRef.current as any)?.showPicker?.();
+            } catch {
+              /* older browsers: focusing is enough */
+            }
+          }}
+          tabIndex={-1}
+          aria-hidden="true"
+          style={{ position: "absolute", top: 0, right: 0, height: "100%", width: 44, opacity: 0, cursor: "pointer", zIndex: 2 }}
+        />
+        {/* Visible lumo-green calendar icon. */}
+        <span
+          aria-hidden="true"
+          style={{ position: "absolute", top: "50%", right: 12, transform: "translateY(-50%)", pointerEvents: "none", display: "flex", zIndex: 1 }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={LUMO} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+        </span>
+      </div>
     </div>
   );
 }
