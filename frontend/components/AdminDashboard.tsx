@@ -43,19 +43,32 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState("accommodations");
   const [modOpenCount, setModOpenCount] = useState(0);
   const [pendingByCat, setPendingByCat] = useState<Record<string, number>>({});
+  const [pendingReps, setPendingReps] = useState(0);
   const [metricsOpen, setMetricsOpen] = useState(false);
 
   useEffect(() => {
     loadStats();
     loadModCount();
     loadPendingCount();
+    loadPendingReps();
     loadEstate();
     // PendingApplications broadcasts this after an onboard/decline so the
     // per-tab badges stay live without a page reload.
-    const refresh = () => loadPendingCount();
+    const refresh = () => { loadPendingCount(); loadPendingReps(); };
     window.addEventListener("pending-apps-changed", refresh);
     return () => window.removeEventListener("pending-apps-changed", refresh);
   }, []);
+
+  const loadPendingReps = async () => {
+    try {
+      const backend = getAuthenticatedBackend();
+      const res: any = await backend.auth.listReps();
+      const n = (res.reps || []).filter((r: any) => r.status === "Inactive").length;
+      setPendingReps(n);
+    } catch {
+      // non-fatal
+    }
+  };
 
   const loadPendingCount = async () => {
     try {
@@ -145,13 +158,13 @@ export default function AdminDashboard() {
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
             <h1 className="text-4xl font-bold text-foreground">Admin Dashboard</h1>
-            {modOpenCount + pendingTotal > 0 && (
+            {modOpenCount + pendingTotal + pendingReps > 0 && (
               <span
-                title={`${pendingTotal} pending application${pendingTotal === 1 ? "" : "s"} · ${modOpenCount} flagged item${modOpenCount === 1 ? "" : "s"} to review`}
+                title={`${pendingTotal} pending partner application${pendingTotal === 1 ? "" : "s"} · ${pendingReps} pending rep application${pendingReps === 1 ? "" : "s"} · ${modOpenCount} flagged item${modOpenCount === 1 ? "" : "s"} to review`}
                 className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-red-600 text-white text-sm font-bold shadow"
-                aria-label={`${modOpenCount + pendingTotal} items need attention`}
+                aria-label={`${modOpenCount + pendingTotal + pendingReps} items need attention`}
               >
-                {modOpenCount + pendingTotal}
+                {modOpenCount + pendingTotal + pendingReps}
               </span>
             )}
             <Button variant="outline" onClick={() => router.push("/admin-analytics")}>
@@ -218,6 +231,34 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {pendingReps > 0 && (
+          <button
+            onClick={() => setTab("reps")}
+            className="w-full flex items-center gap-3 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-left hover:bg-red-500/15 transition-colors"
+          >
+            <UserRound className="w-5 h-5 text-red-600 shrink-0" />
+            <span className="text-sm text-foreground">
+              <strong>{pendingReps}</strong> new rep {pendingReps === 1 ? "application" : "applications"} awaiting approval. Click to review.
+            </span>
+          </button>
+        )}
+
+        {pendingTotal > 0 && (
+          <button
+            onClick={() => {
+              const first = ["accommodation", "restaurant", "service", "attraction", "estate"].find((c) => (pendingByCat[c] || 0) > 0);
+              const map: Record<string, string> = { accommodation: "accommodations", restaurant: "restaurants", service: "services", attraction: "attractions", estate: "realestate" };
+              if (first) setTab(map[first]);
+            }}
+            className="w-full flex items-center gap-3 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-left hover:bg-red-500/15 transition-colors"
+          >
+            <Building2 className="w-5 h-5 text-red-600 shrink-0" />
+            <span className="text-sm text-foreground">
+              <strong>{pendingTotal}</strong> pending partner {pendingTotal === 1 ? "application" : "applications"} awaiting review. Click to open.
+            </span>
+          </button>
+        )}
+
         {modOpenCount > 0 && (
           <button
             onClick={() => setTab("moderation")}
@@ -243,7 +284,14 @@ export default function AdminDashboard() {
                 <TabsTrigger value="services" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Business/Services{catBadge("service")}</TabsTrigger>
                 <TabsTrigger value="attractions" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Attractions{catBadge("attraction")}</TabsTrigger>
                 <TabsTrigger value="realestate" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Real Estate{catBadge("estate")}</TabsTrigger>
-                <TabsTrigger value="reps" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Reps</TabsTrigger>
+                <TabsTrigger value="reps" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">
+                  Reps
+                  {pendingReps > 0 && (
+                    <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold h-4 min-w-[16px] px-1">
+                      {pendingReps}
+                    </span>
+                  )}
+                </TabsTrigger>
                 <TabsTrigger value="billing" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Billing</TabsTrigger>
                 <TabsTrigger value="moderation" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">
                   Moderation

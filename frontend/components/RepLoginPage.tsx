@@ -30,7 +30,7 @@ const PROVINCES = [
 
 const emptyApp = {
   fullName: "", idNumber: "", dateOfBirth: "", phone: "", email: "",
-  residentialAddress: "", postalCode: "", province: "", taxNumber: "", vatNumber: "",
+  residentialAddress: "", postalCode: "", province: "", region: "", taxNumber: "", vatNumber: "",
   bankAccountName: "", bankName: "", bankAccountNumber: "", bankBranchCode: "", bankAccountType: "",
   uplineRepCode: "", popiaConsent: false, agreementConsent: false, signatureName: "",
   idDocument: "",
@@ -95,6 +95,7 @@ export default function RepLoginPage() {
       ["Residential Address", app.residentialAddress],
       ["Postal Code", app.postalCode],
       ["Province", app.province],
+      ["Region", app.region],
       ["Account Holder", app.bankAccountName],
       ["Bank", app.bankName],
       ["Account Type", app.bankAccountType],
@@ -260,6 +261,7 @@ export default function RepLoginPage() {
                   </select>
                 </div>
               </div>
+              <Field label="Region *" value={app.region} onChange={setA("region")} placeholder="e.g. Garden Route" />
               <div style={{ display: "flex", gap: 8 }}>
                 <Field label="SARS Tax Number (optional)" value={app.taxNumber} onChange={setA("taxNumber")} />
                 <Field label="VAT No. (optional)" value={app.vatNumber} onChange={setA("vatNumber")} />

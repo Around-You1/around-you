@@ -1019,6 +1019,7 @@ type RepApplicationRequest struct {
 	ResidentialAddress string `json:"residentialAddress"`
 	PostalCode         string `json:"postalCode"`
 	Province           string `json:"province"`
+	Region             string `json:"region"`
 	TaxNumber          string `json:"taxNumber"`
 	VatNumber          string `json:"vatNumber"`
 	BankAccountName    string `json:"bankAccountName"`
@@ -1057,6 +1058,7 @@ func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*Rep
 		{"Residential address", req.ResidentialAddress},
 		{"Postal code", req.PostalCode},
 		{"Province", req.Province},
+		{"Region", req.Region},
 		{"Bank account holder", req.BankAccountName},
 		{"Bank", req.BankName},
 		{"Account type", req.BankAccountType},
@@ -1127,17 +1129,18 @@ func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*Rep
 		   id_number, login_code, phone, residential_address, province, postal_code,
 		   date_of_birth, tax_number, vat_number,
 		   bank_account_name, bank_name, bank_account_number, bank_branch_code, bank_account_type,
-		   id_document_path)
+		   id_document_path, region)
 		VALUES ($1, 'Rep', $2, $3, NULLIF($4,''), NULLIF($5,''), 'Inactive',
 		   $6, $7, $8, $9, NULLIF($10,''), $11,
 		   $12, $13, $14, $15, $16, $17, $18, $19,
-		   NULLIF($20,''))`,
+		   NULLIF($20,''), NULLIF($21,''))`,
 		loginEmail, fullName, repCode, strings.TrimSpace(req.Email), strings.TrimSpace(req.UplineRepCode), strings.TrimSpace(req.IDNumber), loginCode,
 		strings.TrimSpace(req.Phone), strings.TrimSpace(req.ResidentialAddress), strings.TrimSpace(req.Province), strings.TrimSpace(req.PostalCode),
 		strings.TrimSpace(req.DateOfBirth), strings.TrimSpace(req.TaxNumber), strings.TrimSpace(req.VatNumber),
 		strings.TrimSpace(req.BankAccountName), strings.TrimSpace(req.BankName), strings.TrimSpace(req.BankAccountNumber),
 		strings.TrimSpace(req.BankBranchCode), strings.TrimSpace(req.BankAccountType),
 		idDocPath,
+		strings.TrimSpace(req.Region),
 	); err != nil {
 		return nil, err
 	}
@@ -1288,6 +1291,7 @@ func renderRepApplicationHTML(r *RepApplicationRequest, repCode string) string {
 		row("Residential address", r.ResidentialAddress) +
 		row("Postal code", r.PostalCode) +
 		row("Province", r.Province) +
+		row("Region", r.Region) +
 		row("SARS tax number", r.TaxNumber) +
 		row("VAT number", r.VatNumber) +
 		row("Bank account holder", r.BankAccountName) +
