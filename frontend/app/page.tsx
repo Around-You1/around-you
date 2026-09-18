@@ -5,26 +5,34 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
 import { getAuthenticatedBackend } from "@/lib/backend";
+import LoadingScreen from "@/components/LoadingScreen";
 
 // Landing / "About You" entry screen. Rendered client-only because the imported
 // component relies on browser APIs (navigation, localStorage) that must not run
-// during SSR.
+// during SSR. LoadingScreen (JHB/Table Mountain splash) covers the load, so no
+// separate fallback UI is needed here.
 const AboutYouPage = dynamic(() => import("@/components/AboutYouPage"), {
   ssr: false,
-  loading: () => <FullscreenLoader />,
+  loading: () => null,
 });
-
-function FullscreenLoader() {
-  return (
-    <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-      Loading…
-    </div>
-  );
-}
 
 export default function Page() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
+  // Warmed independently of next/dynamic so we know the real moment the
+  // landing page's code has actually finished downloading.
+  const [chunkLoaded, setChunkLoaded] = useState(false);
+  const [showLoader, setShowLoader] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    import("@/components/AboutYouPage").then(() => {
+      if (active) setChunkLoaded(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -82,7 +90,14 @@ export default function Page() {
     };
   }, [router]);
 
-  if (checking) return <FullscreenLoader />;
+  // Genuinely ready only once BOTH the session check has resolved (and we're
+  // not about to redirect away to /portal) AND the landing page's code has
+  // actually finished loading — never before.
+  const ready = !checking && chunkLoaded;
+
+  if (showLoader) {
+    return <LoadingScreen ready={ready} onFinished={() => setShowLoader(false)} />;
+  }
 
   return <AboutYouPage />;
 }
