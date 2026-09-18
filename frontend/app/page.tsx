@@ -23,6 +23,11 @@ export default function Page() {
   // landing page's code has actually finished downloading.
   const [chunkLoaded, setChunkLoaded] = useState(false);
   const [showLoader, setShowLoader] = useState(true);
+  // On a fast connection, the session check + chunk load can both finish in
+  // well under a second — too fast to actually see the skylines/car. This
+  // guarantees the loading screen stays up long enough to be seen, no matter
+  // how quickly everything else finishes.
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -32,6 +37,11 @@ export default function Page() {
     return () => {
       active = false;
     };
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setMinTimeElapsed(true), 3200);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -90,10 +100,10 @@ export default function Page() {
     };
   }, [router]);
 
-  // Genuinely ready only once BOTH the session check has resolved (and we're
-  // not about to redirect away to /portal) AND the landing page's code has
-  // actually finished loading — never before.
-  const ready = !checking && chunkLoaded;
+  // Genuinely ready only once the session check has resolved (and we're not
+  // about to redirect away to /portal), the landing page's code has actually
+  // finished loading, AND the minimum display time has passed — never before.
+  const ready = !checking && chunkLoaded && minTimeElapsed;
 
   if (showLoader) {
     return <LoadingScreen ready={ready} onFinished={() => setShowLoader(false)} />;

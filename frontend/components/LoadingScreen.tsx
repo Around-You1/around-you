@@ -4,10 +4,18 @@ import { useEffect, useRef, useState } from "react";
 
 const LUMO = "#39FF14";
 
+// How long the car takes to travel from 0% to 90% when the app is ready
+// before this time is up. Tuned so the whole animation — skylines, bar,
+// car — is actually visible rather than flashing past. The `ready` prop
+// itself is already gated on a minimum display time in app/page.tsx, so by
+// the time `ready` flips true here the bar is normally right around 90%
+// already, giving a smooth final fill rather than an abrupt jump.
+const RAMP_DURATION_MS = 3200;
+
 interface Props {
   // True once whatever the app is actually waiting on (session check, code
-  // chunk load, etc.) has genuinely finished. The bar will animate but will
-  // NEVER reach 100% until this flips true — it never lies about progress.
+  // chunk load, MINIMUM display time, etc.) has genuinely finished. The bar
+  // will animate but will NEVER reach 100% until this flips true.
   ready: boolean;
   // Called after the bar has visibly completed and the fade-out finishes.
   // Use this to actually unmount the loading screen.
@@ -17,22 +25,23 @@ interface Props {
 export default function LoadingScreen({ ready, onFinished }: Props) {
   const [progress, setProgress] = useState(0);
   const [fadingOut, setFadingOut] = useState(false);
-  const readyRef = useRef(ready);
-  readyRef.current = ready;
+  const startRef = useRef<number | null>(null);
 
-  // Ramp progress up asymptotically towards 92% while we wait — gives the
-  // user real motion instead of a frozen bar, without ever claiming we're
-  // done before we actually are.
+  // Smooth, time-based ramp up to 90% — linear, driven by requestAnimationFrame
+  // so it plays at a steady, watchable pace regardless of how fast the
+  // network actually is.
   useEffect(() => {
     if (ready) return;
-    const interval = setInterval(() => {
-      setProgress((p) => {
-        if (p >= 92) return p;
-        const remaining = 92 - p;
-        return p + Math.max(0.5, remaining * 0.08);
-      });
-    }, 120);
-    return () => clearInterval(interval);
+    if (startRef.current === null) startRef.current = performance.now();
+    let frame: number;
+    const tick = (now: number) => {
+      const elapsed = now - (startRef.current ?? now);
+      const pct = Math.min(90, (elapsed / RAMP_DURATION_MS) * 90);
+      setProgress(pct);
+      if (pct < 90) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
   }, [ready]);
 
   // Once genuinely ready, snap to 100% then fade out and unmount.
@@ -121,7 +130,7 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
                 background: LUMO,
                 borderRadius: 999,
                 boxShadow: `0 0 10px 2px ${LUMO}`,
-                transition: "width 150ms linear",
+                transition: "width 100ms linear",
               }}
             />
           </div>
@@ -133,7 +142,7 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
               bottom: 27,
               left: `${progress}%`,
               transform: "translateX(-50%)",
-              transition: "left 150ms linear",
+              transition: "left 100ms linear",
             }}
           >
             <img
