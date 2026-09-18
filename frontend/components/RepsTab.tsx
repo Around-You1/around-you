@@ -181,6 +181,35 @@ export default function RepsTab() {
 
   const teamLeaderCount = reps.filter((r) => r.isTeamLeader).length;
 
+  // Order reps as a tree: each rep is followed by the reps who applied under them
+  // (their upline_rep_code equals this rep's code), indented one level. This puts
+  // a Team Leader's recruited reps directly beneath them (e.g. a rep who signed
+  // up with Ronel's code appears between Ronel and the next top-level rep).
+  const orderedReps = (() => {
+    const byCode = new Map(reps.map((r) => [r.repCode, r]));
+    const children: Record<string, Rep[]> = {};
+    const roots: Rep[] = [];
+    for (const r of reps) {
+      const up = (r.uplineRepCode || "").trim();
+      if (up && byCode.has(up) && up !== r.repCode) {
+        (children[up] = children[up] || []).push(r);
+      } else {
+        roots.push(r);
+      }
+    }
+    const out: { rep: Rep; depth: number }[] = [];
+    const seen = new Set<string>();
+    const visit = (r: Rep, depth: number) => {
+      if (seen.has(r.repCode)) return; // guard against upline loops
+      seen.add(r.repCode);
+      out.push({ rep: r, depth });
+      (children[r.repCode] || []).forEach((c) => visit(c, depth + 1));
+    };
+    roots.forEach((r) => visit(r, 0));
+    for (const r of reps) if (!seen.has(r.repCode)) out.push({ rep: r, depth: 0 });
+    return out;
+  })();
+
   return (
     <div className="space-y-6">
       <Card>
@@ -232,10 +261,14 @@ export default function RepsTab() {
             <p className="text-sm text-muted-foreground">No reps yet — add one above.</p>
           ) : (
             <div className="space-y-3">
-              {reps.map((rep) => {
+              {orderedReps.map(({ rep, depth }) => {
                 const isOpen = openIds.has(rep.id);
                 return (
-                <div key={rep.id} className="rounded-lg border border-border">
+                <div
+                  key={rep.id}
+                  className={`rounded-lg border border-border ${depth > 0 ? "border-l-4 border-l-[#AEECE4]" : ""}`}
+                  style={{ marginLeft: depth * 24 }}
+                >
                   <div
                     role="button"
                     tabIndex={0}
