@@ -3,9 +3,10 @@
 // -----------------------------------------------------------------------------
 // Admin › Real Estate tab.
 //
-// Manage Estate Agencies and Estate Agents. Each agent owns their profile and
-// their property listings (added via EstateAgentForm → PropertyListingFields).
-// The public Agencies → Agent → property pages read this data (Phases 3-4).
+// Agencies are the top level; each agency shows the agents associated with it
+// (linked by agency_id, or by the agency name a standalone agent typed). Agents
+// that match no agency appear under "Independent agents". Each agent owns their
+// profile + property listings (EstateAgentForm).
 // -----------------------------------------------------------------------------
 
 import { useCallback, useEffect, useState } from "react";
@@ -21,11 +22,14 @@ interface Agency {
   id: number;
   name: string;
   province?: string;
+  address?: string;
+  imageUrl?: string;
   isActive: boolean;
 }
 interface Agent {
   id: number;
   name: string;
+  agencyId?: number;
   agencyName?: string;
   province?: string;
   isActive: boolean;
@@ -40,6 +44,7 @@ export default function EstateTab() {
   const [editingAgencyId, setEditingAgencyId] = useState<number | undefined>(undefined);
   const [showAgentForm, setShowAgentForm] = useState(false);
   const [editingAgentId, setEditingAgentId] = useState<number | undefined>(undefined);
+  const [agentDefaultAgency, setAgentDefaultAgency] = useState<string>("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -59,6 +64,11 @@ export default function EstateTab() {
     if (!showAgencyForm && !showAgentForm) load();
   }, [showAgencyForm, showAgentForm, load]);
 
+  const norm = (s?: string) => (s || "").trim().toLowerCase();
+  const belongsTo = (x: Agent, a: Agency) => x.agencyId === a.id || (!!norm(x.agencyName) && norm(x.agencyName) === norm(a.name));
+  const isMatched = (x: Agent) => agencies.some((a) => belongsTo(x, a));
+  const independentAgents = agents.filter((x) => !isMatched(x));
+
   const toggleAgency = async (a: Agency) => {
     try {
       await getAuthenticatedBackend().estate.setAgencyActive({ id: a.id, active: !a.isActive });
@@ -71,7 +81,7 @@ export default function EstateTab() {
     if (!confirm(`Delete "${a.name}" and all its agents and properties?`)) return;
     try {
       await getAuthenticatedBackend().estate.deleteAgency({ id: a.id });
-      setAgencies((prev) => prev.filter((x) => x.id !== a.id));
+      load();
       toast({ title: "Deleted", description: `${a.name} removed.` });
     } catch (error: any) {
       toast({ title: "Error", description: error?.message || "Failed to delete", variant: "destructive" });
@@ -96,6 +106,17 @@ export default function EstateTab() {
     }
   };
 
+  const openAddAgent = (agencyName: string) => {
+    setEditingAgentId(undefined);
+    setAgentDefaultAgency(agencyName);
+    setShowAgentForm(true);
+  };
+  const openEditAgent = (id: number) => {
+    setEditingAgentId(id);
+    setAgentDefaultAgency("");
+    setShowAgentForm(true);
+  };
+
   if (showAgencyForm) {
     return (
       <EstateAgencyForm
@@ -109,90 +130,101 @@ export default function EstateTab() {
     return (
       <EstateAgentForm
         agentId={editingAgentId}
+        defaultAgencyName={agentDefaultAgency}
         onClose={() => setShowAgentForm(false)}
         onSaved={() => setShowAgentForm(false)}
       />
     );
   }
 
-  const row = (
-    title: string,
-    subtitle: string,
-    active: boolean,
-    onToggle: () => void,
-    onEdit: () => void,
-    onDelete: () => void,
-  ) => (
-    <Card>
-      <CardContent className="flex items-center justify-between gap-3 p-3">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">{title}</p>
-          <p className="truncate text-xs text-muted-foreground">{subtitle || "—"}</p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Switch checked={active} onCheckedChange={onToggle} className="data-[state=checked]:bg-green-600" />
-          <span className="text-xs text-muted-foreground">{active ? "Active" : "Disabled"}</span>
-          <Button variant="outline" size="sm" onClick={onEdit}>Edit</Button>
-          <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={onDelete}>
-            Delete
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+  const agentRow = (a: Agent) => (
+    <div key={a.id} className="flex items-center justify-between gap-3 rounded-md border border-border/60 p-2">
+      <div className="min-w-0">
+        <p className="truncate text-sm">{a.name}</p>
+        <p className="truncate text-xs text-muted-foreground">{a.province || "—"}</p>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <Switch checked={a.isActive} onCheckedChange={() => toggleAgent(a)} className="data-[state=checked]:bg-green-600" />
+        <Button variant="outline" size="sm" onClick={() => openEditAgent(a.id)}>Edit</Button>
+        <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => removeAgent(a)}>Delete</Button>
+      </div>
+    </div>
   );
 
   return (
-    <div className="space-y-8">
-      {/* Agencies */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold">Estate Agencies ({agencies.length})</p>
-          <Button
-            className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black"
-            onClick={() => { setEditingAgencyId(undefined); setShowAgencyForm(true); }}
-          >
-            + Add Estate Agency
-          </Button>
-        </div>
-        {loading ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
-        ) : agencies.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No estate agencies yet.</p>
-        ) : (
-          agencies.map((a) =>
-            <div key={a.id}>
-              {row(a.name, a.province || "", a.isActive, () => toggleAgency(a),
-                () => { setEditingAgencyId(a.id); setShowAgencyForm(true); }, () => removeAgency(a))}
-            </div>,
-          )
-        )}
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold">Estate Agencies ({agencies.length})</p>
+        <Button
+          className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black"
+          onClick={() => { setEditingAgencyId(undefined); setShowAgencyForm(true); }}
+        >
+          + Add Estate Agency
+        </Button>
       </div>
 
-      {/* Agents */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold">Estate Agents ({agents.length})</p>
-          <Button
-            variant="outline"
-            className="border-[#AEECE4] text-foreground"
-            onClick={() => { setEditingAgentId(undefined); setShowAgentForm(true); }}
-          >
-            + Add Estate Agent
-          </Button>
+      {loading ? (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : agencies.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No estate agencies yet.</p>
+      ) : (
+        agencies.map((a) => {
+          const nested = agents.filter((x) => belongsTo(x, a));
+          return (
+            <Card key={a.id}>
+              <CardContent className="space-y-3 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    {a.imageUrl ? (
+                      <img src={a.imageUrl} alt={a.name} className="h-12 w-12 shrink-0 rounded object-contain bg-white" />
+                    ) : (
+                      <div className="h-12 w-12 shrink-0 rounded bg-muted" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{a.name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {[a.address, a.province].filter(Boolean).join(", ") || "—"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Switch checked={a.isActive} onCheckedChange={() => toggleAgency(a)} className="data-[state=checked]:bg-green-600" />
+                    <Button variant="outline" size="sm" onClick={() => { setEditingAgencyId(a.id); setShowAgencyForm(true); }}>Edit</Button>
+                    <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => removeAgency(a)}>Delete</Button>
+                  </div>
+                </div>
+
+                <div className="ml-2 space-y-2 border-l-2 border-[#AEECE4]/40 pl-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-muted-foreground">Agents ({nested.length})</p>
+                    <Button variant="outline" size="sm" className="border-[#AEECE4] text-foreground" onClick={() => openAddAgent(a.name)}>
+                      + Add Agent
+                    </Button>
+                  </div>
+                  {nested.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No agents yet.</p>
+                  ) : (
+                    nested.map((ag) => agentRow(ag))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })
+      )}
+
+      {/* Agents whose typed agency doesn't match a registered agency */}
+      {!loading && independentAgents.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold">Independent agents ({independentAgents.length})</p>
+            <Button variant="outline" size="sm" className="border-[#AEECE4] text-foreground" onClick={() => openAddAgent("")}>
+              + Add Agent
+            </Button>
+          </div>
+          {independentAgents.map((ag) => agentRow(ag))}
         </div>
-        {loading ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
-        ) : agents.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No estate agents yet.</p>
-        ) : (
-          agents.map((a) =>
-            <div key={a.id}>
-              {row(a.name, [a.agencyName, a.province].filter(Boolean).join(" · "), a.isActive, () => toggleAgent(a),
-                () => { setEditingAgentId(a.id); setShowAgentForm(true); }, () => removeAgent(a))}
-            </div>,
-          )
-        )}
-      </div>
+      )}
     </div>
   );
 }

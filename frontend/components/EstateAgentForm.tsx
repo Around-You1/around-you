@@ -3,11 +3,11 @@
 // -----------------------------------------------------------------------------
 // EstateAgentForm — an Estate Agent's page + property listings (Admin).
 //
-// Captures the agent's profile (hero photo, bio, up to 10 carousel images,
-// agency name, address, contact) and the agent's property listings (each using
-// the image-1 criteria via PropertyListingFields). On save it writes the agent
-// and every listing to the backend (estate.*), and deletes any listing the user
-// removed.
+// Profile (photo, bio, gallery, agency name, contact) + the agent's property
+// listings. Listings are an accordion: the one being edited is open, the rest
+// collapse to a row showing their Code. "Add property listing" puts a fresh,
+// open listing at the TOP so an agent with many listings never scrolls to add.
+// Ticking "Show House" auto-assigns the next number out of 10.
 // -----------------------------------------------------------------------------
 
 import { useEffect, useState } from "react";
@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { SA_PROVINCES } from "../lib/saRegions";
@@ -43,26 +44,28 @@ const emptyAgent = {
   imageUrls: [] as string[],
 };
 
-// "R 1 200 000 / month" -> 120000000 cents (best effort; blank when no digits).
+// "R 1 200 000 / month" -> 120000000 cents (best effort; 0 when no digits).
 function priceToCents(text: string): number {
   const digits = (text || "").replace(/[^\d]/g, "");
-  if (!digits) return 0;
-  return Number(digits) * 100;
+  return digits ? Number(digits) * 100 : 0;
 }
 
 export default function EstateAgentForm({
   agentId,
+  defaultAgencyName,
   onClose,
   onSaved,
 }: {
   agentId?: number;
+  defaultAgencyName?: string;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const { toast } = useToast();
-  const [agent, setAgent] = useState({ ...emptyAgent });
+  const [agent, setAgent] = useState({ ...emptyAgent, agencyName: defaultAgencyName || "" });
   const [listings, setListings] = useState<PropertyListing[]>([]);
   const [removedIds, setRemovedIds] = useState<number[]>([]);
+  const [openIndex, setOpenIndex] = useState<number>(-1);
   const [loading, setLoading] = useState(!!agentId);
   const [saving, setSaving] = useState(false);
 
@@ -95,7 +98,7 @@ export default function EstateAgentForm({
             id: p.id,
             images: p.imageUrls || [],
             isShowHouse: !!p.showHouse,
-            showHouseNumber: String(p.showHouseNumber || 1),
+            showHouseNumber: p.showHouseNumber || 0,
             listingType: p.listingType === "rent" ? "rent" : p.listingType === "sale" ? "sale" : "",
             code: p.code || "",
             price: p.priceText || "",
@@ -113,22 +116,44 @@ export default function EstateAgentForm({
     })();
   }, [agentId, toast]);
 
-  const updateListing = (i: number, v: PropertyListing) =>
-    setListings((prev) => prev.map((x, idx) => (idx === i ? v : x)));
+  const addListing = () => {
+    setListings((prev) => [newListing(), ...prev]); // new listing first
+    setOpenIndex(0);
+  };
 
-  const removeListing = (i: number) =>
+  const updateListing = (i: number, v: PropertyListing) =>
+    setListings((prev) => {
+      const old = prev[i];
+      let nv = v;
+      if (v.isShowHouse && !old.isShowHouse) {
+        // Turned on: assign the next number out of 10.
+        const maxN = prev.reduce((m, x) => (x.isShowHouse ? Math.max(m, x.showHouseNumber) : m), 0);
+        if (maxN >= 10) {
+          toast({ title: "Show house limit", description: "You can mark up to 10 show houses.", variant: "destructive" });
+          nv = { ...v, isShowHouse: false, showHouseNumber: 0 };
+        } else {
+          nv = { ...v, showHouseNumber: maxN + 1 };
+        }
+      } else if (!v.isShowHouse && old.isShowHouse) {
+        nv = { ...v, showHouseNumber: 0 };
+      }
+      return prev.map((x, idx) => (idx === i ? nv : x));
+    });
+
+  const removeListing = (i: number) => {
     setListings((prev) => {
       const item = prev[i];
       if (item.id) setRemovedIds((r) => [...r, item.id as number]);
       return prev.filter((_, idx) => idx !== i);
     });
+    setOpenIndex((cur) => (cur === i ? -1 : cur > i ? cur - 1 : cur));
+  };
 
   const handleSave = async () => {
     if (!agent.name.trim()) {
       toast({ title: "Agent name is required", variant: "destructive" });
       return;
     }
-    // Validate listings: code, price, beds, baths, garages.
     for (let i = 0; i < listings.length; i++) {
       const l = listings[i];
       const miss: string[] = [];
@@ -138,11 +163,8 @@ export default function EstateAgentForm({
       if (!l.bathrooms) miss.push("Bathrooms");
       if (!l.garages) miss.push("Garages");
       if (miss.length) {
-        toast({
-          title: `Listing #${i + 1} is incomplete`,
-          description: `Missing: ${miss.join(", ")}.`,
-          variant: "destructive",
-        });
+        setOpenIndex(i);
+        toast({ title: `Listing "${l.code || "new"}" is incomplete`, description: `Missing: ${miss.join(", ")}.`, variant: "destructive" });
         return;
       }
     }
@@ -177,7 +199,7 @@ export default function EstateAgentForm({
           garages: Number(l.garages) || 0,
           imageUrls: l.images,
           showHouse: l.isShowHouse,
-          showHouseNumber: l.isShowHouse ? Number(l.showHouseNumber) || 0 : 0,
+          showHouseNumber: l.isShowHouse ? l.showHouseNumber || 0 : 0,
           listingUrl: l.url.trim(),
           isActive: true,
         };
@@ -219,7 +241,6 @@ export default function EstateAgentForm({
             </div>
           </div>
 
-          {/* Hero photo (single) + carousel (up to 10) */}
           <ImageUpload
             label="Agent photo"
             imageUrl={agent.photoUrl}
@@ -255,7 +276,7 @@ export default function EstateAgentForm({
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="space-y-1.5 sm:col-span-1">
+            <div className="space-y-1.5">
               <Label>Province</Label>
               <Select value={agent.province} onValueChange={setA("province")}>
                 <SelectTrigger>
@@ -282,15 +303,14 @@ export default function EstateAgentForm({
         </CardContent>
       </Card>
 
-      {/* Property listings */}
-      <div className="space-y-4">
+      {/* Property listings — accordion, newest first */}
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold">Property listings ({listings.length})</p>
           <Button
             type="button"
-            variant="outline"
-            className="border-[#AEECE4] text-foreground"
-            onClick={() => setListings((prev) => [...prev, newListing()])}
+            className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black"
+            onClick={addListing}
           >
             + Add property listing
           </Button>
@@ -299,15 +319,37 @@ export default function EstateAgentForm({
         {listings.length === 0 ? (
           <p className="text-sm text-muted-foreground">No listings yet. Click “Add property listing”.</p>
         ) : (
-          listings.map((l, i) => (
-            <PropertyListingFields
-              key={l.id ?? `new-${i}`}
-              value={l}
-              index={i}
-              onChange={(v) => updateListing(i, v)}
-              onRemove={() => removeListing(i)}
-            />
-          ))
+          listings.map((l, i) => {
+            const open = openIndex === i;
+            const heading = l.code.trim() || "New listing";
+            return (
+              <div key={l.id ?? `new-${i}`} className="rounded-lg border border-[#AEECE4]/40 overflow-hidden">
+                <div className="flex items-center justify-between gap-2 bg-muted/30 px-4 py-3">
+                  <button
+                    type="button"
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                    onClick={() => setOpenIndex(open ? -1 : i)}
+                  >
+                    {open ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
+                    <span className="truncate text-sm font-semibold">{heading}</span>
+                    {l.isShowHouse && l.showHouseNumber > 0 && (
+                      <span className="shrink-0 text-xs font-bold text-[#00C7BE]">Show House {l.showHouseNumber}/10</span>
+                    )}
+                  </button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 text-destructive hover:text-destructive"
+                    onClick={() => removeListing(i)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                {open && <PropertyListingFields value={l} onChange={(v) => updateListing(i, v)} />}
+              </div>
+            );
+          })
         )}
       </div>
 
