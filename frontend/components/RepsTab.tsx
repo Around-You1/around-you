@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { UserPlus, Copy, Save, ChevronDown, Trash2 } from "lucide-react";
+import { UserPlus, Copy, Save, ChevronDown, Trash2, Mail } from "lucide-react";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -46,6 +46,7 @@ export default function RepsTab() {
   const [creating, setCreating] = useState(false);
   const [savingId, setSavingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [resendingId, setResendingId] = useState<number | null>(null);
   const [openIds, setOpenIds] = useState<Set<number>>(new Set());
   const { toast } = useToast();
 
@@ -100,7 +101,7 @@ export default function RepsTab() {
     setSavingId(rep.id);
     try {
       const backend = getAuthenticatedBackend();
-      await backend.auth.updateRep({
+      const updated: any = await backend.auth.updateRep({
         repCode: rep.repCode,
         uplineRepCode: rep.uplineRepCode || "",
         isTeamLeader: rep.isTeamLeader,
@@ -114,6 +115,16 @@ export default function RepsTab() {
         postalCode: rep.postalCode || "",
       });
       toast({ title: "Rep updated", description: `${rep.fullName} saved` });
+      // Surface the activation welcome-email outcome instead of it being silent.
+      if (updated && updated.welcomeEmailSent === true) {
+        toast({ title: "Welcome email sent", description: `Sent to ${updated.email || "the rep"}` });
+      } else if (updated && updated.welcomeEmailSent === false) {
+        toast({
+          title: "Activation email NOT sent",
+          description: (updated.welcomeEmailError || "The welcome email could not be sent.") + " Use ‘Resend welcome’ once the rep's email is correct.",
+          variant: "destructive",
+        });
+      }
       loadReps(); // reflect auto Team-Leader promotion of the chosen upline
     } catch (error: any) {
       console.error("Failed to update rep:", error);
@@ -138,6 +149,28 @@ export default function RepsTab() {
       toast({ title: "Couldn't delete", description: error?.message || "Failed to delete rep", variant: "destructive" });
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleResendWelcome = async (rep: Rep) => {
+    setResendingId(rep.id);
+    try {
+      const backend = getAuthenticatedBackend();
+      const res: any = await backend.auth.resendRepWelcome({ repCode: rep.repCode });
+      if (res?.sent) {
+        toast({ title: "Welcome email sent", description: `Sent to ${res.to || rep.email || "the rep"}` });
+      } else {
+        toast({
+          title: "Couldn't send welcome email",
+          description: res?.error || "The welcome email could not be sent.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Failed to resend welcome:", error);
+      toast({ title: "Error", description: error?.message || "Failed to resend welcome email", variant: "destructive" });
+    } finally {
+      setResendingId(null);
     }
   };
 
@@ -391,6 +424,17 @@ export default function RepsTab() {
                       Team Leader
                     </label>
                     <div className="flex items-center gap-2">
+                      {rep.status !== "Inactive" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleResendWelcome(rep)}
+                          disabled={resendingId === rep.id}
+                        >
+                          <Mail className="w-4 h-4 mr-2" />
+                          {resendingId === rep.id ? "Sending…" : "Resend welcome"}
+                        </Button>
+                      )}
                       {rep.status === "Inactive" && (
                         <Button
                           size="sm"

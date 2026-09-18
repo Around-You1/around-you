@@ -22,6 +22,10 @@ import (
 
 const accountsEmail = "accounts@aroundyou.co.za"
 
+// applicationCC is copied on every partner application email so the app.aroundyou
+// inbox keeps a record of all partner/rep applications.
+const applicationCC = "app.aroundyou@gmail.com"
+
 var validCategory = map[string]string{
 	"restaurant":    "Restaurant",
 	"service":       "Service",
@@ -94,9 +98,9 @@ func SubmitPartnerApplication(ctx context.Context, req *SubmitRequest) (*SubmitR
 		repEmail := repEmailFor(bgctx, r.RepCode)
 		subject := "New Partner Application — " + validCategory[cat] + " — " + name
 		body := renderApplicationHTML(cat, &r, fields, repEmail)
-		var cc []string
+		cc := []string{applicationCC}
 		if repEmail != "" {
-			cc = []string{repEmail}
+			cc = append(cc, repEmail)
 		}
 		_ = mailer.SendOpts(accountsEmail, subject, body, repEmail, cc)
 	}(*req, cat, fields)

@@ -175,6 +175,8 @@ export const backend = {
     }) => request("POST", "/auth/rep/update", { body: req }),
     deleteRep: (req: { repCode: string }) =>
       request("POST", "/auth/rep/delete", { body: req }),
+    resendRepWelcome: (req: { repCode: string }) =>
+      request("POST", "/auth/rep/resend-welcome", { body: req }),
     // Accountant access code (SuperAdmin only). setAccCode stores a bcrypt hash
     // server-side; accCodeStatus never returns the code itself.
     setAccCode: (req: { code: string }) =>

@@ -1009,6 +1009,10 @@ func nextRepCode(ctx context.Context) (string, error) {
 // Where completed applications are emailed for your records. Change if needed.
 const repApplicationRecipient = "accounts@aroundyou.co.za"
 
+// applicationCC is copied on every Partner/Rep application email and on the rep
+// activation welcome, so this inbox has a record of all rep/partner comms.
+const applicationCC = "app.aroundyou@gmail.com"
+
 type RepApplicationRequest struct {
 	FullName           string `json:"fullName"`
 	IDNumber           string `json:"idNumber"`
@@ -1145,9 +1149,10 @@ func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*Rep
 		return nil, err
 	}
 
-	// Email the completed application (kept on file). Non-blocking.
+	// Email the completed application (kept on file). Non-blocking. CC the
+	// app.aroundyou inbox so it has a copy of every rep application.
 	go func() {
-		_ = mailer.Send(repApplicationRecipient, "New Rep Application — "+fullName+" ("+repCode+")", renderRepApplicationHTML(req, repCode))
+		_ = mailer.SendOpts(repApplicationRecipient, "New Rep Application — "+fullName+" ("+repCode+")", renderRepApplicationHTML(req, repCode), "", []string{applicationCC})
 	}()
 
 	moderation.ScanAndFlag(ctx, "rep_onboarding", "rep", 0, fullName+" ("+repCode+")", "Rep Application",
@@ -1323,6 +1328,11 @@ type Rep struct {
 	Phone         string `json:"phone"`
 	ResidentialAddress string `json:"residentialAddress"`
 	PostalCode    string `json:"postalCode"`
+
+	// Set only by UpdateRep when an activation welcome email was attempted, so the
+	// admin UI can surface a failed send instead of it failing silently.
+	WelcomeEmailSent  *bool  `json:"welcomeEmailSent,omitempty"`
+	WelcomeEmailError string `json:"welcomeEmailError,omitempty"`
 }
 
 type ListRepsResponse struct {
@@ -1469,16 +1479,22 @@ func UpdateRep(ctx context.Context, req *UpdateRepRequest) (*Rep, error) {
 	}
 
 	// On activation (Inactive→Active), email the rep a welcome with their access
-	// code + rep code. Best-effort, never blocks the update.
+	// code + rep code. Sent synchronously so a failure can be reported to the
+	// admin instead of vanishing. CC the app.aroundyou inbox.
+	var welcomeAttempted, welcomeSent bool
+	var welcomeErr string
 	if strings.EqualFold(status, "Active") && !strings.EqualFold(curStatus, "Active") {
+		welcomeAttempted = true
 		to := strings.TrimSpace(req.Email)
 		if to == "" {
 			to = curRepEmail
 		}
-		if to != "" {
-			go func(addr, name, rc, lc string) {
-				_ = mailer.Send(addr, "Welcome to Around You — your Rep access", renderRepWelcomeHTML(name, rc, lc))
-			}(to, curFullName, repCode, loginCode)
+		if to == "" {
+			welcomeErr = "no email address on file for this rep"
+		} else if e := mailer.SendOpts(to, "Welcome to Around You — your Rep access", renderRepWelcomeHTML(curFullName, repCode, loginCode), "", []string{applicationCC}); e != nil {
+			welcomeErr = e.Error()
+		} else {
+			welcomeSent = true
 		}
 	}
 
@@ -1506,7 +1522,60 @@ func UpdateRep(ctx context.Context, req *UpdateRepRequest) (*Rep, error) {
 	if err != nil {
 		return nil, err
 	}
+	if welcomeAttempted {
+		sent := welcomeSent
+		r.WelcomeEmailSent = &sent
+		r.WelcomeEmailError = welcomeErr
+	}
 	return &r, nil
+}
+
+// ResendRepWelcomeRequest / Response power the "Resend welcome" button on the
+// Admin Reps tab.
+type ResendRepWelcomeRequest struct {
+	RepCode string `json:"repCode"`
+}
+type ResendRepWelcomeResponse struct {
+	Sent  bool   `json:"sent"`
+	To    string `json:"to,omitempty"`
+	Error string `json:"error,omitempty"`
+}
+
+// ResendRepWelcome re-sends the activation welcome email (rep code + access code)
+// to a rep. SuperAdmin-only. Reports whether the send succeeded so the admin
+// isn't left guessing.
+//
+//encore:api auth method=POST path=/auth/rep/resend-welcome
+func ResendRepWelcome(ctx context.Context, req *ResendRepWelcomeRequest) (*ResendRepWelcomeResponse, error) {
+	data := FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "not allowed"}
+	}
+	repCode := strings.TrimSpace(req.RepCode)
+	if repCode == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "repCode is required"}
+	}
+	var fullName, email, loginCode string
+	if err := appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT COALESCE(full_name,''), COALESCE(rep_email,''), COALESCE(login_code,'')
+		FROM users WHERE role = 'Rep' AND lower(rep_code) = lower($1)`, repCode,
+	).Scan(&fullName, &email, &loginCode); err != nil {
+		return nil, &errs.Error{Code: errs.NotFound, Message: "rep not found"}
+	}
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return &ResendRepWelcomeResponse{Sent: false, Error: "no email address on file for this rep"}, nil
+	}
+	// Issue an access code if the rep somehow has none yet, so the email is useful.
+	if strings.TrimSpace(loginCode) == "" {
+		loginCode = appdb.RandomCode(12)
+		_, _ = appdb.SQLDB.ExecContext(ctx,
+			`UPDATE users SET login_code = $2 WHERE role = 'Rep' AND lower(rep_code) = lower($1)`, repCode, loginCode)
+	}
+	if e := mailer.SendOpts(email, "Welcome to Around You — your Rep access", renderRepWelcomeHTML(fullName, repCode, loginCode), "", []string{applicationCC}); e != nil {
+		return &ResendRepWelcomeResponse{Sent: false, To: email, Error: e.Error()}, nil
+	}
+	return &ResendRepWelcomeResponse{Sent: true, To: email}, nil
 }
 
 type DeleteRepRequest struct {
