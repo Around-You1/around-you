@@ -98,6 +98,7 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
       "Gardening & Landscaping",
       "Home Security",
       "Interior Design & Décor",
+      "Laundry",
       "Pest Control",
       "Pet Sitting",
       "House Sitting",
