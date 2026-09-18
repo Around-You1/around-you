@@ -104,6 +104,15 @@ export default function GuestDashboard() {
   const isLocalMode = user.role === "LocalGuest";
   const localPostal: string = user.postalCode || "";
 
+  // "Test" partner isolation: a partner (or the guesthouse) is a test entity when
+  // its name starts with the word "Test" (e.g. "Test Guesthouse", "Test Spa").
+  // A guest who signed in with the Test Guesthouse access code sees ONLY test
+  // partners; every other guest and every local sees everything EXCEPT test
+  // partners. This keeps test data invisible to real users.
+  const isTestName = (name?: string) => /^\s*test(?![a-z])/i.test(name || "");
+  const filterTestVisibility = <T extends { name?: string }>(items: T[], showOnlyTest: boolean): T[] =>
+    (items || []).filter((x) => (showOnlyTest ? isTestName(x.name) : !isTestName(x.name)));
+
   const tabOrder = ["restaurants", "services", "attractions"];
 
   const handleSwipeLeft = () => {
@@ -294,13 +303,17 @@ export default function GuestDashboard() {
   const loadPartnersByArea = async () => {
     const backend = getAuthenticatedBackend();
     const apply = (r: any, s: any, a: any) => {
-      setRestaurants(r.restaurants);
-      setServices(s.services);
-      setAttractions(a.attractions);
-      setFilteredRestaurants(r.restaurants);
-      setFilteredServices(s.services);
-      setFilteredAttractions(a.attractions);
-      void loadRatings(r.restaurants, s.services, a.attractions);
+      // Locals never have a test guesthouse, so they never see test partners.
+      const rr = filterTestVisibility(r.restaurants, false);
+      const ss = filterTestVisibility(s.services, false);
+      const aa = filterTestVisibility(a.attractions, false);
+      setRestaurants(rr);
+      setServices(ss);
+      setAttractions(aa);
+      setFilteredRestaurants(rr);
+      setFilteredServices(ss);
+      setFilteredAttractions(aa);
+      void loadRatings(rr, ss, aa);
     };
     try {
       let coords: { latitude: number; longitude: number } | null = null;
@@ -335,13 +348,18 @@ export default function GuestDashboard() {
         backend.service.listNearby({ latitude: accommodation!.latitude, longitude: accommodation!.longitude, radiusKm: radiusKm[0], postalCode: accommodation!.postalCode || "" }),
         backend.attraction.listNearby({ latitude: accommodation!.latitude, longitude: accommodation!.longitude, radiusKm: radiusKm[0], postalCode: accommodation!.postalCode || "" }),
       ]);
-      setRestaurants(restaurantData.restaurants);
-      setServices(serviceData.services);
-      setAttractions(attractionData.attractions);
-      setFilteredRestaurants(restaurantData.restaurants);
-      setFilteredServices(serviceData.services);
-      setFilteredAttractions(attractionData.attractions);
-      void loadRatings(restaurantData.restaurants, serviceData.services, attractionData.attractions);
+      // Only the Test Guesthouse sees test partners; everyone else never does.
+      const showOnlyTest = isTestName(accommodation!.name);
+      const rr = filterTestVisibility(restaurantData.restaurants, showOnlyTest);
+      const ss = filterTestVisibility(serviceData.services, showOnlyTest);
+      const aa = filterTestVisibility(attractionData.attractions, showOnlyTest);
+      setRestaurants(rr);
+      setServices(ss);
+      setAttractions(aa);
+      setFilteredRestaurants(rr);
+      setFilteredServices(ss);
+      setFilteredAttractions(aa);
+      void loadRatings(rr, ss, aa);
     } catch (error) {
       console.error("Failed to load nearby partners:", error);
       toast({ title: "Error", description: "Failed to load nearby partners", variant: "destructive" });
