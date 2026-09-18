@@ -93,6 +93,7 @@ func main() {
 	r.auth("GET /auth/reps", httpx.Empty(auth.ListReps))
 	r.auth("POST /auth/rep/update", httpx.Body(auth.UpdateRep))
 	r.auth("POST /auth/rep/delete", httpx.Body(auth.DeleteRep))
+	r.auth("POST /auth/rep/resend-welcome", httpx.Body(auth.ResendRepWelcome))
 	r.auth("GET /rep/partners-near", httpx.Query(repnearby.PartnersNear))
 	r.auth("GET /rep-invoice/preview", httpx.Empty(repinvoice.Preview))
 	r.auth("POST /rep-invoice/submit", httpx.Body(repinvoice.Submit))
