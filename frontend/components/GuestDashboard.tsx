@@ -110,8 +110,10 @@ export default function GuestDashboard() {
   // partners; every other guest and every local sees everything EXCEPT test
   // partners. This keeps test data invisible to real users.
   const isTestName = (name?: string) => /^\s*test(?![a-z])/i.test(name || "");
-  const filterTestVisibility = <T extends { name?: string }>(items: T[], showOnlyTest: boolean): T[] =>
-    (items || []).filter((x) => (showOnlyTest ? isTestName(x.name) : !isTestName(x.name)));
+  // Non-generic (returns any[]) so the filtered arrays stay assignable to the
+  // Restaurant[] / ServiceData[] / AttractionData[] state setters.
+  const filterTestVisibility = (items: any[], showOnlyTest: boolean): any[] =>
+    (items || []).filter((x) => (showOnlyTest ? isTestName(x?.name) : !isTestName(x?.name)));
 
   const tabOrder = ["restaurants", "services", "attractions"];
 
