@@ -30,6 +30,7 @@ export interface ServiceData {
   paymentCard: boolean;
   paymentCash: boolean;
   paymentMobile: boolean;
+  paymentEft?: boolean;
   wheelchairAccess: boolean;
   parkingAvailability: boolean;
   discountOffered?: string;

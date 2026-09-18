@@ -51,6 +51,7 @@ type CreateRequest struct {
 	PaymentSnapScan bool `json:"paymentSnapScan"`
 	PaymentYoco     bool `json:"paymentYoco"`
 	PaymentZapper   bool `json:"paymentZapper"`
+	PaymentEft      bool `json:"paymentEft"`
 
 	WheelchairAccess    bool `json:"wheelchairAccess"`
 	ParkingAvailability bool `json:"parkingAvailability"`
@@ -120,6 +121,7 @@ type UpdateRequest struct {
 	PaymentSnapScan *bool `json:"paymentSnapScan,omitempty"`
 	PaymentYoco     *bool `json:"paymentYoco,omitempty"`
 	PaymentZapper   *bool `json:"paymentZapper,omitempty"`
+	PaymentEft      *bool `json:"paymentEft,omitempty"`
 
 	WheelchairAccess    *bool `json:"wheelchairAccess,omitempty"`
 	ParkingAvailability *bool `json:"parkingAvailability,omitempty"`

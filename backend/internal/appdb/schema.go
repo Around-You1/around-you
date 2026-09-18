@@ -49,6 +49,7 @@ type PaymentMethods struct {
 	PaymentSnapScan bool `json:"paymentSnapScan"`
 	PaymentYoco     bool `json:"paymentYoco"`
 	PaymentZapper   bool `json:"paymentZapper"`
+	PaymentEft      bool `json:"paymentEft"` // shows "Please contact for more info" to guests/locals
 }
 
 // Socials is shared by Restaurant, Service, and Attraction — each entity's

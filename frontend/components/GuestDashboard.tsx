@@ -1046,11 +1046,12 @@ export default function GuestDashboard() {
                                 Payment Options
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
-                                {restaurant.paymentCard || restaurant.paymentCash || restaurant.paymentMobile ? (
+                                {restaurant.paymentCard || restaurant.paymentCash || restaurant.paymentMobile || restaurant.paymentEft ? (
                                   <div className="flex flex-wrap gap-2">
                                     {restaurant.paymentCard && <span className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs">Card</span>}
                                     {restaurant.paymentCash && <span className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs">Cash</span>}
                                     {restaurant.paymentMobile && <span className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs">Mobile</span>}
+                                    {restaurant.paymentEft && <span className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs">EFT — Please contact for more info</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
@@ -1373,11 +1374,12 @@ export default function GuestDashboard() {
                                 Payment Options
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
-                                {service.paymentCard || service.paymentCash || service.paymentMobile ? (
+                                {service.paymentCard || service.paymentCash || service.paymentMobile || service.paymentEft ? (
                                   <div className="flex flex-wrap gap-2">
                                     {service.paymentCard && <span className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs">Card</span>}
                                     {service.paymentCash && <span className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs">Cash</span>}
                                     {service.paymentMobile && <span className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs">Mobile</span>}
+                                    {service.paymentEft && <span className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs">EFT — Please contact for more info</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
@@ -1587,11 +1589,12 @@ export default function GuestDashboard() {
                                 Payment Options
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
-                                {attraction.paymentCard || attraction.paymentCash || attraction.paymentMobile ? (
+                                {attraction.paymentCard || attraction.paymentCash || attraction.paymentMobile || attraction.paymentEft ? (
                                   <div className="flex flex-wrap gap-2">
                                     {attraction.paymentCard && <span className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs">Card</span>}
                                     {attraction.paymentCash && <span className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs">Cash</span>}
                                     {attraction.paymentMobile && <span className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs">Mobile</span>}
+                                    {attraction.paymentEft && <span className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs">EFT — Please contact for more info</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan

@@ -126,6 +126,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
     paymentSnapScan: false,
     paymentYoco: false,
     paymentZapper: false,
+    paymentEft: false,
     wheelchairAccess: false,
     parkingAvailability: false,
     serviceDineIn: false,
@@ -239,6 +240,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
         paymentSnapScan: data.paymentSnapScan || false,
         paymentYoco: data.paymentYoco || false,
         paymentZapper: data.paymentZapper || false,
+        paymentEft: data.paymentEft || false,
         wheelchairAccess: data.wheelchairAccess || false,
         parkingAvailability: data.parkingAvailability || false,
         serviceDineIn: data.serviceDineIn || false,
@@ -768,6 +770,14 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
                   onCheckedChange={(checked) => setFormData({ ...formData, paymentZapper: checked })}
                 />
                 <Label htmlFor="paymentZapper">Zapper</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="paymentEft"
+                  checked={formData.paymentEft}
+                  onCheckedChange={(checked) => setFormData({ ...formData, paymentEft: checked })}
+                />
+                <Label htmlFor="paymentEft">EFT</Label>
               </div>
             </div>
           </div>

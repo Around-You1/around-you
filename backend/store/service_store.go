@@ -70,7 +70,8 @@ const serviceColumns = `
 	partner_code_active,
 		COALESCE(booking_items, '[]'::jsonb) as booking_items,
 	offers_bookings,
-	created_at, updated_at
+	created_at, updated_at,
+	payment_eft
 `
 
 type serviceScanner interface {
@@ -101,6 +102,7 @@ func scanService(row serviceScanner) (*appdb.ServiceData, error) {
 		&s.BookingItems,
 		&s.OffersBookings,
 		&s.CreatedAt, &s.UpdatedAt,
+		&s.PaymentEft,
 	)
 	if err != nil {
 		return nil, err
@@ -191,11 +193,12 @@ func (s *ServiceStore) Create(ctx context.Context, in *appdb.ServiceData) (*appd
 			guest_type, access_level, partner_code, partner_code_active, booking_items,
 			local_discount_offered, local_discount_code,
 			offers_bookings,
-			discount_enabled, local_discount_enabled, works_from_client_address
+			discount_enabled, local_discount_enabled, works_from_client_address,
+			payment_eft
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,
 			$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,
-			$51,$52,$53,$54,$55,$56
+			$51,$52,$53,$54,$55,$56,$57
 		)
 		RETURNING `+serviceColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -215,6 +218,7 @@ func (s *ServiceStore) Create(ctx context.Context, in *appdb.ServiceData) (*appd
 		in.OffersBookings,
 		in.DiscountEnabled, in.LocalDiscountEnabled,
 		in.WorksFromClientAddress,
+		in.PaymentEft,
 	)
 	return scanService(row)
 }
@@ -243,6 +247,7 @@ type ServicePatch struct {
 	PaymentSnapScan *bool
 	PaymentYoco     *bool
 	PaymentZapper   *bool
+	PaymentEft      *bool
 
 	WheelchairAccess    *bool
 	ParkingAvailability *bool
@@ -351,6 +356,9 @@ func (s *ServiceStore) Update(ctx context.Context, id int64, patch ServicePatch)
 	}
 	if patch.PaymentZapper != nil {
 		sets = append(sets, "payment_zapper = "+arg(*patch.PaymentZapper))
+	}
+	if patch.PaymentEft != nil {
+		sets = append(sets, "payment_eft = "+arg(*patch.PaymentEft))
 	}
 	if patch.WheelchairAccess != nil {
 		sets = append(sets, "wheelchair_access = "+arg(*patch.WheelchairAccess))

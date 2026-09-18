@@ -84,6 +84,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
     paymentSnapScan: false,
     paymentYoco: false,
     paymentZapper: false,
+    paymentEft: false,
     socialsWebsite: "",
     socialsFacebook: "",
     socialsInstagram: "",
@@ -165,6 +166,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
         paymentSnapScan: data.paymentSnapScan || false,
         paymentYoco: data.paymentYoco || false,
         paymentZapper: data.paymentZapper || false,
+        paymentEft: data.paymentEft || false,
         socialsWebsite: data.socialsWebsite || "",
         socialsFacebook: data.socialsFacebook || "",
         socialsInstagram: data.socialsInstagram || "",
@@ -245,6 +247,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           paymentSnapScan: formData.paymentSnapScan,
           paymentYoco: formData.paymentYoco,
           paymentZapper: formData.paymentZapper,
+          paymentEft: formData.paymentEft,
           socialsWebsite: formData.socialsWebsite,
           socialsFacebook: formData.socialsFacebook,
           socialsInstagram: formData.socialsInstagram,
@@ -310,6 +313,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           paymentSnapScan: formData.paymentSnapScan,
           paymentYoco: formData.paymentYoco,
           paymentZapper: formData.paymentZapper,
+          paymentEft: formData.paymentEft,
           socialsWebsite: formData.socialsWebsite,
           socialsFacebook: formData.socialsFacebook,
           socialsInstagram: formData.socialsInstagram,
@@ -761,6 +765,14 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
                   onCheckedChange={(checked) => setFormData({ ...formData, paymentZapper: checked })}
                 />
                 <Label htmlFor="paymentZapper">Zapper</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="paymentEft"
+                  checked={formData.paymentEft}
+                  onCheckedChange={(checked) => setFormData({ ...formData, paymentEft: checked })}
+                />
+                <Label htmlFor="paymentEft">EFT</Label>
               </div>
             </div>
           </div>

@@ -33,6 +33,7 @@ export interface AttractionData {
   paymentCard: boolean;
   paymentCash: boolean;
   paymentMobile: boolean;
+  paymentEft?: boolean;
 
   wheelchairAccess: boolean;
   parkingAvailability: boolean;
