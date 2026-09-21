@@ -278,31 +278,38 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <Tabs value={tab} onValueChange={setTab} className="space-y-6">
-              <TabsList className="grid w-full h-auto grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-1">
-                <TabsTrigger value="accommodations" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Accommodations{catBadge("accommodation")}</TabsTrigger>
-                <TabsTrigger value="restaurants" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Restaurants/Takeaways{catBadge("restaurant")}</TabsTrigger>
-                <TabsTrigger value="services" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Business/Services{catBadge("service")}</TabsTrigger>
-                <TabsTrigger value="attractions" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Attractions{catBadge("attraction")}</TabsTrigger>
-                <TabsTrigger value="realestate" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Real Estate{catBadge("estate")}</TabsTrigger>
-                <TabsTrigger value="reps" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">
-                  Reps
-                  {pendingReps > 0 && (
-                    <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold h-4 min-w-[16px] px-1">
-                      {pendingReps}
-                    </span>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="billing" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Billing</TabsTrigger>
-                <TabsTrigger value="moderation" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">
-                  Moderation
-                  {modOpenCount > 0 && (
-                    <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold h-4 min-w-[16px] px-1">
-                      {modOpenCount}
-                    </span>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="archived" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Archived</TabsTrigger>
-              </TabsList>
+              <div className="space-y-2">
+                {/* Row 1: partner categories */}
+                <TabsList className="grid w-full h-auto grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1">
+                  <TabsTrigger value="accommodations" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Accommodations{catBadge("accommodation")}</TabsTrigger>
+                  <TabsTrigger value="restaurants" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Restaurants/Takeaways{catBadge("restaurant")}</TabsTrigger>
+                  <TabsTrigger value="services" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Business/Services{catBadge("service")}</TabsTrigger>
+                  <TabsTrigger value="attractions" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Attractions{catBadge("attraction")}</TabsTrigger>
+                  <TabsTrigger value="realestate" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Real Estate{catBadge("estate")}</TabsTrigger>
+                </TabsList>
+
+                {/* Row 2: admin sections */}
+                <TabsList className="grid w-full h-auto grid-cols-2 sm:grid-cols-4 gap-1">
+                  <TabsTrigger value="reps" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">
+                    Reps
+                    {pendingReps > 0 && (
+                      <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold h-4 min-w-[16px] px-1">
+                        {pendingReps}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="billing" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Billing</TabsTrigger>
+                  <TabsTrigger value="moderation" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">
+                    Moderation
+                    {modOpenCount > 0 && (
+                      <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold h-4 min-w-[16px] px-1">
+                        {modOpenCount}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="archived" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Archived</TabsTrigger>
+                </TabsList>
+              </div>
 
               <TabsContent value="accommodations">
                 <AccommodationTab onUpdate={loadStats} />
