@@ -17,6 +17,7 @@ import (
 	"fmt"
 	htmlpkg "html"
 	"log"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -1265,8 +1266,27 @@ func renderRepWelcomeHTML(fullName, repCode, loginCode string) string {
 		`<tr><td style="padding:6px 12px;color:#555;">Access Code</td><td style="padding:6px 12px;"><b style="font-size:18px;color:#159a53;letter-spacing:1px;">` + esc(loginCode) + `</b></td></tr>` +
 		`</table>` +
 		`<p>To sign in: open Around You, tap <b>Rep</b>, then enter your full name, rep code and access code.</p>` +
+		repMarketingQRHTML(repCode) +
 		`<p style="color:#888;font-size:13px;">If you didn't apply to be an Around You rep, please ignore this email.</p>` +
 		`</div>`
+}
+
+// repMarketingQRHTML builds the rep's personal recruiting QR (black background,
+// lumo-green, matching the app). It links to the Partner application pre-tagged
+// with the rep's code, so every partner who applies via it is credited to them.
+// Reps print it / share it / put it on a vehicle decal.
+func repMarketingQRHTML(repCode string) string {
+	code := strings.TrimSpace(repCode)
+	if code == "" {
+		return ""
+	}
+	applyURL := "https://aroundyou.co.za/apply?rep=" + url.QueryEscape(code)
+	qrSrc := "https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&bgcolor=000000&color=39FF14&data=" + url.QueryEscape(applyURL)
+	return `<hr style="margin:22px 0;border:none;border-top:1px solid #e5e7eb"/>` +
+		`<h3 style="margin:0 0 8px;color:#159a53;">Your personal QR code — market Around You</h3>` +
+		`<p style="margin:0 0 10px;">Print this, share it, or put it on a vehicle decal. Anyone who scans it lands on the Partner application already linked to you, so every partner they sign up is credited to your rep code.</p>` +
+		`<img src="` + qrSrc + `" alt="Your recruiting QR code" width="200" height="200" style="border:2px solid #39FF14;border-radius:8px;background:#000;"/>` +
+		`<p style="font-size:12px;color:#888;margin:6px 0 0;">Your link: ` + htmlpkg.EscapeString(applyURL) + `</p>`
 }
 
 func renderRepApplicationHTML(r *RepApplicationRequest, repCode string) string {

@@ -6,21 +6,24 @@ interface RepQRCodeProps {
   // The heading shown above the QR. Kept as a prop so the same card can be
   // reused for other rep campaigns; defaults to the recruitment wording.
   title?: string;
+  // The URL the QR encodes. Defaults to the generic Rep Sign In recruitment
+  // link; pass a rep-specific /apply?rep=<code> link for a personal marketing QR.
+  applyUrl?: string;
+  // The caption shown under the QR.
+  description?: string;
 }
 
-// RepQRCode mirrors ProfileQRCode's neon look, but instead of logging a guest
-// into a partner profile it sends the scanner to the Rep Sign In page so they
-// can submit a New Rep Application. Used for advertising / recruiting reps.
-export default function RepQRCode({ title = "Become an Around You Rep" }: RepQRCodeProps) {
+// RepQRCode mirrors ProfileQRCode's neon look (black background, lumo-green). By
+// default it sends the scanner to the Rep Sign In page to submit a New Rep
+// Application; pass applyUrl to make it a rep's personal partner-referral QR.
+export default function RepQRCode({
+  title = "Become an Around You Rep",
+  applyUrl = "https://aroundyou.co.za/rep-login",
+  description = "Scan this QR code, click “New Rep Application”, tick the box to accept the Rep Responsibility & Payment Terms, then click “I Agree & Continue”. Complete all of the fields, then click “Submit Application”.",
+}: RepQRCodeProps) {
   const printRef = useRef<HTMLDivElement>(null);
 
-  // Plain /rep-login lands on the Rep Sign In screen showing both tabs, so the
-  // steps below ("click New Rep Application") match exactly what the user sees.
-  const applyUrl = "https://aroundyou.co.za/rep-login";
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(applyUrl)}&bgcolor=000000&color=39FF14&margin=10`;
-
-  const description =
-    "Scan this QR code, click “New Rep Application”, tick the box to accept the Rep Responsibility & Payment Terms, then click “I Agree & Continue”. Complete all of the fields, then click “Submit Application”.";
 
   const handleDownload = async () => {
     const qrDownloadUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(applyUrl)}&bgcolor=000000&color=39FF14&margin=10`;

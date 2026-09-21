@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { UserPlus, Copy, Save, ChevronDown, Trash2, Mail } from "lucide-react";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
+import RepQRCode from "./RepQRCode";
 
 interface Rep {
   id: number;
@@ -445,6 +446,15 @@ export default function RepsTab() {
                         placeholder="rep@example.com"
                       />
                     </div>
+                  </div>
+
+                  {/* Rep's personal partner-referral QR (marketing / vehicle decal). */}
+                  <div className="pt-1">
+                    <RepQRCode
+                      title="Your marketing QR — recruit partners"
+                      applyUrl={`https://aroundyou.co.za/apply?rep=${rep.repCode}`}
+                      description="Scan to open the Partner application already linked to this rep. Print it or use it as a vehicle decal — every partner who applies via it is credited to this rep."
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">

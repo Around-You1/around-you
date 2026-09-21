@@ -420,10 +420,10 @@ func SendTestInvoiceWithCodes(ctx context.Context, to string) error {
 // sample profile, for the test-invoice preview.
 func sampleCodesHTML() string {
 	loginURL := "https://aroundyou.co.za/?code=SAMPLE123&role=partner"
-	qrSrc := "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + url.QueryEscape(loginURL)
+	qrSrc := "https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&bgcolor=000000&color=39FF14&data=" + url.QueryEscape(loginURL)
 	qr := fmt.Sprintf(
 		`<p style="margin:16px 0 4px;font-weight:bold">Your Profile QR Code</p>`+
-			`<img src="%s" alt="Profile QR Code" width="200" height="200" style="border:1px solid #ddd;border-radius:6px"/>`+
+			`<img src="%s" alt="Profile QR Code" width="200" height="200" style="border:2px solid #39FF14;border-radius:8px;background:#000"/>`+
 			`<p style="font-size:12px;color:#666;margin:4px 0 0">Print or share this — guests scan it to open your profile.</p>`,
 		qrSrc)
 	return fmt.Sprintf(
@@ -432,6 +432,7 @@ func sampleCodesHTML() string {
 			`<p style="margin:2px 0"><strong>Profile Access Code:</strong> %s</p>`+
 			`<p style="margin:2px 0"><strong>Partner Edit Code:</strong> %s</p>`+
 			`<p style="font-size:12px;color:#666;margin:8px 0 0">Please keep these confidential. The Access Code logs you in; the Edit Code unlocks editing of your own profile.</p>`+
+			`<p style="margin:12px 0 0">When using aroundyou.co.za, click on <strong>Log In</strong>, then choose the <strong>“Partner”</strong> button. Use the Access Code or QR Code to gain entry to your dedicated partner profile page. Then when you are prompted, enter the Partner Edit Code so as to change any of the information at any time.</p>`+
 			`%s`,
 		"SAMPLE-ACCESS-123", "SAMPLE-EDIT-456", qr)
 }
@@ -494,10 +495,10 @@ func onboardingCodesHTML(ctx context.Context, partnerType string, partnerID int6
 	qr := ""
 	if profileRef != "" {
 		loginURL := profileURL(partnerType, profileRef)
-		qrSrc := "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + url.QueryEscape(loginURL)
+		qrSrc := "https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&bgcolor=000000&color=39FF14&data=" + url.QueryEscape(loginURL)
 		qr = fmt.Sprintf(
 			`<p style="margin:16px 0 4px;font-weight:bold">Your Profile QR Code</p>`+
-				`<img src="%s" alt="Profile QR Code" width="200" height="200" style="border:1px solid #ddd;border-radius:6px"/>`+
+				`<img src="%s" alt="Profile QR Code" width="200" height="200" style="border:2px solid #39FF14;border-radius:8px;background:#000"/>`+
 				`<p style="font-size:12px;color:#666;margin:4px 0 0">Print or share this — guests scan it to open your profile.</p>`,
 			qrSrc)
 	}
@@ -508,6 +509,7 @@ func onboardingCodesHTML(ctx context.Context, partnerType string, partnerID int6
 			`<p style="margin:2px 0"><strong>Profile Access Code:</strong> %s</p>`+
 			`<p style="margin:2px 0"><strong>Partner Edit Code:</strong> %s</p>`+
 			`<p style="font-size:12px;color:#666;margin:8px 0 0">Please keep these confidential. The Access Code logs you in; the Edit Code unlocks editing of your own profile.</p>`+
+			`<p style="margin:12px 0 0">When using aroundyou.co.za, click on <strong>Log In</strong>, then choose the <strong>“Partner”</strong> button. Use the Access Code or QR Code to gain entry to your dedicated partner profile page. Then when you are prompted, enter the Partner Edit Code so as to change any of the information at any time.</p>`+
 			`%s`,
 		htmlPkg.EscapeString(access), htmlPkg.EscapeString(editCode), qr)
 }
