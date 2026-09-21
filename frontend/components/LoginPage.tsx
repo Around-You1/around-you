@@ -306,6 +306,10 @@ export default function LoginPage() {
   const [localEmail, setLocalEmail] = useState("");
   const [localProvince, setLocalProvince] = useState("");
   const [localPostalCode, setLocalPostalCode] = useState("");
+  // First-time Local Guests confirm by clicking the link we email them; this
+  // flips to true once that email is on its way so we can show a "check your
+  // inbox" panel instead of asking for a code.
+  const [localLinkSent, setLocalLinkSent] = useState(false);
 
   const [partnerCode, setPartnerCode] = useState("");
   const [partnerCodeError, setPartnerCodeError] = useState(false);
@@ -446,55 +450,66 @@ export default function LoginPage() {
         return;
       }
 
-      // First time (or an expired/different session): send a one-time code
-      // and finish signing in once they've verified it. The province/postal
-      // code they already typed are carried through inside the `next` URL's
-      // own query string — /verify does `router.replace(next)` literally, it
-      // does not merge in any other query params, so they have to travel
-      // as part of next's value itself or they'd be lost after redirecting.
+      // First time (or an expired/different session): email a confirmation
+      // LINK. The guest just clicks it — no code to copy. We stash the details
+      // they already typed so the sign-in finishes automatically the moment
+      // their browser comes back with a verified session (see the completion
+      // effect below), whether the link reopens this tab or a fresh one.
+      localStorage.setItem(
+        "pendingLocalGuest",
+        JSON.stringify({ email, province: localProvince, postalCode: localPostalCode.trim() })
+      );
       await signInWithOtp(email);
-      toast({ title: "Check your email", description: `We sent a code to ${email}` });
-      const nextParams = new URLSearchParams({
-        pendingRole: "local",
-        pendingProvince: localProvince,
-        pendingPostalCode: localPostalCode.trim(),
-      });
-      const params = new URLSearchParams({
-        email,
-        next: `/portal?${nextParams.toString()}`,
-      });
-      router.push(`/verify?${params.toString()}`);
+      setLocalLinkSent(true);
+      toast({ title: "Check your email", description: `We've emailed a confirmation link to ${email}` });
     } catch (err: any) {
       console.error(err);
       toast({ title: "Login Failed", description: err?.message || "Unable to sign in. Please try again.", variant: "destructive" });
     } finally { setLoading(false); }
   }
 
-  // After returning from /verify having just confirmed a one-time code,
-  // finish the Local Guest sign-in automatically using the province/postal
-  // code carried through in the URL — the person shouldn't have to type
-  // those in twice.
+  // Finish a first-time Local Guest sign-in once the emailed confirmation link
+  // brings the browser back with a verified Supabase session. We kept the
+  // email/province/postal in localStorage when the link was sent, so the guest
+  // never re-types them. This runs on mount (link reopened this tab) and on
+  // every auth-state change (Supabase parses the link's session a beat after
+  // load, or it lands in another tab and broadcasts here).
   useEffect(() => {
-    const pendingRole = searchParams.get("pendingRole");
-    if (pendingRole !== "local") return;
+    let done = false;
 
-    const province = searchParams.get("pendingProvince") || "";
-    const postalCode = searchParams.get("pendingPostalCode") || "";
+    const finish = async () => {
+      if (done) return;
+      let pending: { email?: string; province?: string; postalCode?: string } | null = null;
+      try {
+        pending = JSON.parse(localStorage.getItem("pendingLocalGuest") || "null");
+      } catch {
+        pending = null;
+      }
+      if (!pending?.email) return;
 
-    (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      const email = session?.user?.email;
-      if (!email) return; // shouldn't happen — /verify already confirmed the session
+      const sessEmail = session?.user?.email?.toLowerCase();
+      // Only complete once the session matches the email we sent the link to.
+      if (!sessEmail || sessEmail !== pending.email.toLowerCase()) return;
 
+      done = true;
+      const province = pending.province || "";
+      const postalCode = pending.postalCode || "";
       setLoading(true);
       try {
-        const res = await backend.auth.localGuestLogin({ email, province, postalCode });
+        const res = await backend.auth.localGuestLogin({ email: pending.email, province, postalCode });
+        localStorage.removeItem("pendingLocalGuest");
         localStorage.setItem("localGuestInfo", JSON.stringify({ province, postalCode }));
-        storeAndNavigate(res.token, res.user, "/guest-dashboard", email.split("@")[0]);
+        storeAndNavigate(res.token, res.user, "/guest-dashboard", pending.email.split("@")[0]);
       } catch (err: any) {
+        done = false;
         toast({ title: "Login Failed", description: err?.message || "Unable to sign in. Please try again.", variant: "destructive" });
       } finally { setLoading(false); }
-    })();
+    };
+
+    finish();
+    const { data: sub } = supabase.auth.onAuthStateChange(() => { finish(); });
+    return () => { sub.subscription.unsubscribe(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -603,6 +618,26 @@ export default function LoginPage() {
 
           <PanelWrap id="local" activePanel={activePanel}>
             <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: LUMO }}>Local Guest</p>
+            {localLinkSent ? (
+              <div className="space-y-4 text-center">
+                <p className="text-base font-semibold" style={{ color: LUMO }}>Check your email</p>
+                <p className="text-sm" style={{ color: "#ccc" }}>
+                  We've emailed a confirmation link to <span style={{ color: "#fff" }}>{localEmail.trim().toLowerCase()}</span>.
+                  Open it and click the link to finish signing in — you'll be brought straight to your dashboard. You can leave this page open.
+                </p>
+                <p className="text-xs" style={{ color: "#777" }}>
+                  Didn't get it? Check your spam folder, or{" "}
+                  <button
+                    type="button"
+                    onClick={() => { setLocalLinkSent(false); }}
+                    style={{ color: LUMO, textDecoration: "underline", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                  >
+                    try again
+                  </button>
+                  .
+                </p>
+              </div>
+            ) : (
             <form onSubmit={handleLocalLogin} className="space-y-4">
               <div className="space-y-1.5">
                 <ThemedLabel>Email Address</ThemedLabel>
@@ -641,6 +676,7 @@ export default function LoginPage() {
               <p className="text-xs" style={{ color: "#555" }}>You may sign in up to 10 times per month with this email.</p>
               <LumoButton disabled={loading}>{loading ? "Signing in…" : "Sign In"}</LumoButton>
             </form>
+            )}
           </PanelWrap>
 
           <PanelWrap id="partner" activePanel={activePanel}>
