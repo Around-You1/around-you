@@ -312,6 +312,33 @@ func ResendInvoice(ctx context.Context, req *ResendInvoiceRequest) (*ResendInvoi
 	return &ResendInvoiceResponse{OK: true}, nil
 }
 
+type SendTestInvoiceRequest struct {
+	To string `json:"to,omitempty"`
+}
+type SendTestInvoiceResponse struct {
+	OK bool   `json:"ok"`
+	To string `json:"to"`
+}
+
+// SendTestInvoice emails a SAMPLE invoice (with sample Access/Edit/QR codes) so
+// an admin can preview the layout. Defaults to accounts@aroundyou.co.za.
+// SuperAdmin-only.
+//
+//encore:api auth method=POST path=/billing/invoice/test-send
+func SendTestInvoice(ctx context.Context, req *SendTestInvoiceRequest) (*SendTestInvoiceResponse, error) {
+	if !isSuperAdmin(ctx) {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can send a test invoice"}
+	}
+	to := req.To
+	if to == "" {
+		to = "accounts@aroundyou.co.za"
+	}
+	if err := billingcore.SendTestInvoiceWithCodes(ctx, to); err != nil {
+		return nil, &errs.Error{Code: errs.Internal, Message: err.Error()}
+	}
+	return &SendTestInvoiceResponse{OK: true, To: to}, nil
+}
+
 // canSeeAccounts allows the Accountant role as well as SuperAdmin — used for the
 // invoice list + mark-paid, which the accountant needs to reconcile payments.
 func canSeeAccounts(ctx context.Context) bool {

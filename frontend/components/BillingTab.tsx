@@ -149,6 +149,20 @@ function InvoiceSettingsCard() {
     }
   };
 
+  const [sendingTest, setSendingTest] = useState(false);
+  const sendTest = async () => {
+    setSendingTest(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const r: any = await backend.billing.sendTestInvoice({});
+      toast({ title: "Test invoice sent", description: `A sample invoice (with Access/Edit/QR codes) was sent to ${r?.to || "accounts@aroundyou.co.za"}.` });
+    } catch (error: any) {
+      toast({ title: "Couldn't send test invoice", description: error?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setSendingTest(false);
+    }
+  };
+
   const field = (key: string, label: string, placeholder?: string) => (
     <div className="space-y-1">
       <Label className="text-xs">{label}</Label>
@@ -194,7 +208,10 @@ function InvoiceSettingsCard() {
                 {saving ? "Saving…" : "Save invoice settings"}
               </Button>
               <Button onClick={preview} variant="outline">Preview invoice</Button>
-              <span className="text-xs text-muted-foreground">Preview opens in a new tab, using your last saved settings.</span>
+              <Button onClick={sendTest} disabled={sendingTest} variant="outline">
+                {sendingTest ? "Sending…" : "Send test invoice to accounts@"}
+              </Button>
+              <span className="text-xs text-muted-foreground">Preview opens in a new tab. “Send test” emails a sample invoice (with Access/Edit/QR codes) to accounts@aroundyou.co.za.</span>
             </div>
           </>
         )}

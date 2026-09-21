@@ -210,6 +210,7 @@ export const backend = {
     invoicePreview: () => request("GET", "/billing/invoice-preview"),
     emailLog: () => request("GET", "/billing/email-log"),
     resendInvoice: (req: { invoiceId: number }) => request("POST", "/billing/invoice/resend", { body: req }),
+    sendTestInvoice: (req?: { to?: string }) => request("POST", "/billing/invoice/test-send", { body: req || {} }),
   },
 
   analytics: {

@@ -386,6 +386,56 @@ func ResendInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) er
 	return mailer.Send(email, "Your "+bizName+" invoice "+number, html)
 }
 
+// SendTestInvoiceWithCodes emails a SAMPLE invoice — including a sample Access
+// Code, Partner Edit Code and Profile QR block — to `to`, so an admin can preview
+// exactly what a partner's first invoice looks like. All values are placeholder.
+func SendTestInvoiceWithCodes(ctx context.Context, to string) error {
+	to = strings.TrimSpace(to)
+	if to == "" {
+		return fmt.Errorf("no recipient address")
+	}
+	settings, _ := LoadInvoiceSettings(ctx)
+	bizName := "Around You"
+	if settings != nil && strings.TrimSpace(settings.BusinessName) != "" {
+		bizName = settings.BusinessName
+	}
+	now := time.Now()
+	view := invoiceView{
+		Number:            "TEST-0001",
+		Date:              now,
+		Due:               now.AddDate(0, 0, 3),
+		Lines:             []invoiceLine{{Desc: "Around You partner subscription (SAMPLE)", Cents: 30000}},
+		BillName:          "Sample Partner (Pty) Ltd",
+		BillReg:           "2020/123456/07",
+		BillVat:           "4123456789",
+		BillContactName:   "Sample Contact",
+		BillContactNumber: "071 000 0000",
+		BillEmail:         to,
+	}
+	html := renderInvoiceHTML(settings, view) + sampleCodesHTML()
+	return mailer.Send(to, "TEST — Your "+bizName+" invoice "+view.Number, html)
+}
+
+// sampleCodesHTML mirrors onboardingCodesHTML with placeholder codes + a QR to a
+// sample profile, for the test-invoice preview.
+func sampleCodesHTML() string {
+	loginURL := "https://aroundyou.co.za/?code=SAMPLE123&role=partner"
+	qrSrc := "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + url.QueryEscape(loginURL)
+	qr := fmt.Sprintf(
+		`<p style="margin:16px 0 4px;font-weight:bold">Your Profile QR Code</p>`+
+			`<img src="%s" alt="Profile QR Code" width="200" height="200" style="border:1px solid #ddd;border-radius:6px"/>`+
+			`<p style="font-size:12px;color:#666;margin:4px 0 0">Print or share this — guests scan it to open your profile.</p>`,
+		qrSrc)
+	return fmt.Sprintf(
+		`<hr style="margin:24px 0;border:none;border-top:1px solid #e5e7eb"/>`+
+			`<h3 style="margin:0 0 10px">Welcome to Around You — your profile codes (SAMPLE)</h3>`+
+			`<p style="margin:2px 0"><strong>Profile Access Code:</strong> %s</p>`+
+			`<p style="margin:2px 0"><strong>Partner Edit Code:</strong> %s</p>`+
+			`<p style="font-size:12px;color:#666;margin:8px 0 0">Please keep these confidential. The Access Code logs you in; the Edit Code unlocks editing of your own profile.</p>`+
+			`%s`,
+		"SAMPLE-ACCESS-123", "SAMPLE-EDIT-456", qr)
+}
+
 // onboardingCodesHTML builds the "welcome" block appended to the FIRST invoice
 // email only: the partner's Access Code, Partner Edit Code and Profile QR Code.
 // SendComplimentaryOnboardingEmail emails a free (test-rep) partner their
