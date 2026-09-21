@@ -14,7 +14,7 @@ const LUMO = "#39FF14";
 
 const CATEGORIES: { key: string; label: string }[] = [
   { key: "accommodation", label: "Accommodation" },
-  { key: "restaurant", label: "Restaurant" },
+  { key: "restaurant", label: "Restaurant/Takeaway" },
   { key: "service", label: "Business/Service" },
   { key: "attraction", label: "Attraction" },
   { key: "estate", label: "Real Estate & Rentals" },
@@ -103,9 +103,9 @@ const charitySection: Section = { title: "Charity you'd like to support", fields
 
 function specsFor(cat: string): Section[] {
   if (cat === "restaurant") return [
-    businessSection("Restaurant name"),
-    { title: "Restaurant details", fields: [
-      { key: "Restaurant type", type: "select", options: REST_TYPES },
+    businessSection("Restaurant/Takeaway name"),
+    { title: "Restaurant/Takeaway details", fields: [
+      { key: "Restaurant type", label: "Restaurant/Takeaway type", type: "select", options: REST_TYPES },
       { key: "Cuisine type(s)", type: "multi", options: CUISINE },
       { key: "Atmosphere", type: "multi", options: ATMOSPHERE },
       { key: "Features", type: "multi", options: REST_FEATURES },

@@ -97,7 +97,7 @@ export default function RepAcademy() {
 
   const GROUPS: { heading: string; key: keyof NearResults }[] = [
     { heading: "Accommodations", key: "accommodations" },
-    { heading: "Restaurants", key: "restaurants" },
+    { heading: "Restaurants/Takeaways", key: "restaurants" },
     { heading: "Business/Services", key: "services" },
     { heading: "Attractions", key: "attractions" },
     { heading: "Real Estate", key: "realEstate" },

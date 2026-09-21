@@ -317,7 +317,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
         await saveCharity("restaurant", restaurantId, officialUse.charity || []);
         toast({
           title: "Success",
-          description: "Restaurant updated successfully",
+          description: "Restaurant/Takeaway updated successfully",
         });
       } else {
         const createdRest: any = await backend.restaurant.create({
@@ -340,7 +340,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
         await saveCharity("restaurant", createdRest.id, officialUse.charity || []);
         toast({
           title: "Success",
-          description: "Restaurant created successfully",
+          description: "Restaurant/Takeaway created successfully",
         });
       }
       onClose();
@@ -378,7 +378,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Loading Restaurant...</CardTitle>
+          <CardTitle>Loading Restaurant/Takeaway...</CardTitle>
         </CardHeader>
         <CardContent className="flex justify-center items-center py-12">
           <div className="text-muted-foreground">Loading restaurant details...</div>
@@ -395,7 +395,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${restaurantId ? "Edit" : "Add"} Restaurant`}</CardTitle>
+        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${restaurantId ? "Edit" : "Add"} Restaurant/Takeaway`}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -403,7 +403,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="name">Restaurant Name *</Label>
+              <Label htmlFor="name">Restaurant/Takeaway Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -521,7 +521,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
           </div>
 
           <MultiImageUpload
-            label="Restaurant Images"
+            label="Restaurant/Takeaway Images"
             images={formData.imageUrls}
             onChange={(urls) => setFormData({ ...formData, imageUrls: urls, imageUrl: urls[0] || "" })}
           />
@@ -637,7 +637,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
           </div>
 
           <div className="space-y-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
-            <Label>Restaurant Type</Label>
+            <Label>Restaurant/Takeaway Type</Label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {RESTAURANT_TYPES.map((rt) => (
                 <div key={rt} className="flex items-center space-x-2">
@@ -883,7 +883,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
           </div>
 
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
-            <Label className="text-base font-semibold">Bookable Items (Restaurants)</Label>
+            <Label className="text-base font-semibold">Bookable Items (Restaurants/Takeaways)</Label>
             <p className="text-sm text-muted-foreground">
               Tables a guest can book (name and price in Rand). Booking partners pay R300/month plus R10 per cover.
             </p>

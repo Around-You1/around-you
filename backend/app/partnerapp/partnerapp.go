@@ -27,7 +27,7 @@ const accountsEmail = "accounts@aroundyou.co.za"
 const applicationCC = "app.aroundyou@gmail.com"
 
 var validCategory = map[string]string{
-	"restaurant":    "Restaurant",
+	"restaurant":    "Restaurant/Takeaway",
 	"service":       "Service",
 	"attraction":    "Attraction",
 	"accommodation": "Accommodation",

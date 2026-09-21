@@ -105,7 +105,7 @@ export default function RestaurantTab({ onUpdate }: RestaurantTabProps) {
       window.URL.revokeObjectURL(url);
       toast({
         title: "Success",
-        description: "Restaurants exported successfully",
+        description: "Restaurants/Takeaways exported successfully",
       });
     } catch (error) {
       console.error("Export failed:", error);
@@ -124,7 +124,7 @@ export default function RestaurantTab({ onUpdate }: RestaurantTabProps) {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
-              placeholder="Search restaurants..."
+              placeholder="Search restaurants/takeaways..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -135,7 +135,7 @@ export default function RestaurantTab({ onUpdate }: RestaurantTabProps) {
             className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add Restaurant
+            Add Restaurant/Takeaway
           </Button>
         </div>
 

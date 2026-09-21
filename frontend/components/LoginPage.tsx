@@ -679,7 +679,7 @@ export default function LoginPage() {
 
           <p className="text-xs leading-relaxed px-1 pt-1" style={{ color: "#888" }}>
             {activePanel === "local"
-              ? "We list Restaurant, Business/Service and Attraction Partners in and around your location up to 50kms. To request inclusion of a Partner, please submit full provider details to "
+              ? "We list Restaurant/Takeaway, Business/Service and Attraction Partners in and around your location up to 50kms. To request inclusion of a Partner, please submit full provider details to "
               : "We list Service Partners in and around your accommodation's location. Use the Radius slider to expand your search up to 150 km. To request inclusion of a service provider, submit full provider details to "}
             <a href="mailto:sales@aroundyou.co.za" className="underline underline-offset-2 transition-colors hover:text-[#39FF14]" style={{ color: "#aaa" }}>
               sales@aroundyou.co.za

@@ -138,7 +138,7 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
     try {
       const backend = getAuthenticatedBackend();
       await backend.restaurant.deleteRestaurant({ id });
-      toast({ title: "Success", description: "Restaurant deleted successfully" });
+      toast({ title: "Success", description: "Restaurant/Takeaway deleted successfully" });
       onUpdate();
     } catch (error) {
       console.error("Failed to delete restaurant:", error);

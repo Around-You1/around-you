@@ -35,8 +35,10 @@ const ONBOARDING_PDF: Record<string, string> = {
   "Real Estate & Rentals": "/onboarding/real-estate-onboarding.pdf",
 };
 
-// Display-only category label; the internal partner-type key stays "Services".
-const typeLabel = (t: string) => (t === "Services" ? "Business/Services" : t);
+// Display-only category label; the internal partner-type keys stay "Services"
+// and "Restaurants".
+const typeLabel = (t: string) =>
+  t === "Services" ? "Business/Services" : t === "Restaurants" ? "Restaurants/Takeaways" : t;
 
 const colors = {
   background: "#000000",
@@ -598,7 +600,7 @@ export default function RepOnboardingApp() {
   const nameLabel = isAccommodation
     ? "Accommodation Name"
     : isRestaurant
-    ? "Restaurant Name"
+    ? "Restaurant/Takeaway Name"
     : isService
     ? "Business/Service Name"
     : "Attraction Name";
@@ -928,7 +930,7 @@ export default function RepOnboardingApp() {
           <div style={{ fontSize: 40, marginBottom: 10 }}>✅</div>
           <h2 style={{ color: colors.primary, fontSize: 18, marginBottom: 6 }}>Profile Submitted</h2>
           <p style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 16 }}>
-            {submitted.companyName} was created under {submitted.partnerType}
+            {submitted.companyName} was created under {typeLabel(submitted.partnerType)}
             {submitted.booking ? " — Booking Partner" : " — Premium"}, status: <b style={{ color: colors.error }}>Non-Active</b>.
           </p>
 
@@ -1157,7 +1159,7 @@ export default function RepOnboardingApp() {
 
                 {booking && (
                   <div style={{ marginBottom: 12 }}>
-                    <SectionTitle>{isRestaurant ? "Bookable Items (Restaurants)" : "Bookable Items"}</SectionTitle>
+                    <SectionTitle>{isRestaurant ? "Bookable Items (Restaurants/Takeaways)" : "Bookable Items"}</SectionTitle>
                     <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: -4, marginBottom: 8 }}>
                       {isRestaurant ? "Tables a guest can book. Price in Rand." : "Products or services a guest can select when booking. Price in Rand."}
                     </p>
@@ -1360,7 +1362,7 @@ export default function RepOnboardingApp() {
                   <CheckboxGroup label="Cuisine Types" options={CUISINE_TYPES} selected={data.cuisineTypes || []} onChange={set("cuisineTypes")} />
                 )}
                 {isRestaurant && (
-                  <CheckboxGroup label="Restaurant Type" options={RESTAURANT_TYPES} selected={data.restaurantType || []} onChange={set("restaurantType")} />
+                  <CheckboxGroup label="Restaurant/Takeaway Type" options={RESTAURANT_TYPES} selected={data.restaurantType || []} onChange={set("restaurantType")} />
                 )}
                 {isRestaurant && (
                   <CheckboxGroup label="Atmosphere / Vibe" options={ATMOSPHERE_OPTIONS} selected={data.atmosphere || []} onChange={set("atmosphere")} />

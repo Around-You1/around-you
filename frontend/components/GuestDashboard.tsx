@@ -820,7 +820,7 @@ export default function GuestDashboard() {
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-muted rounded-md" style={{ height: "auto" }}>
-              <TabsTrigger value="restaurants" className="min-h-[44px] touch-manipulation">Restaurants ({filteredRestaurants.length})</TabsTrigger>
+              <TabsTrigger value="restaurants" className="min-h-[44px] touch-manipulation">Restaurants/Takeaways ({filteredRestaurants.length})</TabsTrigger>
               <TabsTrigger value="services" className="min-h-[44px] touch-manipulation">Business/Services ({filteredServices.length})</TabsTrigger>
               <TabsTrigger value="attractions" className="min-h-[44px] touch-manipulation">Attractions ({filteredAttractions.length})</TabsTrigger>
               <TabsTrigger value="realestate" className="min-h-[44px] touch-manipulation">Real Estate</TabsTrigger>
@@ -976,7 +976,7 @@ export default function GuestDashboard() {
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
-                                Restaurant Type
+                                Restaurant/Takeaway Type
                               </CollapsibleTrigger>
                               <CollapsibleContent className={contentClass}>
                                 {restaurant.restaurantType && restaurant.restaurantType.length > 0 ? (
