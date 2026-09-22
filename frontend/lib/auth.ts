@@ -5,18 +5,12 @@ import { supabase } from "./supabase";
 // Email-only OTP authentication (identity layer). Access-code authorization
 // happens AFTER a session exists — see app/access/[code]/page.tsx.
 
-// Send a sign-in email to the given address. `shouldCreateUser` lets first-
+// Send a one-time passcode to the given email. `shouldCreateUser` lets first-
 // time users in; flip to false if you want to restrict to pre-provisioned users.
-// `emailRedirectTo` is the page the confirmation LINK in the email returns to
-// once clicked — so the guest just taps the link instead of copying a code.
-// Defaults to the app root, which is always an allowed redirect (the Site URL).
-export async function signInWithOtp(email: string, emailRedirectTo?: string) {
-  const redirect =
-    emailRedirectTo ??
-    (typeof window !== "undefined" ? window.location.origin : undefined);
+export async function signInWithOtp(email: string) {
   const { data, error } = await supabase.auth.signInWithOtp({
     email: email.trim().toLowerCase(),
-    options: { shouldCreateUser: true, emailRedirectTo: redirect },
+    options: { shouldCreateUser: true },
   });
   if (error) throw error;
   return data;
