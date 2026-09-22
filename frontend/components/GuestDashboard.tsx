@@ -370,7 +370,7 @@ export default function GuestDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#007BFF]/10 to-background flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#39FF14]/10 to-background flex items-center justify-center">
         <p className="text-lg">Loading...</p>
       </div>
     );
@@ -378,7 +378,7 @@ export default function GuestDashboard() {
 
   if (!isLocalMode && !accommodation) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#007BFF]/10 to-background flex items-center justify-center p-6">
+      <div className="min-h-screen bg-gradient-to-br from-[#39FF14]/10 to-background flex items-center justify-center p-6">
         <Card>
           <CardContent className="p-8">
             <p>No accommodation assigned</p>
@@ -388,12 +388,12 @@ export default function GuestDashboard() {
     );
   }
 
-  const triggerClass = "flex items-center gap-2 text-sm font-medium hover:text-[#007BFF] transition-colors w-full text-left";
+  const triggerClass = "flex items-center gap-2 text-sm font-medium hover:text-black transition-colors w-full text-left";
   const contentClass = "pl-6 pt-2";
   const fallbackSpan = <span className="text-sm text-muted-foreground italic">{FALLBACK}</span>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#007BFF]/10 to-background px-6 pt-3 pb-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#39FF14]/10 to-background px-6 pt-3 pb-6">
       <div className="max-w-7xl mx-auto space-y-6 pt-3 pb-8">
         {isLocalMode ? (
           <div className="space-y-4">
@@ -472,7 +472,7 @@ export default function GuestDashboard() {
                             <Button
                               variant="default"
                               size="default"
-                              className="bg-[#007BFF] hover:bg-[#007BFF]/90 text-white"
+                              className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black"
                               onClick={() => (window.location.href = `tel:${selectedContact || accommodation!.primaryContact}`)}
                             >
                               <Phone className="h-4 w-4 mr-2" />
@@ -561,7 +561,7 @@ export default function GuestDashboard() {
                         href="https://www.weathersa.co.za"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[#007BFF] hover:underline flex items-center gap-1"
+                        className="text-black hover:underline flex items-center gap-1"
                       >
                         <ExternalLink className="h-3 w-3" />
                         Visit WeatherSA
@@ -579,7 +579,7 @@ export default function GuestDashboard() {
                         href="https://www.tides4fishing.com/za"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[#007BFF] hover:underline flex items-center gap-1"
+                        className="text-black hover:underline flex items-center gap-1"
                       >
                         <ExternalLink className="h-3 w-3" />
                         Visit Tides4Fishing
@@ -618,7 +618,7 @@ export default function GuestDashboard() {
                           {accommodation!.ambulanceContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Ambulance Contact:</span>
-                              <a href={`tel:${accommodation!.ambulanceContact}`} className="font-medium text-[#007BFF] hover:underline">
+                              <a href={`tel:${accommodation!.ambulanceContact}`} className="font-medium text-black hover:underline">
                                 {accommodation!.ambulanceContact}
                               </a>
                             </div>
@@ -626,7 +626,7 @@ export default function GuestDashboard() {
                           {accommodation!.policeContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Police Contact:</span>
-                              <a href={`tel:${accommodation!.policeContact}`} className="font-medium text-[#007BFF] hover:underline">
+                              <a href={`tel:${accommodation!.policeContact}`} className="font-medium text-black hover:underline">
                                 {accommodation!.policeContact}
                               </a>
                             </div>
@@ -634,7 +634,7 @@ export default function GuestDashboard() {
                           {accommodation!.fireDepartmentContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Fire Department:</span>
-                              <a href={`tel:${accommodation!.fireDepartmentContact}`} className="font-medium text-[#007BFF] hover:underline">
+                              <a href={`tel:${accommodation!.fireDepartmentContact}`} className="font-medium text-black hover:underline">
                                 {accommodation!.fireDepartmentContact}
                               </a>
                             </div>
@@ -642,7 +642,7 @@ export default function GuestDashboard() {
                           {accommodation!.primaryContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Primary Contact:</span>
-                              <a href={`tel:${accommodation!.primaryContact}`} className="font-medium text-[#007BFF] hover:underline">
+                              <a href={`tel:${accommodation!.primaryContact}`} className="font-medium text-black hover:underline">
                                 {accommodation!.primaryContact}
                               </a>
                             </div>
@@ -653,7 +653,7 @@ export default function GuestDashboard() {
                                   <div className="flex items-center justify-between">
                                     <span className="text-muted-foreground">{d.name ? `Doctor — ${d.name}:` : "Doctor:"}</span>
                                     {d.number && (
-                                      <a href={`tel:${d.number}`} className="font-medium text-[#007BFF] hover:underline">
+                                      <a href={`tel:${d.number}`} className="font-medium text-black hover:underline">
                                         {d.number}
                                       </a>
                                     )}
@@ -669,7 +669,7 @@ export default function GuestDashboard() {
                             : accommodation!.doctorContact && (
                                 <div className="flex items-center justify-between text-sm">
                                   <span className="text-muted-foreground">Doctor Contact:</span>
-                                  <a href={`tel:${accommodation!.doctorContact}`} className="font-medium text-[#007BFF] hover:underline">
+                                  <a href={`tel:${accommodation!.doctorContact}`} className="font-medium text-black hover:underline">
                                     {accommodation!.doctorContact}
                                   </a>
                                 </div>
@@ -677,7 +677,7 @@ export default function GuestDashboard() {
                           {accommodation!.hospitalContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Hospital Contact:</span>
-                              <a href={`tel:${accommodation!.hospitalContact}`} className="font-medium text-[#007BFF] hover:underline">
+                              <a href={`tel:${accommodation!.hospitalContact}`} className="font-medium text-black hover:underline">
                                 {accommodation!.hospitalContact}
                               </a>
                             </div>
@@ -691,13 +691,13 @@ export default function GuestDashboard() {
                           {accommodation!.snakeCatchersContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Snake Catchers:</span>
-                              <a href={`tel:${accommodation!.snakeCatchersContact}`} className="font-medium text-[#007BFF] hover:underline">{accommodation!.snakeCatchersContact}</a>
+                              <a href={`tel:${accommodation!.snakeCatchersContact}`} className="font-medium text-black hover:underline">{accommodation!.snakeCatchersContact}</a>
                             </div>
                           )}
                           {accommodation!.nsriContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">NSRI:</span>
-                              <a href={`tel:${accommodation!.nsriContact}`} className="font-medium text-[#007BFF] hover:underline">{accommodation!.nsriContact}</a>
+                              <a href={`tel:${accommodation!.nsriContact}`} className="font-medium text-black hover:underline">{accommodation!.nsriContact}</a>
                             </div>
                           )}
                           {accommodation!.vets && accommodation!.vets.length > 0
@@ -706,7 +706,7 @@ export default function GuestDashboard() {
                                   <div className="flex items-center justify-between">
                                     <span className="text-muted-foreground">{v.name ? `Vet — ${v.name}:` : "Vet:"}</span>
                                     {v.number && (
-                                      <a href={`tel:${v.number}`} className="font-medium text-[#007BFF] hover:underline">
+                                      <a href={`tel:${v.number}`} className="font-medium text-black hover:underline">
                                         {v.number}
                                       </a>
                                     )}
@@ -722,19 +722,19 @@ export default function GuestDashboard() {
                             : accommodation!.vetContact && (
                                 <div className="flex items-center justify-between text-sm">
                                   <span className="text-muted-foreground">Vet:</span>
-                                  <a href={`tel:${accommodation!.vetContact}`} className="font-medium text-[#007BFF] hover:underline">{accommodation!.vetContact}</a>
+                                  <a href={`tel:${accommodation!.vetContact}`} className="font-medium text-black hover:underline">{accommodation!.vetContact}</a>
                                 </div>
                               )}
                           {accommodation!.communityWatchContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Community Watch:</span>
-                              <a href={`tel:${accommodation!.communityWatchContact}`} className="font-medium text-[#007BFF] hover:underline">{accommodation!.communityWatchContact}</a>
+                              <a href={`tel:${accommodation!.communityWatchContact}`} className="font-medium text-black hover:underline">{accommodation!.communityWatchContact}</a>
                             </div>
                           )}
                           {accommodation!.localSecurityContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Local Security:</span>
-                              <a href={`tel:${accommodation!.localSecurityContact}`} className="font-medium text-[#007BFF] hover:underline">{accommodation!.localSecurityContact}</a>
+                              <a href={`tel:${accommodation!.localSecurityContact}`} className="font-medium text-black hover:underline">{accommodation!.localSecurityContact}</a>
                             </div>
                           )}
                         </>
@@ -752,7 +752,7 @@ export default function GuestDashboard() {
         )}
 
         <div className="space-y-4">
-          <Button className="w-full bg-[#007BFF] hover:bg-[#007BFF]/90 text-white font-semibold" onClick={() => setShowMyBookings(true)}>My Bookings</Button>
+          <Button className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold" onClick={() => setShowMyBookings(true)}>My Bookings</Button>
           {isLocalMode ? (
             <Label className="text-lg font-medium">Local Partners</Label>
           ) : (
@@ -799,7 +799,7 @@ export default function GuestDashboard() {
               type="button"
               variant={discountsOnly ? "default" : "outline"}
               size="sm"
-              className={discountsOnly ? "h-9 bg-[#007BFF] hover:bg-[#007BFF]/90 text-white" : "h-9"}
+              className={discountsOnly ? "h-9 bg-[#39FF14] hover:bg-[#39FF14]/90 text-black" : "h-9"}
               onClick={() => setDiscountsOnly((v) => !v)}
             >
               <Tag className="h-4 w-4 mr-1" />
@@ -866,7 +866,7 @@ export default function GuestDashboard() {
                             {(restaurant.offersBookings || restaurant.accessLevel === "Booking") && (restaurant.bookingItems?.length ?? 0) > 0 && (
                               <Button
                                 size="sm"
-                                className="bg-[#007BFF] hover:bg-[#007BFF]/90 text-white w-full sm:w-auto"
+                                className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black w-full sm:w-auto"
                                 onClick={() => setBookingFor({ entityType: "restaurant", entityId: Number(restaurant.id), entityName: restaurant.name, items: (restaurant.bookingItems || []) as BookItem[] })}
                               >
                                 Click here to book at this establishment.
@@ -877,7 +877,7 @@ export default function GuestDashboard() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="w-full sm:w-auto border-[#007BFF] text-[#007BFF]"
+                                className="w-full sm:w-auto border-[#39FF14] text-black"
                                 onClick={() => setRedeemFor({ entityType: "restaurant", entityId: Number(restaurant.id), entityName: restaurant.name, discount: discOffered(restaurant), discountCode: discCode(restaurant) })}
                               >
                                 Redeem discount
@@ -1004,7 +1004,7 @@ export default function GuestDashboard() {
                                     href={restaurant.menuLink}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-[#007BFF] hover:underline flex items-center gap-1 text-sm"
+                                    className="text-black hover:underline flex items-center gap-1 text-sm"
                                   >
                                     <ExternalLink className="h-3 w-3 flex-shrink-0" />
                                     <span className="break-all">{restaurant.menuLink}</span>
@@ -1029,7 +1029,7 @@ export default function GuestDashboard() {
                                         href={url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-[#007BFF] hover:underline flex items-center gap-1 text-sm"
+                                        className="text-black hover:underline flex items-center gap-1 text-sm"
                                       >
                                         <ExternalLink className="h-3 w-3 flex-shrink-0" />
                                         <span>View menu — page {i + 1}</span>
@@ -1135,7 +1135,7 @@ export default function GuestDashboard() {
                                             else newSet.add(restaurant.id);
                                             setVisiblePasswords(newSet);
                                           }}
-                                          className="text-[#007BFF] hover:text-[#0056b3]"
+                                          className="text-black hover:text-[#0056b3]"
                                           title={visiblePasswords.has(restaurant.id) ? "Hide password" : "Show password"}
                                         >
                                           {visiblePasswords.has(restaurant.id) ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -1158,7 +1158,7 @@ export default function GuestDashboard() {
                                 {restaurant.contactNumber ? (
                                   <div className="flex items-center justify-between">
                                     <span className="text-muted-foreground">Contact Number:</span>
-                                    <a href={`tel:${restaurant.contactNumber}`} className="text-[#007BFF] hover:underline flex items-center gap-1">
+                                    <a href={`tel:${restaurant.contactNumber}`} className="text-black hover:underline flex items-center gap-1">
                                       <Phone className="h-3 w-3" />
                                       {restaurant.contactNumber}
                                     </a>
@@ -1176,9 +1176,9 @@ export default function GuestDashboard() {
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm`}>
                                 {discOffered(restaurant) || discCode(restaurant) ? (
-                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#007BFF]/10 border border-[#007BFF] rounded-lg">
+                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#39FF14]/10 border border-[#39FF14] rounded-lg">
                                     {discOffered(restaurant) && (
-                                      <div className="flex items-center gap-1.5 text-[#007BFF]">
+                                      <div className="flex items-center gap-1.5 text-black">
                                         <Tag className="h-4 w-4" />
                                         <span className="font-semibold text-sm whitespace-nowrap">{discOffered(restaurant)}</span>
                                       </div>
@@ -1186,7 +1186,7 @@ export default function GuestDashboard() {
                                     {discCode(restaurant) && (
                                       <div className="flex items-center gap-1">
                                         <span className="text-xs text-muted-foreground">Code:</span>
-                                        <span className="px-2 py-0.5 bg-[#007BFF] text-white rounded font-mono text-xs font-bold">
+                                        <span className="px-2 py-0.5 bg-[#39FF14] text-black rounded font-mono text-xs font-bold">
                                           {discCode(restaurant)}
                                         </span>
                                       </div>
@@ -1225,7 +1225,7 @@ export default function GuestDashboard() {
                                     {restaurant.socialsWebsite && (
                                       <div className="flex items-center gap-2">
                                         <Globe className="h-3 w-3 flex-shrink-0" />
-                                        <a href={restaurant.socialsWebsite} target="_blank" rel="noopener noreferrer" className="text-[#007BFF] hover:underline flex items-center gap-1 break-all">
+                                        <a href={restaurant.socialsWebsite} target="_blank" rel="noopener noreferrer" className="text-black hover:underline flex items-center gap-1 break-all">
                                           Website <ExternalLink className="h-3 w-3 flex-shrink-0" />
                                         </a>
                                       </div>
@@ -1233,7 +1233,7 @@ export default function GuestDashboard() {
                                     {restaurant.socialsInstagram && (
                                       <div className="flex items-center gap-2">
                                         <Instagram className="h-3 w-3 flex-shrink-0" />
-                                        <a href={restaurant.socialsInstagram} target="_blank" rel="noopener noreferrer" className="text-[#007BFF] hover:underline flex items-center gap-1 break-all">
+                                        <a href={restaurant.socialsInstagram} target="_blank" rel="noopener noreferrer" className="text-black hover:underline flex items-center gap-1 break-all">
                                           Instagram <ExternalLink className="h-3 w-3 flex-shrink-0" />
                                         </a>
                                       </div>
@@ -1241,7 +1241,7 @@ export default function GuestDashboard() {
                                     {restaurant.socialsTwitter && (
                                       <div className="flex items-center gap-2">
                                         <Twitter className="h-3 w-3 flex-shrink-0" />
-                                        <a href={restaurant.socialsTwitter} target="_blank" rel="noopener noreferrer" className="text-[#007BFF] hover:underline flex items-center gap-1 break-all">
+                                        <a href={restaurant.socialsTwitter} target="_blank" rel="noopener noreferrer" className="text-black hover:underline flex items-center gap-1 break-all">
                                           X (Twitter) <ExternalLink className="h-3 w-3 flex-shrink-0" />
                                         </a>
                                       </div>
@@ -1249,7 +1249,7 @@ export default function GuestDashboard() {
                                     {restaurant.socialsYoutube && (
                                       <div className="flex items-center gap-2">
                                         <Youtube className="h-3 w-3 flex-shrink-0" />
-                                        <a href={restaurant.socialsYoutube} target="_blank" rel="noopener noreferrer" className="text-[#007BFF] hover:underline flex items-center gap-1 break-all">
+                                        <a href={restaurant.socialsYoutube} target="_blank" rel="noopener noreferrer" className="text-black hover:underline flex items-center gap-1 break-all">
                                           YouTube <ExternalLink className="h-3 w-3 flex-shrink-0" />
                                         </a>
                                       </div>
@@ -1257,7 +1257,7 @@ export default function GuestDashboard() {
                                     {restaurant.socialsTiktok && (
                                       <div className="flex items-center gap-2">
                                         <Music className="h-3 w-3 flex-shrink-0" />
-                                        <a href={restaurant.socialsTiktok} target="_blank" rel="noopener noreferrer" className="text-[#007BFF] hover:underline flex items-center gap-1 break-all">
+                                        <a href={restaurant.socialsTiktok} target="_blank" rel="noopener noreferrer" className="text-black hover:underline flex items-center gap-1 break-all">
                                           TikTok <ExternalLink className="h-3 w-3 flex-shrink-0" />
                                         </a>
                                       </div>
@@ -1312,7 +1312,7 @@ export default function GuestDashboard() {
                             {(service.offersBookings || service.accessLevel === "Booking") && (service.bookingItems?.length ?? 0) > 0 && (
                               <Button
                                 size="sm"
-                                className="bg-[#007BFF] hover:bg-[#007BFF]/90 text-white w-full sm:w-auto"
+                                className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black w-full sm:w-auto"
                                 onClick={() => setBookingFor({ entityType: "service", entityId: Number(service.id), entityName: service.name, items: (service.bookingItems || []) as BookItem[] })}
                               >
                                 Click here to book at this establishment.
@@ -1322,7 +1322,7 @@ export default function GuestDashboard() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="w-full sm:w-auto border-[#007BFF] text-[#007BFF]"
+                                className="w-full sm:w-auto border-[#39FF14] text-black"
                                 onClick={() => setRedeemFor({ entityType: "service", entityId: Number(service.id), entityName: service.name, discount: discOffered(service), discountCode: discCode(service) })}
                               >
                                 Redeem discount
@@ -1429,7 +1429,7 @@ export default function GuestDashboard() {
                                 {service.contactNumber ? (
                                   <div className="flex items-center justify-between">
                                     <span className="text-muted-foreground">Contact Number:</span>
-                                    <a href={`tel:${service.contactNumber}`} className="text-[#007BFF] hover:underline flex items-center gap-1">
+                                    <a href={`tel:${service.contactNumber}`} className="text-black hover:underline flex items-center gap-1">
                                       <Phone className="h-3 w-3" />
                                       {service.contactNumber}
                                     </a>
@@ -1447,9 +1447,9 @@ export default function GuestDashboard() {
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm`}>
                                 {discOffered(service) || discCode(service) ? (
-                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#007BFF]/10 border border-[#007BFF] rounded-lg">
+                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#39FF14]/10 border border-[#39FF14] rounded-lg">
                                     {discOffered(service) && (
-                                      <div className="flex items-center gap-1.5 text-[#007BFF]">
+                                      <div className="flex items-center gap-1.5 text-black">
                                         <Tag className="h-4 w-4" />
                                         <span className="font-semibold text-sm whitespace-nowrap">{discOffered(service)}</span>
                                       </div>
@@ -1457,7 +1457,7 @@ export default function GuestDashboard() {
                                     {discCode(service) && (
                                       <div className="flex items-center gap-1">
                                         <span className="text-xs text-muted-foreground">Code:</span>
-                                        <span className="px-2 py-0.5 bg-[#007BFF] text-white rounded font-mono text-xs font-bold">
+                                        <span className="px-2 py-0.5 bg-[#39FF14] text-black rounded font-mono text-xs font-bold">
                                           {discCode(service)}
                                         </span>
                                       </div>
@@ -1527,7 +1527,7 @@ export default function GuestDashboard() {
                             {(attraction.offersBookings || attraction.accessLevel === "Booking") && (attraction.bookingItems?.length ?? 0) > 0 && (
                               <Button
                                 size="sm"
-                                className="bg-[#007BFF] hover:bg-[#007BFF]/90 text-white w-full sm:w-auto"
+                                className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black w-full sm:w-auto"
                                 onClick={() => setBookingFor({ entityType: "attraction", entityId: Number(attraction.id), entityName: attraction.name, items: (attraction.bookingItems || []) as BookItem[] })}
                               >
                                 Click here to book at this establishment.
@@ -1537,7 +1537,7 @@ export default function GuestDashboard() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="w-full sm:w-auto border-[#007BFF] text-[#007BFF]"
+                                className="w-full sm:w-auto border-[#39FF14] text-black"
                                 onClick={() => setRedeemFor({ entityType: "attraction", entityId: Number(attraction.id), entityName: attraction.name, discount: discOffered(attraction), discountCode: discCode(attraction) })}
                               >
                                 Redeem discount
@@ -1644,7 +1644,7 @@ export default function GuestDashboard() {
                                 {attraction.contactNumber ? (
                                   <div className="flex items-center justify-between">
                                     <span className="text-muted-foreground">Contact Number:</span>
-                                    <a href={`tel:${attraction.contactNumber}`} className="text-[#007BFF] hover:underline flex items-center gap-1">
+                                    <a href={`tel:${attraction.contactNumber}`} className="text-black hover:underline flex items-center gap-1">
                                       <Phone className="h-3 w-3" />
                                       {attraction.contactNumber}
                                     </a>
@@ -1662,9 +1662,9 @@ export default function GuestDashboard() {
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm`}>
                                 {discOffered(attraction) || discCode(attraction) ? (
-                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#007BFF]/10 border border-[#007BFF] rounded-lg">
+                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#39FF14]/10 border border-[#39FF14] rounded-lg">
                                     {discOffered(attraction) && (
-                                      <div className="flex items-center gap-1.5 text-[#007BFF]">
+                                      <div className="flex items-center gap-1.5 text-black">
                                         <Tag className="h-4 w-4" />
                                         <span className="font-semibold text-sm whitespace-nowrap">{discOffered(attraction)}</span>
                                       </div>
@@ -1672,7 +1672,7 @@ export default function GuestDashboard() {
                                     {discCode(attraction) && (
                                       <div className="flex items-center gap-1">
                                         <span className="text-xs text-muted-foreground">Code:</span>
-                                        <span className="px-2 py-0.5 bg-[#007BFF] text-white rounded font-mono text-xs font-bold">
+                                        <span className="px-2 py-0.5 bg-[#39FF14] text-black rounded font-mono text-xs font-bold">
                                           {discCode(attraction)}
                                         </span>
                                       </div>
@@ -1934,7 +1934,7 @@ function BookingModal({ onClose, entityType, entityId, entityName, items }: {
         <p className="text-xs text-muted-foreground">You can change or cancel this booking yourself from "My Bookings" using this email. The partner cannot change or cancel it.</p>
         <div className="flex justify-end gap-2 pt-1">
           <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
-          <Button onClick={submit} disabled={saving} className="bg-[#007BFF] hover:bg-[#007BFF]/90 text-white">{saving ? "Sending…" : "Confirm Booking"}</Button>
+          <Button onClick={submit} disabled={saving} className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black">{saving ? "Sending…" : "Confirm Booking"}</Button>
         </div>
       </div>
     </div>
@@ -1973,7 +1973,7 @@ function RedeemModal({ onClose, entityType, entityId, entityName, discount, disc
         {discount && <p className="text-base font-semibold">{discount}</p>}
 
         {discountCode ? (
-          <div className="rounded-lg border-2 border-dashed border-[#007BFF] bg-[#007BFF]/10 px-4 py-3">
+          <div className="rounded-lg border-2 border-dashed border-[#39FF14] bg-[#39FF14]/10 px-4 py-3">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Discount Code</p>
             <p className="text-2xl font-bold font-mono tracking-widest text-black">{discountCode}</p>
           </div>
@@ -2094,7 +2094,7 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
         <p className="text-xs text-muted-foreground">Enter the email you booked with to see, cancel, or rate your bookings.</p>
         <div className="flex gap-2">
           <Input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <Button onClick={find} disabled={loading} className="bg-[#007BFF] hover:bg-[#007BFF]/90 text-white whitespace-nowrap">{loading ? "…" : "Find"}</Button>
+          <Button onClick={find} disabled={loading} className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black whitespace-nowrap">{loading ? "…" : "Find"}</Button>
         </div>
         {bookings !== null &&
           (bookings.length === 0 ? (
@@ -2126,7 +2126,7 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
                         </Select>
                       </div>
                       <div className="flex gap-2">
-                        <Button size="sm" className="bg-[#007BFF] hover:bg-[#007BFF]/90 text-white" onClick={() => saveEdit(b.id)} disabled={busyId === b.id}>
+                        <Button size="sm" className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black" onClick={() => saveEdit(b.id)} disabled={busyId === b.id}>
                           {busyId === b.id ? "Saving…" : "Save"}
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => setEditingId(null)} disabled={busyId === b.id}>Cancel</Button>
