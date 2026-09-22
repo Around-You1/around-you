@@ -91,6 +91,12 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
     ],
   },
   {
+    label: "Hobby & Craft Supplies",
+    subcategories: [
+      "Wool & Craft",
+    ],
+  },
+  {
     label: "Home & Property",
     subcategories: [
       "Architecture",

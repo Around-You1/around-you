@@ -141,6 +141,12 @@ const CATEGORY_GROUPS = [
     ],
   },
   {
+    label: "Hobby & Craft Supplies",
+    subcategories: [
+      "Wool & Craft",
+    ],
+  },
+  {
     label: "Home & Property",
     subcategories: [
       "Architecture",
@@ -148,6 +154,7 @@ const CATEGORY_GROUPS = [
       "Gardening & Landscaping",
       "Home Security",
       "Interior Design & Décor",
+      "Laundry",
       "Pest Control",
       "Pet Sitting",
       "House Sitting",
