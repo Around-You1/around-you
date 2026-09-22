@@ -57,7 +57,7 @@ function TagList({ items }: { items: string[] }) {
   return (
     <div className="flex flex-wrap gap-2">
       {items.map((item) => (
-        <span key={item} className="px-3 py-1 bg-[#AEECE4]/10 text-[#AEECE4] rounded-full text-sm">
+        <span key={item} className="px-3 py-1 bg-black text-[#39FF14] rounded-full text-sm">
           {item}
         </span>
       ))}
@@ -177,7 +177,7 @@ function RedeemScanner() {
             <Button variant="outline" onClick={stopCamera} className="w-full">Stop camera</Button>
           </div>
         ) : (
-          <Button onClick={startScan} disabled={busy} className="w-full bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black font-semibold">
+          <Button onClick={startScan} disabled={busy} className="w-full bg-[#007BFF] hover:bg-[#007BFF]/90 text-white font-semibold">
             Scan guest's QR code
           </Button>
         )}
@@ -185,7 +185,7 @@ function RedeemScanner() {
           <Input value={token} onChange={(ev) => setToken(ev.target.value)} placeholder="or type the guest's code" className="font-mono" />
           <Button onClick={() => doRedeem(token)} disabled={busy || !token.trim()}>Redeem</Button>
         </div>
-        {result && <p className={`text-sm ${result.startsWith("✓") ? "text-green-600" : "text-red-600"}`}>{result}</p>}
+        {result && <p className={`text-sm ${result.startsWith("✓") ? "text-[#007BFF]" : "text-black"}`}>{result}</p>}
       </CardContent>
     </Card>
   );
@@ -302,9 +302,9 @@ export default function PartnerDashboard() {
   };
 
   const getEntityIcon = () => {
-    if (entityType === "restaurant") return <Store className="h-12 w-12 text-[#AEECE4]" />;
-    if (entityType === "service") return <Building2 className="h-12 w-12 text-[#AEECE4]" />;
-    return <Compass className="h-12 w-12 text-[#AEECE4]" />;
+    if (entityType === "restaurant") return <Store className="h-12 w-12 text-[#007BFF]" />;
+    if (entityType === "service") return <Building2 className="h-12 w-12 text-[#007BFF]" />;
+    return <Compass className="h-12 w-12 text-[#007BFF]" />;
   };
 
   const getEntityTypeName = () => {
@@ -315,7 +315,7 @@ export default function PartnerDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#AEECE4]/20 to-background flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#007BFF]/10 to-background flex items-center justify-center">
         <p className="text-lg">Loading...</p>
       </div>
     );
@@ -323,7 +323,7 @@ export default function PartnerDashboard() {
 
   if (!entity || !entityType) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#AEECE4]/20 to-background flex items-center justify-center p-6">
+      <div className="min-h-screen bg-gradient-to-br from-[#007BFF]/10 to-background flex items-center justify-center p-6">
         <Card>
           <CardContent className="p-8">
             <p>No partner entity assigned</p>
@@ -341,7 +341,7 @@ export default function PartnerDashboard() {
       loadEntityDetails();
     };
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#AEECE4]/20 to-background p-6">
+      <div className="min-h-screen bg-gradient-to-br from-[#007BFF]/10 to-background p-6">
         <div className="max-w-4xl mx-auto py-8">
           {entityType === "restaurant" && (
             <RestaurantForm restaurantId={(entity as Restaurant).id} onClose={closeAndReload} partnerEdit editCode={verifiedEditCode} />
@@ -371,7 +371,7 @@ export default function PartnerDashboard() {
     (e.trailDifficulty || e.wildlifeCautions || e.tideWarnings || e.parkingNotes || e.photographySpots);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#AEECE4]/20 to-background p-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#007BFF]/10 to-background p-6">
       <div className="max-w-4xl mx-auto space-y-8 py-8">
         <div className="relative text-center">
           <div className="flex justify-center mb-2"><AppLogo src="/logo-dark.png" /></div>
@@ -388,7 +388,7 @@ export default function PartnerDashboard() {
         </div>
 
         <Button
-          className="w-full bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black font-semibold"
+          className="w-full bg-[#007BFF] hover:bg-[#007BFF]/90 text-white font-semibold"
           onClick={() => setShowGate(true)}
         >
           Edit Profile
@@ -401,11 +401,11 @@ export default function PartnerDashboard() {
             <CardContent className="p-4 flex items-center justify-around text-center">
               <div>
                 <p className="text-xs text-muted-foreground">Listing views this month</p>
-                <p className="text-2xl font-bold text-[#AEECE4]">{views.thisMonth}</p>
+                <p className="text-2xl font-bold text-[#007BFF]">{views.thisMonth}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">All time</p>
-                <p className="text-2xl font-bold text-[#AEECE4]">{views.allTime}</p>
+                <p className="text-2xl font-bold text-[#007BFF]">{views.allTime}</p>
               </div>
             </CardContent>
           </Card>
@@ -439,7 +439,7 @@ export default function PartnerDashboard() {
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setShowGate(false)} disabled={verifying}>Cancel</Button>
-                <Button onClick={verifyAndOpen} disabled={verifying} className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black">
+                <Button onClick={verifyAndOpen} disabled={verifying} className="bg-[#007BFF] hover:bg-[#007BFF]/90 text-white">
                   {verifying ? "Checking…" : "Unlock"}
                 </Button>
               </div>
@@ -455,14 +455,14 @@ export default function PartnerDashboard() {
                 <CardTitle className="text-2xl">{entity.name}</CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">
                   Status: {entity.isActive ? (
-                    <span className="text-green-600 font-medium">Active</span>
+                    <span className="text-[#007BFF] font-medium">Active</span>
                   ) : (
-                    <span className="text-red-600 font-medium">Inactive</span>
+                    <span className="text-black font-medium">Inactive</span>
                   )}
                 </p>
                 {entityType === "restaurant" && e.littleExplorerApproved && (
                   <div className="flex flex-wrap gap-2 mt-3">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#AEECE4]/20 text-[#AEECE4] border border-[#AEECE4]/30 rounded-full text-sm font-medium">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black text-[#39FF14] border border-[#39FF14] rounded-full text-sm font-medium">
                       <Baby className="h-4 w-4" />
                       Child Friendly
                     </span>
@@ -489,7 +489,7 @@ export default function PartnerDashboard() {
             <div className="grid gap-4">
               <Section title="Location">
                 <div className="flex items-start gap-2">
-                  <MapPin className="h-5 w-5 mt-0.5 text-[#AEECE4] flex-shrink-0" />
+                  <MapPin className="h-5 w-5 mt-0.5 text-[#007BFF] flex-shrink-0" />
                   <div className="flex-1">
                     <p>{entity.address}</p>
                     <p className="text-sm text-muted-foreground">
@@ -500,7 +500,7 @@ export default function PartnerDashboard() {
                 {entity.latitude && entity.longitude && (
                   <Button
                     onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${entity.latitude},${entity.longitude}`, "_blank")}
-                    className="mt-3 bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black"
+                    className="mt-3 bg-[#007BFF] hover:bg-[#007BFF]/90 text-white"
                     title="Opens directions in your default map app"
                   >
                     <Navigation className="h-4 w-4 mr-2" />
@@ -511,7 +511,7 @@ export default function PartnerDashboard() {
 
               {e.contactNumber && (
                 <Section title="Contact">
-                  <a href={`tel:${e.contactNumber}`} className="flex items-center gap-2 text-[#AEECE4] hover:underline">
+                  <a href={`tel:${e.contactNumber}`} className="flex items-center gap-2 text-[#007BFF] hover:underline">
                     <Phone className="h-5 w-5" />
                     {e.contactNumber}
                   </a>
@@ -544,10 +544,10 @@ export default function PartnerDashboard() {
 
               <Section title="Accessibility">
                 <div className="flex flex-wrap gap-4 text-sm">
-                  <span className={`flex items-center gap-1.5 ${e.wheelchairAccess ? "text-[#AEECE4]" : "text-muted-foreground/50"}`}>
+                  <span className={`flex items-center gap-1.5 ${e.wheelchairAccess ? "text-[#007BFF]" : "text-muted-foreground/50"}`}>
                     <Accessibility className="h-4 w-4" /> Wheelchair Access
                   </span>
-                  <span className={`flex items-center gap-1.5 ${e.parkingAvailability ? "text-[#AEECE4]" : "text-muted-foreground/50"}`}>
+                  <span className={`flex items-center gap-1.5 ${e.parkingAvailability ? "text-[#007BFF]" : "text-muted-foreground/50"}`}>
                     <CarFront className="h-4 w-4" /> Parking Available
                   </span>
                 </div>
@@ -557,7 +557,7 @@ export default function PartnerDashboard() {
                 <Section title="Payment Options">
                   <div className="flex flex-wrap gap-2">
                     {activePayments.map((label) => (
-                      <span key={label} className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#AEECE4]/10 text-[#AEECE4] rounded-full text-sm">
+                      <span key={label} className="inline-flex items-center gap-1.5 px-3 py-1 bg-black text-[#39FF14] rounded-full text-sm">
                         <CreditCard className="h-3.5 w-3.5" /> {label}
                       </span>
                     ))}
@@ -568,7 +568,7 @@ export default function PartnerDashboard() {
               {entityType === "restaurant" && e.wifiNetwork && (
                 <Section title="WiFi">
                   <p className="flex items-center gap-2 text-sm">
-                    <Wifi className="h-4 w-4 text-[#AEECE4]" />
+                    <Wifi className="h-4 w-4 text-[#007BFF]" />
                     {e.wifiNetwork}{e.wifiPassword ? ` — ${e.wifiPassword}` : ""}
                   </p>
                 </Section>
@@ -603,14 +603,14 @@ export default function PartnerDashboard() {
                   <div className="text-sm space-y-1">
                     {e.bookingsEmail && (
                       <p className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-[#AEECE4]" />
-                        <a href={`mailto:${e.bookingsEmail}`} className="text-[#AEECE4] hover:underline">{e.bookingsEmail}</a>
+                        <Mail className="h-4 w-4 text-[#007BFF]" />
+                        <a href={`mailto:${e.bookingsEmail}`} className="text-[#007BFF] hover:underline">{e.bookingsEmail}</a>
                       </p>
                     )}
                     {e.bookingsContactNumber && (
                       <p className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-[#AEECE4]" />
-                        <a href={`tel:${e.bookingsContactNumber}`} className="text-[#AEECE4] hover:underline">{e.bookingsContactNumber}</a>
+                        <Phone className="h-4 w-4 text-[#007BFF]" />
+                        <a href={`tel:${e.bookingsContactNumber}`} className="text-[#007BFF] hover:underline">{e.bookingsContactNumber}</a>
                       </p>
                     )}
                   </div>
@@ -621,27 +621,27 @@ export default function PartnerDashboard() {
                 <Section title="Social Media">
                   <div className="flex flex-wrap gap-3">
                     {e.socialsWebsite && (
-                      <a href={e.socialsWebsite} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#AEECE4] hover:underline">
+                      <a href={e.socialsWebsite} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#007BFF] hover:underline">
                         <Globe className="h-4 w-4" /> Website
                       </a>
                     )}
                     {e.socialsFacebook && (
-                      <a href={e.socialsFacebook} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#AEECE4] hover:underline">
+                      <a href={e.socialsFacebook} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#007BFF] hover:underline">
                         <Facebook className="h-4 w-4" /> Facebook
                       </a>
                     )}
                     {e.socialsInstagram && (
-                      <a href={e.socialsInstagram} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#AEECE4] hover:underline">
+                      <a href={e.socialsInstagram} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#007BFF] hover:underline">
                         <Instagram className="h-4 w-4" /> Instagram
                       </a>
                     )}
                     {e.socialsTiktok && (
-                      <a href={e.socialsTiktok} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#AEECE4] hover:underline">
+                      <a href={e.socialsTiktok} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#007BFF] hover:underline">
                         TikTok
                       </a>
                     )}
                     {e.socialsTwitter && (
-                      <a href={e.socialsTwitter} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#AEECE4] hover:underline">
+                      <a href={e.socialsTwitter} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#007BFF] hover:underline">
                         X (Twitter)
                       </a>
                     )}
@@ -652,9 +652,9 @@ export default function PartnerDashboard() {
               {e.discountOffered && (
                 <Section title="Discount Offered">
                   <div className="flex items-center gap-2">
-                    <p className="text-lg font-semibold text-[#AEECE4]">{e.discountOffered}</p>
+                    <p className="text-lg font-semibold text-[#007BFF]">{e.discountOffered}</p>
                     {e.discountCode && (
-                      <span className="px-3 py-1.5 bg-[#AEECE4]/10 text-[#AEECE4] rounded text-lg font-mono font-bold tracking-wide">
+                      <span className="px-3 py-1.5 bg-black text-[#39FF14] rounded text-lg font-mono font-bold tracking-wide">
                         {e.discountCode}
                       </span>
                     )}
@@ -666,7 +666,7 @@ export default function PartnerDashboard() {
                 <div>
                   <Button
                     onClick={() => window.open(e.menuLink, "_blank")}
-                    className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black"
+                    className="bg-[#007BFF] hover:bg-[#007BFF]/90 text-white"
                   >
                     <ExternalLink className="h-5 w-5 mr-2" />
                     View Menu
@@ -683,7 +683,7 @@ export default function PartnerDashboard() {
               <div className="flex items-center justify-between">
                 <CardTitle>Bookings Received</CardTitle>
                 {bookings.filter((b) => b.status === "pending").length > 0 && (
-                  <span className="inline-flex items-center justify-center h-6 px-2 rounded-full bg-red-600 text-white text-xs font-bold">
+                  <span className="inline-flex items-center justify-center h-6 px-2 rounded-full bg-black text-white text-xs font-bold">
                     {bookings.filter((b) => b.status === "pending").length} new
                   </span>
                 )}
@@ -700,7 +700,7 @@ export default function PartnerDashboard() {
                   <div key={b.id} className={`border rounded-lg p-3 space-y-1 ${b.status === "cancelled" ? "opacity-60" : ""}`}>
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-medium text-sm">{b.bookingDate}{b.bookingTime ? ` \u00B7 ${b.bookingTime}` : ""}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded ${b.status === "cancelled" ? "bg-red-100 text-red-700" : b.status === "pending" ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-700"}`}>{b.status}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded ${b.status === "cancelled" ? "bg-black text-white" : b.status === "pending" ? "bg-[#007BFF] text-white" : "bg-[#39FF14] text-black"}`}>{b.status}</span>
                     </div>
                     <div className="text-sm">{b.customerName}</div>
                     <div className="text-xs text-muted-foreground">{[b.customerPhone, b.customerEmail].filter(Boolean).join(" \u00B7 ")}</div>
@@ -723,7 +723,7 @@ export default function PartnerDashboard() {
             <p className="text-sm text-muted-foreground">
               Welcome to the Around You Partner Portal! Your business is now listed on our platform and visible to guests staying at participating accommodations in your area.
             </p>
-            <div className="p-4 bg-[#AEECE4]/10 rounded-lg space-y-2">
+            <div className="p-4 bg-[#007BFF]/10 rounded-lg space-y-2">
               <h4 className="font-semibold text-sm">Need to update your information?</h4>
               <p className="text-sm text-muted-foreground">
                 Please contact the platform administrator to make changes to your business profile, including contact details, images, descriptions, or discount offers.

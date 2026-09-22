@@ -30,6 +30,12 @@ export default function PendingApplications({ category }: { category?: string })
   const [apps, setApps] = useState<Application[]>([]);
   const [openIds, setOpenIds] = useState<Set<number>>(new Set());
   const [busyId, setBusyId] = useState<number | null>(null);
+  // Error surfaced to the admin. Previously any failure (including "your session
+  // isn't an admin session") was swallowed and the card just read "No pending
+  // applications" — which looked like the application had been lost. We now show
+  // the real reason so it's clear the data is there but the session can't see it.
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const { toast } = useToast();
 
   const load = async () => {
@@ -37,8 +43,17 @@ export default function PendingApplications({ category }: { category?: string })
       const backend = getAuthenticatedBackend();
       const data: any = await backend.partnerApp.list({ category: category || "", status: "Pending" });
       setApps(data.applications || []);
-    } catch (error) {
+      setLoadError(null);
+    } catch (error: any) {
       console.error("Failed to load applications:", error);
+      const status = error?.status;
+      if (status === 401 || status === 403) {
+        setLoadError(
+          "This isn't an active admin session (it may have expired, or you're currently signed in as a guest/partner on this browser). Sign out and sign in again via Admin Login to review applications."
+        );
+      } else {
+        setLoadError("Couldn't load applications right now. Please refresh and try again.");
+      }
     }
   };
 
@@ -84,7 +99,9 @@ export default function PendingApplications({ category }: { category?: string })
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {apps.length === 0 ? (
+        {loadError ? (
+          <p className="text-sm font-medium text-red-600">{loadError}</p>
+        ) : apps.length === 0 ? (
           <p className="text-sm text-muted-foreground">No pending applications.</p>
         ) : (
           <div className="space-y-3">
