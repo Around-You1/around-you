@@ -12,13 +12,14 @@ const LUMO = "#39FF14";
 // already, giving a smooth final fill rather than an abrupt jump.
 const RAMP_DURATION_MS = 3200;
 
-// Layout constants (percent of the stage). The two skylines flank the screen
-// and "almost touch" in the middle, with the logo bridging the gap. The
-// loading bar spans from the MIDDLE of the JHB skyline (25%) to the MIDDLE of
-// the Table Mountain skyline (75%), and the car rides along that same span.
-const BAR_LEFT = 25; // = horizontal centre of the JHB skyline
-const BAR_WIDTH = 50; // 25%..75% (centre of JHB .. centre of Table Mountain)
-const BASELINE_BOTTOM = "40%"; // shared baseline the skylines + logo sit on
+// Layout constants (percent of the stage). The combined skyline (Joburg on
+// the left, Table Mountain on the right, meeting in a continuous neon line)
+// spans the top. The loading bar runs from roughly the MIDDLE of the JHB
+// skyline to the MIDDLE of the Table Mountain skyline, and the car rides
+// along that same span at a constant size.
+const BAR_LEFT = 24; // ~ horizontal centre of the JHB skyline
+const BAR_WIDTH = 52; // ~24%..76% (centre of JHB .. centre of Table Mountain)
+const BASELINE_BOTTOM = "40%"; // the neon baseline the skyline + logo sit on
 
 interface Props {
   // True once whatever the app is actually waiting on (session check, code
@@ -82,41 +83,28 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
       }}
     >
       <div style={{ position: "relative", width: "100%", height: "100%" }}>
-        {/* Johannesburg skyline — left, baseline on the shared line */}
+        {/* Combined skyline — Joburg (left) + Table Mountain (right) meeting in
+            one continuous neon line, sitting on the shared baseline. */}
         <img
-          src="/loading/jhb-skyline.png"
+          src="/loading/skyline-combined.png"
           alt=""
           draggable={false}
           style={{
             position: "absolute",
             bottom: BASELINE_BOTTOM,
-            left: "1%",
-            width: "47%",
-            maxHeight: "42%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "94%",
+            maxHeight: "46%",
             objectFit: "contain",
             objectPosition: "bottom",
           }}
         />
 
-        {/* Table Mountain skyline — right, baseline on the shared line */}
+        {/* Around You logo — centred at the junction of the two skylines, its
+            bottom point resting on the neon baseline. Transparent PNG. */}
         <img
-          src="/loading/table-mountain-skyline.png"
-          alt=""
-          draggable={false}
-          style={{
-            position: "absolute",
-            bottom: BASELINE_BOTTOM,
-            right: "1%",
-            width: "47%",
-            maxHeight: "42%",
-            objectFit: "contain",
-            objectPosition: "bottom",
-          }}
-        />
-
-        {/* Around You logo — centred, its bottom point on the shared baseline */}
-        <img
-          src="/loading/logo-clear.png"
+          src="/loading/logo2.png"
           alt="Around You"
           draggable={false}
           style={{
@@ -124,7 +112,7 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
             bottom: BASELINE_BOTTOM,
             left: "50%",
             transform: "translateX(-50%)",
-            height: "clamp(70px, 18%, 170px)",
+            height: "clamp(52px, 9vw, 132px)",
             width: "auto",
           }}
         />
@@ -136,7 +124,7 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
           draggable={false}
           style={{
             position: "absolute",
-            bottom: "calc(9% + 26px)",
+            bottom: "calc(10% + 26px)",
             left: `${carLeft}%`,
             transform: "translateX(-50%)",
             width: "clamp(90px, 13%, 190px)",
@@ -145,13 +133,13 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
           }}
         />
 
-        {/* Loading bar — spans JHB centre (25%) to Table Mountain centre (75%) */}
+        {/* Loading bar — spans JHB centre to Table Mountain centre */}
         <div
           style={{
             position: "absolute",
             left: `${BAR_LEFT}%`,
             width: `${BAR_WIDTH}%`,
-            bottom: "9%",
+            bottom: "10%",
             height: 26,
             borderRadius: 999,
             border: `2px solid ${LUMO}`,
@@ -182,7 +170,7 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
             position: "absolute",
             left: 0,
             right: 0,
-            bottom: "3%",
+            bottom: "4%",
             textAlign: "center",
             color: LUMO,
             fontWeight: 700,
