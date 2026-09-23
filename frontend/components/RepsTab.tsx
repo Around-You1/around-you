@@ -451,9 +451,9 @@ export default function RepsTab() {
                   {/* Rep's personal partner-referral QR (marketing / vehicle decal). */}
                   <div className="pt-1">
                     <RepQRCode
-                      title="Your marketing QR — recruit partners"
+                      title={rep.repCode ? `Rep Code: ${rep.repCode}` : "Rep Code"}
                       applyUrl={`https://aroundyou.co.za/apply?rep=${rep.repCode}`}
-                      description="Scan to open the Partner application already linked to this rep. Print it or use it as a vehicle decal — every partner who applies via it is credited to this rep."
+                      description="Scan this QR code to open the Rep Onboarding page, where you can onboard your business as part of the Around You Partner Team."
                     />
                   </div>
 
