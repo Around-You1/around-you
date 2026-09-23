@@ -732,6 +732,8 @@ export default function RepOnboardingApp() {
           postalCode: data.postalCode || "",
           contactNumber: data.contactNumber || "",
           description: data.description || "",
+          tradingHours: data.tradingHours || "",
+          publicHolidays: data.publicHolidays || "",
           cuisineTypes: data.cuisineTypes || [],
           restaurantType: data.restaurantType || [],
           atmosphere: data.atmosphere || [],
@@ -801,6 +803,8 @@ export default function RepOnboardingApp() {
           postalCode: data.postalCode || "",
           contactNumber: data.contact || data.contactNumber || "",
           description: data.description || "",
+          tradingHours: data.tradingHours || "",
+          publicHolidays: data.publicHolidays || "",
           serviceCategories: data.serviceCategories || [],
           littleExplorerApproved: (data.childFriendly || []).includes("Child Friendly"),
           paymentCard: (data.paymentOptions || []).includes("Card"),
@@ -859,6 +863,8 @@ export default function RepOnboardingApp() {
           postalCode: data.postalCode || "",
           contactNumber: data.contact || data.contactNumber || "",
           description: data.description || "",
+          tradingHours: data.tradingHours || "",
+          publicHolidays: data.publicHolidays || "",
           attractionType: data.attractionType || [],
           littleExplorerApproved: (data.childFriendly || []).includes("Child Friendly"),
           paymentCard: (data.paymentOptions || []).includes("Card"),
@@ -1291,6 +1297,12 @@ export default function RepOnboardingApp() {
                     <CheckboxGroup label="Child Friendly" options={["Child Friendly"]} selected={data.childFriendly || []} onChange={set("childFriendly")} />
                     {isRestaurant && <TextField label="Address (public listing)" value={data.publicAddress} onChange={set("publicAddress")} />}
                     {isRestaurant && <TextField label="Description" area value={data.description} onChange={set("description")} />}
+                    {(isRestaurant || isService || isAttraction) && (
+                      <>
+                        <TextField label="Trading Hours" area value={data.tradingHours} onChange={set("tradingHours")} />
+                        <TextField label="Public Holidays" area value={data.publicHolidays} onChange={set("publicHolidays")} />
+                      </>
+                    )}
                   </>
                 )}
               </>

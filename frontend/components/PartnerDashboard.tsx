@@ -310,7 +310,7 @@ export default function PartnerDashboard() {
   const getEntityTypeName = () => {
     if (entityType === "restaurant") return "Restaurant";
     if (entityType === "service") return "Service";
-    return "Attraction/Activity";
+    return "Attraction";
   };
 
   if (loading) {
@@ -541,6 +541,8 @@ export default function PartnerDashboard() {
               )}
 
               {e.description && <Section title="Description"><p className="text-sm">{e.description}</p></Section>}
+              {e.tradingHours && <Section title="Trading Hours"><p className="text-sm whitespace-pre-line">{e.tradingHours}</p></Section>}
+              {e.publicHolidays && <Section title="Public Holidays"><p className="text-sm whitespace-pre-line">{e.publicHolidays}</p></Section>}
 
               <Section title="Accessibility">
                 <div className="flex flex-wrap gap-4 text-sm">
@@ -587,7 +589,7 @@ export default function PartnerDashboard() {
               )}
 
               {hasAttractionExtras && (
-                <Section title="Attraction/Activity Extras">
+                <Section title="Attraction Extras">
                   <div className="text-sm space-y-1">
                     {e.trailDifficulty && <p><span className="text-muted-foreground">Trail Difficulty: </span>{e.trailDifficulty}</p>}
                     {e.wildlifeCautions && <p><span className="text-muted-foreground">Wildlife Cautions: </span>{e.wildlifeCautions}</p>}

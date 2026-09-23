@@ -78,6 +78,8 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
     discountEnabled: false,
     localDiscountEnabled: false,
     description: "",
+    tradingHours: "",
+    publicHolidays: "",
     paymentCard: false,
     paymentCash: false,
     paymentMobile: false,
@@ -160,6 +162,8 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
         discountEnabled: data.discountEnabled ?? Boolean(data.discountOffered),
         localDiscountEnabled: data.localDiscountEnabled ?? Boolean(data.localDiscountOffered),
         description: data.description || "",
+        tradingHours: data.tradingHours || "",
+        publicHolidays: data.publicHolidays || "",
         paymentCard: data.paymentCard || false,
         paymentCash: data.paymentCash || false,
         paymentMobile: data.paymentMobile || false,
@@ -212,6 +216,10 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
       toast({ title: "Validation Error", description: "Province is required", variant: "destructive" });
       return;
     }
+    if (!formData.area || !formData.area.trim()) {
+      toast({ title: "Validation Error", description: "Area is required", variant: "destructive" });
+      return;
+    }
 
     setLoading(true);
 
@@ -241,6 +249,8 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           discountEnabled: formData.discountEnabled,
           localDiscountEnabled: formData.localDiscountEnabled,
           description: formData.description || undefined,
+          tradingHours: formData.tradingHours || undefined,
+          publicHolidays: formData.publicHolidays || undefined,
           paymentCard: formData.paymentCard,
           paymentCash: formData.paymentCash,
           paymentMobile: formData.paymentMobile,
@@ -284,7 +294,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
         await saveCharity("attraction", attractionData?.id, officialUse.charity || []);
         toast({
           title: "Success",
-          description: "Attraction/Activity updated successfully",
+          description: "Attraction updated successfully",
         });
       } else {
         const createdAtt: any = await backend.attraction.create({
@@ -307,6 +317,8 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           discountEnabled: formData.discountEnabled,
           localDiscountEnabled: formData.localDiscountEnabled,
           description: formData.description || undefined,
+          tradingHours: formData.tradingHours || undefined,
+          publicHolidays: formData.publicHolidays || undefined,
           paymentCard: formData.paymentCard,
           paymentCash: formData.paymentCash,
           paymentMobile: formData.paymentMobile,
@@ -350,7 +362,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
         await saveCharity("attraction", createdAtt.id, officialUse.charity || []);
         toast({
           title: "Success",
-          description: "Attraction/Activity created successfully",
+          description: "Attraction created successfully",
         });
       }
       onClose();
@@ -370,7 +382,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Loading Attraction/Activity...</CardTitle>
+          <CardTitle>Loading Attraction...</CardTitle>
         </CardHeader>
         <CardContent className="flex justify-center items-center py-12">
           <div className="text-muted-foreground">Loading attraction details...</div>
@@ -386,7 +398,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${attractionId ? "Edit" : "Add"} Attraction/Activity`}</CardTitle>
+        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${attractionId ? "Edit" : "Add"} Attraction`}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -394,7 +406,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Attraction/Activity Name *</Label>
+              <Label htmlFor="name">Attraction Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -405,7 +417,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           </div>
 
           <div className="space-y-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
-            <Label>Attraction/Activity Categories (Select all that apply)</Label>
+            <Label>Attraction Categories (Select all that apply)</Label>
             <div className="grid grid-cols-2 gap-2 p-4 border rounded-md max-h-48 overflow-y-auto">
               {ATTRACTION_CATEGORIES.map((category) => (
                 <div key={category} className="flex items-center space-x-2">
@@ -502,7 +514,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="area">Area</Label>
+              <Label htmlFor="area">Area *</Label>
               <Input
                 id="area"
                 value={formData.area}
@@ -531,7 +543,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           </div>
 
           <MultiImageUpload
-            label="Attraction/Activity Images"
+            label="Attraction Images"
             images={formData.imageUrls}
             onChange={(urls) => setFormData({ ...formData, imageUrls: urls, imageUrl: urls[0] || "" })}
           />
@@ -616,6 +628,28 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="tradingHours">Trading Hours</Label>
+            <Textarea
+              id="tradingHours"
+              value={formData.tradingHours}
+              onChange={(e) => setFormData({ ...formData, tradingHours: e.target.value })}
+              rows={3}
+              placeholder="e.g. Mon–Fri 08:00–17:00, Sat 09:00–13:00, Sun closed"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="publicHolidays">Public Holidays</Label>
+            <Textarea
+              id="publicHolidays"
+              value={formData.publicHolidays}
+              onChange={(e) => setFormData({ ...formData, publicHolidays: e.target.value })}
+              rows={2}
+              placeholder="e.g. Closed on public holidays, or 09:00–13:00"
+            />
+          </div>
+
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Experience Info</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -663,7 +697,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           </div>
 
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
-            <Label className="text-base font-semibold">Attraction/Activity Extras</Label>
+            <Label className="text-base font-semibold">Attraction Extras</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="trailDifficulty">Trail Difficulty</Label>

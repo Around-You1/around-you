@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"backend_encore/app/auth"
-	"backend_encore/internal/demovis"
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/billing"
 	"backend_encore/internal/dedupe"
+	"backend_encore/internal/demovis"
 	"backend_encore/internal/errs"
 	"backend_encore/internal/moderation"
 	"backend_encore/store"
@@ -153,6 +153,8 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.AttractionData, err
 		PostalCode:             req.PostalCode,
 		ContactNumber:          req.ContactNumber,
 		Description:            req.Description,
+		TradingHours:           req.TradingHours,
+		PublicHolidays:         req.PublicHolidays,
 		ProfileReferenceCode:   appdb.RandomCode(12),
 		AttractionType:         req.AttractionType,
 		OffersBookings:         req.OffersBookings,
@@ -167,14 +169,14 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.AttractionData, err
 			PaymentZapper:   req.PaymentZapper,
 			PaymentEft:      req.PaymentEft,
 		},
-		WheelchairAccess:    req.WheelchairAccess,
-		ParkingAvailability: req.ParkingAvailability,
-		DiscountOffered:     req.DiscountOffered,
-		DiscountCode:        req.DiscountCode,
-		LocalDiscountOffered: req.LocalDiscountOffered,
-		LocalDiscountCode:    req.LocalDiscountCode,
-		DiscountEnabled:      req.DiscountEnabled,
-		LocalDiscountEnabled: req.LocalDiscountEnabled,
+		WheelchairAccess:       req.WheelchairAccess,
+		ParkingAvailability:    req.ParkingAvailability,
+		DiscountOffered:        req.DiscountOffered,
+		DiscountCode:           req.DiscountCode,
+		LocalDiscountOffered:   req.LocalDiscountOffered,
+		LocalDiscountCode:      req.LocalDiscountCode,
+		DiscountEnabled:        req.DiscountEnabled,
+		LocalDiscountEnabled:   req.LocalDiscountEnabled,
 		WorksFromClientAddress: req.WorksFromClientAddress,
 		ExperienceInfo: appdb.ExperienceInfo{
 			SafetyInfo:      req.SafetyInfo,
@@ -195,9 +197,9 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.AttractionData, err
 			SocialsTiktok:    req.SocialsTiktok,
 			SocialsTwitter:   req.SocialsTwitter,
 		},
-		ImageUrl:  req.ImageUrl,
-		ImageUrls: req.ImageUrls,
-		IsActive:  req.IsActive,
+		ImageUrl:     req.ImageUrl,
+		ImageUrls:    req.ImageUrls,
+		IsActive:     req.IsActive,
 		BookingItems: req.BookingItems,
 		OfficialUse: appdb.OfficialUse{
 			OfficialHoldingCompany: req.OfficialHoldingCompany,
@@ -273,6 +275,8 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.AttractionData, err
 		PostalCode:             req.PostalCode,
 		ContactNumber:          req.ContactNumber,
 		Description:            req.Description,
+		TradingHours:           req.TradingHours,
+		PublicHolidays:         req.PublicHolidays,
 		AttractionType:         req.AttractionType,
 		OffersBookings:         req.OffersBookings,
 		LittleExplorerApproved: req.LittleExplorerApproved,
@@ -290,8 +294,8 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.AttractionData, err
 		DiscountCode:           req.DiscountCode,
 		LocalDiscountOffered:   req.LocalDiscountOffered,
 		LocalDiscountCode:      req.LocalDiscountCode,
-		DiscountEnabled:      req.DiscountEnabled,
-		LocalDiscountEnabled: req.LocalDiscountEnabled,
+		DiscountEnabled:        req.DiscountEnabled,
+		LocalDiscountEnabled:   req.LocalDiscountEnabled,
 		WorksFromClientAddress: req.WorksFromClientAddress,
 		SafetyInfo:             req.SafetyInfo,
 		AgeRestrictions:        req.AgeRestrictions,
@@ -516,8 +520,8 @@ func ImportAttractions(ctx context.Context, req *ImportRequest) (*ImportResponse
 			ImageUrls:              splitCSVList(row.ImageUrls),
 			LocalDiscountOffered:   row.LocalDiscountOffered,
 			LocalDiscountCode:      row.LocalDiscountCode,
-			DiscountEnabled:      row.DiscountOffered != "",
-			LocalDiscountEnabled: row.LocalDiscountOffered != "",
+			DiscountEnabled:        row.DiscountOffered != "",
+			LocalDiscountEnabled:   row.LocalDiscountOffered != "",
 			WorksFromClientAddress: false,
 			TrailDifficulty:        row.TrailDifficulty,
 			WildlifeCautions:       row.WildlifeCautions,

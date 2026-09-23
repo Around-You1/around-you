@@ -25,7 +25,7 @@ func NewRestaurantStore() *RestaurantStore {
 }
 
 // restaurantColumns lists every column in one fixed order, shared by every
-// SELECT below — every nullable text column is COALESCE'd to '' from the
+// SELECT below — every nullable text column is COALESCE'd to ” from the
 // very first version of this file, learning from the mistake Accommodation's
 // store made (which needed a whole separate follow-up migration after a
 // production crash to add the same protection retroactively).
@@ -84,7 +84,9 @@ const restaurantColumns = `
 	offers_bookings,
 	COALESCE(pre_order_items, '[]'::jsonb) as pre_order_items,
 	created_at, updated_at,
-	payment_eft
+	payment_eft,
+	COALESCE(trading_hours, '') as trading_hours,
+	COALESCE(public_holidays, '') as public_holidays
 `
 
 type restaurantScanner interface {
@@ -123,6 +125,7 @@ func scanRestaurant(row restaurantScanner) (*appdb.Restaurant, error) {
 		&r.PreOrderItems,
 		&r.CreatedAt, &r.UpdatedAt,
 		&r.PaymentEft,
+		&r.TradingHours, &r.PublicHolidays,
 	)
 	if err != nil {
 		return nil, err
@@ -220,11 +223,11 @@ func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*ap
 			dietary_options, offers_bookings,
 			pre_order_items,
 			discount_enabled, local_discount_enabled, works_from_client_address,
-			payment_eft
+			payment_eft, trading_hours, public_holidays
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,
 			$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,$56,$57,
-			$58,$59,$60,$61,$62,$63,$64,$65,$66
+			$58,$59,$60,$61,$62,$63,$64,$65,$66,$67,$68
 		)
 		RETURNING `+restaurantColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -248,6 +251,7 @@ func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*ap
 		in.DiscountEnabled, in.LocalDiscountEnabled,
 		in.WorksFromClientAddress,
 		in.PaymentEft,
+		in.TradingHours, in.PublicHolidays,
 	)
 	return scanRestaurant(row)
 }
@@ -281,14 +285,16 @@ type RestaurantPatch struct {
 	ServiceDelivery        *bool
 	LittleExplorerApproved *bool
 
-	PaymentCard   *bool
-	PaymentCash   *bool
-	PaymentMobile *bool
+	PaymentCard     *bool
+	PaymentCash     *bool
+	PaymentMobile   *bool
 	PaymentGaap     *bool
 	PaymentSnapScan *bool
 	PaymentYoco     *bool
 	PaymentZapper   *bool
 	PaymentEft      *bool
+	TradingHours    *string
+	PublicHolidays  *string
 
 	WheelchairAccess    *bool
 	ParkingAvailability *bool
@@ -296,12 +302,12 @@ type RestaurantPatch struct {
 	WifiNetwork  *string
 	WifiPassword *string
 
-	DiscountOffered      *string
-	DiscountCode         *string
-	LocalDiscountOffered *string
-	LocalDiscountCode    *string
-	DiscountEnabled      *bool
-	LocalDiscountEnabled *bool
+	DiscountOffered        *string
+	DiscountCode           *string
+	LocalDiscountOffered   *string
+	LocalDiscountCode      *string
+	DiscountEnabled        *bool
+	LocalDiscountEnabled   *bool
 	WorksFromClientAddress *bool
 
 	BookingsEmail         *string
@@ -425,6 +431,12 @@ func (s *RestaurantStore) Update(ctx context.Context, id int64, patch Restaurant
 	}
 	if patch.PaymentEft != nil {
 		sets = append(sets, "payment_eft = "+arg(*patch.PaymentEft))
+	}
+	if patch.TradingHours != nil {
+		sets = append(sets, "trading_hours = "+arg(*patch.TradingHours))
+	}
+	if patch.PublicHolidays != nil {
+		sets = append(sets, "public_holidays = "+arg(*patch.PublicHolidays))
 	}
 	if patch.WheelchairAccess != nil {
 		sets = append(sets, "wheelchair_access = "+arg(*patch.WheelchairAccess))

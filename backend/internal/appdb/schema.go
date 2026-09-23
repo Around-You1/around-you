@@ -302,29 +302,31 @@ type Restaurant struct {
 	Latitude  *float64 `json:"latitude"`
 	Longitude *float64 `json:"longitude"`
 
-	Country       string `json:"country"`
-	Province      string `json:"province"`
-	Area          string `json:"area,omitempty"`
-	PostalCode    string `json:"postalCode"`
-	ContactNumber string `json:"contactNumber,omitempty"`
-	Description   string `json:"description,omitempty"`
+	Country        string `json:"country"`
+	Province       string `json:"province"`
+	Area           string `json:"area,omitempty"`
+	PostalCode     string `json:"postalCode"`
+	ContactNumber  string `json:"contactNumber,omitempty"`
+	Description    string `json:"description,omitempty"`
+	TradingHours   string `json:"tradingHours,omitempty"`
+	PublicHolidays string `json:"publicHolidays,omitempty"`
 
 	ProfileReferenceCode string `json:"profileReferenceCode,omitempty"`
 	IsDuplicate          bool   `json:"isDuplicate,omitempty"`
 	DuplicateReason      string `json:"duplicateReason,omitempty"`
 
-	CuisineTypes           []string `json:"cuisineTypes"`
-	RestaurantType         []string `json:"restaurantType"`
-	Atmosphere             []string `json:"atmosphere,omitempty"`
-	Features               []string `json:"features,omitempty"`
-	DietaryOptions         []string `json:"dietaryOptions,omitempty"`
-	OffersBookings         bool     `json:"offersBookings"`
+	CuisineTypes           []string      `json:"cuisineTypes"`
+	RestaurantType         []string      `json:"restaurantType"`
+	Atmosphere             []string      `json:"atmosphere,omitempty"`
+	Features               []string      `json:"features,omitempty"`
+	DietaryOptions         []string      `json:"dietaryOptions,omitempty"`
+	OffersBookings         bool          `json:"offersBookings"`
 	PreOrderItems          PreOrderItems `json:"preOrderItems,omitempty"`
-	MenuLink               string   `json:"menuLink,omitempty"`
-	ServiceDineIn          bool     `json:"serviceDineIn"`
-	ServiceTakeaway        bool     `json:"serviceTakeaway"`
-	ServiceDelivery        bool     `json:"serviceDelivery"`
-	LittleExplorerApproved bool     `json:"littleExplorerApproved"`
+	MenuLink               string        `json:"menuLink,omitempty"`
+	ServiceDineIn          bool          `json:"serviceDineIn"`
+	ServiceTakeaway        bool          `json:"serviceTakeaway"`
+	ServiceDelivery        bool          `json:"serviceDelivery"`
+	LittleExplorerApproved bool          `json:"littleExplorerApproved"`
 
 	PaymentMethods
 
@@ -390,21 +392,23 @@ type ServiceData struct {
 	Latitude  *float64 `json:"latitude"`
 	Longitude *float64 `json:"longitude"`
 
-	Country       string `json:"country"`
-	Province      string `json:"province"`
-	Area          string `json:"area,omitempty"`
-	PostalCode    string `json:"postalCode"`
-	ContactNumber string `json:"contactNumber,omitempty"`
-	Description   string `json:"description,omitempty"`
+	Country        string `json:"country"`
+	Province       string `json:"province"`
+	Area           string `json:"area,omitempty"`
+	PostalCode     string `json:"postalCode"`
+	ContactNumber  string `json:"contactNumber,omitempty"`
+	Description    string `json:"description,omitempty"`
+	TradingHours   string `json:"tradingHours,omitempty"`
+	PublicHolidays string `json:"publicHolidays,omitempty"`
 
 	ProfileReferenceCode string `json:"profileReferenceCode,omitempty"`
 	IsDuplicate          bool   `json:"isDuplicate,omitempty"`
 	DuplicateReason      string `json:"duplicateReason,omitempty"`
 
-	ServiceCategories      []string `json:"serviceCategories"`
-	OffersBookings         bool     `json:"offersBookings"`
+	ServiceCategories      []string     `json:"serviceCategories"`
+	OffersBookings         bool         `json:"offersBookings"`
 	BookingItems           BookingItems `json:"bookingItems,omitempty"`
-	LittleExplorerApproved bool     `json:"littleExplorerApproved"`
+	LittleExplorerApproved bool         `json:"littleExplorerApproved"`
 
 	PaymentMethods
 
@@ -456,21 +460,23 @@ type AttractionData struct {
 	Latitude  *float64 `json:"latitude"`
 	Longitude *float64 `json:"longitude"`
 
-	Country       string `json:"country"`
-	Province      string `json:"province"`
-	Area          string `json:"area,omitempty"`
-	PostalCode    string `json:"postalCode"`
-	ContactNumber string `json:"contactNumber,omitempty"`
-	Description   string `json:"description,omitempty"`
+	Country        string `json:"country"`
+	Province       string `json:"province"`
+	Area           string `json:"area,omitempty"`
+	PostalCode     string `json:"postalCode"`
+	ContactNumber  string `json:"contactNumber,omitempty"`
+	Description    string `json:"description,omitempty"`
+	TradingHours   string `json:"tradingHours,omitempty"`
+	PublicHolidays string `json:"publicHolidays,omitempty"`
 
 	ProfileReferenceCode string `json:"profileReferenceCode,omitempty"`
 	IsDuplicate          bool   `json:"isDuplicate,omitempty"`
 	DuplicateReason      string `json:"duplicateReason,omitempty"`
 
-	AttractionType         []string `json:"attractionType"`
-	OffersBookings         bool     `json:"offersBookings"`
+	AttractionType         []string     `json:"attractionType"`
+	OffersBookings         bool         `json:"offersBookings"`
 	BookingItems           BookingItems `json:"bookingItems,omitempty"`
-	LittleExplorerApproved bool     `json:"littleExplorerApproved"`
+	LittleExplorerApproved bool         `json:"littleExplorerApproved"`
 
 	PaymentMethods
 
@@ -592,7 +598,7 @@ type User struct {
 	ID              int64  `json:"id"`
 	Email           string `json:"email"`
 	Role            string `json:"role"`                  // "Guest" | "LocalGuest" | "Partner" | "SuperAdmin"
-	ProfileType     string `json:"profileType,omitempty"`  // "accommodation" | "restaurant" | "service" | "attraction"
+	ProfileType     string `json:"profileType,omitempty"` // "accommodation" | "restaurant" | "service" | "attraction"
 	AccommodationID int64  `json:"accommodationId,omitempty"`
 	EntityType      string `json:"entityType,omitempty"` // "restaurant" | "service" | "attraction"
 	EntityID        int64  `json:"entityId,omitempty"`

@@ -16,8 +16,8 @@ type ListByMunicipalityRequest struct {
 }
 
 type ListNearbyRequest struct {
-	Latitude  float64 `query:"latitude"`
-	Longitude float64 `query:"longitude"`
+	Latitude   float64 `query:"latitude"`
+	Longitude  float64 `query:"longitude"`
 	RadiusKm   float64 `query:"radiusKm"`
 	PostalCode string  `query:"postalCode"`
 }
@@ -33,12 +33,14 @@ type CreateRequest struct {
 	Latitude  *float64 `json:"latitude,omitempty"`
 	Longitude *float64 `json:"longitude,omitempty"`
 
-	Country       string `json:"country"`
-	Province      string `json:"province"`
-	Area          string `json:"area,omitempty"`
-	PostalCode    string `json:"postalCode"`
-	ContactNumber string `json:"contactNumber,omitempty"`
-	Description   string `json:"description,omitempty"`
+	Country        string `json:"country"`
+	Province       string `json:"province"`
+	Area           string `json:"area,omitempty"`
+	PostalCode     string `json:"postalCode"`
+	ContactNumber  string `json:"contactNumber,omitempty"`
+	Description    string `json:"description,omitempty"`
+	TradingHours   string `json:"tradingHours,omitempty"`
+	PublicHolidays string `json:"publicHolidays,omitempty"`
 
 	ServiceCategories      []string `json:"serviceCategories"`
 	OffersBookings         bool     `json:"offersBookings"`
@@ -59,11 +61,11 @@ type CreateRequest struct {
 	DiscountOffered string `json:"discountOffered,omitempty"`
 	DiscountCode    string `json:"discountCode,omitempty"`
 
-	LocalDiscountOffered string `json:"localDiscountOffered,omitempty"`
-	LocalDiscountCode    string `json:"localDiscountCode,omitempty"`
-	DiscountEnabled      bool `json:"discountEnabled,omitempty"`
-	LocalDiscountEnabled bool `json:"localDiscountEnabled,omitempty"`
-	WorksFromClientAddress bool `json:"worksFromClientAddress,omitempty"`
+	LocalDiscountOffered   string `json:"localDiscountOffered,omitempty"`
+	LocalDiscountCode      string `json:"localDiscountCode,omitempty"`
+	DiscountEnabled        bool   `json:"discountEnabled,omitempty"`
+	LocalDiscountEnabled   bool   `json:"localDiscountEnabled,omitempty"`
+	WorksFromClientAddress bool   `json:"worksFromClientAddress,omitempty"`
 
 	SafetyInfo      string `json:"safetyInfo,omitempty"`
 	AgeRestrictions string `json:"ageRestrictions,omitempty"`
@@ -81,16 +83,16 @@ type CreateRequest struct {
 	ImageUrls []string `json:"imageUrls,omitempty"`
 	IsActive  bool     `json:"isActive"`
 
-	OfficialHoldingCompany string `json:"officialHoldingCompany,omitempty"`
-	OfficialContactName    string `json:"officialContactName,omitempty"`
-	OfficialContactNumber  string `json:"officialContactNumber,omitempty"`
-	OfficialEmail          string `json:"officialEmail,omitempty"`
-	OfficialRepCode        string `json:"officialRepCode,omitempty"`
-	OfficialRepName        string `json:"officialRepName,omitempty"`
-	CompanyRegNumber       string `json:"companyRegNumber,omitempty"`
-	CompanyVatNumber       string `json:"companyVatNumber,omitempty"`
-	GuestType              string `json:"guestType,omitempty"`
-	AccessLevel            string `json:"accessLevel,omitempty"`
+	OfficialHoldingCompany string              `json:"officialHoldingCompany,omitempty"`
+	OfficialContactName    string              `json:"officialContactName,omitempty"`
+	OfficialContactNumber  string              `json:"officialContactNumber,omitempty"`
+	OfficialEmail          string              `json:"officialEmail,omitempty"`
+	OfficialRepCode        string              `json:"officialRepCode,omitempty"`
+	OfficialRepName        string              `json:"officialRepName,omitempty"`
+	CompanyRegNumber       string              `json:"companyRegNumber,omitempty"`
+	CompanyVatNumber       string              `json:"companyVatNumber,omitempty"`
+	GuestType              string              `json:"guestType,omitempty"`
+	AccessLevel            string              `json:"accessLevel,omitempty"`
 	BookingItems           []appdb.BookingItem `json:"bookingItems,omitempty"`
 }
 
@@ -103,12 +105,14 @@ type UpdateRequest struct {
 	Latitude  *float64 `json:"latitude,omitempty"`
 	Longitude *float64 `json:"longitude,omitempty"`
 
-	Country       *string `json:"country,omitempty"`
-	Province      *string `json:"province,omitempty"`
-	Area          *string `json:"area,omitempty"`
-	PostalCode    *string `json:"postalCode,omitempty"`
-	ContactNumber *string `json:"contactNumber,omitempty"`
-	Description   *string `json:"description,omitempty"`
+	Country        *string `json:"country,omitempty"`
+	Province       *string `json:"province,omitempty"`
+	Area           *string `json:"area,omitempty"`
+	PostalCode     *string `json:"postalCode,omitempty"`
+	ContactNumber  *string `json:"contactNumber,omitempty"`
+	Description    *string `json:"description,omitempty"`
+	TradingHours   *string `json:"tradingHours,omitempty"`
+	PublicHolidays *string `json:"publicHolidays,omitempty"`
 
 	ServiceCategories      []string `json:"serviceCategories,omitempty"`
 	OffersBookings         *bool    `json:"offersBookings,omitempty"`
@@ -129,11 +133,11 @@ type UpdateRequest struct {
 	DiscountOffered *string `json:"discountOffered,omitempty"`
 	DiscountCode    *string `json:"discountCode,omitempty"`
 
-	LocalDiscountOffered *string `json:"localDiscountOffered,omitempty"`
-	LocalDiscountCode    *string `json:"localDiscountCode,omitempty"`
-	DiscountEnabled      *bool `json:"discountEnabled,omitempty"`
-	LocalDiscountEnabled *bool `json:"localDiscountEnabled,omitempty"`
-	WorksFromClientAddress *bool `json:"worksFromClientAddress,omitempty"`
+	LocalDiscountOffered   *string `json:"localDiscountOffered,omitempty"`
+	LocalDiscountCode      *string `json:"localDiscountCode,omitempty"`
+	DiscountEnabled        *bool   `json:"discountEnabled,omitempty"`
+	LocalDiscountEnabled   *bool   `json:"localDiscountEnabled,omitempty"`
+	WorksFromClientAddress *bool   `json:"worksFromClientAddress,omitempty"`
 
 	// Edit Code the partner typed to unlock editing. Required (and checked
 	// server-side) when a Partner edits their own profile; ignored for staff.
@@ -155,16 +159,16 @@ type UpdateRequest struct {
 	ImageUrls []string `json:"imageUrls,omitempty"`
 	IsActive  *bool    `json:"isActive,omitempty"`
 
-	OfficialHoldingCompany *string `json:"officialHoldingCompany,omitempty"`
-	OfficialContactName    *string `json:"officialContactName,omitempty"`
-	OfficialContactNumber  *string `json:"officialContactNumber,omitempty"`
-	OfficialEmail          *string `json:"officialEmail,omitempty"`
-	OfficialRepCode        *string `json:"officialRepCode,omitempty"`
-	OfficialRepName        *string `json:"officialRepName,omitempty"`
-	CompanyRegNumber       *string `json:"companyRegNumber,omitempty"`
-	CompanyVatNumber       *string `json:"companyVatNumber,omitempty"`
-	GuestType              *string `json:"guestType,omitempty"`
-	AccessLevel            *string `json:"accessLevel,omitempty"`
+	OfficialHoldingCompany *string             `json:"officialHoldingCompany,omitempty"`
+	OfficialContactName    *string             `json:"officialContactName,omitempty"`
+	OfficialContactNumber  *string             `json:"officialContactNumber,omitempty"`
+	OfficialEmail          *string             `json:"officialEmail,omitempty"`
+	OfficialRepCode        *string             `json:"officialRepCode,omitempty"`
+	OfficialRepName        *string             `json:"officialRepName,omitempty"`
+	CompanyRegNumber       *string             `json:"companyRegNumber,omitempty"`
+	CompanyVatNumber       *string             `json:"companyVatNumber,omitempty"`
+	GuestType              *string             `json:"guestType,omitempty"`
+	AccessLevel            *string             `json:"accessLevel,omitempty"`
 	BookingItems           []appdb.BookingItem `json:"bookingItems,omitempty"`
 }
 

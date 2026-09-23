@@ -108,7 +108,6 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
       "Pest Control",
       "Pet Sitting",
       "House Sitting",
-      "Property Management",
     ],
   },
   {
@@ -206,6 +205,8 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
     discountEnabled: false,
     localDiscountEnabled: false,
     description: "",
+    tradingHours: "",
+    publicHolidays: "",
     paymentCard: false,
     paymentCash: false,
     paymentMobile: false,
@@ -283,6 +284,8 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
         discountEnabled: data.discountEnabled ?? Boolean(data.discountOffered),
         localDiscountEnabled: data.localDiscountEnabled ?? Boolean(data.localDiscountOffered),
         description: data.description || "",
+        tradingHours: data.tradingHours || "",
+        publicHolidays: data.publicHolidays || "",
         paymentCard: data.paymentCard || false,
         paymentCash: data.paymentCash || false,
         paymentMobile: data.paymentMobile || false,
@@ -330,6 +333,10 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
       toast({ title: "Validation Error", description: "Province is required", variant: "destructive" });
       return;
     }
+    if (!formData.area || !formData.area.trim()) {
+      toast({ title: "Validation Error", description: "Area is required", variant: "destructive" });
+      return;
+    }
 
     setLoading(true);
 
@@ -359,6 +366,8 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           discountEnabled: formData.discountEnabled,
           localDiscountEnabled: formData.localDiscountEnabled,
           description: formData.description || undefined,
+          tradingHours: formData.tradingHours || undefined,
+          publicHolidays: formData.publicHolidays || undefined,
           paymentCard: formData.paymentCard,
           paymentCash: formData.paymentCash,
           paymentMobile: formData.paymentMobile,
@@ -420,6 +429,8 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           discountEnabled: formData.discountEnabled,
           localDiscountEnabled: formData.localDiscountEnabled,
           description: formData.description || undefined,
+          tradingHours: formData.tradingHours || undefined,
+          publicHolidays: formData.publicHolidays || undefined,
           paymentCard: formData.paymentCard,
           paymentCash: formData.paymentCash,
           paymentMobile: formData.paymentMobile,
@@ -606,7 +617,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="area">Area</Label>
+              <Label htmlFor="area">Area *</Label>
               <Input
                 id="area"
                 value={formData.area}
@@ -762,6 +773,28 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tradingHours">Trading Hours</Label>
+            <Textarea
+              id="tradingHours"
+              value={formData.tradingHours}
+              onChange={(e) => setFormData({ ...formData, tradingHours: e.target.value })}
+              rows={3}
+              placeholder="e.g. Mon–Fri 08:00–17:00, Sat 09:00–13:00, Sun closed"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="publicHolidays">Public Holidays</Label>
+            <Textarea
+              id="publicHolidays"
+              value={formData.publicHolidays}
+              onChange={(e) => setFormData({ ...formData, publicHolidays: e.target.value })}
+              rows={2}
+              placeholder="e.g. Closed on public holidays, or 09:00–13:00"
             />
           </div>
 

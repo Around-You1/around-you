@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"backend_encore/app/auth"
-	"backend_encore/internal/demovis"
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/billing"
 	"backend_encore/internal/dedupe"
+	"backend_encore/internal/demovis"
 	"backend_encore/internal/errs"
 	"backend_encore/internal/moderation"
 	"backend_encore/store"
@@ -157,6 +157,8 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Restaurant, error) 
 		PostalCode:             req.PostalCode,
 		ContactNumber:          req.ContactNumber,
 		Description:            req.Description,
+		TradingHours:           req.TradingHours,
+		PublicHolidays:         req.PublicHolidays,
 		ProfileReferenceCode:   appdb.RandomCode(12),
 		CuisineTypes:           req.CuisineTypes,
 		RestaurantType:         req.RestaurantType,
@@ -179,19 +181,19 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Restaurant, error) 
 			PaymentZapper:   req.PaymentZapper,
 			PaymentEft:      req.PaymentEft,
 		},
-		WheelchairAccess:    req.WheelchairAccess,
-		ParkingAvailability: req.ParkingAvailability,
-		WifiNetwork:         req.WifiNetwork,
-		WifiPassword:        req.WifiPassword,
-		DiscountOffered:     req.DiscountOffered,
-		DiscountCode:        req.DiscountCode,
-		LocalDiscountOffered: req.LocalDiscountOffered,
-		LocalDiscountCode:    req.LocalDiscountCode,
-		DiscountEnabled:      req.DiscountEnabled,
-		LocalDiscountEnabled: req.LocalDiscountEnabled,
+		WheelchairAccess:       req.WheelchairAccess,
+		ParkingAvailability:    req.ParkingAvailability,
+		WifiNetwork:            req.WifiNetwork,
+		WifiPassword:           req.WifiPassword,
+		DiscountOffered:        req.DiscountOffered,
+		DiscountCode:           req.DiscountCode,
+		LocalDiscountOffered:   req.LocalDiscountOffered,
+		LocalDiscountCode:      req.LocalDiscountCode,
+		DiscountEnabled:        req.DiscountEnabled,
+		LocalDiscountEnabled:   req.LocalDiscountEnabled,
 		WorksFromClientAddress: req.WorksFromClientAddress,
-		BookingsEmail:         req.BookingsEmail,
-		BookingsContactNumber: req.BookingsContactNumber,
+		BookingsEmail:          req.BookingsEmail,
+		BookingsContactNumber:  req.BookingsContactNumber,
 		Socials: appdb.Socials{
 			SocialsWebsite:   req.SocialsWebsite,
 			SocialsFacebook:  req.SocialsFacebook,
@@ -199,11 +201,11 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Restaurant, error) 
 			SocialsTiktok:    req.SocialsTiktok,
 			SocialsTwitter:   req.SocialsTwitter,
 		},
-		ImageUrl:            req.ImageUrl,
-		ImageUrls:           req.ImageUrls,
-		IsActive:            req.IsActive,
-		BookingItems:        req.BookingItems,
-		PreOrderItems:       req.PreOrderItems,
+		ImageUrl:      req.ImageUrl,
+		ImageUrls:     req.ImageUrls,
+		IsActive:      req.IsActive,
+		BookingItems:  req.BookingItems,
+		PreOrderItems: req.PreOrderItems,
 		OfficialUse: appdb.OfficialUse{
 			OfficialHoldingCompany: req.OfficialHoldingCompany,
 			OfficialContactName:    req.OfficialContactName,
@@ -291,6 +293,8 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.Restaurant, error) 
 		PostalCode:             req.PostalCode,
 		ContactNumber:          req.ContactNumber,
 		Description:            req.Description,
+		TradingHours:           req.TradingHours,
+		PublicHolidays:         req.PublicHolidays,
 		CuisineTypes:           req.CuisineTypes,
 		RestaurantType:         req.RestaurantType,
 		Atmosphere:             req.Atmosphere,
@@ -318,8 +322,8 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.Restaurant, error) 
 		DiscountCode:           req.DiscountCode,
 		LocalDiscountOffered:   req.LocalDiscountOffered,
 		LocalDiscountCode:      req.LocalDiscountCode,
-		DiscountEnabled:      req.DiscountEnabled,
-		LocalDiscountEnabled: req.LocalDiscountEnabled,
+		DiscountEnabled:        req.DiscountEnabled,
+		LocalDiscountEnabled:   req.LocalDiscountEnabled,
 		WorksFromClientAddress: req.WorksFromClientAddress,
 		BookingsEmail:          req.BookingsEmail,
 		BookingsContactNumber:  req.BookingsContactNumber,
@@ -544,8 +548,8 @@ func ImportRestaurants(ctx context.Context, req *ImportRequest) (*ImportResponse
 			MenuPdfUrls:            splitCSVList(row.MenuPdfUrls),
 			LocalDiscountOffered:   row.LocalDiscountOffered,
 			LocalDiscountCode:      row.LocalDiscountCode,
-			DiscountEnabled:      row.DiscountOffered != "",
-			LocalDiscountEnabled: row.LocalDiscountOffered != "",
+			DiscountEnabled:        row.DiscountOffered != "",
+			LocalDiscountEnabled:   row.LocalDiscountOffered != "",
 			WorksFromClientAddress: false,
 			BookingsEmail:          row.BookingsEmail,
 			BookingsContactNumber:  row.BookingsContactNumber,

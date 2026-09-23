@@ -222,6 +222,10 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
       toast({ title: "Validation Error", description: "Please select a province.", variant: "destructive" });
       return;
     }
+    if (!formData.area || !formData.area.trim()) {
+      toast({ title: "Validation Error", description: "Area is required", variant: "destructive" });
+      return;
+    }
 
     setLoading(true);
 
@@ -375,7 +379,7 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="area">Area</Label>
+              <Label htmlFor="area">Area *</Label>
               <Input
                 id="area"
                 value={formData.area}

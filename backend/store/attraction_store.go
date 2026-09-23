@@ -74,7 +74,9 @@ const attractionColumns = `
 		COALESCE(booking_items, '[]'::jsonb) as booking_items,
 	offers_bookings,
 	created_at, updated_at,
-	payment_eft
+	payment_eft,
+	COALESCE(trading_hours, '') as trading_hours,
+	COALESCE(public_holidays, '') as public_holidays
 `
 
 type attractionScanner interface {
@@ -108,6 +110,7 @@ func scanAttraction(row attractionScanner) (*appdb.AttractionData, error) {
 		&a.OffersBookings,
 		&a.CreatedAt, &a.UpdatedAt,
 		&a.PaymentEft,
+		&a.TradingHours, &a.PublicHolidays,
 	)
 	if err != nil {
 		return nil, err
@@ -200,11 +203,11 @@ func (s *AttractionStore) Create(ctx context.Context, in *appdb.AttractionData) 
 			local_discount_offered, local_discount_code,
 			offers_bookings,
 			discount_enabled, local_discount_enabled, works_from_client_address,
-			payment_eft
+			payment_eft, trading_hours, public_holidays
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,
 			$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,
-			$56,$57,$58,$59,$60,$61,$62
+			$56,$57,$58,$59,$60,$61,$62,$63,$64
 		)
 		RETURNING `+attractionColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -226,6 +229,7 @@ func (s *AttractionStore) Create(ctx context.Context, in *appdb.AttractionData) 
 		in.DiscountEnabled, in.LocalDiscountEnabled,
 		in.WorksFromClientAddress,
 		in.PaymentEft,
+		in.TradingHours, in.PublicHolidays,
 	)
 	return scanAttraction(row)
 }
@@ -255,16 +259,18 @@ type AttractionPatch struct {
 	PaymentYoco     *bool
 	PaymentZapper   *bool
 	PaymentEft      *bool
+	TradingHours    *string
+	PublicHolidays  *string
 
 	WheelchairAccess    *bool
 	ParkingAvailability *bool
 
-	DiscountOffered      *string
-	DiscountCode         *string
-	LocalDiscountOffered *string
-	LocalDiscountCode    *string
-	DiscountEnabled      *bool
-	LocalDiscountEnabled *bool
+	DiscountOffered        *string
+	DiscountCode           *string
+	LocalDiscountOffered   *string
+	LocalDiscountCode      *string
+	DiscountEnabled        *bool
+	LocalDiscountEnabled   *bool
 	WorksFromClientAddress *bool
 
 	SafetyInfo      *string
@@ -372,6 +378,12 @@ func (s *AttractionStore) Update(ctx context.Context, id int64, patch Attraction
 	}
 	if patch.PaymentEft != nil {
 		sets = append(sets, "payment_eft = "+arg(*patch.PaymentEft))
+	}
+	if patch.TradingHours != nil {
+		sets = append(sets, "trading_hours = "+arg(*patch.TradingHours))
+	}
+	if patch.PublicHolidays != nil {
+		sets = append(sets, "public_holidays = "+arg(*patch.PublicHolidays))
 	}
 	if patch.WheelchairAccess != nil {
 		sets = append(sets, "wheelchair_access = "+arg(*patch.WheelchairAccess))

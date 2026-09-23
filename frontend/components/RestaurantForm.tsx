@@ -119,6 +119,8 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
     discountEnabled: false,
     localDiscountEnabled: false,
     description: "",
+    tradingHours: "",
+    publicHolidays: "",
     paymentCard: false,
     paymentCash: false,
     paymentMobile: false,
@@ -233,6 +235,8 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
         discountEnabled: data.discountEnabled ?? Boolean(data.discountOffered),
         localDiscountEnabled: data.localDiscountEnabled ?? Boolean(data.localDiscountOffered),
         description: data.description || "",
+        tradingHours: data.tradingHours || "",
+        publicHolidays: data.publicHolidays || "",
         paymentCard: data.paymentCard || false,
         paymentCash: data.paymentCash || false,
         paymentMobile: data.paymentMobile || false,
@@ -286,6 +290,10 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
     e.preventDefault();
     if (!formData.province) {
       toast({ title: "Validation Error", description: "Province is required", variant: "destructive" });
+      return;
+    }
+    if (!formData.area || !formData.area.trim()) {
+      toast({ title: "Validation Error", description: "Area is required", variant: "destructive" });
       return;
     }
 
@@ -491,7 +499,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="area">Area</Label>
+              <Label htmlFor="area">Area *</Label>
               <Input
                 id="area"
                 value={formData.area}
@@ -709,6 +717,28 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={4}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tradingHours">Trading Hours</Label>
+            <Textarea
+              id="tradingHours"
+              value={formData.tradingHours}
+              onChange={(e) => setFormData({ ...formData, tradingHours: e.target.value })}
+              rows={3}
+              placeholder="e.g. Mon–Fri 08:00–17:00, Sat 09:00–13:00, Sun closed"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="publicHolidays">Public Holidays</Label>
+            <Textarea
+              id="publicHolidays"
+              value={formData.publicHolidays}
+              onChange={(e) => setFormData({ ...formData, publicHolidays: e.target.value })}
+              rows={2}
+              placeholder="e.g. Closed on public holidays, or 09:00–13:00"
             />
           </div>
 

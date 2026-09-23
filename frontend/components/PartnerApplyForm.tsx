@@ -105,6 +105,10 @@ const charitySection: Section = { title: "Charity you'd like to support", fields
 function specsFor(cat: string): Section[] {
   if (cat === "restaurant") return [
     businessSection("Restaurant/Takeaway name"),
+    { title: "Trading hours", fields: [
+      { key: "Trading hours", type: "textarea" },
+      { key: "Public holidays", type: "textarea" },
+    ] },
     { title: "Restaurant/Takeaway details", fields: [
       { key: "Restaurant type", label: "Restaurant/Takeaway type", type: "select", options: REST_TYPES },
       { key: "Cuisine type(s)", type: "multi", options: CUISINE },
@@ -124,6 +128,10 @@ function specsFor(cat: string): Section[] {
   ];
   if (cat === "service") return [
     businessSection("Business/Service name"),
+    { title: "Trading hours", fields: [
+      { key: "Trading hours", type: "textarea" },
+      { key: "Public holidays", type: "textarea" },
+    ] },
     { title: "Business/Service details", fields: [
       { key: "Service category(ies)", label: "Business/Service category(ies)", type: "multigroup", groups: SERVICE_GROUPS },
       { key: "Description", type: "textarea" },
@@ -136,6 +144,10 @@ function specsFor(cat: string): Section[] {
   ];
   if (cat === "attraction") return [
     businessSection("Attraction/Activity name"),
+    { title: "Trading hours", fields: [
+      { key: "Trading hours", type: "textarea" },
+      { key: "Public holidays", type: "textarea" },
+    ] },
     { title: "Attraction/Activity details", fields: [
       { key: "Attraction category(ies)", label: "Attraction/Activity category(ies)", type: "multi", options: ATTRACTION_CATS },
       { key: "Description", type: "textarea" },
