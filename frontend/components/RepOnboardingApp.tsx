@@ -158,6 +158,7 @@ const CATEGORY_GROUPS = [
       "Pest Control",
       "Pet Sitting",
       "House Sitting",
+      "Property Management",
     ],
   },
   {
@@ -219,6 +220,7 @@ const ATTRACTION_CATEGORIES = [
   "Beaches & Coastal",
   "Cultural & Historical",
   "Entertainment & Events",
+  "Free",
   "Nature & Outdoors",
   "Shopping & Markets",
   "Sports & Adventure",

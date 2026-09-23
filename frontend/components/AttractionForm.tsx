@@ -28,6 +28,7 @@ const ATTRACTION_CATEGORIES = [
   "Beaches & Coastal",
   "Cultural & Historical",
   "Entertainment & Events",
+  "Free",
   "Nature & Outdoors",
   "Shopping & Markets",
   "Sports & Adventure",

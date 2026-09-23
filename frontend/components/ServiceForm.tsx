@@ -108,6 +108,7 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
       "Pest Control",
       "Pet Sitting",
       "House Sitting",
+      "Property Management",
     ],
   },
   {
