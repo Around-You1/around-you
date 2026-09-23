@@ -50,6 +50,7 @@ export interface Accommodation {
   policeContact?: string;
   doctorContact?: string;
   ambulanceContact?: string;
+  privateAmbulanceContact?: string;
   hospitalContact?: string;
   fireDepartmentContact?: string;
   snakeCatchersContact?: string;

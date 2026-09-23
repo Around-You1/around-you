@@ -51,17 +51,18 @@ type CreateRequest struct {
 	WheelchairAccess    bool `json:"wheelchairAccess"`
 	ParkingAvailability bool `json:"parkingAvailability"`
 
-	PrimaryContact        string `json:"primaryContact,omitempty"`
-	PoliceContact         string `json:"policeContact,omitempty"`
-	DoctorContact         string `json:"doctorContact,omitempty"`
-	AmbulanceContact      string `json:"ambulanceContact,omitempty"`
-	HospitalContact       string `json:"hospitalContact,omitempty"`
-	FireDepartmentContact string `json:"fireDepartmentContact,omitempty"`
-	SnakeCatchersContact  string `json:"snakeCatchersContact,omitempty"`
-	NsriContact           string `json:"nsriContact,omitempty"`
-	VetContact            string `json:"vetContact,omitempty"`
-	CommunityWatchContact string `json:"communityWatchContact,omitempty"`
-	LocalSecurityContact  string `json:"localSecurityContact,omitempty"`
+	PrimaryContact          string `json:"primaryContact,omitempty"`
+	PoliceContact           string `json:"policeContact,omitempty"`
+	DoctorContact           string `json:"doctorContact,omitempty"`
+	AmbulanceContact        string `json:"ambulanceContact,omitempty"`
+	PrivateAmbulanceContact string `json:"privateAmbulanceContact,omitempty"`
+	HospitalContact         string `json:"hospitalContact,omitempty"`
+	FireDepartmentContact   string `json:"fireDepartmentContact,omitempty"`
+	SnakeCatchersContact    string `json:"snakeCatchersContact,omitempty"`
+	NsriContact             string `json:"nsriContact,omitempty"`
+	VetContact              string `json:"vetContact,omitempty"`
+	CommunityWatchContact   string `json:"communityWatchContact,omitempty"`
+	LocalSecurityContact    string `json:"localSecurityContact,omitempty"`
 
 	Doctors         appdb.EmergencyEntryList `json:"doctors,omitempty"`
 	Vets            appdb.EmergencyEntryList `json:"vets,omitempty"`
@@ -117,17 +118,18 @@ type UpdateRequest struct {
 	WheelchairAccess    *bool `json:"wheelchairAccess,omitempty"`
 	ParkingAvailability *bool `json:"parkingAvailability,omitempty"`
 
-	PrimaryContact        *string `json:"primaryContact,omitempty"`
-	PoliceContact         *string `json:"policeContact,omitempty"`
-	DoctorContact         *string `json:"doctorContact,omitempty"`
-	AmbulanceContact      *string `json:"ambulanceContact,omitempty"`
-	HospitalContact       *string `json:"hospitalContact,omitempty"`
-	FireDepartmentContact *string `json:"fireDepartmentContact,omitempty"`
-	SnakeCatchersContact  *string `json:"snakeCatchersContact,omitempty"`
-	NsriContact           *string `json:"nsriContact,omitempty"`
-	VetContact            *string `json:"vetContact,omitempty"`
-	CommunityWatchContact *string `json:"communityWatchContact,omitempty"`
-	LocalSecurityContact  *string `json:"localSecurityContact,omitempty"`
+	PrimaryContact          *string `json:"primaryContact,omitempty"`
+	PoliceContact           *string `json:"policeContact,omitempty"`
+	DoctorContact           *string `json:"doctorContact,omitempty"`
+	AmbulanceContact        *string `json:"ambulanceContact,omitempty"`
+	PrivateAmbulanceContact *string `json:"privateAmbulanceContact,omitempty"`
+	HospitalContact         *string `json:"hospitalContact,omitempty"`
+	FireDepartmentContact   *string `json:"fireDepartmentContact,omitempty"`
+	SnakeCatchersContact    *string `json:"snakeCatchersContact,omitempty"`
+	NsriContact             *string `json:"nsriContact,omitempty"`
+	VetContact              *string `json:"vetContact,omitempty"`
+	CommunityWatchContact   *string `json:"communityWatchContact,omitempty"`
+	LocalSecurityContact    *string `json:"localSecurityContact,omitempty"`
 
 	Doctors         *appdb.EmergencyEntryList `json:"doctors,omitempty"`
 	Vets            *appdb.EmergencyEntryList `json:"vets,omitempty"`
@@ -225,8 +227,8 @@ type ImportRequest struct {
 }
 
 type ImportResponse struct {
-	Success bool     `json:"success"`
-	Imported int     `json:"imported"`
+	Success  bool     `json:"success"`
+	Imported int      `json:"imported"`
 	Failed   int      `json:"failed"`
 	Errors   []string `json:"errors"`
 }

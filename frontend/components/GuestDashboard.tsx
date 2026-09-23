@@ -613,13 +613,21 @@ export default function GuestDashboard() {
                       Emergency Numbers
                     </CollapsibleTrigger>
                     <CollapsibleContent className={`${contentClass} space-y-2`}>
-                      {accommodation!.primaryContact || accommodation!.policeContact || accommodation!.doctorContact || (accommodation!.doctors && accommodation!.doctors.length > 0) || accommodation!.ambulanceContact || accommodation!.hospitalContact || accommodation!.fireDepartmentContact || accommodation!.snakeCatchersContact || accommodation!.nsriContact || accommodation!.vetContact || (accommodation!.vets && accommodation!.vets.length > 0) || accommodation!.communityWatchContact || accommodation!.localSecurityContact ? (
+                      {accommodation!.primaryContact || accommodation!.policeContact || accommodation!.doctorContact || (accommodation!.doctors && accommodation!.doctors.length > 0) || accommodation!.ambulanceContact || accommodation!.privateAmbulanceContact || accommodation!.hospitalContact || accommodation!.fireDepartmentContact || accommodation!.snakeCatchersContact || accommodation!.nsriContact || accommodation!.vetContact || (accommodation!.vets && accommodation!.vets.length > 0) || accommodation!.communityWatchContact || accommodation!.localSecurityContact ? (
                         <>
                           {accommodation!.ambulanceContact && (
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Ambulance Contact:</span>
+                              <span className="text-muted-foreground">Public Ambulance:</span>
                               <a href={`tel:${accommodation!.ambulanceContact}`} className="font-medium text-black hover:underline">
                                 {accommodation!.ambulanceContact}
+                              </a>
+                            </div>
+                          )}
+                          {accommodation!.privateAmbulanceContact && (
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Private Ambulance:</span>
+                              <a href={`tel:${accommodation!.privateAmbulanceContact}`} className="font-medium text-black hover:underline">
+                                {accommodation!.privateAmbulanceContact}
                               </a>
                             </div>
                           )}

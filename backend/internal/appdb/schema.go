@@ -250,17 +250,18 @@ type Accommodation struct {
 	Amenities            string `json:"amenities,omitempty"`
 	Guidelines           string `json:"guidelines,omitempty"`
 
-	PrimaryContact        string `json:"primaryContact,omitempty"`
-	PoliceContact         string `json:"policeContact,omitempty"`
-	DoctorContact         string `json:"doctorContact,omitempty"`
-	AmbulanceContact      string `json:"ambulanceContact,omitempty"`
-	HospitalContact       string `json:"hospitalContact,omitempty"`
-	FireDepartmentContact string `json:"fireDepartmentContact,omitempty"`
-	SnakeCatchersContact  string `json:"snakeCatchersContact,omitempty"`
-	NsriContact           string `json:"nsriContact,omitempty"`
-	VetContact            string `json:"vetContact,omitempty"`
-	CommunityWatchContact string `json:"communityWatchContact,omitempty"`
-	LocalSecurityContact  string `json:"localSecurityContact,omitempty"`
+	PrimaryContact          string `json:"primaryContact,omitempty"`
+	PoliceContact           string `json:"policeContact,omitempty"`
+	DoctorContact           string `json:"doctorContact,omitempty"`
+	AmbulanceContact        string `json:"ambulanceContact,omitempty"`
+	PrivateAmbulanceContact string `json:"privateAmbulanceContact,omitempty"`
+	HospitalContact         string `json:"hospitalContact,omitempty"`
+	FireDepartmentContact   string `json:"fireDepartmentContact,omitempty"`
+	SnakeCatchersContact    string `json:"snakeCatchersContact,omitempty"`
+	NsriContact             string `json:"nsriContact,omitempty"`
+	VetContact              string `json:"vetContact,omitempty"`
+	CommunityWatchContact   string `json:"communityWatchContact,omitempty"`
+	LocalSecurityContact    string `json:"localSecurityContact,omitempty"`
 
 	// Multi-entry emergency contacts (name/number/address) for doctors & vets,
 	// plus an address for the (single) hospital number above.

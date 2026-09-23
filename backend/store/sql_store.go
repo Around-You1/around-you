@@ -81,7 +81,8 @@ const accommodationColumns = `
 	COALESCE(guest_type, '') as guest_type,
 	COALESCE(access_level, '') as access_level,
 	COALESCE(units, 1) as units,
-	created_at, updated_at
+	created_at, updated_at,
+	COALESCE(private_ambulance_contact, '') as private_ambulance_contact
 `
 
 // scanner is satisfied by both *sql.Row (QueryRow) and *sql.Rows (Query),
@@ -109,6 +110,7 @@ func scanAccommodation(row scanner) (*appdb.Accommodation, error) {
 		&a.OfficialRepName, &a.CompanyRegNumber, &a.CompanyVatNumber, &a.GuestType, &a.AccessLevel,
 		&a.Units,
 		&a.CreatedAt, &a.UpdatedAt,
+		&a.PrivateAmbulanceContact,
 	)
 	if err != nil {
 		return nil, err
@@ -231,12 +233,12 @@ func (s *Store) Create(ctx context.Context, in *appdb.Accommodation) (*appdb.Acc
 			guest_type, access_level,
 			snake_catchers_contact, nsri_contact, vet_contact, community_watch_contact, local_security_contact,
 			units,
-			doctors, vets, hospital_address
+			doctors, vets, hospital_address, private_ambulance_contact
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
 			$19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34,
 			$35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45,
-			$46, $47, $48
+			$46, $47, $48, $49
 		)
 		RETURNING`+accommodationColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -251,7 +253,7 @@ func (s *Store) Create(ctx context.Context, in *appdb.Accommodation) (*appdb.Acc
 		in.GuestType, in.AccessLevel,
 		in.SnakeCatchersContact, in.NsriContact, in.VetContact, in.CommunityWatchContact, in.LocalSecurityContact,
 		unitsOrDefault(in.Units),
-		in.Doctors, in.Vets, in.HospitalAddress,
+		in.Doctors, in.Vets, in.HospitalAddress, in.PrivateAmbulanceContact,
 	)
 
 	return scanAccommodation(row)
@@ -290,17 +292,18 @@ type Patch struct {
 	WheelchairAccess    *bool
 	ParkingAvailability *bool
 
-	PrimaryContact        *string
-	PoliceContact         *string
-	DoctorContact         *string
-	AmbulanceContact      *string
-	HospitalContact       *string
-	FireDepartmentContact *string
-	SnakeCatchersContact  *string
-	NsriContact           *string
-	VetContact            *string
-	CommunityWatchContact *string
-	LocalSecurityContact  *string
+	PrimaryContact          *string
+	PoliceContact           *string
+	DoctorContact           *string
+	AmbulanceContact        *string
+	PrivateAmbulanceContact *string
+	HospitalContact         *string
+	FireDepartmentContact   *string
+	SnakeCatchersContact    *string
+	NsriContact             *string
+	VetContact              *string
+	CommunityWatchContact   *string
+	LocalSecurityContact    *string
 
 	// Multi-entry doctors & vets and a hospital address. A non-nil pointer
 	// (even an empty list) means "replace".
@@ -405,6 +408,9 @@ func (s *Store) Update(ctx context.Context, id int64, patch Patch) (*appdb.Accom
 	}
 	if patch.AmbulanceContact != nil {
 		sets = append(sets, "ambulance_contact = "+arg(*patch.AmbulanceContact))
+	}
+	if patch.PrivateAmbulanceContact != nil {
+		sets = append(sets, "private_ambulance_contact = "+arg(*patch.PrivateAmbulanceContact))
 	}
 	if patch.HospitalContact != nil {
 		sets = append(sets, "hospital_contact = "+arg(*patch.HospitalContact))
@@ -565,4 +571,3 @@ func (s *Store) ToggleAccessCode(ctx context.Context, id int64, active bool) err
 		"UPDATE accommodations SET profile_reference_code_active = $1, updated_at = now() WHERE id = $2", active, id)
 	return err
 }
-

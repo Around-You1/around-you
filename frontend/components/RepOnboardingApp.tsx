@@ -706,6 +706,7 @@ export default function RepOnboardingApp() {
           primaryContact: emergency["Primary"] || "",
           policeContact: emergency["Police"] || "",
           ambulanceContact: emergency["Ambulance"] || "",
+          privateAmbulanceContact: emergency["Private Ambulance"] || "",
           hospitalContact: emergency["Hospital"] || "",
           hospitalAddress: emergency["HospitalAddress"] || "",
           fireDepartmentContact: emergency["Fire Department"] || "",
@@ -1341,8 +1342,14 @@ export default function RepOnboardingApp() {
                   <a href="https://www.yr.no/en" target="_blank" rel="noreferrer" style={{ color: colors.accent }}>https://www.yr.no/en</a>
                 </p>
                 <SectionTitle>Emergency Contacts</SectionTitle>
-                {["Ambulance", "Police", "Fire Department", "Primary"].map((k) => (
-                  <TextField key={k} label={k} value={emergency[k]} onChange={(v) => setEmergency((e) => ({ ...e, [k]: v }))} />
+                {[
+                  { k: "Ambulance", label: "Public Ambulance" },
+                  { k: "Private Ambulance", label: "Private Ambulance" },
+                  { k: "Police", label: "Police" },
+                  { k: "Fire Department", label: "Fire Department" },
+                  { k: "Primary", label: "Primary" },
+                ].map(({ k, label }) => (
+                  <TextField key={k} label={label} value={emergency[k]} onChange={(v) => setEmergency((e) => ({ ...e, [k]: v }))} />
                 ))}
                 <TextField label="Hospital" value={emergency["Hospital"]} onChange={(v) => setEmergency((e) => ({ ...e, Hospital: v }))} />
                 <TextField label="Hospital Address" value={emergency["HospitalAddress"]} onChange={(v) => setEmergency((e) => ({ ...e, HospitalAddress: v }))} />

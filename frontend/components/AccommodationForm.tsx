@@ -134,6 +134,7 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
     policeContact: accommodation?.policeContact || "",
     doctorContact: accommodation?.doctorContact || "",
     ambulanceContact: accommodation?.ambulanceContact || "",
+    privateAmbulanceContact: accommodation?.privateAmbulanceContact || "",
     hospitalContact: accommodation?.hospitalContact || "",
     fireDepartmentContact: accommodation?.fireDepartmentContact || "",
     snakeCatchersContact: accommodation?.snakeCatchersContact || "",
@@ -194,6 +195,7 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
         policeContact: accommodation.policeContact || "",
         doctorContact: accommodation.doctorContact || "",
         ambulanceContact: accommodation.ambulanceContact || "",
+        privateAmbulanceContact: accommodation.privateAmbulanceContact || "",
         hospitalContact: accommodation.hospitalContact || "",
         fireDepartmentContact: accommodation.fireDepartmentContact || "",
         snakeCatchersContact: accommodation.snakeCatchersContact || "",
@@ -532,11 +534,23 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="ambulanceContact">Ambulance Contact</Label>
+              <Label htmlFor="ambulanceContact">Public Ambulance Contact</Label>
               <Input
                 id="ambulanceContact"
                 value={formData.ambulanceContact}
                 onChange={(e) => setFormData({ ...formData, ambulanceContact: e.target.value })}
+                type="tel"
+                inputMode="tel"
+                enterKeyHint="next"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="privateAmbulanceContact">Private Ambulance Contact</Label>
+              <Input
+                id="privateAmbulanceContact"
+                value={formData.privateAmbulanceContact}
+                onChange={(e) => setFormData({ ...formData, privateAmbulanceContact: e.target.value })}
                 type="tel"
                 inputMode="tel"
                 enterKeyHint="next"
