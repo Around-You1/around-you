@@ -57,7 +57,7 @@ function TagList({ items }: { items: string[] }) {
   return (
     <div className="flex flex-wrap gap-2">
       {items.map((item) => (
-        <span key={item} className="px-3 py-1 text-[#39FF14] rounded-full text-sm">
+        <span key={item} className="px-3 py-1 text-black rounded-full text-sm">
           {item}
         </span>
       ))}
@@ -185,7 +185,7 @@ function RedeemScanner() {
           <Input value={token} onChange={(ev) => setToken(ev.target.value)} placeholder="or type the guest's code" className="font-mono" />
           <Button onClick={() => doRedeem(token)} disabled={busy || !token.trim()}>Redeem</Button>
         </div>
-        {result && <p className={`text-sm ${result.startsWith("✓") ? "text-[#39FF14]" : "text-black"}`}>{result}</p>}
+        {result && <p className={`text-sm ${result.startsWith("✓") ? "text-black" : "text-black"}`}>{result}</p>}
       </CardContent>
     </Card>
   );
@@ -302,9 +302,9 @@ export default function PartnerDashboard() {
   };
 
   const getEntityIcon = () => {
-    if (entityType === "restaurant") return <Store className="h-12 w-12 text-[#39FF14]" />;
-    if (entityType === "service") return <Building2 className="h-12 w-12 text-[#39FF14]" />;
-    return <Compass className="h-12 w-12 text-[#39FF14]" />;
+    if (entityType === "restaurant") return <Store className="h-12 w-12 text-black" />;
+    if (entityType === "service") return <Building2 className="h-12 w-12 text-black" />;
+    return <Compass className="h-12 w-12 text-black" />;
   };
 
   const getEntityTypeName = () => {
@@ -401,11 +401,11 @@ export default function PartnerDashboard() {
             <CardContent className="p-4 flex items-center justify-around text-center">
               <div>
                 <p className="text-xs text-muted-foreground">Listing views this month</p>
-                <p className="text-2xl font-bold text-[#39FF14]">{views.thisMonth}</p>
+                <p className="text-2xl font-bold text-black">{views.thisMonth}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">All time</p>
-                <p className="text-2xl font-bold text-[#39FF14]">{views.allTime}</p>
+                <p className="text-2xl font-bold text-black">{views.allTime}</p>
               </div>
             </CardContent>
           </Card>
@@ -455,14 +455,14 @@ export default function PartnerDashboard() {
                 <CardTitle className="text-2xl">{entity.name}</CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">
                   Status: {entity.isActive ? (
-                    <span className="text-[#39FF14] font-medium">Active</span>
+                    <span className="text-black font-medium">Active</span>
                   ) : (
                     <span className="text-black font-medium">Inactive</span>
                   )}
                 </p>
                 {entityType === "restaurant" && e.littleExplorerApproved && (
                   <div className="flex flex-wrap gap-2 mt-3">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[#39FF14] border border-[#39FF14] rounded-full text-sm font-medium">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-black border border-[#39FF14] rounded-full text-sm font-medium">
                       <Baby className="h-4 w-4" />
                       Child Friendly
                     </span>
@@ -489,7 +489,7 @@ export default function PartnerDashboard() {
             <div className="grid gap-4">
               <Section title="Location">
                 <div className="flex items-start gap-2">
-                  <MapPin className="h-5 w-5 mt-0.5 text-[#39FF14] flex-shrink-0" />
+                  <MapPin className="h-5 w-5 mt-0.5 text-black flex-shrink-0" />
                   <div className="flex-1">
                     <p>{entity.address}</p>
                     <p className="text-sm text-muted-foreground">
@@ -511,7 +511,7 @@ export default function PartnerDashboard() {
 
               {e.contactNumber && (
                 <Section title="Contact">
-                  <a href={`tel:${e.contactNumber}`} className="flex items-center gap-2 text-[#39FF14] hover:underline">
+                  <a href={`tel:${e.contactNumber}`} className="flex items-center gap-2 text-black hover:underline">
                     <Phone className="h-5 w-5" />
                     {e.contactNumber}
                   </a>
@@ -544,10 +544,10 @@ export default function PartnerDashboard() {
 
               <Section title="Accessibility">
                 <div className="flex flex-wrap gap-4 text-sm">
-                  <span className={`flex items-center gap-1.5 ${e.wheelchairAccess ? "text-[#39FF14]" : "text-muted-foreground/50"}`}>
+                  <span className={`flex items-center gap-1.5 ${e.wheelchairAccess ? "text-black" : "text-muted-foreground/50"}`}>
                     <Accessibility className="h-4 w-4" /> Wheelchair Access
                   </span>
-                  <span className={`flex items-center gap-1.5 ${e.parkingAvailability ? "text-[#39FF14]" : "text-muted-foreground/50"}`}>
+                  <span className={`flex items-center gap-1.5 ${e.parkingAvailability ? "text-black" : "text-muted-foreground/50"}`}>
                     <CarFront className="h-4 w-4" /> Parking Available
                   </span>
                 </div>
@@ -557,7 +557,7 @@ export default function PartnerDashboard() {
                 <Section title="Payment Options">
                   <div className="flex flex-wrap gap-2">
                     {activePayments.map((label) => (
-                      <span key={label} className="inline-flex items-center gap-1.5 px-3 py-1 text-[#39FF14] rounded-full text-sm">
+                      <span key={label} className="inline-flex items-center gap-1.5 px-3 py-1 text-black rounded-full text-sm">
                         <CreditCard className="h-3.5 w-3.5" /> {label}
                       </span>
                     ))}
@@ -568,7 +568,7 @@ export default function PartnerDashboard() {
               {entityType === "restaurant" && e.wifiNetwork && (
                 <Section title="WiFi">
                   <p className="flex items-center gap-2 text-sm">
-                    <Wifi className="h-4 w-4 text-[#39FF14]" />
+                    <Wifi className="h-4 w-4 text-black" />
                     {e.wifiNetwork}{e.wifiPassword ? ` — ${e.wifiPassword}` : ""}
                   </p>
                 </Section>
@@ -603,14 +603,14 @@ export default function PartnerDashboard() {
                   <div className="text-sm space-y-1">
                     {e.bookingsEmail && (
                       <p className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-[#39FF14]" />
-                        <a href={`mailto:${e.bookingsEmail}`} className="text-[#39FF14] hover:underline">{e.bookingsEmail}</a>
+                        <Mail className="h-4 w-4 text-black" />
+                        <a href={`mailto:${e.bookingsEmail}`} className="text-black hover:underline">{e.bookingsEmail}</a>
                       </p>
                     )}
                     {e.bookingsContactNumber && (
                       <p className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-[#39FF14]" />
-                        <a href={`tel:${e.bookingsContactNumber}`} className="text-[#39FF14] hover:underline">{e.bookingsContactNumber}</a>
+                        <Phone className="h-4 w-4 text-black" />
+                        <a href={`tel:${e.bookingsContactNumber}`} className="text-black hover:underline">{e.bookingsContactNumber}</a>
                       </p>
                     )}
                   </div>
@@ -621,27 +621,27 @@ export default function PartnerDashboard() {
                 <Section title="Social Media">
                   <div className="flex flex-wrap gap-3">
                     {e.socialsWebsite && (
-                      <a href={e.socialsWebsite} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#39FF14] hover:underline">
+                      <a href={e.socialsWebsite} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-black hover:underline">
                         <Globe className="h-4 w-4" /> Website
                       </a>
                     )}
                     {e.socialsFacebook && (
-                      <a href={e.socialsFacebook} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#39FF14] hover:underline">
+                      <a href={e.socialsFacebook} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-black hover:underline">
                         <Facebook className="h-4 w-4" /> Facebook
                       </a>
                     )}
                     {e.socialsInstagram && (
-                      <a href={e.socialsInstagram} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#39FF14] hover:underline">
+                      <a href={e.socialsInstagram} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-black hover:underline">
                         <Instagram className="h-4 w-4" /> Instagram
                       </a>
                     )}
                     {e.socialsTiktok && (
-                      <a href={e.socialsTiktok} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#39FF14] hover:underline">
+                      <a href={e.socialsTiktok} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-black hover:underline">
                         TikTok
                       </a>
                     )}
                     {e.socialsTwitter && (
-                      <a href={e.socialsTwitter} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-[#39FF14] hover:underline">
+                      <a href={e.socialsTwitter} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-black hover:underline">
                         X (Twitter)
                       </a>
                     )}
@@ -652,9 +652,9 @@ export default function PartnerDashboard() {
               {e.discountOffered && (
                 <Section title="Discount Offered">
                   <div className="flex items-center gap-2">
-                    <p className="text-lg font-semibold text-[#39FF14]">{e.discountOffered}</p>
+                    <p className="text-lg font-semibold text-black">{e.discountOffered}</p>
                     {e.discountCode && (
-                      <span className="px-3 py-1.5 text-[#39FF14] rounded text-lg font-mono font-bold tracking-wide">
+                      <span className="px-3 py-1.5 text-black rounded text-lg font-mono font-bold tracking-wide">
                         {e.discountCode}
                       </span>
                     )}

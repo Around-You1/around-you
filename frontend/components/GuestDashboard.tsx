@@ -596,7 +596,7 @@ export default function GuestDashboard() {
                       {accommodation!.facilities && accommodation!.facilities.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {accommodation!.facilities.map((facility) => (
-                            <span key={facility} className="px-2 py-0.5 text-[#39FF14] rounded text-xs">
+                            <span key={facility} className="px-2 py-0.5 text-black rounded text-xs">
                               {facility}
                             </span>
                           ))}
@@ -785,7 +785,7 @@ export default function GuestDashboard() {
           <div className="flex flex-wrap items-center gap-2">
             <Select value={String(minRating)} onValueChange={(v) => setMinRating(Number(v))}>
               <SelectTrigger className="w-auto min-w-[140px] h-9">
-                <Star className="h-4 w-4 mr-1 text-[#39FF14] fill-[#39FF14]" />
+                <Star className="h-4 w-4 mr-1 text-black fill-black" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -908,7 +908,7 @@ export default function GuestDashboard() {
                                 {restaurant.cuisineTypes.length > 0 ? (
                                   <div className="flex flex-wrap gap-2">
                                     {restaurant.cuisineTypes.map((cuisine) => (
-                                      <span key={cuisine} className="px-2 py-0.5 text-[#39FF14] rounded text-xs">
+                                      <span key={cuisine} className="px-2 py-0.5 text-black rounded text-xs">
                                         {cuisine}
                                       </span>
                                     ))}
@@ -928,7 +928,7 @@ export default function GuestDashboard() {
                                 <CollapsibleContent className={contentClass}>
                                   <div className="flex flex-wrap gap-2">
                                     {restaurant.atmosphere.map((a: string) => (
-                                      <span key={a} className="px-2 py-0.5 text-[#39FF14] rounded text-xs">{a}</span>
+                                      <span key={a} className="px-2 py-0.5 text-black rounded text-xs">{a}</span>
                                     ))}
                                   </div>
                                 </CollapsibleContent>
@@ -944,7 +944,7 @@ export default function GuestDashboard() {
                                 <CollapsibleContent className={contentClass}>
                                   <div className="flex flex-wrap gap-2">
                                     {restaurant.features.map((f: string) => (
-                                      <span key={f} className="px-2 py-0.5 text-[#39FF14] rounded text-xs">{f}</span>
+                                      <span key={f} className="px-2 py-0.5 text-black rounded text-xs">{f}</span>
                                     ))}
                                   </div>
                                 </CollapsibleContent>
@@ -960,7 +960,7 @@ export default function GuestDashboard() {
                                 <CollapsibleContent className={contentClass}>
                                   <div className="flex flex-wrap gap-2">
                                     {restaurant.dietaryOptions.map((d: string) => (
-                                      <span key={d} className="px-2 py-0.5 text-[#39FF14] rounded text-xs">{d}</span>
+                                      <span key={d} className="px-2 py-0.5 text-black rounded text-xs">{d}</span>
                                     ))}
                                   </div>
                                 </CollapsibleContent>
@@ -969,7 +969,7 @@ export default function GuestDashboard() {
 
                             {restaurant.offersBookings && (
                               <div className="mt-1">
-                                <span className="inline-block px-2 py-0.5 text-[#39FF14] rounded text-xs font-medium">Takes bookings</span>
+                                <span className="inline-block px-2 py-0.5 text-black rounded text-xs font-medium">Takes bookings</span>
                               </div>
                             )}
 
@@ -982,7 +982,7 @@ export default function GuestDashboard() {
                                 {restaurant.restaurantType && restaurant.restaurantType.length > 0 ? (
                                   <div className="flex flex-wrap gap-2">
                                     {restaurant.restaurantType.map((rt) => (
-                                      <span key={rt} className="px-2 py-0.5 text-[#39FF14] rounded text-xs">
+                                      <span key={rt} className="px-2 py-0.5 text-black rounded text-xs">
                                         {rt}
                                       </span>
                                     ))}
@@ -1050,10 +1050,10 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {restaurant.paymentCard || restaurant.paymentCash || restaurant.paymentMobile || restaurant.paymentEft ? (
                                   <div className="flex flex-wrap gap-2">
-                                    {restaurant.paymentCard && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">Card</span>}
-                                    {restaurant.paymentCash && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">Cash</span>}
-                                    {restaurant.paymentMobile && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">Mobile</span>}
-                                    {restaurant.paymentEft && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">EFT — Please contact for more info</span>}
+                                    {restaurant.paymentCard && <span className="px-2 py-0.5 text-black rounded text-xs">Card</span>}
+                                    {restaurant.paymentCash && <span className="px-2 py-0.5 text-black rounded text-xs">Cash</span>}
+                                    {restaurant.paymentMobile && <span className="px-2 py-0.5 text-black rounded text-xs">Mobile</span>}
+                                    {restaurant.paymentEft && <span className="px-2 py-0.5 text-black rounded text-xs">EFT — Please contact for more info</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
@@ -1069,9 +1069,9 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {restaurant.serviceDineIn || restaurant.serviceTakeaway || restaurant.serviceDelivery ? (
                                   <div className="flex flex-wrap gap-2">
-                                    {restaurant.serviceDineIn && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">Dine-in</span>}
-                                    {restaurant.serviceTakeaway && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">Takeaway</span>}
-                                    {restaurant.serviceDelivery && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">Delivery</span>}
+                                    {restaurant.serviceDineIn && <span className="px-2 py-0.5 text-black rounded text-xs">Dine-in</span>}
+                                    {restaurant.serviceTakeaway && <span className="px-2 py-0.5 text-black rounded text-xs">Takeaway</span>}
+                                    {restaurant.serviceDelivery && <span className="px-2 py-0.5 text-black rounded text-xs">Delivery</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
@@ -1087,8 +1087,8 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {restaurant.wheelchairAccess || restaurant.parkingAvailability ? (
                                   <div className="flex flex-wrap gap-2">
-                                    {restaurant.wheelchairAccess && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">Wheelchair Access</span>}
-                                    {restaurant.parkingAvailability && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">Parking Available</span>}
+                                    {restaurant.wheelchairAccess && <span className="px-2 py-0.5 text-black rounded text-xs">Wheelchair Access</span>}
+                                    {restaurant.parkingAvailability && <span className="px-2 py-0.5 text-black rounded text-xs">Parking Available</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
@@ -1103,7 +1103,7 @@ export default function GuestDashboard() {
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {restaurant.littleExplorerApproved ? (
-                                  <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">with pleasure</span>
+                                  <span className="px-2 py-0.5 text-black rounded text-xs">with pleasure</span>
                                 ) : (
                                   fallbackSpan
                                 )}
@@ -1135,7 +1135,7 @@ export default function GuestDashboard() {
                                             else newSet.add(restaurant.id);
                                             setVisiblePasswords(newSet);
                                           }}
-                                          className="text-black hover:text-[#0056b3]"
+                                          className="text-black hover:text-black"
                                           title={visiblePasswords.has(restaurant.id) ? "Hide password" : "Show password"}
                                         >
                                           {visiblePasswords.has(restaurant.id) ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -1353,7 +1353,7 @@ export default function GuestDashboard() {
                                 {service.serviceCategories && service.serviceCategories.length > 0 ? (
                                   <div className="flex flex-wrap gap-2">
                                     {service.serviceCategories.map((category) => (
-                                      <span key={category} className="px-2 py-0.5 text-[#39FF14] rounded text-xs">
+                                      <span key={category} className="px-2 py-0.5 text-black rounded text-xs">
                                         {category}
                                       </span>
                                     ))}
@@ -1366,7 +1366,7 @@ export default function GuestDashboard() {
 
                             {service.offersBookings && (
                               <div className="mt-1">
-                                <span className="inline-block px-2 py-0.5 text-[#39FF14] rounded text-xs font-medium">Takes bookings</span>
+                                <span className="inline-block px-2 py-0.5 text-black rounded text-xs font-medium">Takes bookings</span>
                               </div>
                             )}
 
@@ -1378,10 +1378,10 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {service.paymentCard || service.paymentCash || service.paymentMobile || service.paymentEft ? (
                                   <div className="flex flex-wrap gap-2">
-                                    {service.paymentCard && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">Card</span>}
-                                    {service.paymentCash && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">Cash</span>}
-                                    {service.paymentMobile && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">Mobile</span>}
-                                    {service.paymentEft && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">EFT — Please contact for more info</span>}
+                                    {service.paymentCard && <span className="px-2 py-0.5 text-black rounded text-xs">Card</span>}
+                                    {service.paymentCash && <span className="px-2 py-0.5 text-black rounded text-xs">Cash</span>}
+                                    {service.paymentMobile && <span className="px-2 py-0.5 text-black rounded text-xs">Mobile</span>}
+                                    {service.paymentEft && <span className="px-2 py-0.5 text-black rounded text-xs">EFT — Please contact for more info</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
@@ -1397,8 +1397,8 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {service.wheelchairAccess || service.parkingAvailability ? (
                                   <div className="flex flex-wrap gap-2">
-                                    {service.wheelchairAccess && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">Wheelchair Access</span>}
-                                    {service.parkingAvailability && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">Parking Available</span>}
+                                    {service.wheelchairAccess && <span className="px-2 py-0.5 text-black rounded text-xs">Wheelchair Access</span>}
+                                    {service.parkingAvailability && <span className="px-2 py-0.5 text-black rounded text-xs">Parking Available</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
@@ -1413,7 +1413,7 @@ export default function GuestDashboard() {
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {service.littleExplorerApproved ? (
-                                  <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">with pleasure</span>
+                                  <span className="px-2 py-0.5 text-black rounded text-xs">with pleasure</span>
                                 ) : (
                                   fallbackSpan
                                 )}
@@ -1568,7 +1568,7 @@ export default function GuestDashboard() {
                                 {attraction.attractionType && attraction.attractionType.length > 0 ? (
                                   <div className="flex flex-wrap gap-2">
                                     {attraction.attractionType.map((type) => (
-                                      <span key={type} className="px-2 py-0.5 text-[#39FF14] rounded text-xs">
+                                      <span key={type} className="px-2 py-0.5 text-black rounded text-xs">
                                         {type}
                                       </span>
                                     ))}
@@ -1581,7 +1581,7 @@ export default function GuestDashboard() {
 
                             {attraction.offersBookings && (
                               <div className="mt-1">
-                                <span className="inline-block px-2 py-0.5 text-[#39FF14] rounded text-xs font-medium">Takes bookings</span>
+                                <span className="inline-block px-2 py-0.5 text-black rounded text-xs font-medium">Takes bookings</span>
                               </div>
                             )}
 
@@ -1593,10 +1593,10 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {attraction.paymentCard || attraction.paymentCash || attraction.paymentMobile || attraction.paymentEft ? (
                                   <div className="flex flex-wrap gap-2">
-                                    {attraction.paymentCard && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">Card</span>}
-                                    {attraction.paymentCash && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">Cash</span>}
-                                    {attraction.paymentMobile && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">Mobile</span>}
-                                    {attraction.paymentEft && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">EFT — Please contact for more info</span>}
+                                    {attraction.paymentCard && <span className="px-2 py-0.5 text-black rounded text-xs">Card</span>}
+                                    {attraction.paymentCash && <span className="px-2 py-0.5 text-black rounded text-xs">Cash</span>}
+                                    {attraction.paymentMobile && <span className="px-2 py-0.5 text-black rounded text-xs">Mobile</span>}
+                                    {attraction.paymentEft && <span className="px-2 py-0.5 text-black rounded text-xs">EFT — Please contact for more info</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
@@ -1612,8 +1612,8 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {attraction.wheelchairAccess || attraction.parkingAvailability ? (
                                   <div className="flex flex-wrap gap-2">
-                                    {attraction.wheelchairAccess && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">Wheelchair Access</span>}
-                                    {attraction.parkingAvailability && <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">Parking Available</span>}
+                                    {attraction.wheelchairAccess && <span className="px-2 py-0.5 text-black rounded text-xs">Wheelchair Access</span>}
+                                    {attraction.parkingAvailability && <span className="px-2 py-0.5 text-black rounded text-xs">Parking Available</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
@@ -1628,7 +1628,7 @@ export default function GuestDashboard() {
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {attraction.littleExplorerApproved ? (
-                                  <span className="px-2 py-0.5 text-[#39FF14] rounded text-xs">with pleasure</span>
+                                  <span className="px-2 py-0.5 text-black rounded text-xs">with pleasure</span>
                                 ) : (
                                   fallbackSpan
                                 )}
@@ -1812,7 +1812,7 @@ function StarRating({
             <Star
               className={`h-5 w-5 sm:h-4 sm:w-4 transition-colors ${
                 star <= highlighted
-                  ? "fill-[#39FF14] text-[#39FF14]"
+                  ? "fill-black text-black"
                   : "text-muted-foreground/40"
               }`}
             />
@@ -2024,7 +2024,7 @@ function InlineRater({ entityType, entityId }: { entityType: RatableType; entity
       <span className="text-xs text-muted-foreground mr-1">Rate your visit:</span>
       {[1, 2, 3, 4, 5].map((s) => (
         <button key={s} type="button" disabled={saving} onClick={() => rate(s)} className="disabled:opacity-50">
-          <Star className={`h-4 w-4 ${s <= saved ? "fill-[#39FF14] text-[#39FF14]" : "text-muted-foreground/40"}`} />
+          <Star className={`h-4 w-4 ${s <= saved ? "fill-black text-black" : "text-muted-foreground/40"}`} />
         </button>
       ))}
     </div>
