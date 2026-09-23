@@ -337,6 +337,39 @@ export default function LoginPage() {
     }
   }, [searchParams]);
 
+  // Auto-fill each sign-in form from what this device entered last time, so a
+  // returning guest/partner doesn't re-type. Saved on a successful sign-in via
+  // rememberLogin(); stored only in this browser. A scanned QR (?code=) always
+  // wins for the code/panel, so we skip the code fields when one is present.
+  useEffect(() => {
+    let saved: any = {};
+    try { saved = JSON.parse(localStorage.getItem("aroundYouLogin") || "{}"); } catch { saved = {}; }
+    const hasQrCode = !!searchParams.get("code");
+
+    if (saved.local) {
+      if (saved.local.email) setLocalEmail(saved.local.email);
+      if (saved.local.province) setLocalProvince(saved.local.province);
+      if (saved.local.postalCode) setLocalPostalCode(saved.local.postalCode);
+    }
+    if (saved.holiday && !hasQrCode) {
+      if (saved.holiday.method) setHolidayMethod(saved.holiday.method);
+      if (saved.holiday.code) setHolidayCode(saved.holiday.code);
+      if (saved.holiday.name) setHolidayName(saved.holiday.name);
+      if (saved.holiday.address) setHolidayAddress(saved.holiday.address);
+      if (saved.holiday.province) setHolidayProvince(saved.holiday.province);
+      if (saved.holiday.area) setHolidayArea(saved.holiday.area);
+    }
+    if (saved.partner && !hasQrCode) {
+      if (saved.partner.method) setPartnerMethod(saved.partner.method);
+      if (saved.partner.code) setPartnerCode(saved.partner.code);
+      if (saved.partner.name) setPartnerName(saved.partner.name);
+      if (saved.partner.address) setPartnerAddress(saved.partner.address);
+      if (saved.partner.province) setPartnerProvince(saved.partner.province);
+      if (saved.partner.area) setPartnerArea(saved.partner.area);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function togglePanel(panel: ActivePanel) {
     setActivePanel((prev) => (prev === panel ? null : panel));
   }
@@ -387,6 +420,17 @@ export default function LoginPage() {
     navigate(path);
   }
 
+  // Persist what was just used to sign in, so the form pre-fills next time on
+  // this device. Merges into a single per-browser record.
+  function rememberLogin(patch: Record<string, any>) {
+    try {
+      const cur = JSON.parse(localStorage.getItem("aroundYouLogin") || "{}");
+      localStorage.setItem("aroundYouLogin", JSON.stringify({ ...cur, ...patch }));
+    } catch {
+      /* best-effort — never block sign-in on storage */
+    }
+  }
+
   async function handleHolidayLogin(e: React.FormEvent) {
     e.preventDefault();
     if (holidayMethod === "code") {
@@ -397,6 +441,7 @@ export default function LoginPage() {
         const res = await backend.auth.accessCodeLogin({ accessCode: code });
         const path = res.user.profileType === "accommodation" || res.user.profileType === undefined
           ? "/guest-dashboard" : "/partner-dashboard";
+        rememberLogin({ holiday: { method: "code", code } });
         storeAndNavigate(res.token, res.user, path, res.user.email);
       } catch (err: any) {
         console.error(err);
@@ -416,6 +461,7 @@ export default function LoginPage() {
           area: holidayArea.trim(),
         });
         const path = res.user.role === "Guest" ? "/guest-dashboard" : "/partner-dashboard";
+        rememberLogin({ holiday: { method: "secondary", name: holidayName.trim(), address: holidayAddress.trim(), province: holidayProvince, area: holidayArea.trim() } });
         storeAndNavigate(res.token, res.user, path, res.user.email);
       } catch (err: any) {
         console.error(err);
@@ -442,6 +488,7 @@ export default function LoginPage() {
       if (alreadyVerified) {
         const res = await backend.auth.localGuestLogin({ email, province: localProvince, postalCode: localPostalCode.trim() });
         localStorage.setItem("localGuestInfo", JSON.stringify({ province: localProvince, postalCode: localPostalCode.trim() }));
+        rememberLogin({ local: { email, province: localProvince, postalCode: localPostalCode.trim() } });
         storeAndNavigate(res.token, res.user, "/guest-dashboard", email.split("@")[0]);
         return;
       }
@@ -490,6 +537,7 @@ export default function LoginPage() {
       try {
         const res = await backend.auth.localGuestLogin({ email, province, postalCode });
         localStorage.setItem("localGuestInfo", JSON.stringify({ province, postalCode }));
+        rememberLogin({ local: { email, province, postalCode } });
         storeAndNavigate(res.token, res.user, "/guest-dashboard", email.split("@")[0]);
       } catch (err: any) {
         toast({ title: "Login Failed", description: err?.message || "Unable to sign in. Please try again.", variant: "destructive" });
@@ -506,6 +554,7 @@ export default function LoginPage() {
       setLoading(true);
       try {
         const res = await backend.auth.accessCodeLogin({ accessCode: code });
+        rememberLogin({ partner: { method: "code", code } });
         storeAndNavigate(res.token, res.user, "/partner-dashboard", res.user.email);
       } catch (err: any) {
         console.error(err);
@@ -524,6 +573,7 @@ export default function LoginPage() {
           province: partnerProvince,
           area: partnerArea.trim(),
         });
+        rememberLogin({ partner: { method: "secondary", name: partnerName.trim(), address: partnerAddress.trim(), province: partnerProvince, area: partnerArea.trim() } });
         storeAndNavigate(res.token, res.user, "/partner-dashboard", res.user.email);
       } catch (err: any) {
         console.error(err);
@@ -635,6 +685,7 @@ export default function LoginPage() {
                   onChange={(e) => setLocalPostalCode(e.target.value)}
                   placeholder="e.g. 7395"
                   inputMode="numeric"
+                  autoComplete="postal-code"
                   enterKeyHint="next"
                 />
               </div>
