@@ -95,7 +95,6 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
             maxHeight: "42%",
             objectFit: "contain",
             objectPosition: "bottom",
-            filter: "drop-shadow(0 0 6px rgba(57,255,20,0.5))",
           }}
         />
 
@@ -112,7 +111,6 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
             maxHeight: "42%",
             objectFit: "contain",
             objectPosition: "bottom",
-            filter: "drop-shadow(0 0 6px rgba(57,255,20,0.5))",
           }}
         />
 
@@ -126,9 +124,8 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
             bottom: BASELINE_BOTTOM,
             left: "50%",
             transform: "translateX(-50%)",
-            height: "clamp(120px, 34%, 320px)",
+            height: "clamp(70px, 18%, 170px)",
             width: "auto",
-            filter: "drop-shadow(0 0 10px rgba(57,255,20,0.35))",
           }}
         />
 
@@ -144,7 +141,6 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
             transform: "translateX(-50%)",
             width: "clamp(90px, 13%, 190px)",
             height: "auto",
-            filter: `drop-shadow(0 0 8px ${LUMO})`,
             transition: "left 120ms linear",
           }}
         />
