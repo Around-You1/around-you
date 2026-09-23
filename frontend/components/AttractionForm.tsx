@@ -12,6 +12,7 @@ import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
 import { loadCharity, saveCharity } from "../lib/charity";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
+import { getCurrentPosition } from "../lib/geolocation";
 import type { AttractionData } from "~backend/attraction/types";
 import { SA_PROVINCES } from "../lib/saRegions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -111,6 +112,20 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
     bookingItems: [] as { name: string; price: number; duration: number }[],
   });
   const { toast } = useToast();
+
+  const [locating, setLocating] = useState(false);
+  const captureLocation = async () => {
+    setLocating(true);
+    try {
+      const pos = await getCurrentPosition();
+      setFormData((f) => ({ ...f, latitude: pos.latitude.toFixed(6), longitude: pos.longitude.toFixed(6) }));
+      toast({ title: "Location captured", description: "Latitude and longitude filled from your device." });
+    } catch (e: any) {
+      toast({ title: "Could not get location", description: e?.message || "Allow location access and try again, or enter the coordinates manually.", variant: "destructive" });
+    } finally {
+      setLocating(false);
+    }
+  };
 
   useEffect(() => {
     if (attractionId) {
@@ -485,6 +500,15 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
                 value={formData.longitude}
                 onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
               />
+            </div>
+
+            <div className="space-y-1 md:col-span-2">
+              <Button type="button" variant="outline" onClick={captureLocation} disabled={locating}>
+                {locating ? "Getting your location…" : "📍 Use my current location"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                On site at the venue, tap this to fill the coordinates from your device's GPS. Allow location access when prompted; you can still edit them by hand.
+              </p>
             </div>
           </div>
 
