@@ -21,6 +21,8 @@ export interface ServiceData {
   postalCode: string;
   contactNumber?: string;
   description?: string;
+  tradingHours?: string;
+  publicHolidays?: string;
   profileReferenceCode?: string;
   isDuplicate?: boolean;
   duplicateReason?: string;
