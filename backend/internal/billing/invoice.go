@@ -533,7 +533,11 @@ func lineDescription(plan string, tier int, start time.Time) string {
 	if plan == "booking" {
 		return "Booking plan monthly fee — " + period
 	}
-	return fmt.Sprintf("Tier %d subscription — %s", tier, period)
+	tierWord := "Basic"
+	if tier >= 2 {
+		tierWord = "Premium"
+	}
+	return fmt.Sprintf("%s subscription — %s", tierWord, period)
 }
 
 func rands(cents int) string { return fmt.Sprintf("R%.2f", float64(cents)/100) }

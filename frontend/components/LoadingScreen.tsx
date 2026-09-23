@@ -12,6 +12,14 @@ const LUMO = "#39FF14";
 // already, giving a smooth final fill rather than an abrupt jump.
 const RAMP_DURATION_MS = 3200;
 
+// Layout constants (percent of the stage). The two skylines flank the screen
+// and "almost touch" in the middle, with the logo bridging the gap. The
+// loading bar spans from the MIDDLE of the JHB skyline (25%) to the MIDDLE of
+// the Table Mountain skyline (75%), and the car rides along that same span.
+const BAR_LEFT = 25; // = horizontal centre of the JHB skyline
+const BAR_WIDTH = 50; // 25%..75% (centre of JHB .. centre of Table Mountain)
+const BASELINE_BOTTOM = "40%"; // shared baseline the skylines + logo sit on
+
 interface Props {
   // True once whatever the app is actually waiting on (session check, code
   // chunk load, MINIMUM display time, etc.) has genuinely finished. The bar
@@ -28,8 +36,8 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
   const startRef = useRef<number | null>(null);
 
   // Smooth, time-based ramp up to 90% — linear, driven by requestAnimationFrame
-  // so it plays at a steady, watchable pace regardless of how fast the
-  // network actually is.
+  // so it plays at a steady, watchable pace regardless of how fast the network
+  // actually is.
   useEffect(() => {
     if (ready) return;
     if (startRef.current === null) startRef.current = performance.now();
@@ -48,8 +56,8 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
   useEffect(() => {
     if (!ready) return;
     setProgress(100);
-    const fadeTimer = setTimeout(() => setFadingOut(true), 350);
-    const doneTimer = setTimeout(() => onFinished(), 350 + 400);
+    const fadeTimer = setTimeout(() => setFadingOut(true), 400);
+    const doneTimer = setTimeout(() => onFinished(), 400 + 400);
     return () => {
       clearTimeout(fadeTimer);
       clearTimeout(doneTimer);
@@ -57,122 +65,138 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
 
+  const p = progress / 100;
+  const carLeft = BAR_LEFT + BAR_WIDTH * p; // car centre rides the bar span
+
   return (
     <div
       style={{
         position: "fixed",
         inset: 0,
         background: "#000",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
+        overflow: "hidden",
         zIndex: 9999,
         opacity: fadingOut ? 0 : 1,
         transition: "opacity 400ms ease",
         pointerEvents: fadingOut ? "none" : "auto",
       }}
     >
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-          maxWidth: 640,
-          height: "clamp(180px, 32vh, 300px)",
-          display: "flex",
-          alignItems: "flex-end",
-          padding: "0 4vw",
-          boxSizing: "border-box",
-        }}
-      >
-        {/* Johannesburg skyline — left */}
+      <div style={{ position: "relative", width: "100%", height: "100%" }}>
+        {/* Johannesburg skyline — left, baseline on the shared line */}
         <img
           src="/loading/jhb-skyline.png"
           alt=""
           draggable={false}
           style={{
-            height: "clamp(90px, 22vh, 170px)",
-            width: "auto",
-            maxWidth: "38%",
+            position: "absolute",
+            bottom: BASELINE_BOTTOM,
+            left: "1%",
+            width: "47%",
+            maxHeight: "42%",
             objectFit: "contain",
-            flexShrink: 0,
-            filter: "drop-shadow(0 0 6px rgba(57,255,20,0.35))",
+            objectPosition: "bottom",
+            filter: "drop-shadow(0 0 6px rgba(57,255,20,0.5))",
           }}
         />
 
-        {/* Track between the two skylines: holds the bar + car */}
-        <div
-          style={{
-            position: "relative",
-            flex: 1,
-            height: "100%",
-            minWidth: 40,
-          }}
-        >
-          {/* Rail */}
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: 22,
-              height: 5,
-              borderRadius: 999,
-              background: "rgba(57,255,20,0.15)",
-              overflow: "hidden",
-            }}
-          >
-            {/* Fill */}
-            <div
-              style={{
-                height: "100%",
-                width: `${progress}%`,
-                background: LUMO,
-                borderRadius: 999,
-                boxShadow: `0 0 10px 2px ${LUMO}`,
-                transition: "width 100ms linear",
-              }}
-            />
-          </div>
-
-          {/* Car, riding on top of the rail, sliding left -> right with progress */}
-          <div
-            style={{
-              position: "absolute",
-              bottom: 27,
-              left: `${progress}%`,
-              transform: "translateX(-50%)",
-              transition: "left 100ms linear",
-            }}
-          >
-            <img
-              src="/loading/car.png"
-              alt=""
-              draggable={false}
-              style={{
-                width: "clamp(64px, 16vw, 100px)",
-                height: "auto",
-                display: "block",
-                filter: `drop-shadow(0 0 6px ${LUMO})`,
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Table Mountain skyline — right */}
+        {/* Table Mountain skyline — right, baseline on the shared line */}
         <img
           src="/loading/table-mountain-skyline.png"
           alt=""
           draggable={false}
           style={{
-            height: "clamp(110px, 26vh, 200px)",
-            width: "auto",
-            maxWidth: "38%",
+            position: "absolute",
+            bottom: BASELINE_BOTTOM,
+            right: "1%",
+            width: "47%",
+            maxHeight: "42%",
             objectFit: "contain",
-            flexShrink: 0,
-            filter: "drop-shadow(0 0 6px rgba(57,255,20,0.35))",
+            objectPosition: "bottom",
+            filter: "drop-shadow(0 0 6px rgba(57,255,20,0.5))",
           }}
         />
+
+        {/* Around You logo — centred, its bottom point on the shared baseline */}
+        <img
+          src="/loading/logo.png"
+          alt="Around You"
+          draggable={false}
+          style={{
+            position: "absolute",
+            bottom: BASELINE_BOTTOM,
+            left: "50%",
+            transform: "translateX(-50%)",
+            height: "clamp(120px, 34%, 320px)",
+            width: "auto",
+            filter: "drop-shadow(0 0 10px rgba(57,255,20,0.35))",
+          }}
+        />
+
+        {/* The car — rides along the bar span, constant size */}
+        <img
+          src="/loading/car.png"
+          alt=""
+          draggable={false}
+          style={{
+            position: "absolute",
+            bottom: "calc(9% + 26px)",
+            left: `${carLeft}%`,
+            transform: "translateX(-50%)",
+            width: "clamp(90px, 13%, 190px)",
+            height: "auto",
+            filter: `drop-shadow(0 0 8px ${LUMO})`,
+            transition: "left 120ms linear",
+          }}
+        />
+
+        {/* Loading bar — spans JHB centre (25%) to Table Mountain centre (75%) */}
+        <div
+          style={{
+            position: "absolute",
+            left: `${BAR_LEFT}%`,
+            width: `${BAR_WIDTH}%`,
+            bottom: "9%",
+            height: 26,
+            borderRadius: 999,
+            border: `2px solid ${LUMO}`,
+            background: "rgba(57,255,20,0.08)",
+            boxShadow: `0 0 14px rgba(57,255,20,0.5), inset 0 0 10px rgba(57,255,20,0.25)`,
+            overflow: "hidden",
+            boxSizing: "border-box",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: 3,
+              bottom: 3,
+              left: 3,
+              width: `calc((100% - 6px) * ${p})`,
+              background: LUMO,
+              borderRadius: 999,
+              boxShadow: `0 0 16px 3px ${LUMO}`,
+              transition: "width 120ms linear",
+            }}
+          />
+        </div>
+
+        {/* Percentage under the bar */}
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: "3%",
+            textAlign: "center",
+            color: LUMO,
+            fontWeight: 700,
+            fontSize: "clamp(18px, 3vw, 28px)",
+            fontFamily: "system-ui, sans-serif",
+            textShadow: "0 0 10px rgba(57,255,20,0.7)",
+          }}
+        >
+          {Math.round(progress)}%
+        </div>
       </div>
     </div>
   );

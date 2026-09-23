@@ -1163,7 +1163,7 @@ export default function RepOnboardingApp() {
                   {booking ? "✓ Booking Partner" : "Booking"}
                 </button>
                 <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: 0, marginBottom: 12 }}>
-                  Booking Partners are Premium (shown to both guests and locals) and pay R400 per month with a R10 charge per cover. Turning this on hides the Tier and Guest/Local/Both options.
+                  Booking Partners are Premium (shown to both guests and locals) and pay R400 per month with a R10 charge per cover. Turning this on hides the Basic/Premium and Guest/Local/Both options.
                 </p>
 
                 {booking && (

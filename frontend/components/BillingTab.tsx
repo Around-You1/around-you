@@ -95,7 +95,7 @@ interface AccCodeStatus {
 const rand = (cents: number) => `R${(cents / 100).toFixed(2)}`;
 
 const planLabel = (s: Subscription) =>
-  s.plan === "booking" ? "Booking" : `Tier ${s.tier}`;
+  s.plan === "booking" ? "Booking" : s.tier >= 2 ? "Premium" : "Basic";
 
 function InvoiceSettingsCard() {
   const [s, setS] = useState<Record<string, string>>({});
