@@ -86,7 +86,7 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
         {/* Combined skyline — Joburg (left) + Table Mountain (right) meeting in
             one continuous neon line, sitting on the shared baseline. */}
         <img
-          src="/loading/skyline-combined-v2.png"
+          src="/loading/skyline-v3.png"
           alt=""
           draggable={false}
           style={{
