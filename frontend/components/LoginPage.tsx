@@ -370,6 +370,26 @@ export default function LoginPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Returning from an email confirmation (the "check your email" link or code)
+  // lands here with a live Supabase session. Only Local Guests use email auth,
+  // so open the Local Guest panel with their email filled in — instead of
+  // dropping them on the generic "Sign in as a…" chooser. They then tap Sign In
+  // (province/postal are pre-filled from last time if we have them), and the
+  // already-verified path finishes the sign-in.
+  useEffect(() => {
+    if (searchParams.get("code")) return; // a scanned QR wins
+    if (searchParams.get("pendingRole") === "local") return; // /verify code flow handles this
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const email = session?.user?.email;
+      if (email) {
+        setActivePanel("local");
+        setLocalEmail((prev) => prev || email);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function togglePanel(panel: ActivePanel) {
     setActivePanel((prev) => (prev === panel ? null : panel));
   }
