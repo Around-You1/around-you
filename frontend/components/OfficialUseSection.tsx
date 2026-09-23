@@ -103,19 +103,24 @@ export default function OfficialUseSection({ data, onChange, showTierFields = tr
               options={GUEST_TYPE_OPTIONS}
               value={data.guestType}
               onChange={(val) =>
-                // Choosing "Both" audiences auto-selects the top tier (Tier 2),
-                // matching the Rep Onboarding app.
-                onChange({ ...data, guestType: val, ...(val === "Both" ? { accessLevel: "Tier 2" } : {}) })
+                // "Both" audiences = Premium (auto-tick Tier 2). "Guest Only" or
+                // "Local" are single-audience, so Premium is auto-un-ticked —
+                // it only stays on when explicitly ticked or when "Both" is chosen.
+                onChange({ ...data, guestType: val, accessLevel: val === "Both" ? "Tier 2" : "" })
               }
             />
-            <RadioGroup
-              label="Access Level"
-              name="officialAccessLevel"
-              options={ACCESS_LEVEL_OPTIONS}
-              labels={TIER_LABELS}
-              value={data.accessLevel}
-              onChange={(val) => onChange({ ...data, accessLevel: val })}
-            />
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Access Level</Label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={data.accessLevel === "Tier 2"}
+                  onChange={(e) => onChange({ ...data, accessLevel: e.target.checked ? "Tier 2" : "" })}
+                  className="accent-amber-600"
+                />
+                <span className="text-sm">Premium</span>
+              </label>
+            </div>
           </div>
         )}
 

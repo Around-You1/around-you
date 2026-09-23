@@ -277,7 +277,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           companyRegNumber: officialUse.companyRegNumber || undefined,
           companyVatNumber: officialUse.companyVatNumber || undefined,
           guestType: officialUse.guestType || undefined,
-          accessLevel: officialUse.accessLevel || undefined,
+          accessLevel: formData.offersBookings ? "Booking" : (officialUse.accessLevel || undefined),
           bookingItems: formData.bookingItems,
         });
         await saveCharity("attraction", attractionData?.id, officialUse.charity || []);
@@ -343,7 +343,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           companyRegNumber: officialUse.companyRegNumber || undefined,
           companyVatNumber: officialUse.companyVatNumber || undefined,
           guestType: officialUse.guestType || undefined,
-          accessLevel: officialUse.accessLevel || undefined,
+          accessLevel: formData.offersBookings ? "Booking" : (officialUse.accessLevel || undefined),
           bookingItems: formData.bookingItems,
         });
         await saveCharity("attraction", createdAtt.id, officialUse.charity || []);

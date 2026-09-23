@@ -12,7 +12,7 @@ const (
 	Tier1Cents   = 20000 // R200 — Tier 1
 	Tier2Cents   = 30000 // R300 — Tier 2 (the former top tier)
 	BothCents    = 40000 // R400 — audience "Both" (forces Tier 2) at this flat price
-	BookingBase  = 30000 // R300/month base for Booking / Pre-Order partners (+ per-cover/per-booking charge added per billing period: restaurants R10/cover, services/attractions 10%, pre-orders 5%)
+	BookingBase  = 40000 // R400/month base — Booking / Pre-Order partners are Premium (+ per-cover/per-booking usage added per billing period: restaurants R10/cover, services/attractions 10%, pre-orders 5%)
 	RealEstateCents = 30000 // R300 — flat per real-estate page (agency or agent), no tiers
 
 	// Accommodation Option-A unit bands (6+ units); 1–5 units use tier pricing.
@@ -68,7 +68,14 @@ func PriceForUnits(partnerType, accessLevel, guestType string, units int) Plan {
 	if guestType == "Both" {
 		return Plan{Plan: "tier", Tier: 2, Audience: "Both", MonthlyCents: BothCents}
 	}
+	// Single-audience (Guest Only / Local) restaurant/service/attraction partners
+	// are all Premium at R300 now — Basic (Tier 1 / R200) is retired, so we floor
+	// to Tier 2 regardless of any stale/blank stored access level. Only "Both" or
+	// Bookings/Pre-Orders lift them to R400 (handled above).
 	tier := tierNumber(accessLevel)
+	if tier < 2 {
+		tier = 2
+	}
 	return Plan{Plan: "tier", Tier: tier, Audience: guestType, MonthlyCents: tierCents(tier)}
 }
 

@@ -631,7 +631,9 @@ export default function RepOnboardingApp() {
   }
 
   function resolveAccessLevel() {
-    if (booking) return "Booking";
+    // Bookings OR Pre-Orders make the partner a Premium "Booking" partner
+    // (R400/month + usage). Otherwise they sit on the standard tier.
+    if (booking || preOrderItems.length > 0) return "Booking";
     return tier >= 1 ? `Tier ${tier}` : "";
   }
 
@@ -1161,7 +1163,7 @@ export default function RepOnboardingApp() {
                   {booking ? "✓ Booking Partner" : "Booking"}
                 </button>
                 <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: 0, marginBottom: 12 }}>
-                  Booking Partners are shown to both guest and locals and pay R300 per month with a R10 charge per cover. Turning this on hides the Tier and Guest/Local/Both options.
+                  Booking Partners are Premium (shown to both guests and locals) and pay R400 per month with a R10 charge per cover. Turning this on hides the Tier and Guest/Local/Both options.
                 </p>
 
                 {booking && (

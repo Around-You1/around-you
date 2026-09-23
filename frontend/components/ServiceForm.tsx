@@ -390,7 +390,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           companyRegNumber: officialUse.companyRegNumber || undefined,
           companyVatNumber: officialUse.companyVatNumber || undefined,
           guestType: officialUse.guestType || undefined,
-          accessLevel: officialUse.accessLevel || undefined,
+          accessLevel: formData.offersBookings ? "Booking" : (officialUse.accessLevel || undefined),
           bookingItems: formData.bookingItems,
         });
         await saveCharity("service", serviceData?.id, officialUse.charity || []);
@@ -451,7 +451,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           companyRegNumber: officialUse.companyRegNumber || undefined,
           companyVatNumber: officialUse.companyVatNumber || undefined,
           guestType: officialUse.guestType || undefined,
-          accessLevel: officialUse.accessLevel || undefined,
+          accessLevel: formData.offersBookings ? "Booking" : (officialUse.accessLevel || undefined),
           bookingItems: formData.bookingItems,
         });
         await saveCharity("service", createdSvc.id, officialUse.charity || []);
