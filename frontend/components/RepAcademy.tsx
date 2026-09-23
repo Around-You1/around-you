@@ -38,7 +38,7 @@ const ONBOARDING_PDF: Record<string, string> = {
   Attractions: "/onboarding/attraction-onboarding.pdf",
   "Real Estate & Rentals": "/onboarding/real-estate-onboarding.pdf",
 };
-const typeLabel = (t: string) => (t === "Services" ? "Business/Services" : t);
+const typeLabel = (t: string) => (t === "Services" ? "Business/Services" : t === "Attractions" ? "Attractions/Activities" : t);
 
 interface NearResults {
   accommodations: string[];
@@ -99,7 +99,7 @@ export default function RepAcademy() {
     { heading: "Accommodations", key: "accommodations" },
     { heading: "Restaurants/Takeaways", key: "restaurants" },
     { heading: "Business/Services", key: "services" },
-    { heading: "Attractions", key: "attractions" },
+    { heading: "Attractions/Activities", key: "attractions" },
     { heading: "Real Estate", key: "realEstate" },
   ];
 

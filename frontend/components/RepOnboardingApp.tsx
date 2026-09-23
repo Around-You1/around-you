@@ -38,7 +38,7 @@ const ONBOARDING_PDF: Record<string, string> = {
 // Display-only category label; the internal partner-type keys stay "Services"
 // and "Restaurants".
 const typeLabel = (t: string) =>
-  t === "Services" ? "Business/Services" : t === "Restaurants" ? "Restaurants/Takeaways" : t;
+  t === "Services" ? "Business/Services" : t === "Restaurants" ? "Restaurants/Takeaways" : t === "Attractions" ? "Attractions/Activities" : t;
 
 const colors = {
   background: "#000000",
@@ -612,7 +612,7 @@ export default function RepOnboardingApp() {
     ? "Restaurant/Takeaway Name"
     : isService
     ? "Business/Service Name"
-    : "Attraction Name";
+    : "Attraction/Activity Name";
 
   const reset = () => {
     setPartnerType(null); setTier(2); setVisibility([]); setBooking(false); setBookingItems([]); setPreOrderItems([]); setServiceOptions(["Dine-in"]); setCountry([]); setProvince([]);
@@ -1396,7 +1396,7 @@ export default function RepOnboardingApp() {
                   </>
                 )}
                 {isAttraction && (
-                  <CheckboxGroup label="Attraction Categories" options={ATTRACTION_CATEGORIES} selected={data.attractionType || []} onChange={set("attractionType")} />
+                  <CheckboxGroup label="Attraction/Activity Categories" options={ATTRACTION_CATEGORIES} selected={data.attractionType || []} onChange={set("attractionType")} />
                 )}
                 {!isRestaurant && <TextField label="Description" area value={data.description} onChange={set("description")} />}
                 {(isService || isAttraction) && (
@@ -1461,7 +1461,7 @@ export default function RepOnboardingApp() {
                 )}
                 {isAttraction && (
                   <>
-                    <SectionTitle>Attraction Extras</SectionTitle>
+                    <SectionTitle>Attraction/Activity Extras</SectionTitle>
                     <TextField label="Trail Difficulty" value={data.trailDifficulty} onChange={set("trailDifficulty")} />
                     <TextField label="Wildlife Cautions" value={data.wildlifeCautions} onChange={set("wildlifeCautions")} />
                     <TextField label="Tide Warnings" value={data.tideWarnings} onChange={set("tideWarnings")} />

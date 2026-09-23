@@ -63,7 +63,7 @@ export default function AttractionTab({ onUpdate }: AttractionTabProps) {
       window.URL.revokeObjectURL(url);
       toast({
         title: "Success",
-        description: "Attractions exported successfully",
+        description: "Attractions/Activities exported successfully",
       });
     } catch (error) {
       console.error("Export failed:", error);

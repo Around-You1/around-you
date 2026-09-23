@@ -16,7 +16,7 @@ const CATEGORIES: { key: string; label: string }[] = [
   { key: "accommodation", label: "Accommodation" },
   { key: "restaurant", label: "Restaurant/Takeaway" },
   { key: "service", label: "Business/Service" },
-  { key: "attraction", label: "Attraction" },
+  { key: "attraction", label: "Attraction/Activity" },
   { key: "estate", label: "Real Estate & Rentals" },
 ];
 
@@ -135,9 +135,9 @@ function specsFor(cat: string): Section[] {
     appearSection(cat), discountsSection, paymentsSection, socialsSection, accessibilitySection, charitySection,
   ];
   if (cat === "attraction") return [
-    businessSection("Attraction name"),
-    { title: "Attraction details", fields: [
-      { key: "Attraction category(ies)", type: "multi", options: ATTRACTION_CATS },
+    businessSection("Attraction/Activity name"),
+    { title: "Attraction/Activity details", fields: [
+      { key: "Attraction category(ies)", label: "Attraction/Activity category(ies)", type: "multi", options: ATTRACTION_CATS },
       { key: "Description", type: "textarea" },
     ] },
     { title: "Good-to-know info", fields: [

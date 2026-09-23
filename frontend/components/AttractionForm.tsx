@@ -284,7 +284,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
         await saveCharity("attraction", attractionData?.id, officialUse.charity || []);
         toast({
           title: "Success",
-          description: "Attraction updated successfully",
+          description: "Attraction/Activity updated successfully",
         });
       } else {
         const createdAtt: any = await backend.attraction.create({
@@ -350,7 +350,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
         await saveCharity("attraction", createdAtt.id, officialUse.charity || []);
         toast({
           title: "Success",
-          description: "Attraction created successfully",
+          description: "Attraction/Activity created successfully",
         });
       }
       onClose();
@@ -370,7 +370,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Loading Attraction...</CardTitle>
+          <CardTitle>Loading Attraction/Activity...</CardTitle>
         </CardHeader>
         <CardContent className="flex justify-center items-center py-12">
           <div className="text-muted-foreground">Loading attraction details...</div>
@@ -386,7 +386,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${attractionId ? "Edit" : "Add"} Attraction`}</CardTitle>
+        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${attractionId ? "Edit" : "Add"} Attraction/Activity`}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -394,7 +394,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Attraction Name *</Label>
+              <Label htmlFor="name">Attraction/Activity Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -405,7 +405,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           </div>
 
           <div className="space-y-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
-            <Label>Attraction Categories (Select all that apply)</Label>
+            <Label>Attraction/Activity Categories (Select all that apply)</Label>
             <div className="grid grid-cols-2 gap-2 p-4 border rounded-md max-h-48 overflow-y-auto">
               {ATTRACTION_CATEGORIES.map((category) => (
                 <div key={category} className="flex items-center space-x-2">
@@ -531,7 +531,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           </div>
 
           <MultiImageUpload
-            label="Attraction Images"
+            label="Attraction/Activity Images"
             images={formData.imageUrls}
             onChange={(urls) => setFormData({ ...formData, imageUrls: urls, imageUrl: urls[0] || "" })}
           />
@@ -663,7 +663,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           </div>
 
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
-            <Label className="text-base font-semibold">Attraction Extras</Label>
+            <Label className="text-base font-semibold">Attraction/Activity Extras</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="trailDifficulty">Trail Difficulty</Label>
