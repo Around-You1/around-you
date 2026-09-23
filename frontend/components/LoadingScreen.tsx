@@ -116,7 +116,7 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
 
         {/* Around You logo — centred, its bottom point on the shared baseline */}
         <img
-          src="/loading/logo.png"
+          src="/loading/logo-clear.png"
           alt="Around You"
           draggable={false}
           style={{
