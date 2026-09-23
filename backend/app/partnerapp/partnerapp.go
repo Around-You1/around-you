@@ -98,7 +98,9 @@ func SubmitPartnerApplication(ctx context.Context, req *SubmitRequest) (*SubmitR
 		repEmail := repEmailFor(bgctx, r.RepCode)
 		subject := "New Partner Application — " + validCategory[cat] + " — " + name
 		body := renderApplicationHTML(cat, &r, fields, repEmail)
-		cc := []string{applicationCC}
+		// One admin copy only: send to Accounts (which forwards to the owner's
+		// inbox). The referring rep is still cc'd so they can follow up.
+		var cc []string
 		if repEmail != "" {
 			cc = append(cc, repEmail)
 		}

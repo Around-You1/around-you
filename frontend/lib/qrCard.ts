@@ -2,14 +2,22 @@
 //
 // Every card is the same landscape layout — the full Around You logo on the
 // left, a green title over a large neon-green QR on the right, and a caption
-// across the bottom — drawn onto a canvas sized to A6 landscape at 300 DPI so
-// the Download and Print buttons both produce a print-ready A6 card.
+// across the bottom — exported at A5 landscape, 300 DPI, with the DPI written
+// into the PNG (a pHYs chunk) so PowerPoint / Word insert it at exactly A5
+// (210 × 148 mm ≈ 8.27" × 5.83") instead of guessing the physical size.
 //
-// A6 = 105 × 148 mm. Landscape → 148 × 105 mm. At 300 DPI that is
-// 1748 × 1240 px.
+// A5 = 148 × 210 mm. Landscape → 210 × 148 mm. At 300 DPI that is
+// 2480 × 1748 px.
 
-export const A6_W = 1748; // 148 mm @ 300 DPI
-export const A6_H = 1240; // 105 mm @ 300 DPI
+const DPI = 300;
+export const CARD_W = 2480; // 210 mm @ 300 DPI (A5 landscape width)
+export const CARD_H = 1748; // 148 mm @ 300 DPI (A5 landscape height)
+
+// The layout below was tuned on this base canvas; we draw in these base
+// coordinates and uniformly scale up to the A5 pixel size, so the QR stays
+// perfectly square and nothing is distorted.
+const BASE_W = 1748;
+const BASE_H = 1240;
 
 const LOGO_SRC = "/around-you-logo.png";
 const LUMO = "#39FF14";
@@ -34,36 +42,20 @@ function loadImage(src: string, crossOrigin?: boolean): Promise<HTMLImageElement
 }
 
 function qrImageUrl(data: string): string {
-  // High-res so the A6 print stays crisp. qrserver caps at 1000×1000.
+  // High-res so the A5 print stays crisp. qrserver caps at 1000×1000.
   return `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(
     data
   )}&bgcolor=000000&color=39FF14&margin=8`;
 }
 
-/**
- * Draw the card onto a fresh canvas and return it. Loads the logo (same-origin)
- * and the QR (cross-origin, so the canvas stays untainted and can be exported).
- */
-export async function renderQrCardCanvas(
-  opts: QrCardOptions
-): Promise<HTMLCanvasElement> {
-  const [logoImg, qrImg] = await Promise.all([
-    loadImage(LOGO_SRC),
-    loadImage(qrImageUrl(opts.data), true),
-  ]);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = A6_W;
-  canvas.height = A6_H;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas 2D context unavailable");
-
-  const W = A6_W;
-  const H = A6_H;
-
-  // Background.
-  ctx.fillStyle = "#000000";
-  ctx.fillRect(0, 0, W, H);
+// Draw the card in BASE_W × BASE_H coordinates onto the given context.
+function drawCard(
+  ctx: CanvasRenderingContext2D,
+  opts: QrCardOptions,
+  logoImg: HTMLImageElement,
+  qrImg: HTMLImageElement
+) {
+  const W = BASE_W;
 
   // Logo (left), preserve aspect ratio, fit inside a box.
   const boxW = 680;
@@ -135,8 +127,104 @@ export async function renderQrCardCanvas(
     ctx.font = `700 30px system-ui, sans-serif`;
     ctx.fillText("✦", W / 2, ty + 8);
   }
+}
+
+/**
+ * Render the card onto a fresh canvas at A5 (2480 × 1748) and return it. Loads
+ * the logo (same-origin) and the QR (cross-origin, so the canvas stays
+ * untainted and can be exported).
+ */
+export async function renderQrCardCanvas(
+  opts: QrCardOptions
+): Promise<HTMLCanvasElement> {
+  const [logoImg, qrImg] = await Promise.all([
+    loadImage(LOGO_SRC),
+    loadImage(qrImageUrl(opts.data), true),
+  ]);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = CARD_W;
+  canvas.height = CARD_H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D context unavailable");
+
+  // Full black background (covers the thin side margins left by centring).
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(0, 0, CARD_W, CARD_H);
+
+  // Uniformly scale the tuned base layout up to A5 and centre it horizontally.
+  const k = CARD_H / BASE_H;
+  const xOffset = (CARD_W - BASE_W * k) / 2;
+  ctx.save();
+  ctx.setTransform(k, 0, 0, k, xOffset, 0);
+  // Re-fill the base area black so the card body is solid.
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(0, 0, BASE_W, BASE_H);
+  drawCard(ctx, opts, logoImg, qrImg);
+  ctx.restore();
 
   return canvas;
+}
+
+// --- PNG DPI tagging (pHYs chunk) ---------------------------------------
+
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32(bytes: Uint8Array): number {
+  let c = 0xffffffff;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+/**
+ * Insert a pHYs chunk (physical pixel dimensions) into a PNG so image editors
+ * and Office apps place it at the intended DPI / physical size.
+ */
+async function tagPngDpi(blob: Blob, dpi: number): Promise<Blob> {
+  const buf = new Uint8Array(await blob.arrayBuffer());
+  // PNG signature (8) + IHDR chunk (length 4 + type 4 + data 13 + crc 4 = 25)
+  // → the IHDR chunk ends at byte 33; pHYs must appear before IDAT.
+  const insertAt = 33;
+  const ppm = Math.round(dpi / 0.0254); // pixels per metre
+
+  const chunk = new Uint8Array(21); // len(4) + type(4) + data(9) + crc(4)
+  const dv = new DataView(chunk.buffer);
+  dv.setUint32(0, 9); // data length
+  chunk[4] = 0x70; // 'p'
+  chunk[5] = 0x48; // 'H'
+  chunk[6] = 0x59; // 'Y'
+  chunk[7] = 0x73; // 's'
+  dv.setUint32(8, ppm); // x pixels per unit
+  dv.setUint32(12, ppm); // y pixels per unit
+  chunk[16] = 1; // unit specifier: metre
+  const crc = crc32(chunk.subarray(4, 17)); // over type + data
+  dv.setUint32(17, crc);
+
+  const out = new Uint8Array(buf.length + chunk.length);
+  out.set(buf.subarray(0, insertAt), 0);
+  out.set(chunk, insertAt);
+  out.set(buf.subarray(insertAt), insertAt + chunk.length);
+  return new Blob([out], { type: "image/png" });
+}
+
+async function canvasToTaggedBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
+  const raw = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob((b) => resolve(b), "image/png")
+  );
+  if (!raw) return null;
+  try {
+    return await tagPngDpi(raw, DPI);
+  } catch {
+    return raw; // fall back to the untagged PNG if tagging fails
+  }
 }
 
 /** Render the card and return a PNG data URL (used for the on-screen preview). */
@@ -145,33 +233,26 @@ export async function renderQrCardDataUrl(opts: QrCardOptions): Promise<string> 
   return canvas.toDataURL("image/png");
 }
 
-/** Render the card and trigger a PNG download at A6 size. */
-export async function downloadQrCardA6(
+/** Render the card and trigger a PNG download at A5 size (300 DPI tagged). */
+export async function downloadQrCard(
   opts: QrCardOptions,
   fileName: string
 ): Promise<void> {
   const canvas = await renderQrCardCanvas(opts);
-  await new Promise<void>((resolve) => {
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        resolve();
-        return;
-      }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      resolve();
-    }, "image/png");
-  });
+  const blob = await canvasToTaggedBlob(canvas);
+  if (!blob) return;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
-/** Render the card and open the browser print dialog, sized to A6 landscape. */
-export async function printQrCardA6(opts: QrCardOptions): Promise<void> {
+/** Render the card and open the browser print dialog, sized to A5 landscape. */
+export async function printQrCard(opts: QrCardOptions): Promise<void> {
   const dataUrl = await renderQrCardDataUrl(opts);
   const win = window.open("", "_blank");
   if (!win) return;
@@ -181,7 +262,7 @@ export async function printQrCardA6(opts: QrCardOptions): Promise<void> {
       <head>
         <title>Around You QR — ${opts.title}</title>
         <style>
-          @page { size: A6 landscape; margin: 0; }
+          @page { size: A5 landscape; margin: 0; }
           * { box-sizing: border-box; margin: 0; padding: 0; }
           html, body { background: #000; }
           img { display: block; width: 100vw; height: 100vh; object-fit: contain; }

@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
 import {
-  downloadQrCardA6,
-  printQrCardA6,
+  downloadQrCard,
+  printQrCard,
   renderQrCardDataUrl,
   type QrCardOptions,
 } from "../lib/qrCard";
@@ -50,12 +50,12 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loginUrl, profileName, entityType]);
 
-  const fileName = `${(profileName || "around-you").replace(/\s+/g, "-")}-QR-A6.png`;
+  const fileName = `${(profileName || "around-you").replace(/\s+/g, "-")}-QR-A5.png`;
 
   const handleDownload = async () => {
     setBusy(true);
     try {
-      await downloadQrCardA6(card, fileName);
+      await downloadQrCard(card, fileName);
     } finally {
       setBusy(false);
     }
@@ -64,7 +64,7 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
   const handlePrint = async () => {
     setBusy(true);
     try {
-      await printQrCardA6(card);
+      await printQrCard(card);
     } finally {
       setBusy(false);
     }
@@ -78,7 +78,7 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
       {/* WYSIWYG preview of the exact A6 card that Download / Print produce. */}
       <div
         className="w-full rounded-lg overflow-hidden"
-        style={{ border: "2px solid #39FF14", background: "#000", aspectRatio: "1748 / 1240" }}
+        style={{ border: "2px solid #39FF14", background: "#000", aspectRatio: "2480 / 1748" }}
       >
         {preview ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -91,7 +91,7 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
       </div>
 
       <p className="text-[11px] text-center" style={{ color: "#888" }}>
-        Downloads &amp; prints at A6 size (148 × 105 mm).
+        Downloads &amp; prints at A5 size (210 × 148 mm).
       </p>
 
       <div className="flex gap-2">
@@ -105,7 +105,7 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
           style={{ borderColor: "rgba(57,255,20,0.4)", color: "#39FF14", background: "transparent" }}
         >
           <Download className="w-3 h-3" />
-          Download A6
+          Download A5
         </Button>
         <Button
           type="button"
@@ -117,7 +117,7 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
           style={{ borderColor: "rgba(57,255,20,0.4)", color: "#39FF14", background: "transparent" }}
         >
           <Printer className="w-3 h-3" />
-          Print A6
+          Print A5
         </Button>
       </div>
     </div>

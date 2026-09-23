@@ -310,7 +310,7 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 		if withCodes {
 			html += onboardingCodesHTML(ctx, partnerType, partnerID)
 		}
-		_ = mailer.Send(email, "Your "+bizName+" invoice "+number, html)
+		_ = mailer.SendOpts(email, "Your "+bizName+" invoice "+number, html, "", []string{"accounts@aroundyou.co.za"})
 	}
 	return nil
 }
@@ -383,7 +383,7 @@ func ResendInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) er
 	if withCodes {
 		html += onboardingCodesHTML(ctx, partnerType, partnerID)
 	}
-	return mailer.Send(email, "Your "+bizName+" invoice "+number, html)
+	return mailer.SendOpts(email, "Your "+bizName+" invoice "+number, html, "", []string{"accounts@aroundyou.co.za"})
 }
 
 // SendTestInvoiceWithCodes emails a SAMPLE invoice — including a sample Access
@@ -467,7 +467,7 @@ func SendComplimentaryOnboardingEmail(ctx context.Context, partnerType string, p
 		`</b> is now live. This is a <b>complimentary</b> partnership — there is no charge.</p>`)
 	b.WriteString(onboardingCodesHTML(ctx, partnerType, partnerID))
 	b.WriteString(`</div>`)
-	return mailer.Send(email, "Welcome to "+bizName+" — "+name, b.String())
+	return mailer.SendOpts(email, "Welcome to "+bizName+" — "+name, b.String(), "", []string{"accounts@aroundyou.co.za"})
 }
 
 func onboardingCodesHTML(ctx context.Context, partnerType string, partnerID int64) string {
