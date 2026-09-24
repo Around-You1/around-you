@@ -763,7 +763,7 @@ export default function GuestDashboard() {
         )}
 
         <div className="space-y-4">
-          <Button className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold" onClick={() => setShowMyBookings(true)}>My Bookings</Button>
+          <Button className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold" onClick={() => setShowMyBookings(true)}>Bookings I have made</Button>
           {isLocalMode ? (
             <Label className="text-lg font-medium">Local Partners</Label>
           ) : (
@@ -2002,7 +2002,7 @@ function BookingModal({ onClose, entityType, entityId, entityName, items }: {
         <div className="space-y-1"><Label className="text-xs">Your name</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
         <div className="space-y-1"><Label className="text-xs">Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
         <div className="space-y-1"><Label className="text-xs">Phone (optional)</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-        <p className="text-xs text-muted-foreground">You can change or cancel this booking yourself from "My Bookings" using this email. The partner cannot change or cancel it.</p>
+        <p className="text-xs text-muted-foreground">You can change or cancel this booking yourself from "Bookings I have made" using this email. The partner cannot change or cancel it.</p>
         <div className="flex justify-end gap-2 pt-1">
           <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black">{saving ? "Sending…" : "Confirm Booking"}</Button>
@@ -2161,7 +2161,7 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-background rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold">My Bookings</h3>
+        <h3 className="text-lg font-semibold">Bookings I have made</h3>
         <p className="text-xs text-muted-foreground">Enter the email you booked with to see, cancel, or rate your bookings.</p>
         <div className="flex gap-2">
           <Input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
