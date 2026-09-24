@@ -24,6 +24,7 @@ import type { Restaurant } from "~backend/restaurant/types";
 import type { ServiceData } from "~backend/service/types";
 import type { AttractionData } from "~backend/attraction/types";
 import AppLogo from "../components/AppLogo";
+import AppInstallButtons from "../components/AppInstallButtons";
 
 const FALLBACK = "The company has opted not to make this information visible.";
 
@@ -402,6 +403,7 @@ export default function GuestDashboard() {
               <h1 className="text-3xl font-bold text-foreground">Around You</h1>
               <p className="text-lg text-muted-foreground">Local Guest</p>
             </div>
+            <AppInstallButtons />
           </div>
         ) : (
           <>
@@ -410,6 +412,7 @@ export default function GuestDashboard() {
               <h1 className="text-3xl font-bold text-foreground">Welcome to</h1>
               <p className="text-lg text-muted-foreground">{accommodation!.name}</p>
             </div>
+            <AppInstallButtons />
             <Card>
               <CardContent className="p-4">
                 <div className="mb-4 mx-auto w-full max-w-xl">

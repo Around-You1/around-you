@@ -13,6 +13,7 @@ import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 import OptimizedImage from "../components/OptimizedImage";
 import AppLogo from "../components/AppLogo";
+import AppInstallButtons from "../components/AppInstallButtons";
 import RestaurantForm from "../components/RestaurantForm";
 import ServiceForm from "../components/ServiceForm";
 import AttractionForm from "../components/AttractionForm";
@@ -386,6 +387,8 @@ export default function PartnerDashboard() {
             Logout
           </Button>
         </div>
+
+        <AppInstallButtons />
 
         <Button
           className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold"
