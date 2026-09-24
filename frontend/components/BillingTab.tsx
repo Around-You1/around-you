@@ -19,6 +19,8 @@ interface Subscription {
   repCode: string;
   status: string;
   nextBillDate: string;
+  partnerName: string;
+  billable: boolean;
 }
 
 interface Invoice {
@@ -33,6 +35,7 @@ interface Invoice {
   totalCents: number;
   status: string;
   issuedAt: string;
+  billable: boolean;
 }
 
 interface Commission {
@@ -379,9 +382,11 @@ export default function BillingTab() {
     }
   };
 
-  const mrrCents = subs
-    .filter((s) => s.status === "Active")
-    .reduce((sum, s) => sum + s.monthlyCents, 0);
+  // Billing view shows only billable rows — active, paid, real (non-test) rep.
+  const billableSubs = subs.filter((s) => s.billable);
+  const billableInvoices = invoices.filter((v) => v.billable);
+
+  const mrrCents = billableSubs.reduce((sum, s) => sum + s.monthlyCents, 0);
 
   return (
     <div className="space-y-6">
@@ -437,13 +442,13 @@ export default function BillingTab() {
       <Card>
         <CardHeader>
           <CardTitle>
-            Subscriptions ({subs.length}) · Monthly recurring {rand(mrrCents)}
+            Subscriptions ({billableSubs.length}) · Monthly recurring {rand(mrrCents)}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {subs.length === 0 ? (
+          {billableSubs.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No subscriptions yet — onboard a partner (any category) and one is created automatically.
+              No billable subscriptions yet — a subscription becomes billable once the partner is on a paid plan and activated for billing.
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -460,9 +465,12 @@ export default function BillingTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {subs.map((s) => (
+                  {billableSubs.map((s) => (
                     <tr key={s.id} className="border-b border-border/50">
-                      <td className="py-2 pr-3">{s.partnerType} #{s.partnerId}</td>
+                      <td className="py-2 pr-3">
+                        {s.partnerName || `${s.partnerType} #${s.partnerId}`}
+                        <span className="ml-2 text-xs text-muted-foreground">{s.partnerType} #{s.partnerId}</span>
+                      </td>
                       <td className="py-2 pr-3">{planLabel(s)}</td>
                       <td className="py-2 pr-3">{s.audience || "—"}</td>
                       <td className="py-2 pr-3">{rand(s.monthlyCents)}</td>
@@ -537,10 +545,10 @@ export default function BillingTab() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Invoices ({invoices.length})</CardTitle>
+          <CardTitle>Invoices ({billableInvoices.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          {invoices.length === 0 ? (
+          {billableInvoices.length === 0 ? (
             <p className="text-sm text-muted-foreground">No invoices yet.</p>
           ) : (
             <div className="overflow-x-auto">
@@ -558,7 +566,7 @@ export default function BillingTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {invoices.map((v) => (
+                  {billableInvoices.map((v) => (
                     <tr key={v.id} className="border-b border-border/50">
                       <td className="py-2 pr-3 font-mono">{v.invoiceNumber}</td>
                       <td className="py-2 pr-3">{v.billName || `${v.partnerType} #${v.partnerId}`}</td>
