@@ -76,6 +76,7 @@ export default function GuestDashboard() {
     { entityType: RatableType; entityId: number; entityName: string; discount?: string; discountCode?: string } | null
   >(null);
   const [showMyBookings, setShowMyBookings] = useState(false);
+  const [showMyStamps, setShowMyStamps] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [showAccInfo, setShowAccInfo] = useState(false);
   const fireEvent = (eventType: string, extra?: { entityType?: string; entityId?: number; searchTerm?: string }) => {
@@ -764,6 +765,7 @@ export default function GuestDashboard() {
 
         <div className="space-y-4">
           <Button className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold" onClick={() => setShowMyBookings(true)}>Bookings I have made</Button>
+          <Button className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold" onClick={() => setShowMyStamps(true)}>My Stamp Cards</Button>
           {isLocalMode ? (
             <Label className="text-lg font-medium">Local Partners</Label>
           ) : (
@@ -1801,6 +1803,7 @@ export default function GuestDashboard() {
           />
         )}
         {showMyBookings && <MyBookingsModal onClose={() => setShowMyBookings(false)} />}
+        {showMyStamps && <MyStampCardsModal onClose={() => setShowMyStamps(false)} />}
         <SwipeIndicator show={filteredRestaurants.length > 0 || filteredServices.length > 0 || filteredAttractions.length > 0} />
       </div>
     </div>
@@ -2220,6 +2223,69 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
               ))}
             </div>
           ))}
+        <div className="flex justify-end pt-1"><Button variant="outline" onClick={onClose}>Close</Button></div>
+      </div>
+    </div>
+  );
+}
+
+// MyStampCardsModal lets a customer see their loyalty stamp cards by entering the
+// mobile number the partner stamps against. Read-only — only partners add stamps.
+function MyStampCardsModal({ onClose }: { onClose: () => void }) {
+  const [phone, setPhone] = useState("");
+  const [cards, setCards] = useState<any[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  const find = async () => {
+    if (!phone.trim()) { toast({ title: "Enter your mobile number", variant: "destructive" }); return; }
+    setLoading(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const res: any = await backend.loyalty.myCards({ phone: phone.trim() });
+      setCards(res.cards || []);
+    } catch (error: any) {
+      toast({ title: "Couldn't load cards", description: error?.message || "Please try again.", variant: "destructive" });
+    } finally { setLoading(false); }
+  };
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-background rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-lg font-semibold">My Stamp Cards</h3>
+        <p className="text-xs text-muted-foreground">
+          Enter the mobile number you give the shop to see your stamp cards. Partners add a stamp each time you buy — collect enough and the reward is yours.
+        </p>
+        <div className="flex gap-2">
+          <Input inputMode="tel" placeholder="Your mobile number" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <Button onClick={find} disabled={loading} className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black whitespace-nowrap">{loading ? "…" : "Find"}</Button>
+        </div>
+        {cards !== null && (cards.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No stamp cards yet for that number. Ask a participating partner to add your first stamp.</p>
+        ) : (
+          <div className="space-y-3">
+            {cards.map((c, idx) => (
+              <div key={idx} className="border rounded-md p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium text-sm">{c.partnerName || "Partner"}</span>
+                  {c.rewardReady && <span className="text-xs px-2 py-0.5 rounded bg-[#39FF14] text-black font-semibold">Reward ready!</span>}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {Array.from({ length: c.threshold }).map((_, i) => (
+                    <span key={i}
+                      className={`h-7 w-7 rounded-full border flex items-center justify-center text-xs font-bold ${
+                        i < c.stamps ? "bg-[#39FF14] border-[#39FF14] text-black" : "border-border text-muted-foreground"
+                      }`}>
+                      {i < c.stamps ? "✓" : i + 1}
+                    </span>
+                  ))}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {c.stamps} of {c.threshold} stamps{c.rewardText ? ` · Reward: ${c.rewardText}` : ""}
+                </div>
+                {c.rewardReady && <p className="text-xs">Show this to {c.partnerName || "the partner"} to claim your reward.</p>}
+              </div>
+            ))}
+          </div>
+        ))}
         <div className="flex justify-end pt-1"><Button variant="outline" onClick={onClose}>Close</Button></div>
       </div>
     </div>

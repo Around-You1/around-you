@@ -192,6 +192,168 @@ function RedeemScanner() {
   );
 }
 
+// LoyaltyManager lets a partner run a digital stamp card: set the rule (stamps
+// needed + reward), then add a stamp for a customer by mobile number and redeem
+// the reward when the card is full. The partner adds every stamp — customers
+// cannot stamp themselves.
+function LoyaltyManager({ entityType, entityId }: { entityType: string; entityId: number }) {
+  const { toast } = useToast();
+  const [enabled, setEnabled] = useState(false);
+  const [threshold, setThreshold] = useState(10);
+  const [rewardText, setRewardText] = useState("");
+  const [loadingCfg, setLoadingCfg] = useState(true);
+  const [savingCfg, setSavingCfg] = useState(false);
+
+  const [phone, setPhone] = useState("");
+  const [card, setCard] = useState<any | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const GREEN = "bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold";
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const backend = getAuthenticatedBackend();
+        const p: any = await backend.loyalty.getProgram({ partnerType: entityType, partnerId: entityId });
+        setEnabled(!!p.enabled);
+        setThreshold(p.threshold || 10);
+        setRewardText(p.rewardText || "");
+      } catch {
+        /* keep defaults */
+      } finally {
+        setLoadingCfg(false);
+      }
+    })();
+  }, [entityType, entityId]);
+
+  const saveConfig = async () => {
+    setSavingCfg(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.loyalty.setProgram({ partnerType: entityType, partnerId: entityId, enabled, threshold, rewardText });
+      toast({ title: "Loyalty card saved" });
+    } catch (e: any) {
+      toast({ title: "Couldn't save", description: e?.message || "Please try again", variant: "destructive" });
+    } finally {
+      setSavingCfg(false);
+    }
+  };
+
+  const lookup = async () => {
+    if (!phone.trim()) return;
+    setBusy(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const c: any = await backend.loyalty.lookup({ partnerType: entityType, partnerId: entityId, phone });
+      setCard(c);
+    } catch (e: any) {
+      toast({ title: "Couldn't load card", description: e?.message || "", variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const addStamp = async () => {
+    setBusy(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const c: any = await backend.loyalty.stamp({ partnerType: entityType, partnerId: entityId, phone: card?.customerPhone || phone });
+      setCard(c);
+      toast({ title: "Stamp added", description: `${c.stamps} of ${c.threshold}` });
+    } catch (e: any) {
+      toast({ title: "Couldn't add stamp", description: e?.message || "", variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const redeem = async () => {
+    setBusy(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const c: any = await backend.loyalty.redeem({ partnerType: entityType, partnerId: entityId, phone: card?.customerPhone || phone });
+      setCard(c);
+      toast({ title: "Reward redeemed 🎉" });
+    } catch (e: any) {
+      toast({ title: "Couldn't redeem", description: e?.message || "", variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Loyalty Stamp Card</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-3 rounded-lg border border-border/60 p-3">
+          <p className="text-sm font-semibold">Card setup</p>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+            Turn the loyalty card on for my customers
+          </label>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
+              <Label className="text-xs">Stamps needed for a reward</Label>
+              <Input type="number" min={2} max={50} value={threshold}
+                onChange={(e) => setThreshold(parseInt(e.target.value || "0", 10))} />
+            </div>
+            <div className="flex-[2]">
+              <Label className="text-xs">Reward</Label>
+              <Input value={rewardText} onChange={(e) => setRewardText(e.target.value)}
+                placeholder="e.g. 1 free 10L water refill" />
+            </div>
+          </div>
+          <Button onClick={saveConfig} disabled={savingCfg || loadingCfg} className={GREEN}>
+            {savingCfg ? "Saving…" : "Save card settings"}
+          </Button>
+        </div>
+
+        <div className="space-y-3 rounded-lg border border-border/60 p-3">
+          <p className="text-sm font-semibold">Add a stamp</p>
+          <p className="text-xs text-muted-foreground">
+            Enter the customer's mobile number, then add a stamp for today's purchase.
+          </p>
+          <div className="flex gap-2">
+            <Input value={phone} onChange={(e) => setPhone(e.target.value)}
+              placeholder="Customer mobile number" inputMode="tel" />
+            <Button variant="outline" onClick={lookup} disabled={busy || !phone.trim()}>Look up</Button>
+          </div>
+
+          {card && (
+            <div className="space-y-3">
+              <div className="text-sm">
+                <span className="font-semibold font-mono">{card.customerPhone}</span>
+                {" — "}{card.stamps} of {card.threshold} stamps
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {Array.from({ length: card.threshold }).map((_, i) => (
+                  <span key={i}
+                    className={`h-8 w-8 rounded-full border flex items-center justify-center text-xs font-bold ${
+                      i < card.stamps ? "bg-[#39FF14] border-[#39FF14] text-black" : "border-border text-muted-foreground"
+                    }`}>
+                    {i < card.stamps ? "✓" : i + 1}
+                  </span>
+                ))}
+              </div>
+              {card.rewardText && <p className="text-xs text-muted-foreground">Reward: {card.rewardText}</p>}
+              {card.rewardReady ? (
+                <Button onClick={redeem} disabled={busy} className={GREEN}>Redeem reward 🎉</Button>
+              ) : (
+                <Button onClick={addStamp} disabled={busy} className={GREEN}>+1 Stamp</Button>
+              )}
+              {card.rewardsEarned > 0 && (
+                <p className="text-xs text-muted-foreground">Rewards claimed so far: {card.rewardsEarned}</p>
+              )}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function PartnerDashboard() {
   const [entity, setEntity] = useState<EntityData | null>(null);
   const [entityType, setEntityType] = useState<"restaurant" | "service" | "attraction" | null>(null);
@@ -398,6 +560,8 @@ export default function PartnerDashboard() {
         </Button>
 
         <RedeemScanner />
+
+        <LoyaltyManager entityType={entityType} entityId={(entity as { id: number }).id} />
 
         {views && (
           <Card>

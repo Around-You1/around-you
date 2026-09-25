@@ -30,6 +30,7 @@ import (
 	"backend_encore/app/estate"
 	"backend_encore/app/events"
 	"backend_encore/app/health"
+	"backend_encore/app/loyalty"
 	"backend_encore/app/moderation"
 	"backend_encore/app/partnerapp"
 	"backend_encore/app/rating"
@@ -263,6 +264,16 @@ func main() {
 	// ---- Discount redemptions (guest starts, restaurant scans to redeem) ---
 	r.auth("POST /redemption/start", httpx.Body(redemption.Start))
 	r.auth("POST /redemption/redeem", httpx.Body(redemption.Redeem))
+
+	// ---- Loyalty stamp cards ------------------------------------------------
+	// Partner configures + stamps + redeems (ownership enforced in-handler);
+	// customers read their own cards by mobile number.
+	r.auth("POST /loyalty/program/get", httpx.Body(loyalty.GetProgram))
+	r.auth("POST /loyalty/program/set", httpx.Body(loyalty.SetProgram))
+	r.auth("POST /loyalty/lookup", httpx.Body(loyalty.LookupCard))
+	r.auth("POST /loyalty/stamp", httpx.Body(loyalty.AddStamp))
+	r.auth("POST /loyalty/redeem", httpx.Body(loyalty.RedeemReward))
+	r.auth("POST /loyalty/my-cards", httpx.Body(loyalty.MyCards))
 
 	// ---- Not found -----------------------------------------------------------
 	// Go's default 404 for an unmatched pattern is plain text, not the

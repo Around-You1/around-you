@@ -48,6 +48,7 @@ type Invoice struct {
 	IssuedAt      string `json:"issuedAt"`
 	DueAt         string `json:"dueAt"`
 	PaidAt        string `json:"paidAt"`
+	Billable      bool   `json:"billable"` // belongs to a real (non-test) rep — the billing view hides the rest
 }
 
 // partnerTable maps a partner_type to its table name. The set is a fixed
@@ -669,6 +670,10 @@ func renderInvoiceHTML(s *InvoiceSettings, v invoiceView) string {
 	addBill(v.BillEmail)
 	b.WriteString(`</td></tr></table>`)
 
+	// Payment reference note — sits below Balance Due, above the line items.
+	b.WriteString(`<p style="margin:16px 0 0;font-weight:bold;color:#111">` +
+		`Please use your invoice number as reference, when making payment.</p>`)
+
 	// --- Item table (one row per line item) ---
 	b.WriteString(`<table width="100%" cellpadding="8" cellspacing="0" style="margin-top:22px;border-collapse:collapse">`)
 	b.WriteString(`<tr style="border-bottom:1px solid #ccc;text-align:left"><th>Item</th><th>Description</th>` +
@@ -734,12 +739,20 @@ func PreviewInvoiceHTML(ctx context.Context) (string, error) {
 // ListInvoices returns invoices newest-first — powers the admin billing view.
 func ListInvoices(ctx context.Context) ([]Invoice, error) {
 	rows, err := appdb.SQLDB.QueryContext(ctx, `
-		SELECT id, invoice_number, partner_type, partner_id,
-		       COALESCE(bill_name,''), COALESCE(bill_rep_code,''),
-		       to_char(period_start,'YYYY-MM-DD'), to_char(period_end,'YYYY-MM-DD'),
-		       total_cents, status, to_char(issued_at,'YYYY-MM-DD'),
-		       COALESCE(to_char(due_at,'YYYY-MM-DD'),''), COALESCE(to_char(paid_at,'YYYY-MM-DD'),'')
-		FROM invoice ORDER BY issued_at DESC, id DESC`)
+		SELECT i.id, i.invoice_number, i.partner_type, i.partner_id,
+		       COALESCE(i.bill_name,''), COALESCE(i.bill_rep_code,''),
+		       to_char(i.period_start,'YYYY-MM-DD'), to_char(i.period_end,'YYYY-MM-DD'),
+		       i.total_cents, i.status, to_char(i.issued_at,'YYYY-MM-DD'),
+		       COALESCE(to_char(i.due_at,'YYYY-MM-DD'),''), COALESCE(to_char(i.paid_at,'YYYY-MM-DD'),''),
+		       COALESCE((CASE i.partner_type
+		         WHEN 'restaurant'    THEN (SELECT official_rep_code FROM restaurants     WHERE id = i.partner_id)
+		         WHEN 'service'       THEN (SELECT official_rep_code FROM services        WHERE id = i.partner_id)
+		         WHEN 'attraction'    THEN (SELECT official_rep_code FROM attractions     WHERE id = i.partner_id)
+		         WHEN 'accommodation' THEN (SELECT official_rep_code FROM accommodations  WHERE id = i.partner_id)
+		         WHEN 'estate_agency' THEN (SELECT official_rep_code FROM estate_agencies WHERE id = i.partner_id)
+		         WHEN 'estate_agent'  THEN (SELECT official_rep_code FROM estate_agents   WHERE id = i.partner_id)
+		       END), COALESCE(i.bill_rep_code,''))
+		FROM invoice i ORDER BY i.issued_at DESC, i.id DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -748,11 +761,19 @@ func ListInvoices(ctx context.Context) ([]Invoice, error) {
 	out := []Invoice{}
 	for rows.Next() {
 		var v Invoice
+		var currentRep string
 		if err := rows.Scan(&v.ID, &v.InvoiceNumber, &v.PartnerType, &v.PartnerID,
 			&v.BillName, &v.RepCode, &v.PeriodStart, &v.PeriodEnd,
-			&v.TotalCents, &v.Status, &v.IssuedAt, &v.DueAt, &v.PaidAt); err != nil {
+			&v.TotalCents, &v.Status, &v.IssuedAt, &v.DueAt, &v.PaidAt, &currentRep); err != nil {
 			return nil, err
 		}
+		// Billable is judged on the partner's CURRENT profile rep, not the rep
+		// frozen on the invoice — so reassigning a partner to the test rep removes
+		// its past invoices from the billing view too, just like its subscription,
+		// with no re-save needed. Falls back to the invoice's own rep if the
+		// partner record is gone. Complimentary/no-rep and test-rep partners are
+		// excluded.
+		v.Billable = strings.TrimSpace(currentRep) != "" && !isTestRep(currentRep)
 		out = append(out, v)
 	}
 	return out, rows.Err()

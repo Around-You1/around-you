@@ -213,6 +213,26 @@ export const backend = {
     sendTestInvoice: (req?: { to?: string }) => request("POST", "/billing/invoice/test-send", { body: req || {} }),
   },
 
+  loyalty: {
+    getProgram: (req: { partnerType: string; partnerId: number }) =>
+      request("POST", "/loyalty/program/get", { body: req }),
+    setProgram: (req: {
+      partnerType: string;
+      partnerId: number;
+      enabled: boolean;
+      threshold: number;
+      rewardText: string;
+    }) => request("POST", "/loyalty/program/set", { body: req }),
+    lookup: (req: { partnerType: string; partnerId: number; phone: string }) =>
+      request("POST", "/loyalty/lookup", { body: req }),
+    stamp: (req: { partnerType: string; partnerId: number; phone: string }) =>
+      request("POST", "/loyalty/stamp", { body: req }),
+    redeem: (req: { partnerType: string; partnerId: number; phone: string }) =>
+      request("POST", "/loyalty/redeem", { body: req }),
+    myCards: (req: { phone: string }) =>
+      request("POST", "/loyalty/my-cards", { body: req }),
+  },
+
   analytics: {
     repActivity: () => request("GET", "/analytics/rep-activity"),
     reps: () => request("GET", "/analytics/reps"),

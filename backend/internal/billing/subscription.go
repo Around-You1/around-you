@@ -21,6 +21,8 @@ type Subscription struct {
 	Status       string `json:"status"`
 	AutoRenew    bool   `json:"autoRenew"`
 	NextBillDate string `json:"nextBillDate"` // YYYY-MM-DD
+	PartnerName  string `json:"partnerName"`  // resolved from the partner's own table
+	Billable     bool   `json:"billable"`     // active, paid plan, real (non-test) rep, billing anchored
 }
 
 // EnsureSubscription creates (or updates) the billing arrangement for a partner
@@ -82,14 +84,34 @@ func SetStatusByPartner(ctx context.Context, partnerType string, partnerID int64
 }
 
 // List returns all subscriptions, newest first — powers admin/analytics views.
+// PartnerName is resolved from the partner's own table (the admin view shows the
+// real business name instead of "accommodation #17"), and Billable flags the
+// subscriptions that actually bill money: active, on a paid plan, with the
+// monthly anchor set, onboarded by a real (non-test) rep. The billing view uses
+// Billable to hide complimentary/test/not-yet-activated rows.
 func List(ctx context.Context) ([]Subscription, error) {
 	rows, err := appdb.SQLDB.QueryContext(ctx, `
-		SELECT id, partner_type, partner_id, plan,
-		       COALESCE(tier, 0), COALESCE(audience, ''), monthly_cents,
-		       COALESCE(rep_code, ''), status, auto_renew,
-		       to_char(next_bill_date, 'YYYY-MM-DD')
-		FROM partner_subscription
-		ORDER BY created_at DESC`)
+		SELECT ps.id, ps.partner_type, ps.partner_id, ps.plan,
+		       COALESCE(ps.tier, 0), COALESCE(ps.audience, ''), ps.monthly_cents,
+		       COALESCE((CASE ps.partner_type
+		         WHEN 'restaurant'    THEN (SELECT official_rep_code FROM restaurants     WHERE id = ps.partner_id)
+		         WHEN 'service'       THEN (SELECT official_rep_code FROM services        WHERE id = ps.partner_id)
+		         WHEN 'attraction'    THEN (SELECT official_rep_code FROM attractions     WHERE id = ps.partner_id)
+		         WHEN 'accommodation' THEN (SELECT official_rep_code FROM accommodations  WHERE id = ps.partner_id)
+		         WHEN 'estate_agency' THEN (SELECT official_rep_code FROM estate_agencies WHERE id = ps.partner_id)
+		         WHEN 'estate_agent'  THEN (SELECT official_rep_code FROM estate_agents   WHERE id = ps.partner_id)
+		       END), ps.rep_code, ''), ps.status, ps.auto_renew,
+		       COALESCE(to_char(ps.next_bill_date, 'YYYY-MM-DD'), ''),
+		       COALESCE((CASE ps.partner_type
+		         WHEN 'restaurant'    THEN (SELECT name FROM restaurants     WHERE id = ps.partner_id)
+		         WHEN 'service'       THEN (SELECT name FROM services        WHERE id = ps.partner_id)
+		         WHEN 'attraction'    THEN (SELECT name FROM attractions     WHERE id = ps.partner_id)
+		         WHEN 'accommodation' THEN (SELECT name FROM accommodations  WHERE id = ps.partner_id)
+		         WHEN 'estate_agency' THEN (SELECT name FROM estate_agencies WHERE id = ps.partner_id)
+		         WHEN 'estate_agent'  THEN (SELECT name FROM estate_agents   WHERE id = ps.partner_id)
+		       END), '')
+		FROM partner_subscription ps
+		ORDER BY ps.created_at DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -100,9 +122,21 @@ func List(ctx context.Context) ([]Subscription, error) {
 		var s Subscription
 		if err := rows.Scan(&s.ID, &s.PartnerType, &s.PartnerID, &s.Plan,
 			&s.Tier, &s.Audience, &s.MonthlyCents, &s.RepCode, &s.Status,
-			&s.AutoRenew, &s.NextBillDate); err != nil {
+			&s.AutoRenew, &s.NextBillDate, &s.PartnerName); err != nil {
 			return nil, err
 		}
+		// Billable = money actually changes hands: active, paid plan, billing
+		// anchor set (activated), and a real rep that isn't a test rep. RepCode
+		// here is the partner's CURRENT profile rep (falling back to the
+		// subscription's stored rep), so moving a partner to the test rep excludes
+		// it immediately, without waiting for the subscription mirror to catch up.
+		// Test-rep and complimentary (R0) listings, and partners not yet activated
+		// for recurring billing, are excluded.
+		s.Billable = s.Status == "Active" &&
+			s.MonthlyCents > 0 &&
+			strings.TrimSpace(s.NextBillDate) != "" &&
+			strings.TrimSpace(s.RepCode) != "" &&
+			!isTestRep(s.RepCode)
 		subs = append(subs, s)
 	}
 	return subs, rows.Err()

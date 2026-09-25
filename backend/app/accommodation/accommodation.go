@@ -216,6 +216,13 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.Accommodation, erro
 		moderation.NamedField{Name: "name", Value: a.Name},
 		moderation.NamedField{Name: "description", Value: a.Description},
 	)
+	// Keep the billing subscription in sync with the edited profile — notably
+	// propagating a changed official rep code to the subscription's rep_code so
+	// billing (and the test-rep exemption) tracks the CURRENT rep. Idempotent and
+	// must not block the edit; never touches next_bill_date or status.
+	if subErr := billing.EnsureSubscription(ctx, "accommodation", a.ID, a.AccessLevel, a.GuestType, a.OfficialRepCode); subErr != nil {
+		log.Printf("accommodation %d updated but subscription sync failed: %v", a.ID, subErr)
+	}
 	return a, nil
 }
 

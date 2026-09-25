@@ -361,6 +361,15 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.Restaurant, error) 
 		moderation.NamedField{Name: "description", Value: r.Description},
 		moderation.NamedField{Name: "discountOffered", Value: r.DiscountOffered},
 	)
+	// Keep the billing subscription in sync with the edited profile. In
+	// particular this propagates a changed official rep code to the
+	// subscription's rep_code so activation bills (or complimentary-exempts)
+	// against the CURRENT rep, not the one captured at onboarding. Idempotent
+	// and must not block the edit — it never touches next_bill_date or status,
+	// so a paused/unactivated subscription stays paused.
+	if subErr := billing.EnsureSubscription(ctx, "restaurant", r.ID, r.AccessLevel, r.GuestType, r.OfficialRepCode); subErr != nil {
+		log.Printf("restaurant %d updated but subscription sync failed: %v", r.ID, subErr)
+	}
 	return r, nil
 }
 
