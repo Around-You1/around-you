@@ -240,6 +240,13 @@ export const backend = {
     events: () => request("GET", "/analytics/events"),
     listingViews: (req: { entityType: string; entityId: number }) =>
       request("GET", "/analytics/listing-views", { query: req }),
+    // "Locals" dropdown: every local guest who has signed in, with their
+    // total login count.
+    locals: () => request("GET", "/analytics/locals"),
+    // Sign-in totals for the Daily/Weekly/Monthly/Yearly selector next to the
+    // Locals dropdown. Omit userId (or pass 0) for totals across all locals.
+    localLoginTotals: (req: { period: "daily" | "weekly" | "monthly" | "yearly"; userId?: number }) =>
+      request("GET", "/analytics/locals/logins", { query: req }),
   },
   events: {
     record: (req: {

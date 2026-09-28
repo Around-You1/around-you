@@ -409,14 +409,16 @@ func issueSession(ctx context.Context, u *appdb.User) (*LoginResponse, error) {
 	}
 
 	// Best-effort login-event analytics for guests/locals — never blocks login.
+	// user_id is recorded (migration 000072) so the Admin Dashboard's "Locals"
+	// analytics can show a per-local breakdown, not just the aggregate area.
 	if u.Role == "Guest" || u.Role == "LocalGuest" {
 		actorType := "holiday_guest"
 		if u.Role == "LocalGuest" {
 			actorType = "local_guest"
 		}
 		_, _ = appdb.SQLDB.ExecContext(ctx, `
-			INSERT INTO events (event_type, actor_type, area)
-			VALUES ('login', $1, NULLIF($2, ''))`, actorType, u.Area)
+			INSERT INTO events (event_type, actor_type, area, user_id)
+			VALUES ('login', $1, NULLIF($2, ''), $3)`, actorType, u.Area, u.ID)
 	}
 
 	return &LoginResponse{Token: token, User: u}, nil
@@ -1334,20 +1336,20 @@ func renderRepApplicationHTML(r *RepApplicationRequest, repCode string) string {
 }
 
 type Rep struct {
-	ID            int64  `json:"id"`
-	FullName      string `json:"fullName"`
-	RepCode       string `json:"repCode"`
-	UplineRepCode string `json:"uplineRepCode"`
-	IsTeamLeader  bool   `json:"isTeamLeader"`
-	Region        string `json:"region"`
-	Province      string `json:"province"`
-	Status        string `json:"status"`
-	Email         string `json:"email"`
-	AccessCode    string `json:"accessCode"` // 12-char login code (SuperAdmin view, for reveal/resend)
-	IDNumber      string `json:"idNumber"`
-	Phone         string `json:"phone"`
+	ID                 int64  `json:"id"`
+	FullName           string `json:"fullName"`
+	RepCode            string `json:"repCode"`
+	UplineRepCode      string `json:"uplineRepCode"`
+	IsTeamLeader       bool   `json:"isTeamLeader"`
+	Region             string `json:"region"`
+	Province           string `json:"province"`
+	Status             string `json:"status"`
+	Email              string `json:"email"`
+	AccessCode         string `json:"accessCode"` // 12-char login code (SuperAdmin view, for reveal/resend)
+	IDNumber           string `json:"idNumber"`
+	Phone              string `json:"phone"`
 	ResidentialAddress string `json:"residentialAddress"`
-	PostalCode    string `json:"postalCode"`
+	PostalCode         string `json:"postalCode"`
 
 	// Set only by UpdateRep when an activation welcome email was attempted, so the
 	// admin UI can surface a failed send instead of it failing silently.

@@ -88,6 +88,22 @@ interface EventsSummary {
   topSearches: SearchCount[];
 }
 
+// "Locals" — the dropdown of individual local guests who have signed in, plus
+// the Daily/Weekly/Monthly/Yearly sign-in totals selector next to it.
+interface LocalGuestOption {
+  userId: number;
+  email: string;
+  area: string;
+  totalLogins: number;
+}
+
+interface LocalLoginPoint {
+  period: string;
+  count: number;
+}
+
+type LocalsPeriod = "daily" | "weekly" | "monthly" | "yearly";
+
 const TIER_ORDER = ["Tier 1", "Tier 2", "Tier 3", "Tier 4", "N/A"];
 // Display label for a stored tier key. Data keys stay "Tier 1".."Tier 4".
 const tierLabel = (k: string) => (k === "Tier 1" ? "Basic" : k === "Tier 2" ? "Premium" : k);
@@ -142,6 +158,13 @@ export default function AnalyticsDashboard() {
   const [openCharity, setOpenCharity] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
+  // Locals — dropdown of local guests + Daily/Weekly/Monthly/Yearly totals.
+  const [locals, setLocals] = useState<LocalGuestOption[]>([]);
+  const [selectedLocalId, setSelectedLocalId] = useState<number>(0); // 0 = All Locals
+  const [localsPeriod, setLocalsPeriod] = useState<LocalsPeriod>("daily");
+  const [localPoints, setLocalPoints] = useState<LocalLoginPoint[]>([]);
+  const [localsPointsLoading, setLocalsPointsLoading] = useState(false);
+
   useEffect(() => {
     load();
   }, []);
@@ -152,6 +175,12 @@ export default function AnalyticsDashboard() {
     window.addEventListener("afterprint", after);
     return () => window.removeEventListener("afterprint", after);
   }, []);
+
+  // Refetch Locals totals whenever the selected local or period changes.
+  useEffect(() => {
+    loadLocalPoints();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLocalId, localsPeriod]);
 
   // Force every section open, let it render, then open the browser's
   // print-to-PDF dialog so the full dashboard downloads as a .pdf.
@@ -164,12 +193,13 @@ export default function AnalyticsDashboard() {
     setLoading(true);
     try {
       const backend = getAuthenticatedBackend();
-      const [activity, stats, biz, ev, charity] = await Promise.all([
+      const [activity, stats, biz, ev, charity, localsList] = await Promise.all([
         backend.analytics.repActivity(),
         backend.analytics.reps(),
         backend.analytics.business(),
         backend.analytics.events(),
         backend.charity.byProvince().catch(() => ({ provinces: [], month: "" })),
+        backend.analytics.locals().catch(() => ({ locals: [] })),
       ]);
       setReps(activity.reps);
       setRepStats(stats);
@@ -177,11 +207,29 @@ export default function AnalyticsDashboard() {
       setEvents(ev);
       setCharityProvinces((charity as any).provinces || []);
       setCharityMonth((charity as any).month || "");
+      setLocals((localsList as any).locals || []);
     } catch (error) {
       console.error("Failed to load analytics:", error);
       toast({ title: "Error", description: "Failed to load analytics", variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadLocalPoints = async () => {
+    setLocalsPointsLoading(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const res = await backend.analytics.localLoginTotals({
+        period: localsPeriod,
+        userId: selectedLocalId || undefined,
+      });
+      setLocalPoints((res as any).points || []);
+    } catch (error) {
+      console.error("Failed to load local login totals:", error);
+      toast({ title: "Error", description: "Failed to load Locals totals", variant: "destructive" });
+    } finally {
+      setLocalsPointsLoading(false);
     }
   };
 
@@ -201,6 +249,96 @@ export default function AnalyticsDashboard() {
         </div>
 
         <h1 className="text-4xl font-bold text-foreground">Analytics Dashboard</h1>
+
+        <Section title="Locals">
+          <p className="text-xs text-muted-foreground mb-3">
+            Every local resident who has signed into the app. Pick a local to see their sign-in history, or leave
+            "All Locals" selected to see totals across everyone.
+          </p>
+
+          <div className="flex flex-wrap items-end gap-3 mb-4">
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Local</label>
+              <select
+                value={selectedLocalId}
+                onChange={(e) => setSelectedLocalId(Number(e.target.value))}
+                className="text-sm rounded border border-border bg-background px-2 py-1.5 min-w-[220px]"
+              >
+                <option value={0}>All Locals{locals.length > 0 ? ` (${locals.length})` : ""}</option>
+                {locals.map((l) => (
+                  <option key={l.userId} value={l.userId}>
+                    {l.email}
+                    {l.area ? ` — ${l.area}` : ""} ({l.totalLogins} sign-in{l.totalLogins === 1 ? "" : "s"})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Totals per</label>
+              <div className="flex gap-1">
+                {([
+                  ["daily", "Daily"],
+                  ["weekly", "Weekly"],
+                  ["monthly", "Monthly"],
+                  ["yearly", "Yearly"],
+                ] as [LocalsPeriod, string][]).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setLocalsPeriod(value)}
+                    className={`text-xs px-3 py-1.5 rounded border ${
+                      localsPeriod === value
+                        ? "bg-[#AEECE4] border-[#AEECE4] text-black font-semibold"
+                        : "bg-muted/40 border-border text-muted-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {loading ? (
+            <Pending loading={loading} />
+          ) : locals.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No local guests have signed in yet.</p>
+          ) : localsPointsLoading ? (
+            <Pending loading={true} />
+          ) : localPoints.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No sign-ins in this period yet.</p>
+          ) : (
+            <>
+              <div className="flex items-end gap-1 h-24 overflow-x-auto pb-1 mb-3">
+                {(() => {
+                  const max = Math.max(1, ...localPoints.map((p) => p.count));
+                  return localPoints.map((p) => (
+                    <div
+                      key={p.period}
+                      className="flex flex-col items-center justify-end shrink-0"
+                      style={{ width: 40 }}
+                      title={`${p.period}: ${p.count}`}
+                    >
+                      <span className="text-[10px] mb-1">{p.count}</span>
+                      <div className="w-full rounded-t bg-[#AEECE4]" style={{ height: `${Math.max(6, (p.count / max) * 100)}%` }} />
+                      <span className="text-[9px] text-muted-foreground mt-1 rotate-45 origin-top-left whitespace-nowrap">
+                        {p.period}
+                      </span>
+                    </div>
+                  ));
+                })()}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Total for this selection:{" "}
+                <span className="font-semibold text-foreground">
+                  {localPoints.reduce((sum, p) => sum + p.count, 0)}
+                </span>{" "}
+                sign-in{localPoints.reduce((sum, p) => sum + p.count, 0) === 1 ? "" : "s"}
+              </p>
+            </>
+          )}
+        </Section>
 
         <Section title="Charity Support by Province">
           {charityProvinces.length === 0 ? (
