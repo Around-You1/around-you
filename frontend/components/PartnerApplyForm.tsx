@@ -35,7 +35,7 @@ const SERVICE_GROUPS = [
   { label: "Health & Wellness", options: ["Beauty Treatments", "Fitness & Gyms", "Grooming Services", "Holistic Therapies", "Skin Care & Aesthetics", "Spas & Beauty Treatments"] },
   { label: "Hobby & Craft Supplies", options: ["Wool & Craft"] },
   { label: "Home & Property", options: ["Architecture", "Cleaning Services", "Gardening & Landscaping", "Home Security", "Interior Design & Décor", "Laundry", "Pest Control", "Pet Sitting", "House Sitting", "Property Management"] },
-  { label: "Services & Trades", options: ["Appliance Repairs", "Carpenters", "Electricians", "Handyman Services", "Locksmiths", "Mechanics", "Painters", "Plumbers", "Welders"] },
+  { label: "Services & Trades", options: ["Appliance Repairs", "Carpenters", "Electricians", "Gas Provider/Refill", "Handyman Services", "Locksmiths", "Mechanics", "Painters", "Plumbers", "Welders"] },
   { label: "Transport", options: ["Delivery & Courier Services", "Equipment Hire", "Moving Services", "Shuttle Services", "Taxi & Ride Hailing", "Towing Services", "Vehicle Rentals"] },
   { label: "Food & Drink", options: ["Bakeries", "Butcheries & Fishmongers", "Catering Services", "Fresh Produce Markets", "Grocery Stores"] },
   { label: "Safety", options: ["Emergency Services", "First Aid Training", "Medical Services", "Pharmacies", "Security Services"] },

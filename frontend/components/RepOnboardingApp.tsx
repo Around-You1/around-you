@@ -190,6 +190,7 @@ const CATEGORY_GROUPS = [
       "Appliance Repairs",
       "Carpenters",
       "Electricians",
+      "Gas Provider/Refill",
       "Handyman Services",
       "Locksmiths",
       "Mechanics",

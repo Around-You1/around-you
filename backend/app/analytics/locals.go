@@ -3,9 +3,10 @@
 // and a totals query (Daily / Weekly / Monthly / Yearly) for sign-ins,
 // either for one selected local or across all of them.
 //
-// Depends on migration 000072_add_user_id_to_events.sql, which adds
-// events.user_id so each 'login' event (see app/auth/auth.go's
-// issueSession) can be tied back to the specific user who signed in.
+// Sign-ins are read from the sessions table (one row is inserted per
+// successful login, see auth.issueSession), joined to users where
+// role = 'LocalGuest'. That means the full history since localsSince is
+// available immediately — no backfill needed.
 package analytics
 
 import (
@@ -16,6 +17,10 @@ import (
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/errs"
 )
+
+// localsSince is when the Locals adverts went live. Sign-ins before this
+// moment are ignored. Wednesday 23 September 2026, 00:00 South African time.
+const localsSince = "2026-09-23T00:00:00+02:00"
 
 // LocalGuestOption is one entry in the "Locals" dropdown.
 type LocalGuestOption struct {
@@ -29,9 +34,8 @@ type LocalsListResponse struct {
 	Locals []LocalGuestOption `json:"locals"`
 }
 
-// LocalsList returns every local guest who has at least one recorded login
-// event, for the Admin Dashboard's "Locals" dropdown. SuperAdmin only, same
-// check as the other analytics endpoints in this package.
+// LocalsList returns every local guest who has signed in since localsSince,
+// for the Admin Dashboard's "Locals" dropdown. SuperAdmin only.
 //
 //encore:api auth method=GET path=/analytics/locals
 func LocalsList(ctx context.Context) (*LocalsListResponse, error) {
@@ -41,13 +45,12 @@ func LocalsList(ctx context.Context) (*LocalsListResponse, error) {
 	}
 
 	rows, err := appdb.SQLDB.QueryContext(ctx, `
-		SELECT u.id, u.email, COALESCE(u.area, ''), count(e.id)
+		SELECT u.id, u.email, COALESCE(u.area, ''), count(s.token)
 		FROM users u
-		JOIN events e ON e.user_id = u.id AND e.event_type = 'login' AND e.actor_type = 'local_guest'
-		WHERE u.role = 'LocalGuest'
+		JOIN sessions s ON s.user_id = u.id
+		WHERE u.role = 'LocalGuest' AND s.created_at >= $1::timestamptz
 		GROUP BY u.id, u.email, u.area
-		ORDER BY u.email ASC
-	`)
+		ORDER BY u.email ASC`, localsSince)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +92,8 @@ type LocalLoginTotalsResponse struct {
 }
 
 // LocalLoginTotals powers the Daily/Weekly/Monthly/Yearly selector next to
-// the Locals dropdown. SuperAdmin only.
+// the Locals dropdown. SuperAdmin only. Buckets are cut in South African
+// time so a late-evening sign-in lands on the correct local day.
 //
 //encore:api auth method=GET path=/analytics/locals/logins
 func LocalLoginTotals(ctx context.Context, req *LocalLoginTotalsRequest) (*LocalLoginTotalsResponse, error) {
@@ -114,12 +118,13 @@ func LocalLoginTotals(ctx context.Context, req *LocalLoginTotalsRequest) (*Local
 	}
 
 	query := `
-		SELECT to_char(date_trunc('` + trunc + `', e.created_at), '` + format + `') AS period, count(*)
-		FROM events e
-		WHERE e.event_type = 'login' AND e.actor_type = 'local_guest'`
-	args := []interface{}{}
+		SELECT to_char(date_trunc('` + trunc + `', s.created_at AT TIME ZONE 'Africa/Johannesburg'), '` + format + `') AS period, count(*)
+		FROM sessions s
+		JOIN users u ON u.id = s.user_id
+		WHERE u.role = 'LocalGuest' AND s.created_at >= $1::timestamptz`
+	args := []interface{}{localsSince}
 	if req.UserID > 0 {
-		query += ` AND e.user_id = $1`
+		query += ` AND u.id = $2`
 		args = append(args, req.UserID)
 	}
 	query += ` GROUP BY period ORDER BY period ASC`

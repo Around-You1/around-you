@@ -140,6 +140,7 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
       "Appliance Repairs",
       "Carpenters",
       "Electricians",
+      "Gas Provider/Refill",
       "Handyman Services",
       "Locksmiths",
       "Mechanics",
