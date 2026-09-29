@@ -251,18 +251,18 @@ export default function AnalyticsDashboard() {
         <h1 className="text-4xl font-bold text-foreground">Analytics Dashboard</h1>
 
         <Section title="Locals">
-          <p className="text-xs text-muted-foreground mb-3">
+          <p className="text-sm text-muted-foreground mb-4">
             Every local resident who has signed into the app. Pick a local to see their sign-in history, or leave
             "All Locals" selected to see totals across everyone.
           </p>
 
           <div className="flex flex-wrap items-end gap-3 mb-4">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Local</label>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Local</label>
               <select
                 value={selectedLocalId}
                 onChange={(e) => setSelectedLocalId(Number(e.target.value))}
-                className="text-sm rounded border border-border bg-background px-2 py-1.5 min-w-[220px]"
+                className="text-base rounded border border-border bg-background px-3 py-2 min-w-[280px]"
               >
                 <option value={0}>All Locals{locals.length > 0 ? ` (${locals.length})` : ""}</option>
                 {locals.map((l) => (
@@ -275,7 +275,7 @@ export default function AnalyticsDashboard() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Totals per</label>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Totals per</label>
               <div className="flex gap-1">
                 {([
                   ["daily", "Daily"],
@@ -287,7 +287,7 @@ export default function AnalyticsDashboard() {
                     key={value}
                     type="button"
                     onClick={() => setLocalsPeriod(value)}
-                    className={`text-xs px-3 py-1.5 rounded border ${
+                    className={`text-base px-4 py-2 rounded border ${
                       localsPeriod === value
                         ? "bg-[#AEECE4] border-[#AEECE4] text-black font-semibold"
                         : "bg-muted/40 border-border text-muted-foreground"
@@ -310,28 +310,31 @@ export default function AnalyticsDashboard() {
             <p className="text-sm text-muted-foreground">No sign-ins in this period yet.</p>
           ) : (
             <>
-              <div className="flex items-end gap-1 h-24 overflow-x-auto pb-1 mb-3">
+              <div className="flex gap-3 overflow-x-auto pb-3 mb-4">
                 {(() => {
                   const max = Math.max(1, ...localPoints.map((p) => p.count));
                   return localPoints.map((p) => (
                     <div
                       key={p.period}
-                      className="flex flex-col items-center justify-end shrink-0"
-                      style={{ width: 40 }}
+                      className="flex flex-col items-center shrink-0"
+                      style={{ width: 88 }}
                       title={`${p.period}: ${p.count}`}
                     >
-                      <span className="text-[10px] mb-1">{p.count}</span>
-                      <div className="w-full rounded-t bg-[#AEECE4]" style={{ height: `${Math.max(6, (p.count / max) * 100)}%` }} />
-                      <span className="text-[9px] text-muted-foreground mt-1 rotate-45 origin-top-left whitespace-nowrap">
-                        {p.period}
-                      </span>
+                      <div className="h-64 w-full flex flex-col items-center justify-end">
+                        <span className="text-xl font-bold mb-1">{p.count}</span>
+                        <div
+                          className="w-full rounded-t bg-[#AEECE4]"
+                          style={{ height: `${Math.max(4, (p.count / max) * 80)}%` }}
+                        />
+                      </div>
+                      <span className="text-sm text-muted-foreground mt-2 whitespace-nowrap">{p.period}</span>
                     </div>
                   ));
                 })()}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-base text-muted-foreground">
                 Total for this selection:{" "}
-                <span className="font-semibold text-foreground">
+                <span className="text-3xl font-bold text-foreground">
                   {localPoints.reduce((sum, p) => sum + p.count, 0)}
                 </span>{" "}
                 sign-in{localPoints.reduce((sum, p) => sum + p.count, 0) === 1 ? "" : "s"}
