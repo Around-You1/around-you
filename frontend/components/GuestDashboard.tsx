@@ -832,11 +832,11 @@ export default function GuestDashboard() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-muted rounded-md" style={{ height: "auto" }}>
-              <TabsTrigger value="restaurants" className="min-h-[44px] touch-manipulation">Restaurants/Takeaways ({filteredRestaurants.length})</TabsTrigger>
-              <TabsTrigger value="services" className="min-h-[44px] touch-manipulation">Business/Services ({filteredServices.length})</TabsTrigger>
-              <TabsTrigger value="attractions" className="min-h-[44px] touch-manipulation">Attractions ({filteredAttractions.length})</TabsTrigger>
-              <TabsTrigger value="realestate" className="min-h-[44px] touch-manipulation">Real Estate</TabsTrigger>
+            <TabsList className="flex w-full gap-1 p-1 bg-muted rounded-md overflow-x-auto" style={{ height: "auto" }}>
+              <TabsTrigger value="restaurants" className="min-h-[44px] shrink-0 whitespace-nowrap touch-manipulation text-xs sm:text-sm px-3">Restaurants/Takeaways ({filteredRestaurants.length})</TabsTrigger>
+              <TabsTrigger value="services" className="min-h-[44px] shrink-0 whitespace-nowrap touch-manipulation text-xs sm:text-sm px-3">Business/Services ({filteredServices.length})</TabsTrigger>
+              <TabsTrigger value="attractions" className="min-h-[44px] shrink-0 whitespace-nowrap touch-manipulation text-xs sm:text-sm px-3">Attractions ({filteredAttractions.length})</TabsTrigger>
+              <TabsTrigger value="realestate" className="min-h-[44px] shrink-0 whitespace-nowrap touch-manipulation text-xs sm:text-sm px-3">Real Estate</TabsTrigger>
             </TabsList>
 
             <TabsContent value="realestate" className="space-y-3 mt-6">
