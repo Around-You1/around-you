@@ -27,8 +27,9 @@ type GetRequest struct {
 }
 
 type CreateRequest struct {
-	Name    string `json:"name"`
-	Address string `json:"address"`
+	Name              string `json:"name"`
+	Address           string `json:"address"`
+	AccountingAddress string `json:"accountingAddress,omitempty"`
 
 	Latitude  *float64 `json:"latitude,omitempty"`
 	Longitude *float64 `json:"longitude,omitempty"`
@@ -89,24 +90,26 @@ type CreateRequest struct {
 	ImageUrls []string `json:"imageUrls,omitempty"`
 	IsActive  bool     `json:"isActive"`
 
-	OfficialHoldingCompany string              `json:"officialHoldingCompany,omitempty"`
-	OfficialContactName    string              `json:"officialContactName,omitempty"`
-	OfficialContactNumber  string              `json:"officialContactNumber,omitempty"`
-	OfficialEmail          string              `json:"officialEmail,omitempty"`
-	OfficialRepCode        string              `json:"officialRepCode,omitempty"`
-	OfficialRepName        string              `json:"officialRepName,omitempty"`
-	CompanyRegNumber       string              `json:"companyRegNumber,omitempty"`
-	CompanyVatNumber       string              `json:"companyVatNumber,omitempty"`
-	GuestType              string              `json:"guestType,omitempty"`
-	AccessLevel            string              `json:"accessLevel,omitempty"`
-	BookingItems           []appdb.BookingItem `json:"bookingItems,omitempty"`
+	OfficialHoldingCompany string               `json:"officialHoldingCompany,omitempty"`
+	OfficialContactName    string               `json:"officialContactName,omitempty"`
+	OfficialContactNumber  string               `json:"officialContactNumber,omitempty"`
+	OfficialEmail          string               `json:"officialEmail,omitempty"`
+	OfficialRepCode        string               `json:"officialRepCode,omitempty"`
+	OfficialRepName        string               `json:"officialRepName,omitempty"`
+	CompanyRegNumber       string               `json:"companyRegNumber,omitempty"`
+	CompanyVatNumber       string               `json:"companyVatNumber,omitempty"`
+	GuestType              string               `json:"guestType,omitempty"`
+	AccessLevel            string               `json:"accessLevel,omitempty"`
+	BookingItems           []appdb.BookingItem  `json:"bookingItems,omitempty"`
+	PreOrderItems          []appdb.PreOrderItem `json:"preOrderItems,omitempty"`
 }
 
 type UpdateRequest struct {
 	AttractionID string `json:"attractionId"`
 
-	Name    *string `json:"name,omitempty"`
-	Address *string `json:"address,omitempty"`
+	Name              *string `json:"name,omitempty"`
+	Address           *string `json:"address,omitempty"`
+	AccountingAddress *string `json:"accountingAddress,omitempty"`
 
 	Latitude  *float64 `json:"latitude,omitempty"`
 	Longitude *float64 `json:"longitude,omitempty"`
@@ -171,17 +174,18 @@ type UpdateRequest struct {
 	ImageUrls []string `json:"imageUrls,omitempty"`
 	IsActive  *bool    `json:"isActive,omitempty"`
 
-	OfficialHoldingCompany *string             `json:"officialHoldingCompany,omitempty"`
-	OfficialContactName    *string             `json:"officialContactName,omitempty"`
-	OfficialContactNumber  *string             `json:"officialContactNumber,omitempty"`
-	OfficialEmail          *string             `json:"officialEmail,omitempty"`
-	OfficialRepCode        *string             `json:"officialRepCode,omitempty"`
-	OfficialRepName        *string             `json:"officialRepName,omitempty"`
-	CompanyRegNumber       *string             `json:"companyRegNumber,omitempty"`
-	CompanyVatNumber       *string             `json:"companyVatNumber,omitempty"`
-	GuestType              *string             `json:"guestType,omitempty"`
-	AccessLevel            *string             `json:"accessLevel,omitempty"`
-	BookingItems           []appdb.BookingItem `json:"bookingItems,omitempty"`
+	OfficialHoldingCompany *string              `json:"officialHoldingCompany,omitempty"`
+	OfficialContactName    *string              `json:"officialContactName,omitempty"`
+	OfficialContactNumber  *string              `json:"officialContactNumber,omitempty"`
+	OfficialEmail          *string              `json:"officialEmail,omitempty"`
+	OfficialRepCode        *string              `json:"officialRepCode,omitempty"`
+	OfficialRepName        *string              `json:"officialRepName,omitempty"`
+	CompanyRegNumber       *string              `json:"companyRegNumber,omitempty"`
+	CompanyVatNumber       *string              `json:"companyVatNumber,omitempty"`
+	GuestType              *string              `json:"guestType,omitempty"`
+	AccessLevel            *string              `json:"accessLevel,omitempty"`
+	BookingItems           []appdb.BookingItem  `json:"bookingItems,omitempty"`
+	PreOrderItems          []appdb.PreOrderItem `json:"preOrderItems,omitempty"`
 }
 
 type DeleteRequest struct {

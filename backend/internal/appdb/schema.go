@@ -38,6 +38,10 @@ type OfficialUse struct {
 	CompanyVatNumber       string `json:"companyVatNumber,omitempty"`
 	GuestType              string `json:"guestType,omitempty"`
 	AccessLevel            string `json:"accessLevel,omitempty"`
+	// SupportOrgName is a PUBLIC display field (deliberately NOT stripped): the
+	// Team Leader organisation shown in a partner's "We support …" badge,
+	// resolved from the onboarding rep. Filled in by publicize/Get, never stored.
+	SupportOrgName string `json:"supportOrgName,omitempty"`
 }
 
 // PaymentMethods are shared across Restaurant, ServiceData, and AttractionData.
@@ -296,9 +300,10 @@ type PartnerCode struct {
 
 // Restaurant matches RestaurantForm.tsx / RestaurantList.tsx / RestaurantTab.tsx.
 type Restaurant struct {
-	ID      int64  `json:"id"`
-	Name    string `json:"name"`
-	Address string `json:"address"`
+	ID                int64  `json:"id"`
+	Name              string `json:"name"`
+	Address           string `json:"address"`
+	AccountingAddress string `json:"accountingAddress,omitempty"`
 
 	Latitude  *float64 `json:"latitude"`
 	Longitude *float64 `json:"longitude"`
@@ -321,6 +326,7 @@ type Restaurant struct {
 	Atmosphere             []string      `json:"atmosphere,omitempty"`
 	Features               []string      `json:"features,omitempty"`
 	DietaryOptions         []string      `json:"dietaryOptions,omitempty"`
+	ChefRecommendation     string        `json:"chefRecommendation,omitempty"`
 	OffersBookings         bool          `json:"offersBookings"`
 	PreOrderItems          PreOrderItems `json:"preOrderItems,omitempty"`
 	MenuLink               string        `json:"menuLink,omitempty"`
@@ -385,10 +391,12 @@ type Restaurant struct {
 // and PartnerDashboard.tsx's `services.find(s => s.id === user.entityId)`).
 // Both are kept in sync — ServiceID is just the string form of ID.
 type ServiceData struct {
-	ID        int64  `json:"id"`
-	ServiceID string `json:"serviceId"`
-	Name      string `json:"name"`
-	Address   string `json:"address"`
+	ID                int64  `json:"id"`
+	ServiceID         string `json:"serviceId"`
+	Name              string `json:"name"`
+	Address           string `json:"address"`
+	AccountingAddress string `json:"accountingAddress,omitempty"`
+	IsNonProfit       bool   `json:"isNonProfit"`
 
 	Latitude  *float64 `json:"latitude"`
 	Longitude *float64 `json:"longitude"`
@@ -406,10 +414,11 @@ type ServiceData struct {
 	IsDuplicate          bool   `json:"isDuplicate,omitempty"`
 	DuplicateReason      string `json:"duplicateReason,omitempty"`
 
-	ServiceCategories      []string     `json:"serviceCategories"`
-	OffersBookings         bool         `json:"offersBookings"`
-	BookingItems           BookingItems `json:"bookingItems,omitempty"`
-	LittleExplorerApproved bool         `json:"littleExplorerApproved"`
+	ServiceCategories      []string      `json:"serviceCategories"`
+	OffersBookings         bool          `json:"offersBookings"`
+	BookingItems           BookingItems  `json:"bookingItems,omitempty"`
+	PreOrderItems          PreOrderItems `json:"preOrderItems,omitempty"`
+	LittleExplorerApproved bool          `json:"littleExplorerApproved"`
 
 	PaymentMethods
 
@@ -453,10 +462,11 @@ type ServiceData struct {
 // AttractionData matches AttractionForm.tsx / AttractionList.tsx / AttractionTab.tsx.
 // Same dual-identifier note as ServiceData applies to AttractionID.
 type AttractionData struct {
-	ID           int64  `json:"id"`
-	AttractionID string `json:"attractionId"`
-	Name         string `json:"name"`
-	Address      string `json:"address"`
+	ID                int64  `json:"id"`
+	AttractionID      string `json:"attractionId"`
+	Name              string `json:"name"`
+	Address           string `json:"address"`
+	AccountingAddress string `json:"accountingAddress,omitempty"`
 
 	Latitude  *float64 `json:"latitude"`
 	Longitude *float64 `json:"longitude"`
@@ -474,10 +484,11 @@ type AttractionData struct {
 	IsDuplicate          bool   `json:"isDuplicate,omitempty"`
 	DuplicateReason      string `json:"duplicateReason,omitempty"`
 
-	AttractionType         []string     `json:"attractionType"`
-	OffersBookings         bool         `json:"offersBookings"`
-	BookingItems           BookingItems `json:"bookingItems,omitempty"`
-	LittleExplorerApproved bool         `json:"littleExplorerApproved"`
+	AttractionType         []string      `json:"attractionType"`
+	OffersBookings         bool          `json:"offersBookings"`
+	BookingItems           BookingItems  `json:"bookingItems,omitempty"`
+	PreOrderItems          PreOrderItems `json:"preOrderItems,omitempty"`
+	LittleExplorerApproved bool          `json:"littleExplorerApproved"`
 
 	PaymentMethods
 
@@ -544,6 +555,7 @@ func (r *Restaurant) StripSensitive() {
 	r.OfficialRepName = ""
 	r.CompanyRegNumber = ""
 	r.CompanyVatNumber = ""
+	r.AccountingAddress = ""
 }
 
 func (s *ServiceData) StripSensitive() {
@@ -558,6 +570,7 @@ func (s *ServiceData) StripSensitive() {
 	s.OfficialRepName = ""
 	s.CompanyRegNumber = ""
 	s.CompanyVatNumber = ""
+	s.AccountingAddress = ""
 }
 
 func (a *AttractionData) StripSensitive() {
@@ -572,6 +585,7 @@ func (a *AttractionData) StripSensitive() {
 	a.OfficialRepName = ""
 	a.CompanyRegNumber = ""
 	a.CompanyVatNumber = ""
+	a.AccountingAddress = ""
 }
 
 // StripSensitive blanks the internal Official-Use / duplicate fields on an

@@ -149,3 +149,87 @@ func LocalLoginTotals(ctx context.Context, req *LocalLoginTotalsRequest) (*Local
 
 	return &LocalLoginTotalsResponse{Points: points}, nil
 }
+
+// --- Per-bucket sign-in detail (who signed in) -------------------------------
+
+type LocalSigninsRequest struct {
+	// Period matches the totals selector: "daily" | "weekly" | "monthly" | "yearly".
+	Period string `query:"period"`
+	// PeriodKey is the bucket label the user clicked, exactly as returned by
+	// LocalLoginTotals (e.g. "2026-10-03", "2026-10", "2026").
+	PeriodKey string `query:"periodKey"`
+	// UserID, when > 0, filters to a single local guest.
+	UserID int64 `query:"userId"`
+}
+
+type LocalSignin struct {
+	Email      string `json:"email"`
+	Area       string `json:"area"`
+	SignedInAt string `json:"signedInAt"` // "YYYY-MM-DD HH:MM" in South African time
+}
+
+type LocalSigninsResponse struct {
+	Signins []LocalSignin `json:"signins"`
+}
+
+// LocalSignins lists the individual local-guest sign-ins that fall inside one
+// clicked bucket, so an admin can see exactly which emails signed in that day
+// (or week/month/year). SuperAdmin only. Bucketing mirrors LocalLoginTotals so
+// the keys line up with the chart.
+//
+//encore:api auth method=GET path=/analytics/locals/signins
+func LocalSignins(ctx context.Context, req *LocalSigninsRequest) (*LocalSigninsResponse, error) {
+	data := auth.FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can view analytics"}
+	}
+
+	// trunc/format come from this fixed switch, never from the request, so
+	// interpolating them into the query is safe.
+	trunc := "day"
+	format := "YYYY-MM-DD"
+	switch strings.ToLower(strings.TrimSpace(req.Period)) {
+	case "weekly":
+		trunc, format = "week", "YYYY-MM-DD"
+	case "monthly":
+		trunc, format = "month", "YYYY-MM"
+	case "yearly":
+		trunc, format = "year", "YYYY"
+	default:
+		trunc, format = "day", "YYYY-MM-DD"
+	}
+
+	query := `
+		SELECT u.email, COALESCE(u.area, ''),
+		       to_char(s.created_at AT TIME ZONE 'Africa/Johannesburg', 'YYYY-MM-DD HH24:MI') AS signed_in_at
+		FROM sessions s
+		JOIN users u ON u.id = s.user_id
+		WHERE u.role = 'LocalGuest' AND s.created_at >= $1::timestamptz
+		  AND to_char(date_trunc('` + trunc + `', s.created_at AT TIME ZONE 'Africa/Johannesburg'), '` + format + `') = $2`
+	args := []interface{}{localsSince, strings.TrimSpace(req.PeriodKey)}
+	if req.UserID > 0 {
+		query += ` AND u.id = $3`
+		args = append(args, req.UserID)
+	}
+	query += ` ORDER BY s.created_at ASC`
+
+	rows, err := appdb.SQLDB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	signins := []LocalSignin{}
+	for rows.Next() {
+		var s LocalSignin
+		if err := rows.Scan(&s.Email, &s.Area, &s.SignedInAt); err != nil {
+			return nil, err
+		}
+		signins = append(signins, s)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &LocalSigninsResponse{Signins: signins}, nil
+}

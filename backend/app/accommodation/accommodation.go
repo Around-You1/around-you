@@ -27,6 +27,18 @@ var accommodations = store.NewStore()
 // reads unless the caller is an internal (privileged) role — same treatment as
 // restaurant/service/attraction. Guest-facing fields are kept.
 func publicize(ctx context.Context, items []appdb.Accommodation) []appdb.Accommodation {
+	// "We support <org>" badge: resolve each partner's Team Leader organisation
+	// from its onboarding rep (public display field, survives StripSensitive).
+	{
+		codes := make([]string, 0, len(items))
+		for i := range items {
+			codes = append(codes, items[i].OfficialRepCode)
+		}
+		orgs := appdb.SupportOrgNamesForReps(ctx, codes)
+		for i := range items {
+			items[i].SupportOrgName = orgs[strings.ToLower(strings.TrimSpace(items[i].OfficialRepCode))]
+		}
+	}
 	if auth.IsPrivileged(ctx) {
 		return items
 	}
@@ -54,6 +66,7 @@ func Get(ctx context.Context, req *GetRequest) (*appdb.Accommodation, error) {
 		}
 		return nil, err
 	}
+	a.SupportOrgName = appdb.SupportOrgNameForRep(ctx, a.OfficialRepCode)
 	if !auth.IsPrivileged(ctx) {
 		a.StripSensitive()
 	}
@@ -154,6 +167,25 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.Accommodation, erro
 	); err != nil {
 		return nil, err
 	}
+
+	// Authorisation: staff (SuperAdmin/Admin/Rep) may edit any profile. An
+	// accommodation owner — signed in with their access code (Role "Guest",
+	// ProfileType "accommodation") — may edit ONLY their own profile, and ONLY
+	// with a valid Edit Code. This is the server-side gate; the dashboard's
+	// edit-code prompt is just the UI. (Also closes the previously open update.)
+	if !auth.IsPrivileged(ctx) {
+		d := auth.FromContext(ctx)
+		if d == nil || d.User == nil || d.User.ProfileType != "accommodation" || d.User.AccommodationID != req.ID {
+			return nil, &errs.Error{Code: errs.PermissionDenied, Message: "you can only edit your own profile"}
+		}
+		storedEditCode, ecErr := accommodations.GetEditCode(ctx, req.ID)
+		if ecErr != nil {
+			return nil, &errs.Error{Code: errs.NotFound, Message: "accommodation not found"}
+		}
+		if strings.TrimSpace(req.EditCode) == "" || !strings.EqualFold(strings.TrimSpace(req.EditCode), strings.TrimSpace(storedEditCode)) {
+			return nil, &errs.Error{Code: errs.PermissionDenied, Message: "a valid edit code is required to edit this profile"}
+		}
+	}
 	patch := store.Patch{
 		Name:                    req.Name,
 		Address:                 req.Address,
@@ -224,6 +256,36 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.Accommodation, erro
 		log.Printf("accommodation %d updated but subscription sync failed: %v", a.ID, subErr)
 	}
 	return a, nil
+}
+
+// RegenerateAccessCode issues a fresh Profile Access Code for an accommodation
+// (e.g. when guests change over). Staff may do it for any accommodation; an
+// owner (signed in with their access code) may do it for their own ONLY with a
+// valid Edit Code — the same gate as Update.
+//
+//encore:api auth method=POST path=/accommodation/access-code/regenerate
+func RegenerateAccessCode(ctx context.Context, req *RegenerateAccessCodeRequest) (*RegenerateAccessCodeResponse, error) {
+	if !auth.IsPrivileged(ctx) {
+		d := auth.FromContext(ctx)
+		if d == nil || d.User == nil || d.User.ProfileType != "accommodation" || d.User.AccommodationID != req.ID {
+			return nil, &errs.Error{Code: errs.PermissionDenied, Message: "you can only change your own access code"}
+		}
+		storedEditCode, ecErr := accommodations.GetEditCode(ctx, req.ID)
+		if ecErr != nil {
+			return nil, &errs.Error{Code: errs.NotFound, Message: "accommodation not found"}
+		}
+		if strings.TrimSpace(req.EditCode) == "" || !strings.EqualFold(strings.TrimSpace(req.EditCode), strings.TrimSpace(storedEditCode)) {
+			return nil, &errs.Error{Code: errs.PermissionDenied, Message: "a valid edit code is required to change the access code"}
+		}
+	}
+	code, _, err := accommodations.RegenerateAccessCode(ctx, req.ID, appdb.RandomCode(12))
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return nil, &errs.Error{Code: errs.NotFound, Message: "accommodation not found"}
+		}
+		return nil, err
+	}
+	return &RegenerateAccessCodeResponse{AccessCode: code}, nil
 }
 
 //encore:api auth method=DELETE path=/accommodation

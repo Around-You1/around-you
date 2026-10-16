@@ -1,1 +1,9 @@
 .vercel
+backend_src.tgz
+_to_delete/
+Backup-1au.ps1
+ANTHROPIC_API_KEY=sk-ant-.txt
+backend/ANTHROPIC_API_KEY=sk-ant-.txt
+*sk-ant-*
+backup-log.txt
+*.bak

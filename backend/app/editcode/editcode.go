@@ -166,3 +166,15 @@ func Verify(ctx context.Context, req *VerifyRequest) (*VerifyResponse, error) {
 	valid := entered != "" && strings.EqualFold(entered, strings.TrimSpace(code))
 	return &VerifyResponse{Valid: valid}, nil
 }
+
+// CheckCode reports whether code matches the entity's stored edit code. Exported
+// so other packages (e.g. suggestions) can authorise an owner-only action
+// without duplicating the lookup. No session check — callers decide that.
+func CheckCode(ctx context.Context, entityType string, id int64, code string) (bool, error) {
+	stored, err := getCode(ctx, entityType, id)
+	if err != nil {
+		return false, err
+	}
+	entered := strings.TrimSpace(code)
+	return entered != "" && strings.EqualFold(entered, strings.TrimSpace(stored)), nil
+}

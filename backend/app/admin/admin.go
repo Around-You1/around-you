@@ -121,7 +121,7 @@ func BulkSetActive(ctx context.Context, req *BulkRequest) (*BulkResponse, error)
 // disableCodes turns the Access Code off and rotates the Edit Code so the old
 // one stops working. Best-effort — errors are non-fatal.
 func disableCodes(ctx context.Context, entityType string, id int64) {
-	rot := appdb.RandomCode(10)
+	rot := appdb.RandomCode(12)
 	switch entityType {
 	case "restaurant":
 		_ = restaurants.TogglePartnerCode(ctx, id, false)
@@ -142,17 +142,17 @@ func disableCodes(ctx context.Context, entityType string, id int64) {
 func enableCodes(ctx context.Context, entityType string, id int64) {
 	switch entityType {
 	case "restaurant":
-		_, _, _ = restaurants.RegeneratePartnerCode(ctx, id, appdb.RandomCode(10))
-		_, _ = restaurants.RegenerateEditCode(ctx, id, appdb.RandomCode(10))
+		_, _, _ = restaurants.RegeneratePartnerCode(ctx, id, appdb.RandomCode(12))
+		_, _ = restaurants.RegenerateEditCode(ctx, id, appdb.RandomCode(12))
 	case "service":
-		_, _, _ = services.RegeneratePartnerCode(ctx, id, appdb.RandomCode(10))
-		_, _ = services.RegenerateEditCode(ctx, id, appdb.RandomCode(10))
+		_, _, _ = services.RegeneratePartnerCode(ctx, id, appdb.RandomCode(12))
+		_, _ = services.RegenerateEditCode(ctx, id, appdb.RandomCode(12))
 	case "attraction":
-		_, _, _ = attractions.RegeneratePartnerCode(ctx, id, appdb.RandomCode(10))
-		_, _ = attractions.RegenerateEditCode(ctx, id, appdb.RandomCode(10))
+		_, _, _ = attractions.RegeneratePartnerCode(ctx, id, appdb.RandomCode(12))
+		_, _ = attractions.RegenerateEditCode(ctx, id, appdb.RandomCode(12))
 	case "accommodation":
 		_, _, _ = accommodations.RegenerateAccessCode(ctx, id, appdb.RandomCode(12))
-		_, _ = accommodations.RegenerateEditCode(ctx, id, appdb.RandomCode(10))
+		_, _ = accommodations.RegenerateEditCode(ctx, id, appdb.RandomCode(12))
 	}
 }
 
@@ -334,7 +334,7 @@ func Reinstate(ctx context.Context, req *ReinstateRequest) (*ReinstateResponse, 
 		r.ID = 0
 		r.IsActive = true
 		r.ProfileReferenceCode = appdb.RandomCode(12)
-		r.PartnerCode = appdb.PartnerCode{Code: appdb.RandomCode(10), Active: true}
+		r.PartnerCode = appdb.PartnerCode{Code: appdb.RandomCode(12), Active: true}
 		created, err := restaurants.Create(ctx, &r)
 		if err != nil {
 			return nil, err
@@ -349,7 +349,7 @@ func Reinstate(ctx context.Context, req *ReinstateRequest) (*ReinstateResponse, 
 		s.ID = 0
 		s.IsActive = true
 		s.ProfileReferenceCode = appdb.RandomCode(12)
-		s.PartnerCode = appdb.PartnerCode{Code: appdb.RandomCode(10), Active: true}
+		s.PartnerCode = appdb.PartnerCode{Code: appdb.RandomCode(12), Active: true}
 		created, err := services.Create(ctx, &s)
 		if err != nil {
 			return nil, err
@@ -364,7 +364,7 @@ func Reinstate(ctx context.Context, req *ReinstateRequest) (*ReinstateResponse, 
 		a.ID = 0
 		a.IsActive = true
 		a.ProfileReferenceCode = appdb.RandomCode(12)
-		a.PartnerCode = appdb.PartnerCode{Code: appdb.RandomCode(10), Active: true}
+		a.PartnerCode = appdb.PartnerCode{Code: appdb.RandomCode(12), Active: true}
 		created, err := attractions.Create(ctx, &a)
 		if err != nil {
 			return nil, err

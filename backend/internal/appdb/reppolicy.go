@@ -39,13 +39,13 @@ func IsTestRep(code string) bool {
 
 // No-commission reps: unlike test reps, their partners ARE real, billed and
 // counted profiles treated exactly like any other partner (first invoice now,
-// September-2026 promo R0, normal recurring from October). The ONLY difference
+// September-October 2026 promo R0, normal recurring from November). The ONLY difference
 // is that the rep earns NO commission — used for the internal "Around You"
 // company account (Rep00000005) that onboards partners directly. Rep00000005 is
 // the default; add more via NO_COMMISSION_REP_CODES (comma-separated,
 // case-insensitive).
 func NoCommissionRepCodesLower() []string {
-	out := []string{"rep00000005"} // internal "Around You" company account
+	out := []string{"rep00000005", "rep00000012"} // internal "Around You" company accounts
 	for _, c := range strings.Split(os.Getenv("NO_COMMISSION_REP_CODES"), ",") {
 		if c = strings.ToLower(strings.TrimSpace(c)); c != "" {
 			out = append(out, c)
@@ -62,6 +62,36 @@ func IsNoCommissionRep(code string) bool {
 		return false
 	}
 	for _, t := range NoCommissionRepCodesLower() {
+		if code == t {
+			return true
+		}
+	}
+	return false
+}
+
+// Half-price reps: partners onboarded under these codes are billed HALF the
+// normal monthly cost (the per-booking / pre-order usage fees are unchanged).
+// Their partners are otherwise real, billed and counted like any other.
+// Rep00000012 ("Around You 12") is the default; add more via
+// HALF_PRICE_REP_CODES (comma-separated, case-insensitive).
+func HalfPriceRepCodesLower() []string {
+	out := []string{"rep00000012"}
+	for _, c := range strings.Split(os.Getenv("HALF_PRICE_REP_CODES"), ",") {
+		if c = strings.ToLower(strings.TrimSpace(c)); c != "" {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// IsHalfPriceRep reports whether a rep code's partners are billed at half the
+// normal monthly cost.
+func IsHalfPriceRep(code string) bool {
+	code = strings.ToLower(strings.TrimSpace(code))
+	if code == "" {
+		return false
+	}
+	for _, t := range HalfPriceRepCodesLower() {
 		if code == t {
 			return true
 		}

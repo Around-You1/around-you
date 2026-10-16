@@ -124,9 +124,10 @@ type EstateProperty struct {
 	IsActive     bool     `json:"isActive"`
 
 	// Real Estate redesign extras.
-	PriceText       string `json:"priceText,omitempty"`  // price exactly as typed (free text)
-	Code            string `json:"code,omitempty"`       // agent contact/listing code
-	ShowHouse       bool   `json:"showHouse"`            // one of this week's show houses
+	PriceText       string `json:"priceText,omitempty"`       // price exactly as typed (free text)
+	Code            string `json:"code,omitempty"`            // agent contact/listing code
+	ShowHouse       bool   `json:"showHouse"`                 // one of this week's show houses
 	ShowHouseNumber int    `json:"showHouseNumber,omitempty"` // 1-10 slot when ShowHouse
-	ListingURL      string `json:"listingUrl,omitempty"` // linkable URL for the listing
+	ListingURL      string `json:"listingUrl,omitempty"`      // linkable URL for the listing
+	VideoURL        string `json:"videoUrl,omitempty"`        // YouTube/Vimeo link, embedded on the listing
 }

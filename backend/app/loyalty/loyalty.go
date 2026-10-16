@@ -58,6 +58,7 @@ type CardView struct {
 	PartnerType   string `json:"partnerType"`
 	PartnerID     int64  `json:"partnerId"`
 	PartnerName   string `json:"partnerName"`
+	Area          string `json:"area"`
 	Enabled       bool   `json:"enabled"`
 	Threshold     int    `json:"threshold"`
 	RewardText    string `json:"rewardText"`
@@ -84,6 +85,7 @@ type CardRequest struct {
 	PartnerType string `json:"partnerType"`
 	PartnerID   int64  `json:"partnerId"`
 	Phone       string `json:"phone"`
+	Count       int    `json:"count"` // stamps to add at once (AddStamp); 0/absent = 1
 }
 
 type MyCardsRequest struct {
@@ -133,15 +135,22 @@ func normalizePhone(s string) string {
 	return d
 }
 
-func partnerName(ctx context.Context, partnerType string, partnerID int64) string {
+func partnerNameArea(ctx context.Context, partnerType string, partnerID int64) (string, string) {
 	tbl, ok := partnerTables[partnerType]
 	if !ok {
-		return ""
+		return "", ""
 	}
-	var name string
+	// Only the location-based partner tables carry an `area` column; estate
+	// agencies/agents do not, so fall back to an empty area for those.
+	areaCol := "''"
+	switch partnerType {
+	case "restaurant", "service", "attraction", "accommodation":
+		areaCol = "COALESCE(area,'')"
+	}
+	var name, area string
 	_ = appdb.SQLDB.QueryRowContext(ctx,
-		"SELECT COALESCE(name,'') FROM "+tbl+" WHERE id = $1", partnerID).Scan(&name)
-	return name
+		"SELECT COALESCE(name,''), "+areaCol+" FROM "+tbl+" WHERE id = $1", partnerID).Scan(&name, &area)
+	return name, area
 }
 
 // loadProgram returns the partner's config, or a disabled default if none saved.
@@ -162,12 +171,13 @@ func loadProgram(ctx context.Context, partnerType string, partnerID int64) (Prog
 }
 
 // cardView assembles a CardView from a program and the (possibly absent) card row.
-func cardView(prog Program, name, phone string, stamps, rewards int) CardView {
+func cardView(prog Program, name, area, phone string, stamps, rewards int) CardView {
 	ready := prog.Threshold > 0 && stamps >= prog.Threshold
 	return CardView{
 		PartnerType:   prog.PartnerType,
 		PartnerID:     prog.PartnerID,
 		PartnerName:   name,
+		Area:          area,
 		Enabled:       prog.Enabled,
 		Threshold:     prog.Threshold,
 		RewardText:    prog.RewardText,
@@ -269,11 +279,13 @@ func LookupCard(ctx context.Context, req *CardRequest) (*CardView, error) {
 	if err != nil {
 		return nil, err
 	}
-	v := cardView(prog, partnerName(ctx, req.PartnerType, req.PartnerID), phone, stamps, rewards)
+	pn, pa := partnerNameArea(ctx, req.PartnerType, req.PartnerID)
+	v := cardView(prog, pn, pa, phone, stamps, rewards)
 	return &v, nil
 }
 
-// AddStamp records one stamp for a customer. Blocked when the card is full
+// AddStamp records one or more stamps for a customer (req.Count, default 1).
+// Blocked when the card is full
 // (redeem first) or when a stamp was just added (double-tap guard).
 //
 //encore:api auth method=POST path=/loyalty/stamp
@@ -314,15 +326,28 @@ func AddStamp(ctx context.Context, req *CardRequest) (*CardView, error) {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "a stamp was just added a moment ago"}
 	}
 
+	// How many stamps to add this scan (the teller's dropdown). Default 1, capped
+	// at a sane per-scan max, and never pushed past the card's threshold.
+	n := req.Count
+	if n < 1 {
+		n = 1
+	}
+	if n > 20 {
+		n = 20
+	}
+	if room := prog.Threshold - stamps; n > room {
+		n = room
+	}
+
 	if _, err := appdb.SQLDB.ExecContext(ctx, `
 		INSERT INTO loyalty_cards (partner_type, partner_id, customer_phone, stamps, total_stamps, last_stamp_at)
-		VALUES ($1, $2, $3, 1, 1, now())
+		VALUES ($1, $2, $3, $4, $4, now())
 		ON CONFLICT (partner_type, partner_id, customer_phone) DO UPDATE SET
-		  stamps        = loyalty_cards.stamps + 1,
-		  total_stamps  = loyalty_cards.total_stamps + 1,
+		  stamps        = loyalty_cards.stamps + $4,
+		  total_stamps  = loyalty_cards.total_stamps + $4,
 		  last_stamp_at = now(),
 		  updated_at    = now()`,
-		req.PartnerType, req.PartnerID, phone,
+		req.PartnerType, req.PartnerID, phone, n,
 	); err != nil {
 		return nil, err
 	}
@@ -331,7 +356,8 @@ func AddStamp(ctx context.Context, req *CardRequest) (*CardView, error) {
 	if err != nil {
 		return nil, err
 	}
-	v := cardView(prog, partnerName(ctx, req.PartnerType, req.PartnerID), phone, stamps, rewards)
+	pn, pa := partnerNameArea(ctx, req.PartnerType, req.PartnerID)
+	v := cardView(prog, pn, pa, phone, stamps, rewards)
 	return &v, nil
 }
 
@@ -389,7 +415,8 @@ func RedeemReward(ctx context.Context, req *CardRequest) (*CardView, error) {
 	if err != nil {
 		return nil, err
 	}
-	v := cardView(prog, partnerName(ctx, req.PartnerType, req.PartnerID), phone, stampsNow, rewards)
+	pn, pa := partnerNameArea(ctx, req.PartnerType, req.PartnerID)
+	v := cardView(prog, pn, pa, phone, stampsNow, rewards)
 	return &v, nil
 }
 
@@ -425,7 +452,8 @@ func MyCards(ctx context.Context, req *MyCardsRequest) (*MyCardsResponse, error)
 			return nil, err
 		}
 		prog := Program{PartnerType: pt, PartnerID: pid, Enabled: true, Threshold: threshold, RewardText: reward}
-		out = append(out, cardView(prog, partnerName(ctx, pt, pid), phone, stamps, rewards))
+		pn, pa := partnerNameArea(ctx, pt, pid)
+		out = append(out, cardView(prog, pn, pa, phone, stamps, rewards))
 	}
 	return &MyCardsResponse{Cards: out}, rows.Err()
 }

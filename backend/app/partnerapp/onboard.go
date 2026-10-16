@@ -88,26 +88,10 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 	parking := has(acc, "Parking")
 	childFriendly := has(a.f("Child friendly"), "Child")
 
-	// Audience (Guest Only / Local / Both) + tier from the applicant's answers.
-	// Newer forms use "Shown to (tick one)"; older ones stored "Audience".
-	appear := a.f("Show profile to (tick one)")
-	if appear == "" {
-		appear = a.f("Shown to (tick one)")
-	}
-	if appear == "" {
-		appear = a.f("Audience")
-	}
-	guestType := ""
-	switch {
-	case has(appear, "Both"):
-		guestType = "Both"
-	case has(appear, "Local"):
-		guestType = "Local"
-	case has(appear, "Guest"):
-		guestType = "Guest Only"
-	}
-	// Premium is the only plan going forward — R300 for a single audience,
-	// R400 for Both (priced by guestType in pricing.go). Always stored Tier 2.
+	// Flat R300 model (Oct 2026): every partner is shown to Both at the single
+	// Premium tier. The audience/tier selections were removed from the forms, so
+	// these are fixed here (price is flat regardless — see pricing.go).
+	guestType := "Both"
 	accessLevel := "Tier 2"
 
 	// The applicant ticked the "Bookings" option (older forms: "Or, if you take bookings").
@@ -128,11 +112,14 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			PostalCode:             a.f("Postal code"),
 			ContactNumber:          a.ContactNumber,
 			Description:            a.f("Description"),
+			TradingHours:           a.f("Trading hours"),
+			PublicHolidays:         a.f("Public holidays"),
 			CuisineTypes:           splitList(a.f("Cuisine type(s)")),
 			RestaurantType:         splitList(a.f("Restaurant type")),
 			Atmosphere:             splitList(a.f("Atmosphere")),
 			Features:               splitList(a.f("Features")),
 			DietaryOptions:         splitList(a.f("Dietary options")),
+			ChefRecommendation:     a.f("Chef recommendation"),
 			OffersBookings:         offersBookings,
 			MenuLink:               a.f("Menu link"),
 			ServiceDineIn:          has(a.f("Service options"), "Dine"),
@@ -157,6 +144,8 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			DiscountEnabled:        a.f("Guest discount — offer") != "",
 			LocalDiscountEnabled:   a.f("Local discount — offer") != "",
 			WorksFromClientAddress: worksFromClient,
+			Area:                   a.f("Area"),
+			AccountingAddress:      a.f("Office address (Official Use)"),
 			SocialsWebsite:         a.f("Website"),
 			SocialsFacebook:        a.f("Facebook"),
 			SocialsInstagram:       a.f("Instagram"),
@@ -187,6 +176,8 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			PostalCode:             a.f("Postal code"),
 			ContactNumber:          a.ContactNumber,
 			Description:            a.f("Description"),
+			TradingHours:           a.f("Trading hours"),
+			PublicHolidays:         a.f("Public holidays"),
 			ServiceCategories:      splitList(a.f("Service category(ies)")),
 			OffersBookings:         offersBookings,
 			LittleExplorerApproved: childFriendly,
@@ -206,6 +197,8 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			DiscountEnabled:        a.f("Guest discount — offer") != "",
 			LocalDiscountEnabled:   a.f("Local discount — offer") != "",
 			WorksFromClientAddress: worksFromClient,
+			Area:                   a.f("Area"),
+			AccountingAddress:      a.f("Office address (Official Use)"),
 			SafetyInfo:             a.f("Safety information"),
 			AgeRestrictions:        a.f("Age restrictions"),
 			FitnessLevel:           a.f("Fitness level"),
@@ -241,6 +234,8 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			PostalCode:             a.f("Postal code"),
 			ContactNumber:          a.ContactNumber,
 			Description:            a.f("Description"),
+			TradingHours:           a.f("Trading hours"),
+			PublicHolidays:         a.f("Public holidays"),
 			AttractionType:         splitList(a.f("Attraction category(ies)")),
 			OffersBookings:         offersBookings,
 			LittleExplorerApproved: childFriendly,
@@ -260,6 +255,8 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			DiscountEnabled:        a.f("Guest discount — offer") != "",
 			LocalDiscountEnabled:   a.f("Local discount — offer") != "",
 			WorksFromClientAddress: worksFromClient,
+			Area:                   a.f("Area"),
+			AccountingAddress:      a.f("Office address (Official Use)"),
 			SafetyInfo:             a.f("Safety information"),
 			AgeRestrictions:        a.f("Age restrictions"),
 			FitnessLevel:           a.f("Fitness level"),
@@ -299,6 +296,7 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 		created, err := accommodation.Create(ctx, &accommodation.CreateRequest{
 			Name:                   a.BusinessName,
 			Address:                a.f("Physical address"),
+			Area:                   a.f("Area"),
 			Country:                "South Africa",
 			Province:               a.Province,
 			PostalCode:             a.f("Postal code"),

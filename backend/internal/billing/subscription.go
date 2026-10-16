@@ -37,6 +37,13 @@ func EnsureSubscription(ctx context.Context, partnerType string, partnerID int64
 	}
 	p := PriceForUnits(partnerType, accessLevel, guestType, units)
 
+	// Half-price reps (e.g. the internal "Around You 12" account, Rep00000012)
+	// bill their partners at half the normal monthly cost. The per-booking /
+	// pre-order usage fees added at billing time are unchanged.
+	if appdb.IsHalfPriceRep(repCode) {
+		p.MonthlyCents = p.MonthlyCents / 2
+	}
+
 	var tierArg interface{}
 	if p.Tier > 0 {
 		tierArg = p.Tier

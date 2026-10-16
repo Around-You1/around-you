@@ -4,16 +4,16 @@
 // All money is integer ZAR cents to avoid floating-point rounding.
 package billing
 
-import "fmt"
-
 // Monthly prices in ZAR cents. Two-tier model (Aug 2026): Tier 1 R200,
 // Tier 2 R300, audience "Both" R400.
 const (
-	Tier1Cents   = 20000 // R200 — Tier 1
-	Tier2Cents   = 30000 // R300 — Tier 2 (the former top tier)
-	BothCents    = 40000 // R400 — audience "Both" (forces Tier 2) at this flat price
-	BookingBase  = 40000 // R400/month base — Booking / Pre-Order partners are Premium (+ per-cover/per-booking usage added per billing period: restaurants R10/cover, services/attractions 10%, pre-orders 5%)
-	RealEstateCents = 30000 // R300 — flat per real-estate page (agency or agent), no tiers
+	Tier1Cents            = 20000 // R200 — Tier 1
+	Tier2Cents            = 30000 // R300 — Tier 2 (the former top tier)
+	BothCents             = 40000 // R400 — audience "Both" (forces Tier 2) at this flat price
+	BookingBase           = 40000 // R400/month base — Booking / Pre-Order partners are Premium (+ per-cover/per-booking usage added per billing period: restaurants R10/cover, services/attractions 10%, pre-orders 5%)
+	RealEstateCents       = 30000 // R300 — legacy flat real-estate price (kept for reference)
+	RealEstateAgencyCents = 50000 // R500 — estate agency page
+	RealEstateAgentCents  = 30000 // R300 — estate agent page
 
 	// Accommodation Option-A unit bands (6+ units); 1–5 units use tier pricing.
 	AccUnits6to10Cents  = 50000  // R500
@@ -31,9 +31,10 @@ type Plan struct {
 }
 
 // PriceFor derives a partner's billing plan from its stored tier/audience.
-//   partnerType: "accommodation" | "restaurant" | "service" | "attraction"
-//   accessLevel: "Tier 1" | "Tier 2" or "Booking" (empty for accommodation)
-//   guestType:   "Guest Only" | "Local" | "Both" (empty for accommodation)
+//
+//	partnerType: "accommodation" | "restaurant" | "service" | "attraction"
+//	accessLevel: "Tier 1" | "Tier 2" or "Booking" (empty for accommodation)
+//	guestType:   "Guest Only" | "Local" | "Both" (empty for accommodation)
 //
 // Rules: two tiers (Tier 1 R200, Tier 2 R300); audience "Both" forces
 // Tier 2 at R400; accommodations sit on Tier 2 (unit pricing for 6+ units);
@@ -48,35 +49,28 @@ func PriceFor(partnerType, accessLevel, guestType string) Plan {
 // PriceForUnits is PriceFor plus the accommodation unit count (Option A). units
 // only affects accommodations; pass 1 for everything else.
 func PriceForUnits(partnerType, accessLevel, guestType string, units int) Plan {
-	// Real estate pages (agency + each agent) are a flat R300/month, no tiers.
-	if partnerType == "estate_agency" || partnerType == "estate_agent" {
-		return Plan{Plan: "realestate", MonthlyCents: RealEstateCents}
+	// Flat R300 model (Oct 2026): one price for all information aimed at both
+	// guests and locals. Audience (Guest/Local/Both) and the Basic/Premium tier
+	// no longer change the price. Kept as-is: accommodation unit bands (6+ units),
+	// the Booking plan's per-booking commissions (added per period at billing),
+	// and estate pages. Everything else is a flat R300/month.
+	if partnerType == "estate_agency" {
+		return Plan{Plan: "realestate", MonthlyCents: RealEstateAgencyCents}
+	}
+	if partnerType == "estate_agent" {
+		return Plan{Plan: "realestate", MonthlyCents: RealEstateAgentCents}
 	}
 	if partnerType == "accommodation" {
 		if units >= 6 {
-			return accommodationUnitBand(units)
+			return accommodationUnitBand(units) // unit bands unchanged
 		}
-		// 1–5 units: accommodations sit on Tier 2, audience-priced.
-		if guestType == "Both" {
-			return Plan{Plan: "tier", Tier: 2, Audience: "Both", MonthlyCents: BothCents}
-		}
-		return Plan{Plan: "tier", Tier: 2, Audience: guestType, MonthlyCents: Tier2Cents}
+		return Plan{Plan: "tier", Tier: 2, Audience: "Both", MonthlyCents: Tier2Cents}
 	}
 	if accessLevel == "Booking" {
-		return Plan{Plan: "booking", Tier: 0, Audience: guestType, MonthlyCents: BookingBase}
+		// R300/month base; per-cover / per-booking commission added at billing time.
+		return Plan{Plan: "booking", Tier: 0, Audience: "Both", MonthlyCents: Tier2Cents}
 	}
-	if guestType == "Both" {
-		return Plan{Plan: "tier", Tier: 2, Audience: "Both", MonthlyCents: BothCents}
-	}
-	// Single-audience (Guest Only / Local) restaurant/service/attraction partners
-	// are all Premium at R300 now — Basic (Tier 1 / R200) is retired, so we floor
-	// to Tier 2 regardless of any stale/blank stored access level. Only "Both" or
-	// Bookings/Pre-Orders lift them to R400 (handled above).
-	tier := tierNumber(accessLevel)
-	if tier < 2 {
-		tier = 2
-	}
-	return Plan{Plan: "tier", Tier: tier, Audience: guestType, MonthlyCents: tierCents(tier)}
+	return Plan{Plan: "tier", Tier: 2, Audience: "Both", MonthlyCents: Tier2Cents}
 }
 
 func accommodationUnitBand(units int) Plan {
@@ -115,46 +109,31 @@ func InvoiceItem(partnerType string, tier int, audience string, units int) (code
 			return "Acc40+", "Accommodation 40+ Units (Custom Quote)"
 		}
 	}
-	prefix, typeName := "Res", "Restaurant"
 	switch partnerType {
 	case "accommodation":
-		prefix, typeName = "Acc", "Accommodation"
+		return "Acc1", "Accommodation 1"
 	case "service":
-		prefix, typeName = "Ser", "Service"
+		return "Bus/Ser1", "Business/Services 1"
 	case "attraction":
-		prefix, typeName = "Att", "Attraction"
+		return "Att1", "Attractions/Activities 1"
+	default: // restaurant
+		return "Res/TA1", "Restaurants/Takeaways 1"
 	}
-	if tier < 1 {
-		tier = 1
-	}
-	audLetter, audWord := "G", "Guest"
-	switch audience {
-	case "Both":
-		audLetter, audWord = "B", "Both"
-	case "Local":
-		audLetter, audWord = "L", "Local"
-	}
-	tierWord := "Premium"
-	if tier < 2 {
-		tierWord = "Basic"
-	}
-	return fmt.Sprintf("%sT%d%s", prefix, tier, audLetter),
-		fmt.Sprintf("%s %s %s", typeName, tierWord, audWord)
 }
 
 // BookingItemCodes returns the two invoice line codes/descriptions for a
-// Booking-plan partner: the fixed monthly base (…BookM, R300) and the variable
+// Booking-plan partner: the fixed monthly base …BookM, R300) and the variable
 // usage line (…BookC / …Book — restaurant covers at R10 each, service/attraction
 // bookings at 10% of the chosen items). Accommodation/estate never use the
 // Booking plan, so they fall back to the restaurant labels defensively.
 func BookingItemCodes(partnerType string) (monthlyCode, monthlyDesc, usageCode, usageDesc string) {
 	switch partnerType {
 	case "service":
-		return "SerBookM", "Service Booking Monthly", "SerBook", "Service Bookings"
+		return "Bus/Ser1", "Business/Services 1", "SerBook", "Service Bookings"
 	case "attraction":
-		return "AttBookM", "Attraction Booking Monthly", "AttBook", "Attraction Bookings"
+		return "Att1", "Attractions/Activities 1", "AttBook", "Attraction Bookings"
 	default: // restaurant
-		return "ResBookM", "Restaurant Booking Monthly", "ResBookC", "Restaurant Booking Covers"
+		return "Res/TA1", "Restaurants/Takeaways 1", "ResBookC", "Restaurant Booking Covers"
 	}
 }
 

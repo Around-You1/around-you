@@ -3,6 +3,7 @@ package billing
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/mailer"
@@ -16,6 +17,8 @@ type RepStatement struct {
 	TotalCents    int    `json:"totalCents"`
 	PaidCents     int    `json:"paidCents"`
 	AccruedCents  int    `json:"accruedCents"`
+	PayToRepCode  string `json:"payToRepCode"` // if set, pay this organization, not the rep
+	PayToName     string `json:"payToName"`
 }
 
 // MonthlyStatements summarises each rep's commissions for a month (period is
@@ -45,6 +48,7 @@ func MonthlyStatements(ctx context.Context, period string) ([]RepStatement, erro
 			&s.TotalCents, &s.PaidCents, &s.AccruedCents); err != nil {
 			return nil, err
 		}
+		s.PayToRepCode, s.PayToName = payToFor(ctx, s.RepCode)
 		out = append(out, s)
 	}
 	return out, rows.Err()
@@ -107,4 +111,30 @@ func renderStatementHTML(name, repCode, period string, s RepStatement) string {
     <tr><td>Still accrued</td><td style="text-align:right">%s</td></tr>
   </table>
 </div>`, name, repCode, period, rands(s.OwnCents), rands(s.OverrideCents), rands(s.TotalCents), rands(s.PaidCents), rands(s.AccruedCents))
+}
+
+// payToFor returns the organization a rep's commission should be paid to when
+// the rep is staff under a Team Leader (the rep has no own banking and a Team
+// Leader upline). Returns empty strings when the rep is paid directly.
+func payToFor(ctx context.Context, repCode string) (code, name string) {
+	var bankAcc, upline string
+	if err := appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT COALESCE(bank_account_number,''), COALESCE(upline_rep_code,'') FROM users WHERE role='Rep' AND lower(rep_code)=lower($1) LIMIT 1`, repCode,
+	).Scan(&bankAcc, &upline); err != nil {
+		return "", ""
+	}
+	if strings.TrimSpace(bankAcc) != "" || strings.TrimSpace(upline) == "" {
+		return "", ""
+	}
+	var isTL bool
+	var nm string
+	if err := appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT is_team_leader, COALESCE(full_name,'') FROM users WHERE role='Rep' AND lower(rep_code)=lower($1) LIMIT 1`, upline,
+	).Scan(&isTL, &nm); err != nil {
+		return "", ""
+	}
+	if isTL {
+		return upline, nm
+	}
+	return "", ""
 }

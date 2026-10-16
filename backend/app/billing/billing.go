@@ -339,6 +339,37 @@ func SendTestInvoice(ctx context.Context, req *SendTestInvoiceRequest) (*SendTes
 	return &SendTestInvoiceResponse{OK: true, To: to}, nil
 }
 
+type ResendWelcomeRequest struct {
+	PartnerType string `json:"partnerType"`
+	PartnerID   int64  `json:"partnerId"`
+}
+type ResendWelcomeResponse struct {
+	Sent  bool   `json:"sent"`
+	Error string `json:"error,omitempty"`
+}
+
+// ResendWelcome re-sends a partner's welcome email (Access Code, Partner Edit
+// Code and profile QR decal) without creating an invoice or changing billing.
+// SuperAdmin-only. A missing email is reported in the response, not as an error.
+//
+//encore:api auth method=POST path=/partner/resend-welcome
+func ResendWelcome(ctx context.Context, req *ResendWelcomeRequest) (*ResendWelcomeResponse, error) {
+	if !isSuperAdmin(ctx) {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can resend a partner welcome"}
+	}
+	if req.PartnerID == 0 || req.PartnerType == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "partnerType and partnerId are required"}
+	}
+	sent, err := billingcore.ResendPartnerWelcome(ctx, req.PartnerType, req.PartnerID)
+	if err != nil {
+		return &ResendWelcomeResponse{Sent: false, Error: err.Error()}, nil
+	}
+	if !sent {
+		return &ResendWelcomeResponse{Sent: false, Error: "no email address on file for this partner"}, nil
+	}
+	return &ResendWelcomeResponse{Sent: true}, nil
+}
+
 // canSeeAccounts allows the Accountant role as well as SuperAdmin — used for the
 // invoice list + mark-paid, which the accountant needs to reconcile payments.
 func canSeeAccounts(ctx context.Context) bool {

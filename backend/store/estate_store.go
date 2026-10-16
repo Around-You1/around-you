@@ -414,7 +414,7 @@ const propertyCols = `
 	features, price_cents, listing_type,
 	address, province, country, postal_code, latitude, longitude, description,
 	image_url, image_urls, is_active,
-	COALESCE(price_text,''), COALESCE(code,''), COALESCE(show_house,false), COALESCE(show_house_number,0), COALESCE(listing_url,'')`
+	COALESCE(price_text,''), COALESCE(code,''), COALESCE(show_house,false), COALESCE(show_house_number,0), COALESCE(listing_url,''), COALESCE(video_url,'')`
 
 func scanProperty(s scannable) (*appdb.EstateProperty, error) {
 	var p appdb.EstateProperty
@@ -426,7 +426,7 @@ func scanProperty(s scannable) (*appdb.EstateProperty, error) {
 		pq.Array(&p.Features), &p.PriceCents, &p.ListingType,
 		&p.Address, &p.Province, &p.Country, &p.PostalCode, &lat, &lng, &p.Description,
 		&p.ImageURL, pq.Array(&p.ImageURLs), &p.IsActive,
-		&p.PriceText, &p.Code, &p.ShowHouse, &p.ShowHouseNumber, &p.ListingURL,
+		&p.PriceText, &p.Code, &p.ShowHouse, &p.ShowHouseNumber, &p.ListingURL, &p.VideoURL,
 	); err != nil {
 		return nil, err
 	}
@@ -452,14 +452,14 @@ func (s *EstatePropertyStore) Create(ctx context.Context, in *appdb.EstateProper
 		  (agency_id, agent_id, title, property_type, plot_size_m2, house_size_m2, bedrooms, bathrooms, garages,
 		   features, price_cents, listing_type, address, province, country, postal_code, latitude, longitude,
 		   description, image_url, image_urls, is_active,
-		   price_text, code, show_house, show_house_number, listing_url)
+		   price_text, code, show_house, show_house_number, listing_url, video_url)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,
-		   $23,$24,$25,$26,$27)
+		   $23,$24,$25,$26,$27,$28)
 		RETURNING id`,
 		agencyIDOrNull(in.AgencyID), in.AgentID, in.Title, in.PropertyType, in.PlotSizeM2, in.HouseSizeM2, in.Bedrooms, in.Bathrooms, in.Garages,
 		pq.Array(nonNilSlice(in.Features)), in.PriceCents, normListing(in.ListingType), in.Address, in.Province, in.Country, in.PostalCode,
 		in.Latitude, in.Longitude, in.Description, in.ImageURL, pq.Array(nonNilSlice(in.ImageURLs)), in.IsActive,
-		in.PriceText, in.Code, in.ShowHouse, in.ShowHouseNumber, in.ListingURL,
+		in.PriceText, in.Code, in.ShowHouse, in.ShowHouseNumber, in.ListingURL, in.VideoURL,
 	).Scan(&id)
 	if err != nil {
 		return nil, err
@@ -529,12 +529,12 @@ func (s *EstatePropertyStore) Update(ctx context.Context, id int64, in *appdb.Es
 		  agent_id=$2, title=$3, property_type=$4, plot_size_m2=$5, house_size_m2=$6, bedrooms=$7, bathrooms=$8, garages=$9,
 		  features=$10, price_cents=$11, listing_type=$12, address=$13, province=$14, country=$15, postal_code=$16,
 		  latitude=$17, longitude=$18, description=$19, image_url=$20, image_urls=$21, is_active=$22,
-		  price_text=$23, code=$24, show_house=$25, show_house_number=$26, listing_url=$27, updated_at=now()
+		  price_text=$23, code=$24, show_house=$25, show_house_number=$26, listing_url=$27, video_url=$28, updated_at=now()
 		WHERE id=$1`,
 		id, in.AgentID, in.Title, in.PropertyType, in.PlotSizeM2, in.HouseSizeM2, in.Bedrooms, in.Bathrooms, in.Garages,
 		pq.Array(nonNilSlice(in.Features)), in.PriceCents, normListing(in.ListingType), in.Address, in.Province, in.Country, in.PostalCode,
 		in.Latitude, in.Longitude, in.Description, in.ImageURL, pq.Array(nonNilSlice(in.ImageURLs)), in.IsActive,
-		in.PriceText, in.Code, in.ShowHouse, in.ShowHouseNumber, in.ListingURL,
+		in.PriceText, in.Code, in.ShowHouse, in.ShowHouseNumber, in.ListingURL, in.VideoURL,
 	)
 	if err != nil {
 		return nil, err

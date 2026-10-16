@@ -86,7 +86,9 @@ const restaurantColumns = `
 	created_at, updated_at,
 	payment_eft,
 	COALESCE(trading_hours, '') as trading_hours,
-	COALESCE(public_holidays, '') as public_holidays
+	COALESCE(public_holidays, '') as public_holidays,
+	COALESCE(chef_recommendation, '') as chef_recommendation,
+	COALESCE(accounting_address, '') as accounting_address
 `
 
 type restaurantScanner interface {
@@ -126,6 +128,8 @@ func scanRestaurant(row restaurantScanner) (*appdb.Restaurant, error) {
 		&r.CreatedAt, &r.UpdatedAt,
 		&r.PaymentEft,
 		&r.TradingHours, &r.PublicHolidays,
+		&r.ChefRecommendation,
+		&r.AccountingAddress,
 	)
 	if err != nil {
 		return nil, err
@@ -223,11 +227,13 @@ func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*ap
 			dietary_options, offers_bookings,
 			pre_order_items,
 			discount_enabled, local_discount_enabled, works_from_client_address,
-			payment_eft, trading_hours, public_holidays
+			payment_eft, trading_hours, public_holidays,
+			chef_recommendation,
+			accounting_address
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,
 			$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,$56,$57,
-			$58,$59,$60,$61,$62,$63,$64,$65,$66,$67,$68
+			$58,$59,$60,$61,$62,$63,$64,$65,$66,$67,$68,$69,$70
 		)
 		RETURNING `+restaurantColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -252,6 +258,8 @@ func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*ap
 		in.WorksFromClientAddress,
 		in.PaymentEft,
 		in.TradingHours, in.PublicHolidays,
+		in.ChefRecommendation,
+		in.AccountingAddress,
 	)
 	return scanRestaurant(row)
 }
@@ -262,6 +270,7 @@ func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*ap
 type RestaurantPatch struct {
 	Name       *string
 	Address    *string
+	AccountingAddress *string
 	Latitude   *float64
 	Longitude  *float64
 	Country    *string
@@ -277,6 +286,7 @@ type RestaurantPatch struct {
 	Atmosphere             []string
 	Features               []string
 	DietaryOptions         []string
+	ChefRecommendation     *string
 	OffersBookings         *bool
 	PreOrderItems          appdb.PreOrderItems
 	MenuLink               *string
@@ -351,6 +361,9 @@ func (s *RestaurantStore) Update(ctx context.Context, id int64, patch Restaurant
 	if patch.Address != nil {
 		sets = append(sets, "address = "+arg(*patch.Address))
 	}
+	if patch.AccountingAddress != nil {
+		sets = append(sets, "accounting_address = "+arg(*patch.AccountingAddress))
+	}
 	if patch.Latitude != nil {
 		sets = append(sets, "latitude = "+arg(*patch.Latitude))
 	}
@@ -389,6 +402,9 @@ func (s *RestaurantStore) Update(ctx context.Context, id int64, patch Restaurant
 	}
 	if patch.DietaryOptions != nil {
 		sets = append(sets, "dietary_options = "+arg(pq.Array(patch.DietaryOptions)))
+	}
+	if patch.ChefRecommendation != nil {
+		sets = append(sets, "chef_recommendation = "+arg(*patch.ChefRecommendation))
 	}
 	if patch.OffersBookings != nil {
 		sets = append(sets, "offers_bookings = "+arg(*patch.OffersBookings))

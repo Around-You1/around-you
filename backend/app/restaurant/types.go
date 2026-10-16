@@ -29,6 +29,7 @@ type GetRequest struct {
 type CreateRequest struct {
 	Name    string `json:"name"`
 	Address string `json:"address"`
+	AccountingAddress string `json:"accountingAddress,omitempty"`
 
 	Latitude  *float64 `json:"latitude,omitempty"`
 	Longitude *float64 `json:"longitude,omitempty"`
@@ -47,6 +48,7 @@ type CreateRequest struct {
 	Atmosphere             []string `json:"atmosphere,omitempty"`
 	Features               []string `json:"features,omitempty"`
 	DietaryOptions         []string `json:"dietaryOptions,omitempty"`
+	ChefRecommendation     string   `json:"chefRecommendation,omitempty"`
 	OffersBookings         bool     `json:"offersBookings"`
 	MenuLink               string   `json:"menuLink,omitempty"`
 	ServiceDineIn          bool     `json:"serviceDineIn"`
@@ -110,6 +112,7 @@ type UpdateRequest struct {
 
 	Name    *string `json:"name,omitempty"`
 	Address *string `json:"address,omitempty"`
+	AccountingAddress *string `json:"accountingAddress,omitempty"`
 
 	Latitude  *float64 `json:"latitude,omitempty"`
 	Longitude *float64 `json:"longitude,omitempty"`
@@ -128,6 +131,7 @@ type UpdateRequest struct {
 	Atmosphere             []string `json:"atmosphere,omitempty"`
 	Features               []string `json:"features,omitempty"`
 	DietaryOptions         []string `json:"dietaryOptions,omitempty"`
+	ChefRecommendation     *string  `json:"chefRecommendation,omitempty"`
 	OffersBookings         *bool    `json:"offersBookings,omitempty"`
 	MenuLink               *string  `json:"menuLink,omitempty"`
 	ServiceDineIn          *bool    `json:"serviceDineIn,omitempty"`

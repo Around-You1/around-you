@@ -18,11 +18,16 @@ import (
 )
 
 var restaurants = store.NewRestaurantStore()
+var services = store.NewServiceStore()
+var attractions = store.NewAttractionStore()
 var bookings = store.NewBookingStore()
 
-// preOrderCommissionRate is the platform's cut of every restaurant pre-order:
-// 5% of the sale.
-const preOrderCommissionRate = 0.05
+// Pre-order commission: the platform's cut of each pre-order. Restaurants pay
+// 5%; business/services and attractions pay 10%.
+const (
+	restaurantPreOrderRate = 0.05
+	otherPreOrderRate      = 0.10
+)
 
 type SubmitItem struct {
 	Name     string `json:"name"`
@@ -31,6 +36,8 @@ type SubmitItem struct {
 
 type SubmitRequest struct {
 	RestaurantID    int64        `json:"restaurantId"`
+	EntityType      string       `json:"entityType,omitempty"`
+	EntityID        int64        `json:"entityId,omitempty"`
 	CustomerName    string       `json:"customerName"`
 	CustomerEmail   string       `json:"customerEmail"`
 	CustomerPhone   string       `json:"customerPhone"`
@@ -62,32 +69,80 @@ func Submit(ctx context.Context, req *SubmitRequest) (*SubmitResponse, error) {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "select at least one item"}
 	}
 
-	r, err := restaurants.Get(ctx, req.RestaurantID)
-	if err != nil {
-		return nil, &errs.Error{Code: errs.NotFound, Message: "restaurant not found"}
+	// Resolve the partner (restaurant, service or attraction), its pre-order
+	// list, contact email, and the platform's cut (restaurants 5%; business/
+	// services and attractions 10%). Collection/Delivery applies to restaurants.
+	et := strings.ToLower(strings.TrimSpace(req.EntityType))
+	if et == "" {
+		et = "restaurant"
 	}
-
-	// Fulfilment must be one the restaurant actually offers.
-	fulfil := strings.TrimSpace(req.Fulfilment)
-	switch fulfil {
-	case "Collection":
-		if !r.ServiceTakeaway {
-			return nil, &errs.Error{Code: errs.InvalidArgument, Message: "this restaurant does not offer collection"}
+	entityID := req.EntityID
+	if entityID == 0 {
+		entityID = req.RestaurantID
+	}
+	var (
+		partnerName string
+		preItems    []appdb.PreOrderItem
+		recipient   string
+		takeaway    bool
+		delivery    bool
+		rate        float64
+	)
+	switch et {
+	case "restaurant":
+		r, err := restaurants.Get(ctx, entityID)
+		if err != nil {
+			return nil, &errs.Error{Code: errs.NotFound, Message: "restaurant not found"}
 		}
-	case "Delivery":
-		if !r.ServiceDelivery {
-			return nil, &errs.Error{Code: errs.InvalidArgument, Message: "this restaurant does not offer delivery"}
+		partnerName, preItems, takeaway, delivery, rate = r.Name, r.PreOrderItems, r.ServiceTakeaway, r.ServiceDelivery, restaurantPreOrderRate
+		recipient = strings.TrimSpace(r.BookingsEmail)
+		if recipient == "" {
+			recipient = strings.TrimSpace(r.OfficialEmail)
 		}
-		if strings.TrimSpace(req.DeliveryAddress) == "" {
-			return nil, &errs.Error{Code: errs.InvalidArgument, Message: "a delivery address is required"}
+	case "service":
+		sv, err := services.Get(ctx, entityID)
+		if err != nil {
+			return nil, &errs.Error{Code: errs.NotFound, Message: "business/service not found"}
 		}
+		partnerName, preItems, rate = sv.Name, sv.PreOrderItems, otherPreOrderRate
+		recipient = strings.TrimSpace(sv.OfficialEmail)
+	case "attraction":
+		at, err := attractions.Get(ctx, entityID)
+		if err != nil {
+			return nil, &errs.Error{Code: errs.NotFound, Message: "attraction not found"}
+		}
+		partnerName, preItems, rate = at.Name, at.PreOrderItems, otherPreOrderRate
+		recipient = strings.TrimSpace(at.OfficialEmail)
 	default:
-		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "choose collection or delivery"}
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "unknown partner type"}
 	}
 
-	// Price + lead time from the restaurant's authoritative pre-order list.
+	// Fulfilment: restaurants choose Collection/Delivery; other partners just
+	// pre-order (no in-app delivery option).
+	fulfil := strings.TrimSpace(req.Fulfilment)
+	if et == "restaurant" {
+		switch fulfil {
+		case "Collection":
+			if !takeaway {
+				return nil, &errs.Error{Code: errs.InvalidArgument, Message: "this restaurant does not offer collection"}
+			}
+		case "Delivery":
+			if !delivery {
+				return nil, &errs.Error{Code: errs.InvalidArgument, Message: "this restaurant does not offer delivery"}
+			}
+			if strings.TrimSpace(req.DeliveryAddress) == "" {
+				return nil, &errs.Error{Code: errs.InvalidArgument, Message: "a delivery address is required"}
+			}
+		default:
+			return nil, &errs.Error{Code: errs.InvalidArgument, Message: "choose collection or delivery"}
+		}
+	} else {
+		fulfil = "Pre-order"
+	}
+
+	// Price + lead time from the partner's authoritative pre-order list.
 	byName := map[string]appdb.PreOrderItem{}
-	for _, it := range r.PreOrderItems {
+	for _, it := range preItems {
 		byName[strings.ToLower(strings.TrimSpace(it.Name))] = it
 	}
 	type line struct {
@@ -118,7 +173,7 @@ func Submit(ctx context.Context, req *SubmitRequest) (*SubmitResponse, error) {
 	// (RunMonthlyBilling sums bookings.commission for booking-plan partners),
 	// the accountant ledger, and rep commission — exactly like a table booking,
 	// but distinguished by party_size = 0 and a 5%-of-total commission.
-	commission := total * preOrderCommissionRate
+	commission := total * rate
 	orderItems := appdb.BookingItems{}
 	for _, l := range lines {
 		orderItems = append(orderItems, appdb.BookingItem{
@@ -127,9 +182,9 @@ func Submit(ctx context.Context, req *SubmitRequest) (*SubmitResponse, error) {
 		})
 	}
 	if _, err := bookings.Create(ctx, &appdb.Booking{
-		EntityType:    "restaurant",
-		EntityID:      r.ID,
-		EntityName:    r.Name,
+		EntityType:    et,
+		EntityID:      entityID,
+		EntityName:    partnerName,
 		CustomerName:  strings.TrimSpace(req.CustomerName),
 		CustomerEmail: strings.TrimSpace(req.CustomerEmail),
 		CustomerPhone: strings.TrimSpace(req.CustomerPhone),
@@ -144,14 +199,9 @@ func Submit(ctx context.Context, req *SubmitRequest) (*SubmitResponse, error) {
 		return nil, &errs.Error{Code: errs.Internal, Message: "could not record the pre-order"}
 	}
 
-	recipient := strings.TrimSpace(r.BookingsEmail)
-	if recipient == "" {
-		recipient = strings.TrimSpace(r.OfficialEmail)
-	}
-
 	// Build the order email.
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf(`<h2>New pre-order on Around You</h2><p>You have a new pre-order for <strong>%s</strong>.</p><ul>`, r.Name))
+	b.WriteString(fmt.Sprintf(`<h2>New pre-order on Around You</h2><p>You have a new pre-order for <strong>%s</strong>.</p><ul>`, partnerName))
 	for _, l := range lines {
 		lead := ""
 		if l.item.LeadTimeMinutes > 0 {
@@ -191,7 +241,7 @@ func Submit(ctx context.Context, req *SubmitRequest) (*SubmitResponse, error) {
 	b.WriteString(`<p style="color:#888;font-size:12px">Contact the customer to confirm and arrange payment.</p>`)
 
 	if recipient != "" {
-		go func(to, html string) { _ = mailer.Send(to, "New pre-order on Around You — "+r.Name, html) }(recipient, b.String())
+		go func(to, html string) { _ = mailer.Send(to, "New pre-order on Around You — "+partnerName, html) }(recipient, b.String())
 	}
 
 	return &SubmitResponse{OK: true, Total: total}, nil

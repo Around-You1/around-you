@@ -149,6 +149,24 @@ type UpdateRequest struct {
 	CompanyVatNumber       *string `json:"companyVatNumber,omitempty"`
 	GuestType              *string `json:"guestType,omitempty"`
 	AccessLevel            *string `json:"accessLevel,omitempty"`
+
+	// EditCode authorises a non-privileged owner edit (accommodation owner
+	// signed in with their access code, unlocking the form with their secret
+	// Edit Code). Ignored for privileged (admin / rep) callers.
+	EditCode string `json:"editCode,omitempty"`
+}
+
+// RegenerateAccessCodeRequest changes an accommodation's Profile Access Code
+// (the code guests use to sign in). Privileged (admin/rep) callers may do this
+// for any accommodation; an owner may do it for their own, authorised by their
+// Edit Code.
+type RegenerateAccessCodeRequest struct {
+	ID       int64  `json:"id"`
+	EditCode string `json:"editCode,omitempty"`
+}
+
+type RegenerateAccessCodeResponse struct {
+	AccessCode string `json:"accessCode"`
 }
 
 // ---- Delete ----------------------------------------------------------------

@@ -69,11 +69,14 @@ const serviceColumns = `
 	COALESCE(partner_code, '') as partner_code,
 	partner_code_active,
 		COALESCE(booking_items, '[]'::jsonb) as booking_items,
+		COALESCE(pre_order_items, '[]'::jsonb) as pre_order_items,
 	offers_bookings,
 	created_at, updated_at,
 	payment_eft,
 	COALESCE(trading_hours, '') as trading_hours,
-	COALESCE(public_holidays, '') as public_holidays
+	COALESCE(public_holidays, '') as public_holidays,
+	COALESCE(accounting_address, '') as accounting_address,
+	COALESCE(is_nonprofit, false) as is_nonprofit
 `
 
 type serviceScanner interface {
@@ -102,10 +105,13 @@ func scanService(row serviceScanner) (*appdb.ServiceData, error) {
 		&s.GuestType, &s.AccessLevel,
 		&s.PartnerCode.Code, &s.PartnerCode.Active,
 		&s.BookingItems,
+		&s.PreOrderItems,
 		&s.OffersBookings,
 		&s.CreatedAt, &s.UpdatedAt,
 		&s.PaymentEft,
 		&s.TradingHours, &s.PublicHolidays,
+		&s.AccountingAddress,
+		&s.IsNonProfit,
 	)
 	if err != nil {
 		return nil, err
@@ -197,11 +203,14 @@ func (s *ServiceStore) Create(ctx context.Context, in *appdb.ServiceData) (*appd
 			local_discount_offered, local_discount_code,
 			offers_bookings,
 			discount_enabled, local_discount_enabled, works_from_client_address,
-			payment_eft, trading_hours, public_holidays
+			payment_eft, trading_hours, public_holidays,
+			accounting_address,
+			is_nonprofit,
+			pre_order_items
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,
 			$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,
-			$51,$52,$53,$54,$55,$56,$57,$58,$59
+			$51,$52,$53,$54,$55,$56,$57,$58,$59,$60,$61,$62
 		)
 		RETURNING `+serviceColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -223,19 +232,24 @@ func (s *ServiceStore) Create(ctx context.Context, in *appdb.ServiceData) (*appd
 		in.WorksFromClientAddress,
 		in.PaymentEft,
 		in.TradingHours, in.PublicHolidays,
+		in.AccountingAddress,
+		in.IsNonProfit,
+		in.PreOrderItems,
 	)
 	return scanService(row)
 }
 
 type ServicePatch struct {
-	Name       *string
-	Address    *string
-	Latitude   *float64
-	Longitude  *float64
-	Country    *string
-	Province   *string
-	Area       *string
-	PostalCode *string
+	Name              *string
+	Address           *string
+	AccountingAddress *string
+	IsNonProfit       *bool
+	Latitude          *float64
+	Longitude         *float64
+	Country           *string
+	Province          *string
+	Area              *string
+	PostalCode        *string
 
 	ContactNumber *string
 	Description   *string
@@ -293,6 +307,7 @@ type ServicePatch struct {
 	GuestType              *string
 	AccessLevel            *string
 	BookingItems           appdb.BookingItems
+	PreOrderItems          appdb.PreOrderItems
 }
 
 func (s *ServiceStore) Update(ctx context.Context, id int64, patch ServicePatch) (*appdb.ServiceData, error) {
@@ -308,6 +323,12 @@ func (s *ServiceStore) Update(ctx context.Context, id int64, patch ServicePatch)
 	}
 	if patch.Address != nil {
 		sets = append(sets, "address = "+arg(*patch.Address))
+	}
+	if patch.AccountingAddress != nil {
+		sets = append(sets, "accounting_address = "+arg(*patch.AccountingAddress))
+	}
+	if patch.IsNonProfit != nil {
+		sets = append(sets, "is_nonprofit = "+arg(*patch.IsNonProfit))
 	}
 	if patch.Latitude != nil {
 		sets = append(sets, "latitude = "+arg(*patch.Latitude))
@@ -470,6 +491,9 @@ func (s *ServiceStore) Update(ctx context.Context, id int64, patch ServicePatch)
 	}
 	if patch.BookingItems != nil {
 		sets = append(sets, "booking_items = "+arg(patch.BookingItems))
+	}
+	if patch.PreOrderItems != nil {
+		sets = append(sets, "pre_order_items = "+arg(patch.PreOrderItems))
 	}
 
 	if len(sets) == 0 {

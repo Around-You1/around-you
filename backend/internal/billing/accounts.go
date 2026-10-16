@@ -82,6 +82,7 @@ func LoadCommissionRollup(ctx context.Context) (*CommissionRollup, error) {
 		if err := rows.Scan(&s.RepCode, &s.OwnCents, &s.OverrideCents, &s.TotalCents, &s.PaidCents, &s.AccruedCents); err != nil {
 			return nil, err
 		}
+		s.PayToRepCode, s.PayToName = payToFor(ctx, s.RepCode)
 		r.ByRep = append(r.ByRep, s)
 		r.TotalCents += s.TotalCents
 		r.TotalPaidCents += s.PaidCents

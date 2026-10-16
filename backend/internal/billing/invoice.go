@@ -28,9 +28,14 @@ func isTestRep(code string) bool { return appdb.IsTestRep(code) }
 func isNoCommissionRep(code string) bool { return appdb.IsNoCommissionRep(code) }
 
 // isPromoMonth reports whether a billing period falls in the free introductory
-// promotional month (September 2026), when every invoice is issued at R0.
+// promotional window (September AND October 2026), when every invoice is issued
+// at R0. Normal recurring billing begins November 2026, so a partner's first
+// payable invoice falls in November.
 func isPromoMonth(periodStart time.Time) bool {
-	return periodStart.Year() == 2026 && periodStart.Month() == time.September
+	if periodStart.Year() != 2026 {
+		return false
+	}
+	return periodStart.Month() == time.September || periodStart.Month() == time.October
 }
 
 // Invoice mirrors an invoice row for read APIs.
@@ -114,6 +119,18 @@ func OnPartnerActivated(ctx context.Context, partnerType string, partnerID int64
 	}
 	if err != nil {
 		return err
+	}
+	// Non Profit Organizations (Services flagged is_nonprofit) are free — no
+	// invoice and no recurring billing — but still receive the onboarding email
+	// with their codes and profile QR.
+	if partnerType == "service" {
+		var isNonProfit bool
+		_ = appdb.SQLDB.QueryRowContext(ctx,
+			`SELECT COALESCE(is_nonprofit, false) FROM services WHERE id = $1`, partnerID,
+		).Scan(&isNonProfit)
+		if isNonProfit {
+			return SendComplimentaryOnboardingEmail(ctx, partnerType, partnerID)
+		}
 	}
 	if isTestRep(repCode) {
 		// Test-rep partners are complimentary — free, with no invoice and no
@@ -202,8 +219,9 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 		return nil // already billed this period
 	}
 
-	// September 2026 is a free introductory promotional month — every invoice
-	// (all partners, base + any booking portion) is issued at R0.
+	// September and October 2026 are a free introductory promotional window —
+	// every invoice (all partners, base + any booking portion) is issued at R0,
+	// so the first payable invoice falls in November 2026.
 	if isPromoMonth(start) {
 		baseCents = 0
 		coversCents = 0
@@ -311,7 +329,13 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 		if withCodes {
 			html += onboardingCodesHTML(ctx, partnerType, partnerID)
 		}
-		_ = mailer.SendOpts(email, "Your "+bizName+" invoice "+number, html, "", []string{"accounts@aroundyou.co.za"})
+		pdf := buildInvoicePDF(settings, view)
+		atts := []mailer.Attachment{{Filename: invoicePDFName(number), Content: pdf}}
+		if qr, ok := buildQRCodePDF(ctx, partnerType, partnerID); ok {
+			atts = append(atts, mailer.Attachment{Filename: "profile-qr-code.pdf", Content: qr})
+			html = qrDecalNoteHTML() + html
+		}
+		_ = mailer.SendWithAttachments(email, "Your "+bizName+" invoice "+number, html, "", []string{"accounts@aroundyou.co.za"}, atts)
 	}
 	return nil
 }
@@ -384,7 +408,13 @@ func ResendInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) er
 	if withCodes {
 		html += onboardingCodesHTML(ctx, partnerType, partnerID)
 	}
-	return mailer.SendOpts(email, "Your "+bizName+" invoice "+number, html, "", []string{"accounts@aroundyou.co.za"})
+	pdf := buildInvoicePDF(settings, view)
+	atts := []mailer.Attachment{{Filename: invoicePDFName(number), Content: pdf}}
+	if qr, ok := buildQRCodePDF(ctx, partnerType, partnerID); ok {
+		atts = append(atts, mailer.Attachment{Filename: "profile-qr-code.pdf", Content: qr})
+		html = qrDecalNoteHTML() + html
+	}
+	return mailer.SendWithAttachments(email, "Your "+bizName+" invoice "+number, html, "", []string{"accounts@aroundyou.co.za"}, atts)
 }
 
 // SendTestInvoiceWithCodes emails a SAMPLE invoice — including a sample Access
@@ -433,7 +463,7 @@ func sampleCodesHTML() string {
 			`<p style="margin:2px 0"><strong>Profile Access Code:</strong> %s</p>`+
 			`<p style="margin:2px 0"><strong>Partner Edit Code:</strong> %s</p>`+
 			`<p style="font-size:12px;color:#666;margin:8px 0 0">Please keep these confidential. The Access Code logs you in; the Edit Code unlocks editing of your own profile.</p>`+
-			`<p style="margin:12px 0 0">When using aroundyou.co.za, click on <strong>Log In</strong>, then choose the <strong>“Partner”</strong> button. Use the Access Code or QR Code to gain entry to your dedicated partner profile page. Then when you are prompted, enter the Partner Edit Code so as to change any of the information at any time.</p>`+
+			`<p style="margin:12px 0 0">When using aroundyou.co.za, click <strong>“Sign In”</strong>, then choose the <strong>“Partner”</strong> button. Use the Access Code or QR Code to gain entry to your dedicated partner profile page. Then when you are prompted, enter the Partner Edit Code so as to change any of the information at any time.</p>`+
 			`%s`,
 		"SAMPLE-ACCESS-123", "SAMPLE-EDIT-456", qr)
 }
@@ -457,8 +487,9 @@ func SendComplimentaryOnboardingEmail(ctx context.Context, partnerType string, p
 	if strings.TrimSpace(email) == "" {
 		return nil
 	}
+	settings, _ := LoadInvoiceSettings(ctx)
 	bizName := "Around You"
-	if settings, _ := LoadInvoiceSettings(ctx); settings != nil && strings.TrimSpace(settings.BusinessName) != "" {
+	if settings != nil && strings.TrimSpace(settings.BusinessName) != "" {
 		bizName = settings.BusinessName
 	}
 	var b strings.Builder
@@ -468,7 +499,65 @@ func SendComplimentaryOnboardingEmail(ctx context.Context, partnerType string, p
 		`</b> is now live. This is a <b>complimentary</b> partnership — there is no charge.</p>`)
 	b.WriteString(onboardingCodesHTML(ctx, partnerType, partnerID))
 	b.WriteString(`</div>`)
-	return mailer.SendOpts(email, "Welcome to "+bizName+" — "+name, b.String(), "", []string{"accounts@aroundyou.co.za"})
+	// Attach a R0 "complimentary" invoice PDF so every partner receives an
+	// invoice document — even free (test-rep) ones.
+	compView := invoiceView{
+		Number:    "COMPLIMENTARY",
+		Date:      time.Now(),
+		Due:       time.Now(),
+		Lines:     []invoiceLine{{Desc: "Complimentary partnership - no charge", Cents: 0}},
+		BillName:  name,
+		BillEmail: email,
+	}
+	pdf := buildInvoicePDF(settings, compView)
+	atts := []mailer.Attachment{{Filename: "complimentary-invoice.pdf", Content: pdf}}
+	body := b.String()
+	if qr, ok := buildQRCodePDF(ctx, partnerType, partnerID); ok {
+		atts = append(atts, mailer.Attachment{Filename: "profile-qr-code.pdf", Content: qr})
+		body = qrDecalNoteHTML() + body
+	}
+	return mailer.SendWithAttachments(email, "Welcome to "+bizName+" — "+name, body, "", []string{"accounts@aroundyou.co.za"}, atts)
+}
+
+// ResendPartnerWelcome re-sends a partner's welcome email — their Access Code,
+// Partner Edit Code and profile QR decal — WITHOUT creating an invoice or
+// changing billing. Used by the admin "Resend" button. Returns (sent, err):
+// sent=false with a nil error when the partner has no email address on file.
+func ResendPartnerWelcome(ctx context.Context, partnerType string, partnerID int64) (bool, error) {
+	tbl := partnerTable(partnerType)
+	if tbl == "" {
+		return false, fmt.Errorf("unknown partner type %q", partnerType)
+	}
+	var name, email string
+	if err := appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT COALESCE(name,''), COALESCE(official_email,'') FROM `+tbl+` WHERE id = $1`, partnerID,
+	).Scan(&name, &email); err != nil {
+		return false, err
+	}
+	if strings.TrimSpace(email) == "" {
+		return false, nil
+	}
+	settings, _ := LoadInvoiceSettings(ctx)
+	bizName := "Around You"
+	if settings != nil && strings.TrimSpace(settings.BusinessName) != "" {
+		bizName = settings.BusinessName
+	}
+	var b strings.Builder
+	b.WriteString(`<div style="font-family:Arial,Helvetica,sans-serif;max-width:640px;color:#1a1f2e">`)
+	b.WriteString(`<h2 style="margin:0 0 6px">Your ` + htmlPkg.EscapeString(bizName) + ` sign-in details</h2>`)
+	b.WriteString(`<p style="margin:0 0 12px">Here are the sign-in codes and profile QR code for <b>` + htmlPkg.EscapeString(name) + `</b>.</p>`)
+	b.WriteString(onboardingCodesHTML(ctx, partnerType, partnerID))
+	b.WriteString(`</div>`)
+	body := b.String()
+	var atts []mailer.Attachment
+	if qr, ok := buildQRCodePDF(ctx, partnerType, partnerID); ok {
+		atts = append(atts, mailer.Attachment{Filename: "profile-qr-code.pdf", Content: qr})
+		body = qrDecalNoteHTML() + body
+	}
+	if err := mailer.SendWithAttachments(email, bizName+" — your sign-in details ("+name+")", body, "", []string{"accounts@aroundyou.co.za"}, atts); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func onboardingCodesHTML(ctx context.Context, partnerType string, partnerID int64) string {
@@ -510,7 +599,7 @@ func onboardingCodesHTML(ctx context.Context, partnerType string, partnerID int6
 			`<p style="margin:2px 0"><strong>Profile Access Code:</strong> %s</p>`+
 			`<p style="margin:2px 0"><strong>Partner Edit Code:</strong> %s</p>`+
 			`<p style="font-size:12px;color:#666;margin:8px 0 0">Please keep these confidential. The Access Code logs you in; the Edit Code unlocks editing of your own profile.</p>`+
-			`<p style="margin:12px 0 0">When using aroundyou.co.za, click on <strong>Log In</strong>, then choose the <strong>“Partner”</strong> button. Use the Access Code or QR Code to gain entry to your dedicated partner profile page. Then when you are prompted, enter the Partner Edit Code so as to change any of the information at any time.</p>`+
+			`<p style="margin:12px 0 0">When using aroundyou.co.za, click <strong>“Sign In”</strong>, then choose the <strong>“Partner”</strong> button. Use the Access Code or QR Code to gain entry to your dedicated partner profile page. Then when you are prompted, enter the Partner Edit Code so as to change any of the information at any time.</p>`+
 			`%s`,
 		htmlPkg.EscapeString(access), htmlPkg.EscapeString(editCode), qr)
 }
@@ -609,6 +698,12 @@ func money(cents int) string {
 		out = "-" + out
 	}
 	return out
+}
+
+// qrDecalNoteHTML is the one-line note shown at the top of partner emails that
+// carry the profile-QR attachment, so partners know what the QR is for.
+func qrDecalNoteHTML() string {
+	return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:780px;color:#111;font-size:13px;margin:0 0 14px"><p style="margin:0;font-weight:bold">The QR Code attached can be used for front door, window or vehicle decals.</p></div>`
 }
 
 // renderInvoiceHTML builds the branded invoice (Invoice-Ninja-style layout):

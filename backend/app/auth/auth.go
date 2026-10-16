@@ -149,6 +149,10 @@ type LoginResponse struct {
 
 type AccessCodeLoginRequest struct {
 	AccessCode string `json:"accessCode"`
+	// AsPartner is set when the code is entered on the Business/Service Partner
+	// panel. An accommodation code then resolves to a Partner session (so the
+	// owner lands on the Partner profile page) instead of a Guest session.
+	AsPartner bool `json:"asPartner"`
 }
 
 // AccessCodeLogin resolves a QR/profile-reference code (guest login at an
@@ -168,6 +172,14 @@ func AccessCodeLogin(ctx context.Context, req *AccessCodeLoginRequest) (*LoginRe
 	}
 	if match == nil {
 		return nil, &errs.Error{Code: errs.NotFound, Message: "invalid or expired access code"}
+	}
+	// On the Partner panel, an accommodation signs in as a Partner so it reaches
+	// the Partner profile page (where it edits with its Edit Code), exactly like
+	// restaurants / services / attractions.
+	if req.AsPartner && match.ProfileType == "accommodation" {
+		match.Role = "Partner"
+		match.EntityType = "accommodation"
+		match.EntityID = match.AccommodationID
 	}
 	return issueSession(ctx, match)
 }
@@ -990,7 +1002,7 @@ func nextRepCode(ctx context.Context) (string, error) {
 	var lastCode sql.NullString
 	err := appdb.SQLDB.QueryRowContext(ctx, `
 		SELECT rep_code FROM users
-		WHERE role = 'Rep' AND rep_code IS NOT NULL
+		WHERE role = 'Rep' AND rep_code ~ '^Rep[0-9]+$'
 		ORDER BY rep_code DESC LIMIT 1`,
 	).Scan(&lastCode)
 	if err != nil && !isNoRows(err) {
@@ -1005,6 +1017,75 @@ func nextRepCode(ctx context.Context) (string, error) {
 	}
 	n++
 	return "Rep" + fmt.Sprintf("%08d", n), nil
+}
+
+// validTeamLeaderCode checks a self-chosen Team Leader organization code: 2-24
+// letters or digits, and never the reserved auto-generated "Rep<digits>"
+// namespace.
+func validTeamLeaderCode(code string) bool {
+	code = strings.TrimSpace(code)
+	if len(code) < 2 || len(code) > 24 {
+		return false
+	}
+	if strings.HasPrefix(code, "Rep") {
+		rest := code[3:]
+		if rest != "" {
+			allDigits := true
+			for _, r := range rest {
+				if r < '0' || r > '9' {
+					allDigits = false
+					break
+				}
+			}
+			if allDigits {
+				return false
+			}
+		}
+	}
+	for _, r := range code {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')) {
+			return false
+		}
+	}
+	return true
+}
+
+type RepCodeInfoRequest struct {
+	Code string `query:"code"`
+}
+
+type RepCodeInfoResponse struct {
+	Exists       bool   `json:"exists"`
+	IsTeamLeader bool   `json:"isTeamLeader"`
+	Name         string `json:"name"`
+}
+
+// RepCodeInfo is public: the Rep Application form calls it to detect whether an
+// entered upline code belongs to a Team Leader organization, so staff signing up
+// under that organization do not enter banking details.
+//
+//encore:api public method=GET path=/auth/rep-code-info
+func RepCodeInfo(ctx context.Context, req *RepCodeInfoRequest) (*RepCodeInfoResponse, error) {
+	resp := &RepCodeInfoResponse{}
+	code := strings.TrimSpace(req.Code)
+	if code == "" {
+		return resp, nil
+	}
+	var isTL bool
+	var name string
+	err := appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT is_team_leader, COALESCE(full_name,'') FROM users WHERE role='Rep' AND lower(rep_code)=lower($1) LIMIT 1`, code,
+	).Scan(&isTL, &name)
+	if isNoRows(err) {
+		return resp, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	resp.Exists = true
+	resp.IsTeamLeader = isTL
+	resp.Name = name
+	return resp, nil
 }
 
 // ---- Self-service Rep Application (public, from the Rep Sign In page) --------
@@ -1038,6 +1119,8 @@ type RepApplicationRequest struct {
 	PopiaConsent       bool   `json:"popiaConsent"`
 	AgreementConsent   bool   `json:"agreementConsent"`
 	SignatureName      string `json:"signatureName"`
+	IsTeamLeader       bool   `json:"isTeamLeader"`   // org applying as a Team Leader
+	TeamLeaderCode     string `json:"teamLeaderCode"` // the org's chosen code, e.g. "Care"
 }
 
 type RepApplicationResponse struct {
@@ -1053,9 +1136,31 @@ type RepApplicationResponse struct {
 //encore:api method=POST path=/auth/rep-application
 func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*RepApplicationResponse, error) {
 	fullName := strings.TrimSpace(req.FullName)
+	upline := strings.TrimSpace(req.UplineRepCode)
+	isTL := req.IsTeamLeader
+	customCode := strings.TrimSpace(req.TeamLeaderCode)
+
+	// If the upline code belongs to a Team Leader organization, this applicant
+	// is staff signing up under that organization: their commissions are paid to
+	// the organization's bank account, so they provide no banking details.
+	uplineIsTL := false
+	if upline != "" {
+		var tl sql.NullBool
+		if lerr := appdb.SQLDB.QueryRowContext(ctx,
+			`SELECT is_team_leader FROM users WHERE role='Rep' AND lower(rep_code)=lower($1) LIMIT 1`, upline,
+		).Scan(&tl); lerr != nil && !isNoRows(lerr) {
+			return nil, lerr
+		} else if tl.Valid {
+			uplineIsTL = tl.Bool
+		}
+	}
+	// A Team Leader org keeps its own banking (commissions are paid there); a
+	// staff member signing up under a Team Leader provides none.
+	collectBanking := !(uplineIsTL && !isTL)
+
 	// All fields are required except SARS tax number, VAT number and the
-	// recruiting rep (upline) code. Validate server-side so the rule holds even
-	// if the form is bypassed.
+	// recruiting rep (upline) code. Banking is required only when we collect it.
+	// Validate server-side so the rules hold even if the form is bypassed.
 	required := []struct{ label, value string }{
 		{"Full legal name", req.FullName},
 		{"SA ID / Passport number", req.IDNumber},
@@ -1066,12 +1171,24 @@ func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*Rep
 		{"Postal code", req.PostalCode},
 		{"Province", req.Province},
 		{"Region", req.Region},
-		{"Bank account holder", req.BankAccountName},
-		{"Bank", req.BankName},
-		{"Account type", req.BankAccountType},
-		{"Account number", req.BankAccountNumber},
-		{"Branch code", req.BankBranchCode},
 		{"Signature", req.SignatureName},
+	}
+	if collectBanking {
+		required = append(required,
+			struct{ label, value string }{"Bank account holder", req.BankAccountName},
+			struct{ label, value string }{"Bank", req.BankName},
+			struct{ label, value string }{"Account type", req.BankAccountType},
+			struct{ label, value string }{"Account number", req.BankAccountNumber},
+			struct{ label, value string }{"Branch code", req.BankBranchCode},
+		)
+	}
+	if isTL {
+		if customCode == "" {
+			return nil, &errs.Error{Code: errs.InvalidArgument, Message: "Team Leader code is required"}
+		}
+		if !validTeamLeaderCode(customCode) {
+			return nil, &errs.Error{Code: errs.InvalidArgument, Message: "Team Leader code must be 2-24 letters or digits and cannot be a reserved Rep code"}
+		}
 	}
 	for _, f := range required {
 		if strings.TrimSpace(f.value) == "" {
@@ -1108,9 +1225,26 @@ func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*Rep
 		return nil, &errs.Error{Code: errs.AlreadyExists, Message: "An application with this ID number or email already exists. If you've already applied, please wait for it to be reviewed or contact Around You — there's no need to apply again."}
 	}
 
-	repCode, err := nextRepCode(ctx)
-	if err != nil {
-		return nil, err
+	var repCode string
+	if isTL {
+		// Team Leader organizations choose their own code (e.g. "Care").
+		// Enforce case-insensitive uniqueness against every existing rep code.
+		var taken int
+		if cerr := appdb.SQLDB.QueryRowContext(ctx,
+			`SELECT count(*) FROM users WHERE role='Rep' AND lower(rep_code)=lower($1)`, customCode,
+		).Scan(&taken); cerr != nil {
+			return nil, cerr
+		}
+		if taken > 0 {
+			return nil, &errs.Error{Code: errs.AlreadyExists, Message: "That Team Leader code is already taken - please choose another."}
+		}
+		repCode = customCode
+	} else {
+		var genErr error
+		repCode, genErr = nextRepCode(ctx)
+		if genErr != nil {
+			return nil, genErr
+		}
 	}
 	loginEmail := strings.ToLower(repCode) + "@reps.aroundyou.internal"
 	// 12-char access code, issued now and emailed to the rep when a SuperAdmin
@@ -1129,6 +1263,17 @@ func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*Rep
 		}
 	}
 
+	// Banking: blanked for a staff member signing up under a Team Leader (their
+	// commissions are paid to the organization's account).
+	bankHolder := strings.TrimSpace(req.BankAccountName)
+	bankNm := strings.TrimSpace(req.BankName)
+	bankAcc := strings.TrimSpace(req.BankAccountNumber)
+	bankBranch := strings.TrimSpace(req.BankBranchCode)
+	bankType := strings.TrimSpace(req.BankAccountType)
+	if !collectBanking {
+		bankHolder, bankNm, bankAcc, bankBranch, bankType = "", "", "", "", ""
+	}
+
 	// New applications are created Inactive (pending). A SuperAdmin activates
 	// them on the Reps tab before the applicant can sign in.
 	if _, err := appdb.SQLDB.ExecContext(ctx, `
@@ -1136,18 +1281,16 @@ func SubmitRepApplication(ctx context.Context, req *RepApplicationRequest) (*Rep
 		   id_number, login_code, phone, residential_address, province, postal_code,
 		   date_of_birth, tax_number, vat_number,
 		   bank_account_name, bank_name, bank_account_number, bank_branch_code, bank_account_type,
-		   id_document_path, region)
+		   id_document_path, region, is_team_leader)
 		VALUES ($1, 'Rep', $2, $3, NULLIF($4,''), NULLIF($5,''), 'Inactive',
 		   $6, $7, $8, $9, NULLIF($10,''), $11,
 		   $12, $13, $14, $15, $16, $17, $18, $19,
-		   NULLIF($20,''), NULLIF($21,''))`,
-		loginEmail, fullName, repCode, strings.TrimSpace(req.Email), strings.TrimSpace(req.UplineRepCode), strings.TrimSpace(req.IDNumber), loginCode,
+		   NULLIF($20,''), NULLIF($21,''), $22)`,
+		loginEmail, fullName, repCode, strings.TrimSpace(req.Email), upline, strings.TrimSpace(req.IDNumber), loginCode,
 		strings.TrimSpace(req.Phone), strings.TrimSpace(req.ResidentialAddress), strings.TrimSpace(req.Province), strings.TrimSpace(req.PostalCode),
 		strings.TrimSpace(req.DateOfBirth), strings.TrimSpace(req.TaxNumber), strings.TrimSpace(req.VatNumber),
-		strings.TrimSpace(req.BankAccountName), strings.TrimSpace(req.BankName), strings.TrimSpace(req.BankAccountNumber),
-		strings.TrimSpace(req.BankBranchCode), strings.TrimSpace(req.BankAccountType),
-		idDocPath,
-		strings.TrimSpace(req.Region),
+		bankHolder, bankNm, bankAcc, bankBranch, bankType,
+		idDocPath, strings.TrimSpace(req.Region), isTL,
 	); err != nil {
 		return nil, err
 	}

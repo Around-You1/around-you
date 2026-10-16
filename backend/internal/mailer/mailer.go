@@ -16,6 +16,7 @@ package mailer
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -32,10 +33,22 @@ func Send(to, subject, html string) error {
 	return SendOpts(to, subject, html, "", nil)
 }
 
+// Attachment is a file attached to an outgoing email. Content is the raw bytes
+// (base64-encoded for the Resend API by SendWithAttachments).
+type Attachment struct {
+	Filename string
+	Content  []byte
+}
+
 // SendOpts is Send with an optional reply-to address and optional CC list. Used
 // by the rep-invoice submission so Accounts can reply straight to the rep and
 // the rep gets their own copy.
 func SendOpts(to, subject, html, replyTo string, cc []string) error {
+	return SendWithAttachments(to, subject, html, replyTo, cc, nil)
+}
+
+// SendWithAttachments is SendOpts plus file attachments (e.g. a PDF invoice).
+func SendWithAttachments(to, subject, html, replyTo string, cc []string, atts []Attachment) error {
 	apiKey := os.Getenv("RESEND_API_KEY")
 	if to == "" {
 		logAttempt(to, subject, "skipped", "no recipient address")
@@ -60,6 +73,16 @@ func SendOpts(to, subject, html, replyTo string, cc []string) error {
 	}
 	if len(cc) > 0 {
 		body["cc"] = cc
+	}
+	if len(atts) > 0 {
+		arr := make([]map[string]string, 0, len(atts))
+		for _, a := range atts {
+			arr = append(arr, map[string]string{
+				"filename": a.Filename,
+				"content":  base64.StdEncoding.EncodeToString(a.Content),
+			})
+		}
+		body["attachments"] = arr
 	}
 	payload, err := json.Marshal(body)
 	if err != nil {

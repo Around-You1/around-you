@@ -32,6 +32,18 @@ func publicize(ctx context.Context, items []appdb.AttractionData) []appdb.Attrac
 		}
 		items = kept
 	}
+	// "We support <org>" badge: resolve each partner's Team Leader organisation
+	// from its onboarding rep (public display field, survives StripSensitive).
+	{
+		codes := make([]string, 0, len(items))
+		for i := range items {
+			codes = append(codes, items[i].OfficialRepCode)
+		}
+		orgs := appdb.SupportOrgNamesForReps(ctx, codes)
+		for i := range items {
+			items[i].SupportOrgName = orgs[strings.ToLower(strings.TrimSpace(items[i].OfficialRepCode))]
+		}
+	}
 	if auth.IsPrivileged(ctx) {
 		return items
 	}
@@ -81,30 +93,21 @@ func ListNearby(ctx context.Context, req *ListNearbyRequest) (*ListResponse, err
 	if err != nil {
 		return nil, err
 	}
-	hasCoords := req.Latitude != 0 || req.Longitude != 0
+	// Resolve the point to search FROM: real GPS when supplied, else the centre
+	// of the searcher's postal code (a Local Guest gives only a postal code).
+	searchLat, searchLng, haveSearch := appdb.SearcherCoords(req.Latitude, req.Longitude, req.PostalCode)
 	wantPostal := strings.ToLower(strings.TrimSpace(req.PostalCode))
+	radius := req.RadiusKm
+	if radius <= 0 {
+		radius = 50
+	}
 	out := make([]appdb.AttractionData, 0, len(all))
 	for _, a := range all {
-		// Mobile partners (work from the client's address) have no fixed
-		// coordinates, so they are matched to the searcher by postal code.
-		// This keeps them inside the search area (holiday 150km / local 50km)
-		// without showing a map pin.
-		if a.WorksFromClientAddress {
-			if wantPostal != "" && strings.ToLower(strings.TrimSpace(a.PostalCode)) == wantPostal {
-				out = append(out, a)
-			}
-			continue
-		}
-		if a.Latitude == nil || a.Longitude == nil {
-			continue
-		}
-		if hasCoords {
-			if appdb.HaversineKm(req.Latitude, req.Longitude, *a.Latitude, *a.Longitude) <= req.RadiusKm {
-				out = append(out, a)
-			}
-		} else if wantPostal != "" && strings.ToLower(strings.TrimSpace(a.PostalCode)) == wantPostal {
-			// No coordinates from the searcher (e.g. geolocation blocked):
-			// fall back to a postal-code match so results are not empty.
+		// Every partner is matched by real distance. A fixed partner uses its own
+		// coordinates; a mobile or un-geocoded partner is placed at the centre of
+		// its postal code. Exact postal code is kept as a safety net for codes not
+		// yet in the centroid table.
+		if appdb.WithinRadius(searchLat, searchLng, haveSearch, a.Latitude, a.Longitude, a.PostalCode, wantPostal, radius) {
 			out = append(out, a)
 		}
 	}
@@ -124,6 +127,7 @@ func Get(ctx context.Context, req *GetRequest) (*appdb.AttractionData, error) {
 		}
 		return nil, err
 	}
+	item.SupportOrgName = appdb.SupportOrgNameForRep(ctx, item.OfficialRepCode)
 	if !auth.IsPrivileged(ctx) {
 		item.StripSensitive()
 	}
@@ -145,6 +149,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.AttractionData, err
 	in := &appdb.AttractionData{
 		Name:                   req.Name,
 		Address:                req.Address,
+		AccountingAddress:      req.AccountingAddress,
 		Latitude:               req.Latitude,
 		Longitude:              req.Longitude,
 		Country:                req.Country,
@@ -197,10 +202,11 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.AttractionData, err
 			SocialsTiktok:    req.SocialsTiktok,
 			SocialsTwitter:   req.SocialsTwitter,
 		},
-		ImageUrl:     req.ImageUrl,
-		ImageUrls:    req.ImageUrls,
-		IsActive:     req.IsActive,
-		BookingItems: req.BookingItems,
+		ImageUrl:      req.ImageUrl,
+		ImageUrls:     req.ImageUrls,
+		IsActive:      req.IsActive,
+		BookingItems:  req.BookingItems,
+		PreOrderItems: req.PreOrderItems,
 		OfficialUse: appdb.OfficialUse{
 			OfficialHoldingCompany: req.OfficialHoldingCompany,
 			OfficialContactName:    req.OfficialContactName,
@@ -213,7 +219,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.AttractionData, err
 			GuestType:              req.GuestType,
 			AccessLevel:            req.AccessLevel,
 		},
-		PartnerCode: appdb.PartnerCode{Code: appdb.RandomCode(10), Active: true},
+		PartnerCode: appdb.PartnerCode{Code: appdb.RandomCode(12), Active: true},
 	}
 	created, err := attractions.Create(ctx, in)
 	if err != nil {
@@ -267,6 +273,7 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.AttractionData, err
 	patch := store.AttractionPatch{
 		Name:                   req.Name,
 		Address:                req.Address,
+		AccountingAddress:      req.AccountingAddress,
 		Latitude:               req.Latitude,
 		Longitude:              req.Longitude,
 		Country:                req.Country,
@@ -326,6 +333,7 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.AttractionData, err
 		GuestType:              req.GuestType,
 		AccessLevel:            req.AccessLevel,
 		BookingItems:           req.BookingItems,
+		PreOrderItems:          req.PreOrderItems,
 	}
 	item, err := attractions.Update(ctx, id, patch)
 	if err != nil {
@@ -379,7 +387,7 @@ func GetPartnerCode(ctx context.Context, req *PartnerCodeRequest) (*PartnerCodeR
 
 //encore:api auth method=POST path=/attraction/partner-code/regenerate
 func RegeneratePartnerCode(ctx context.Context, req *RegeneratePartnerCodeRequest) (*PartnerCodeResponse, error) {
-	code, active, err := attractions.RegeneratePartnerCode(ctx, req.ID, appdb.RandomCode(10))
+	code, active, err := attractions.RegeneratePartnerCode(ctx, req.ID, appdb.RandomCode(12))
 	if err != nil {
 		if errors.Is(err, store.ErrAttractionNotFound) {
 			return nil, &errs.Error{Code: errs.NotFound, Message: "attraction not found"}
@@ -562,7 +570,7 @@ func ImportAttractions(ctx context.Context, req *ImportRequest) (*ImportResponse
 				GuestType:              appdb.NormalizeGuestType(row.GuestType),
 				AccessLevel:            appdb.NormalizeAccessLevel(row.AccessLevel),
 			},
-			PartnerCode: appdb.PartnerCode{Code: appdb.RandomCode(10), Active: true},
+			PartnerCode: appdb.PartnerCode{Code: appdb.RandomCode(12), Active: true},
 		}
 		created, err := attractions.Create(ctx, in)
 		if err != nil {

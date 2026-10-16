@@ -18,6 +18,9 @@ import (
 	"time"
  
 	"backend_encore/app/accommodation"
+	"backend_encore/app/onboardingextract"
+	"backend_encore/app/emergency"
+	"backend_encore/app/suggestions"
 	"backend_encore/app/admin"
 	"backend_encore/app/analytics"
 	"backend_encore/app/attraction"
@@ -83,6 +86,7 @@ func main() {
 	r.login("POST /auth/login", httpx.Body(auth.Login))
 	r.login("POST /auth/rep-login", httpx.Body(auth.RepLogin))
 	r.login("POST /auth/rep-application", httpx.Body(auth.SubmitRepApplication))
+	r.login("GET /auth/rep-code-info", httpx.Query(auth.RepCodeInfo))
 	r.auth("GET /auth/rep/id-document", httpx.Query(auth.RepIDDocument))
 	r.auth("POST /auth/rep/id-document", httpx.Body(auth.SetRepIDDocument))
 	// Public self-service partner application (per-IP rate limited like other public posts)
@@ -142,12 +146,12 @@ func main() {
 	r.auth("GET /estate/property/template", httpx.Empty(estate.PropertyTemplate))
 	r.auth("GET /estate/property/export", httpx.Empty(estate.ExportProperties))
 	r.auth("POST /estate/property/import", httpx.Body(estate.ImportProperties))
-	r.auth("GET /estate/public/agencies", httpx.Empty(estate.PublicAgencies))
-	r.auth("GET /estate/public/agents", httpx.Empty(estate.PublicAgents))
-	r.auth("GET /estate/public/properties", httpx.Empty(estate.PublicProperties))
-	r.auth("GET /estate/public/agency", httpx.Query(estate.PublicAgency))
-	r.auth("GET /estate/public/agent", httpx.Query(estate.PublicAgent))
-	r.auth("GET /estate/public/property", httpx.Query(estate.PublicProperty))
+	r.public("GET /estate/public/agencies", httpx.Empty(estate.PublicAgencies))
+	r.public("GET /estate/public/agents", httpx.Empty(estate.PublicAgents))
+	r.public("GET /estate/public/properties", httpx.Empty(estate.PublicProperties))
+	r.public("GET /estate/public/agency", httpx.Query(estate.PublicAgency))
+	r.public("GET /estate/public/agent", httpx.Query(estate.PublicAgent))
+	r.public("GET /estate/public/property", httpx.Query(estate.PublicProperty))
 	r.auth("GET /analytics/rep-activity", httpx.Empty(analytics.RepActivityReport))
 	r.auth("GET /analytics/reps", httpx.Empty(analytics.RepsAnalytics))
 	r.auth("GET /analytics/business", httpx.Empty(analytics.BusinessMetrics))
@@ -155,12 +159,22 @@ func main() {
 	r.auth("GET /analytics/listing-views", httpx.Query(analytics.ListingViews))
 	r.auth("GET /analytics/locals", httpx.Empty(analytics.LocalsList))
 	r.auth("GET /analytics/locals/logins", httpx.Query(analytics.LocalLoginTotals))
+	r.auth("GET /analytics/locals/signins", httpx.Query(analytics.LocalSignins))
+	r.auth("GET /analytics/holiday-guests", httpx.Empty(analytics.HolidayGuestsList))
+	r.auth("GET /analytics/holiday-guests/logins", httpx.Query(analytics.HolidayGuestLoginTotals))
+	r.auth("GET /analytics/holiday-guests/signins", httpx.Query(analytics.HolidayGuestSignins))
  
 	// ---- Accommodation (auth) ----------------------------------------------
 	r.auth("GET /accommodation", httpx.Query(accommodation.List))
 	r.auth("GET /accommodation/get", httpx.Query(accommodation.Get))
 	r.auth("POST /accommodation", httpx.Body(accommodation.Create))
 	r.auth("PUT /accommodation", httpx.Body(accommodation.Update))
+	r.auth("POST /accommodation/access-code/regenerate", httpx.Body(accommodation.RegenerateAccessCode))
+	r.auth("POST /onboarding/extract", httpx.Body(onboardingextract.Extract))
+	r.auth("GET /suggestions/nearby", httpx.Query(suggestions.Nearby))
+	r.auth("GET /suggestions", httpx.Query(suggestions.Get))
+	r.auth("POST /suggestions/save", httpx.Body(suggestions.Save))
+	r.auth("GET /emergency/contacts", httpx.Query(emergency.Contacts))
 	r.auth("DELETE /accommodation", httpx.Body(accommodation.DeleteAccommodation))
 	r.auth("GET /accommodation/template", httpx.Empty(accommodation.Template))
 	r.auth("GET /accommodation/export", httpx.Empty(accommodation.ExportAccommodations))
@@ -219,6 +233,7 @@ func main() {
 	r.auth("POST /preorder", httpx.Body(preorder.Submit))
  
 	// ---- Billing / subscriptions (auth; SuperAdmin-gated in-handler) --------
+	r.auth("POST /partner/resend-welcome", httpx.Body(billing.ResendWelcome))
 	r.auth("GET /billing/subscriptions", httpx.Empty(billing.ListSubscriptions))
 	r.auth("GET /billing/invoices", httpx.Empty(billing.ListInvoices))
 	r.auth("GET /billing/commissions", httpx.Empty(billing.ListCommissions))
