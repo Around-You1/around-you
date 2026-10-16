@@ -471,7 +471,7 @@ export default function LoginPage() {
     return user?.role === "Partner" ? "/partner-dashboard" : "/guest-dashboard";
   }
 
-  function storeAndNavigate(token: string, user: object, path: string, welcomeName: string) {
+  function storeAndNavigate(token: string, user: object, path: string, welcomeName: string, roleLabel?: string) {
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(user));
     dismiss();
@@ -479,8 +479,10 @@ export default function LoginPage() {
     // "guest@Test BnB" / "partner@Test Grub" — see findByAccessCode in
     // auth.go, which has no dedicated display-name field to draw from
     // instead) — strip that prefix so the toast shows just the real name.
+    // roleLabel (e.g. "a Local") is used instead of a name where the sign-in
+    // name is just an email prefix that would read oddly (e.g. "partners").
     const displayName = welcomeName.replace(/^(guest|partner)@/, "");
-    toast({ title: "Welcome!", description: `Signed in as ${displayName}` });
+    toast({ title: "Welcome!", description: roleLabel ? `Welcome as ${roleLabel}` : `Signed in as ${displayName}` });
     navigate(path);
   }
 
@@ -563,7 +565,7 @@ export default function LoginPage() {
         const res = await backend.auth.localGuestLogin({ email, province: localProvince, postalCode: localPostalCode.trim() });
         localStorage.setItem("localGuestInfo", JSON.stringify({ province: localProvince, postalCode: localPostalCode.trim(), cell }));
         rememberLogin({ local: { email, province: localProvince, postalCode: localPostalCode.trim(), cell } });
-        storeAndNavigate(res.token, res.user, "/guest-dashboard", email.split("@")[0]);
+        storeAndNavigate(res.token, res.user, "/guest-dashboard", email.split("@")[0], "a Local");
         return;
       }
 
@@ -614,7 +616,7 @@ export default function LoginPage() {
         const res = await backend.auth.localGuestLogin({ email, province, postalCode });
         localStorage.setItem("localGuestInfo", JSON.stringify({ province, postalCode }));
         rememberLogin({ local: { email, province, postalCode } });
-        storeAndNavigate(res.token, res.user, "/guest-dashboard", email.split("@")[0]);
+        storeAndNavigate(res.token, res.user, "/guest-dashboard", email.split("@")[0], "a Local");
       } catch (err: any) {
         toast({ title: "Login Failed", description: err?.message || "Unable to sign in. Please try again.", variant: "destructive" });
       } finally { setLoading(false); }
