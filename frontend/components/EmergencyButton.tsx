@@ -9,6 +9,8 @@ type EmergencyData = {
   ambulance?: Contact;
   police?: Contact;
   fire?: Contact;
+  nsri?: Contact;
+  snakeCatchers?: Contact;
   doctor?: Contact;
   vet?: Contact;
 };
@@ -49,7 +51,7 @@ export default function EmergencyButton({
   };
 
   const order: Contact[] = data
-    ? ([data.ambulance, data.police, data.fire, data.doctor, data.vet].filter(Boolean) as Contact[])
+    ? ([data.ambulance, data.police, data.fire, data.nsri, data.snakeCatchers, data.doctor, data.vet].filter(Boolean) as Contact[])
     : [];
 
   return (
