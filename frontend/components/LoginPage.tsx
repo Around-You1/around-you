@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import backend from "~backend/client";
 import { SA_PROVINCES } from "../lib/saRegions";
 import AppLogo from "../components/AppLogo";
+import InfoSquares from "../components/InfoSquares";
 import { signInWithOtp } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 
@@ -21,6 +22,17 @@ type LoginMethod = "code" | "secondary";
 
 function sanitizeCode(raw: string): string {
   return raw.replace(STRIP_RE, "");
+}
+
+// Normalise a SA mobile number for comparison only: digits-only, with a
+// +27 / 27 country prefix folded to a leading 0, so "082 123 4567",
+// "+27 82 123 4567" and "0821234567" all compare equal. Used to decide
+// whether a returning local actually changed their number.
+function normalizeCellForCompare(raw: string): string {
+  let d = (raw || "").replace(/[^\d+]/g, "");
+  if (d.startsWith("+27")) d = "0" + d.slice(3);
+  else if (d.startsWith("27") && d.length === 11) d = "0" + d.slice(2);
+  return d.replace(/\D/g, "");
 }
 
 function SignInSquareBtn({
@@ -48,7 +60,7 @@ function SignInSquareBtn({
         textAlign: "center",
         letterSpacing: "0.03em",
         transition: "all 0.2s ease",
-        aspectRatio: "1 / 1",
+        aspectRatio: "2 / 1",
         width: "100%",
         display: "flex",
         alignItems: "center",
@@ -290,7 +302,9 @@ export default function LoginPage() {
   // When arriving from a scanned QR (a code is present in the URL) we skip the
   // Holiday/Local/Partner chooser and open the matching sign-in form directly.
   const [activePanel, setActivePanel] = useState<ActivePanel>(
-    scannedCode ? (scannedRole === "partner" ? "partner" : "holiday") : null,
+    scannedCode
+      ? (scannedRole === "partner" ? "partner" : "holiday")
+      : (searchParams.get("panel") === "local" || searchParams.get("role") === "local" ? "local" : null),
   );
   const [showChooser, setShowChooser] = useState(false);
   const qrMode = Boolean(scannedCode) && !showChooser;
@@ -306,6 +320,7 @@ export default function LoginPage() {
   const [localEmail, setLocalEmail] = useState("");
   const [localProvince, setLocalProvince] = useState("");
   const [localPostalCode, setLocalPostalCode] = useState("");
+  const [localCell, setLocalCell] = useState("");
 
   const [partnerCode, setPartnerCode] = useState("");
   const [partnerCodeError, setPartnerCodeError] = useState(false);
@@ -350,6 +365,7 @@ export default function LoginPage() {
       if (saved.local.email) setLocalEmail(saved.local.email);
       if (saved.local.province) setLocalProvince(saved.local.province);
       if (saved.local.postalCode) setLocalPostalCode(saved.local.postalCode);
+      if (saved.local.cell) setLocalCell(saved.local.cell);
     }
     if (saved.holiday && !hasQrCode) {
       if (saved.holiday.method) setHolidayMethod(saved.holiday.method);
@@ -367,6 +383,23 @@ export default function LoginPage() {
       if (saved.partner.province) setPartnerProvince(saved.partner.province);
       if (saved.partner.area) setPartnerArea(saved.partner.area);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // A printed QR/decal can deep-link straight to the Local Guest form and
+  // pre-fill province/postal for a specific area, so the customer only enters
+  // their email and taps Sign In. Runs after the localStorage auto-fill so the
+  // URL values win for this device.
+  useEffect(() => {
+    if (searchParams.get("code")) return; // a scanned partner/holiday code wins
+    const wantLocal =
+      searchParams.get("panel") === "local" || searchParams.get("role") === "local";
+    if (!wantLocal) return;
+    setActivePanel("local");
+    const prov = searchParams.get("province");
+    const pc = searchParams.get("postalCode");
+    if (prov) setLocalProvince(prov);
+    if (pc) setLocalPostalCode(pc);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -427,6 +460,17 @@ export default function LoginPage() {
     return true;
   }
 
+  // Route to the dashboard that matches the session the backend actually
+  // issued — never the panel the code was typed into. Accommodation
+  // profile-reference codes resolve to a Guest session (/guest-dashboard);
+  // restaurant / service / attraction codes resolve to a Partner session
+  // (/partner-dashboard). This stops a valid code from dead-ending on a
+  // dashboard guard that rejects its role (e.g. an accommodation / guesthouse
+  // code entered on the Business/Service Partner panel).
+  function dashboardPathFor(user: { role?: string }): string {
+    return user?.role === "Partner" ? "/partner-dashboard" : "/guest-dashboard";
+  }
+
   function storeAndNavigate(token: string, user: object, path: string, welcomeName: string) {
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(user));
@@ -459,8 +503,7 @@ export default function LoginPage() {
       setLoading(true);
       try {
         const res = await backend.auth.accessCodeLogin({ accessCode: code });
-        const path = res.user.profileType === "accommodation" || res.user.profileType === undefined
-          ? "/guest-dashboard" : "/partner-dashboard";
+        const path = dashboardPathFor(res.user);
         rememberLogin({ holiday: { method: "code", code } });
         storeAndNavigate(res.token, res.user, path, res.user.email);
       } catch (err: any) {
@@ -480,7 +523,7 @@ export default function LoginPage() {
           province: holidayProvince,
           area: holidayArea.trim(),
         });
-        const path = res.user.role === "Guest" ? "/guest-dashboard" : "/partner-dashboard";
+        const path = dashboardPathFor(res.user);
         rememberLogin({ holiday: { method: "secondary", name: holidayName.trim(), address: holidayAddress.trim(), province: holidayProvince, area: holidayArea.trim() } });
         storeAndNavigate(res.token, res.user, path, res.user.email);
       } catch (err: any) {
@@ -496,6 +539,17 @@ export default function LoginPage() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(localEmail.trim())) { toast({ title: "Validation Error", description: "Please enter a valid email address", variant: "destructive" }); return; }
     if (!localProvince) { toast({ title: "Validation Error", description: "Province is required", variant: "destructive" }); return; }
     if (!localPostalCode.trim()) { toast({ title: "Validation Error", description: "Postal code is required", variant: "destructive" }); return; }
+    const cell = localCell.trim();
+    if (!cell) { toast({ title: "Validation Error", description: "Mobile number is required", variant: "destructive" }); return; }
+    if (!/^(?:\+?27|0)\d{9}$/.test(cell.replace(/\s/g, ""))) { toast({ title: "Validation Error", description: "Please enter a valid South African mobile number (e.g. 082 123 4567)", variant: "destructive" }); return; }
+    // Only ask them to confirm the mobile number when it's new or has changed
+    // since last time on this device — a returning local whose number is
+    // unchanged signs in without the extra prompt. (First sign-up has no saved
+    // number, so the numbers differ and the confirm still shows.)
+    let savedCell = "";
+    try { savedCell = JSON.parse(localStorage.getItem("aroundYouLogin") || "{}")?.local?.cell || ""; } catch { savedCell = ""; }
+    const cellChanged = normalizeCellForCompare(cell) !== normalizeCellForCompare(savedCell);
+    if (cellChanged && !window.confirm(`Please confirm your mobile number:\n\n${cell}\n\nIs this correct?`)) return;
     setLoading(true);
     try {
       const email = localEmail.trim().toLowerCase();
@@ -507,8 +561,8 @@ export default function LoginPage() {
 
       if (alreadyVerified) {
         const res = await backend.auth.localGuestLogin({ email, province: localProvince, postalCode: localPostalCode.trim() });
-        localStorage.setItem("localGuestInfo", JSON.stringify({ province: localProvince, postalCode: localPostalCode.trim() }));
-        rememberLogin({ local: { email, province: localProvince, postalCode: localPostalCode.trim() } });
+        localStorage.setItem("localGuestInfo", JSON.stringify({ province: localProvince, postalCode: localPostalCode.trim(), cell }));
+        rememberLogin({ local: { email, province: localProvince, postalCode: localPostalCode.trim(), cell } });
         storeAndNavigate(res.token, res.user, "/guest-dashboard", email.split("@")[0]);
         return;
       }
@@ -520,6 +574,8 @@ export default function LoginPage() {
       // does not merge in any other query params, so they have to travel
       // as part of next's value itself or they'd be lost after redirecting.
       await signInWithOtp(email);
+      localStorage.setItem("localGuestInfo", JSON.stringify({ province: localProvince, postalCode: localPostalCode.trim(), cell }));
+      rememberLogin({ local: { email, province: localProvince, postalCode: localPostalCode.trim(), cell } });
       toast({ title: "Check your email", description: `We sent a code to ${email}` });
       const nextParams = new URLSearchParams({
         pendingRole: "local",
@@ -573,9 +629,9 @@ export default function LoginPage() {
       if (!validateCode(code)) return;
       setLoading(true);
       try {
-        const res = await backend.auth.accessCodeLogin({ accessCode: code });
+        const res = await backend.auth.accessCodeLogin({ accessCode: code, asPartner: true });
         rememberLogin({ partner: { method: "code", code } });
-        storeAndNavigate(res.token, res.user, "/partner-dashboard", res.user.email);
+        storeAndNavigate(res.token, res.user, dashboardPathFor(res.user), res.user.email);
       } catch (err: any) {
         console.error(err);
         toast({ title: "Login Failed", description: err?.message || "Invalid access code", variant: "destructive" });
@@ -594,7 +650,7 @@ export default function LoginPage() {
           area: partnerArea.trim(),
         });
         rememberLogin({ partner: { method: "secondary", name: partnerName.trim(), address: partnerAddress.trim(), province: partnerProvince, area: partnerArea.trim() } });
-        storeAndNavigate(res.token, res.user, "/partner-dashboard", res.user.email);
+        storeAndNavigate(res.token, res.user, dashboardPathFor(res.user), res.user.email);
       } catch (err: any) {
         console.error(err);
         toast({ title: "Login Failed", description: err?.message || "Partner not found", variant: "destructive" });
@@ -609,20 +665,30 @@ export default function LoginPage() {
           <AppLogo />
         </div>
 
+        <div className="mb-4">
+          <img
+            src="/breast-cancer-awareness.jpg"
+            alt="Breast Cancer Awareness — Support · Hope · Cure"
+            className="w-full rounded-xl"
+            style={{ display: "block", border: "1px solid rgba(57,255,20,0.12)" }}
+          />
+        </div>
+
         <div
           className="rounded-2xl p-6 space-y-3"
           style={{ background: "#111111", border: "1px solid rgba(57,255,20,0.18)", boxShadow: "0 0 40px rgba(57,255,20,0.06)" }}
         >
           {!qrMode && (
           <>
+          <InfoSquares />
           <p className="text-center text-sm font-semibold uppercase tracking-widest" style={{ color: "#666" }}>
             Sign in as a …
           </p>
 
           <div className="grid grid-cols-3 gap-1.5">
             <SignInSquareBtn label="Holiday Guest" isOpen={activePanel === "holiday"} onToggle={() => togglePanel("holiday")} />
-            <SignInSquareBtn label="Local Guest" isOpen={activePanel === "local"} onToggle={() => togglePanel("local")} />
-            <SignInSquareBtn label="Business/Service Partner" isOpen={activePanel === "partner"} onToggle={() => togglePanel("partner")} />
+            <SignInSquareBtn label="Local" isOpen={activePanel === "local"} onToggle={() => togglePanel("local")} />
+            <SignInSquareBtn label="Partner" isOpen={activePanel === "partner"} onToggle={() => togglePanel("partner")} />
           </div>
           </>
           )}
@@ -672,7 +738,7 @@ export default function LoginPage() {
           </PanelWrap>
 
           <PanelWrap id="local" activePanel={activePanel}>
-            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: LUMO }}>Local Guest</p>
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: LUMO }}>Local</p>
             <form onSubmit={handleLocalLogin} className="space-y-4">
               <div className="space-y-1.5">
                 <ThemedLabel>Email Address</ThemedLabel>
@@ -684,6 +750,19 @@ export default function LoginPage() {
                   autoComplete="email"
                   enterKeyHint="next"
                 />
+              </div>
+              <div className="space-y-1.5">
+                <ThemedLabel>Mobile Number</ThemedLabel>
+                <ThemedInput
+                  type="tel"
+                  value={localCell}
+                  onChange={(e) => setLocalCell(e.target.value)}
+                  placeholder="e.g. 082 123 4567"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  enterKeyHint="next"
+                />
+                <p className="text-xs" style={{ color: "#555" }}>Used for your stamp cards at local shops.</p>
               </div>
               <div className="space-y-1.5">
                 <ThemedLabel>Province</ThemedLabel>

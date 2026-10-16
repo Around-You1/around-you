@@ -23,6 +23,12 @@ const CHARITY_ROW2 = ["Health", "Homes", "Food"] as const;
 interface OfficialUseSectionProps {
   data: OfficialUseData;
   onChange: (data: OfficialUseData) => void;
+  // The business address. Kept in the Official Use (admin-only) block so the
+  // office always has it on record — shown publicly for a business premises,
+  // but hidden from Guests/Locals when the partner works from different
+  // addresses. Omit onAddress to leave the address out of this section.
+  address?: string;
+  onAddressChange?: (value: string) => void;
   // Guest Type and Access Level are Tier fields that only apply to
   // Restaurant / Service / Attraction. Accommodation passes showTierFields=false
   // to hide them (the underlying columns still exist and are simply left blank).
@@ -73,7 +79,7 @@ function RadioGroup({
   );
 }
 
-export default function OfficialUseSection({ data, onChange, showTierFields = true }: OfficialUseSectionProps) {
+export default function OfficialUseSection({ data, onChange, address, onAddressChange, showTierFields = true }: OfficialUseSectionProps) {
   const set = (field: keyof OfficialUseData) => (e: React.ChangeEvent<HTMLInputElement>) =>
     onChange({ ...data, [field]: e.target.value });
 
@@ -95,35 +101,17 @@ export default function OfficialUseSection({ data, onChange, showTierFields = tr
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {showTierFields && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <RadioGroup
-              label="Guest Type"
-              name="officialGuestType"
-              options={GUEST_TYPE_OPTIONS}
-              value={data.guestType}
-              onChange={(val) =>
-                // "Both" audiences = Premium (auto-tick Tier 2). "Guest Only" or
-                // "Local" are single-audience, so Premium is auto-un-ticked —
-                // it only stays on when explicitly ticked or when "Both" is chosen.
-                onChange({ ...data, guestType: val, accessLevel: val === "Both" ? "Tier 2" : "" })
-              }
+        {onAddressChange && (
+          <div className="space-y-2">
+            <Label htmlFor="official-address">Accounting Address</Label>
+            <Input
+              id="official-address"
+              value={address || ""}
+              onChange={(e) => onAddressChange(e.target.value)}
+              placeholder="Accounting / office address"
             />
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Access Level</Label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={data.accessLevel === "Tier 2"}
-                  onChange={(e) => onChange({ ...data, accessLevel: e.target.checked ? "Tier 2" : "" })}
-                  className="accent-amber-600"
-                />
-                <span className="text-sm">Premium</span>
-              </label>
-            </div>
           </div>
         )}
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="officialHoldingCompany">Holding Company</Label>
@@ -202,7 +190,7 @@ export default function OfficialUseSection({ data, onChange, showTierFields = tr
         </div>
 
         <div className="space-y-2 pt-2 border-t border-amber-200/60 dark:border-amber-800/60">
-          <Label className="text-sm font-semibold text-amber-800 dark:text-amber-400">Charity</Label>
+          <Label className="text-sm font-semibold text-amber-800 dark:text-amber-400">Please give us the details of the charity you wish US to support</Label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-1">
               <Label htmlFor="charity-name" className="text-xs">Name</Label>

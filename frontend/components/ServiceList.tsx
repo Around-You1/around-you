@@ -9,6 +9,7 @@ import ProfileQRCode from "./ProfileQRCode";
 import ProfileClassificationGroups from "./ProfileClassificationGroups";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
+import ResendWelcomeButton from "./ResendWelcomeButton";
 import { getCurrentPosition, buildDirectionsUrl } from "../lib/geolocation";
 import type { ServiceData } from "~backend/service/types";
 import { SortState, DEFAULT_SORT_STATE, applySortState } from "./SortControls";
@@ -18,6 +19,7 @@ interface ServiceListProps {
   onUpdate?: () => void;
   searchQuery?: string;
   sortState?: SortState;
+  nonProfit?: boolean;
 }
 
 const FALLBACK = "The company has opted not to make this information visible.";
@@ -57,7 +59,7 @@ function FieldRow({ label, value }: { label: string; value: string | number | bo
   );
 }
 
-export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortState = DEFAULT_SORT_STATE }: ServiceListProps) {
+export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortState = DEFAULT_SORT_STATE, nonProfit = false }: ServiceListProps) {
   const [services, setServices] = useState<ServiceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [gettingDirections, setGettingDirections] = useState<string | null>(null);
@@ -130,6 +132,7 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortSt
   }, [services.map((s) => s.id).join(",")]);
 
   const searchedServices = services.filter((service) => {
+    if (!!service.isNonProfit !== nonProfit) return false;
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -268,7 +271,7 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortSt
                   <CollapsibleTrigger asChild>
                     <button className="flex items-center gap-2 flex-1 min-w-0 text-left">
                       {isOpen ? <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />}
-                      <h3 className="font-semibold text-sm text-foreground truncate min-w-[120px]">{service.name}</h3>
+                      <h3 className="font-semibold text-sm text-foreground truncate min-w-0">{service.name}</h3>
                       <StarRatingDisplay
                         average={ratings[service.id]?.averageRating ?? 0}
                         count={ratings[service.id]?.ratingCount ?? 0}
@@ -348,6 +351,7 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortSt
                           profileCode={service.profileReferenceCode}
                           entityType="service"
                         />
+                        <ResendWelcomeButton partnerType="service" partnerId={service.id} partnerName={service.name} />
                       </div>
                     )}
                   </div>

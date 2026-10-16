@@ -17,6 +17,9 @@ import AppInstallButtons from "../components/AppInstallButtons";
 import RestaurantForm from "../components/RestaurantForm";
 import ServiceForm from "../components/ServiceForm";
 import AttractionForm from "../components/AttractionForm";
+import AccommodationForm from "../components/AccommodationForm";
+import SuggestionsBanner from "../components/SuggestionsBanner";
+import SuggestionsManager from "../components/SuggestionsManager";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Restaurant } from "~backend/restaurant/types";
@@ -70,6 +73,7 @@ function TagList({ items }: { items: string[] }) {
 // browser's built-in QR detector where available (Android Chrome), and always
 // offers a manual code-entry fallback so it works on every device.
 function RedeemScanner() {
+  const [open, setOpen] = useState(false);
   const [token, setToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -130,8 +134,8 @@ function RedeemScanner() {
     try {
       const backend = getAuthenticatedBackend();
       await backend.redemption.redeem({ token: code });
-      setResult("✓ Redeemed — the guest can now rate your business.");
-      toast({ title: "Discount redeemed", description: "The guest can now leave a rating." });
+      setResult("✓ Redeemed — the guest or local can now rate your business.");
+      toast({ title: "Discount redeemed", description: "The guest or local can now leave a rating." });
       setToken("");
     } catch (error: any) {
       const msg = error?.message || "Could not redeem this code.";
@@ -165,12 +169,16 @@ function RedeemScanner() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Redeem a Guest's Discount</CardTitle>
+      <CardHeader className="cursor-pointer select-none" onClick={() => setOpen((o) => !o)}>
+        <CardTitle className="flex items-center justify-between">
+          <span>Redeem a Guest/Local's Discount</span>
+          <span className="text-muted-foreground text-base font-normal">{open ? "▾" : "▸"}</span>
+        </CardTitle>
       </CardHeader>
+      {open && (
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          When a guest shows their discount QR code, scan it here (or type the code) to redeem it. This confirms their visit and unlocks their rating of your business.
+          When a guest or local shows their discount QR code, scan it here (or type the code) to redeem it. This confirms their visit and unlocks their rating of your business.
         </p>
         {scanning ? (
           <div className="space-y-2">
@@ -179,15 +187,16 @@ function RedeemScanner() {
           </div>
         ) : (
           <Button onClick={startScan} disabled={busy} className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold">
-            Scan guest's QR code
+            Scan Guest/Local's QR code
           </Button>
         )}
         <div className="flex gap-2">
-          <Input value={token} onChange={(ev) => setToken(ev.target.value)} placeholder="or type the guest's code" className="font-mono" />
+          <Input value={token} onChange={(ev) => setToken(ev.target.value)} placeholder="or type the Guest/Local's code" className="font-mono" />
           <Button onClick={() => doRedeem(token)} disabled={busy || !token.trim()}>Redeem</Button>
         </div>
         {result && <p className={`text-sm ${result.startsWith("✓") ? "text-black" : "text-black"}`}>{result}</p>}
       </CardContent>
+      )}
     </Card>
   );
 }
@@ -198,7 +207,9 @@ function RedeemScanner() {
 // cannot stamp themselves.
 function LoyaltyManager({ entityType, entityId }: { entityType: string; entityId: number }) {
   const { toast } = useToast();
+  const [open, setOpen] = useState(false);
   const [enabled, setEnabled] = useState(false);
+  const [savedEnabled, setSavedEnabled] = useState(false);
   const [threshold, setThreshold] = useState(10);
   const [rewardText, setRewardText] = useState("");
   const [loadingCfg, setLoadingCfg] = useState(true);
@@ -207,6 +218,11 @@ function LoyaltyManager({ entityType, entityId }: { entityType: string; entityId
   const [phone, setPhone] = useState("");
   const [card, setCard] = useState<any | null>(null);
   const [busy, setBusy] = useState(false);
+  const [qty, setQty] = useState(1);
+  const [scanning, setScanning] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const activeRef = useRef(false);
 
   const GREEN = "bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold";
 
@@ -216,6 +232,7 @@ function LoyaltyManager({ entityType, entityId }: { entityType: string; entityId
         const backend = getAuthenticatedBackend();
         const p: any = await backend.loyalty.getProgram({ partnerType: entityType, partnerId: entityId });
         setEnabled(!!p.enabled);
+        setSavedEnabled(!!p.enabled);
         setThreshold(p.threshold || 10);
         setRewardText(p.rewardText || "");
       } catch {
@@ -231,6 +248,7 @@ function LoyaltyManager({ entityType, entityId }: { entityType: string; entityId
     try {
       const backend = getAuthenticatedBackend();
       await backend.loyalty.setProgram({ partnerType: entityType, partnerId: entityId, enabled, threshold, rewardText });
+      setSavedEnabled(enabled);
       toast({ title: "Loyalty card saved" });
     } catch (e: any) {
       toast({ title: "Couldn't save", description: e?.message || "Please try again", variant: "destructive" });
@@ -239,12 +257,13 @@ function LoyaltyManager({ entityType, entityId }: { entityType: string; entityId
     }
   };
 
-  const lookup = async () => {
-    if (!phone.trim()) return;
+  const lookup = async (override?: string) => {
+    const ph = (override ?? phone).trim();
+    if (!ph) return;
     setBusy(true);
     try {
       const backend = getAuthenticatedBackend();
-      const c: any = await backend.loyalty.lookup({ partnerType: entityType, partnerId: entityId, phone });
+      const c: any = await backend.loyalty.lookup({ partnerType: entityType, partnerId: entityId, phone: ph });
       setCard(c);
     } catch (e: any) {
       toast({ title: "Couldn't load card", description: e?.message || "", variant: "destructive" });
@@ -257,9 +276,10 @@ function LoyaltyManager({ entityType, entityId }: { entityType: string; entityId
     setBusy(true);
     try {
       const backend = getAuthenticatedBackend();
-      const c: any = await backend.loyalty.stamp({ partnerType: entityType, partnerId: entityId, phone: card?.customerPhone || phone });
+      const c: any = await backend.loyalty.stamp({ partnerType: entityType, partnerId: entityId, phone: card?.customerPhone || phone, count: qty });
       setCard(c);
-      toast({ title: "Stamp added", description: `${c.stamps} of ${c.threshold}` });
+      setQty(1);
+      toast({ title: qty === 1 ? "Stamp added" : `${qty} stamps added`, description: `${c.stamps} of ${c.threshold}` });
     } catch (e: any) {
       toast({ title: "Couldn't add stamp", description: e?.message || "", variant: "destructive" });
     } finally {
@@ -281,11 +301,69 @@ function LoyaltyManager({ entityType, entityId }: { entityType: string; entityId
     }
   };
 
+  const stopCamera = () => {
+    activeRef.current = false;
+    setScanning(false);
+    if (streamRef.current) { streamRef.current.getTracks().forEach((t) => t.stop()); streamRef.current = null; }
+  };
+  const onScan = (raw: string) => {
+    let v = (raw || "").trim();
+    if (v.toLowerCase().startsWith("aystamp:")) v = v.slice(8);
+    const digits = v.replace(/[^0-9]/g, "");
+    if (digits.length < 7) {
+      toast({ title: "That's not a stamp QR", description: "Ask the customer for their mobile number instead.", variant: "destructive" });
+      return;
+    }
+    setPhone(digits);
+    lookup(digits);
+  };
+  const startScan = async () => {
+    const hasDetector = "BarcodeDetector" in window;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      streamRef.current = stream;
+      setScanning(true);
+      if (!hasDetector) {
+        toast({ title: "Auto-scan not supported on this browser", description: "You'll see the camera, but please type the customer's number below." });
+      }
+    } catch {
+      stopCamera();
+      toast({ title: "Couldn't open the camera", description: "Allow camera access, or type the customer's number below instead.", variant: "destructive" });
+    }
+  };
+  useEffect(() => () => stopCamera(), []);
+  useEffect(() => {
+    if (!scanning || !streamRef.current || !videoRef.current) return;
+    const video = videoRef.current;
+    video.srcObject = streamRef.current;
+    video.play().catch(() => {});
+    activeRef.current = true;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const detector = "BarcodeDetector" in window ? new (window as any).BarcodeDetector({ formats: ["qr_code"] }) : null;
+    const scan = async () => {
+      if (!activeRef.current || !videoRef.current || !detector) return;
+      try {
+        const codes = await detector.detect(videoRef.current);
+        if (codes && codes.length > 0 && codes[0].rawValue) { stopCamera(); onScan(String(codes[0].rawValue)); return; }
+      } catch {
+        /* transient detect error — keep trying */
+      }
+      timer = setTimeout(scan, 400);
+    };
+    scan();
+    return () => { if (timer) clearTimeout(timer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scanning]);
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Loyalty Stamp Card</CardTitle>
+      <CardHeader className="cursor-pointer select-none" onClick={() => setOpen((o) => !o)}>
+        <CardTitle className="flex items-center justify-between">
+          <span>Loyalty Stamp Card</span>
+          <span className="text-muted-foreground text-base font-normal">{open ? "▾" : "▸"}</span>
+        </CardTitle>
       </CardHeader>
+      {open && (
       <CardContent className="space-y-4">
         <div className="space-y-3 rounded-lg border border-border/60 p-3">
           <p className="text-sm font-semibold">Card setup</p>
@@ -310,15 +388,24 @@ function LoyaltyManager({ entityType, entityId }: { entityType: string; entityId
           </Button>
         </div>
 
+        {savedEnabled ? (
         <div className="space-y-3 rounded-lg border border-border/60 p-3">
           <p className="text-sm font-semibold">Add a stamp</p>
           <p className="text-xs text-muted-foreground">
-            Enter the customer's mobile number, then add a stamp for today's purchase.
+            Scan the customer's QR code, or enter their mobile number, then add stamps for today's purchase.
           </p>
+          {scanning ? (
+            <div className="space-y-2">
+              <video ref={videoRef} className="w-full rounded-lg bg-black aspect-square object-cover" autoPlay muted playsInline />
+              <Button variant="outline" onClick={stopCamera} className="w-full">Stop camera</Button>
+            </div>
+          ) : (
+            <Button onClick={startScan} disabled={busy} className={`w-full ${GREEN}`}>Scan customer's QR code</Button>
+          )}
           <div className="flex gap-2">
             <Input value={phone} onChange={(e) => setPhone(e.target.value)}
-              placeholder="Customer mobile number" inputMode="tel" />
-            <Button variant="outline" onClick={lookup} disabled={busy || !phone.trim()}>Look up</Button>
+              placeholder="or enter mobile number" inputMode="tel" />
+            <Button variant="outline" onClick={() => lookup()} disabled={busy || !phone.trim()}>Look up</Button>
           </div>
 
           {card && (
@@ -341,7 +428,21 @@ function LoyaltyManager({ entityType, entityId }: { entityType: string; entityId
               {card.rewardReady ? (
                 <Button onClick={redeem} disabled={busy} className={GREEN}>Redeem reward 🎉</Button>
               ) : (
-                <Button onClick={addStamp} disabled={busy} className={GREEN}>+1 Stamp</Button>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={qty}
+                    onChange={(e) => setQty(parseInt(e.target.value, 10))}
+                    className="h-9 rounded-md border border-border bg-background px-2 text-sm"
+                    aria-label="Number of stamps"
+                  >
+                    {Array.from({ length: Math.max(1, Math.min(10, card.threshold - card.stamps)) }).map((_, i) => (
+                      <option key={i + 1} value={i + 1}>{i + 1}</option>
+                    ))}
+                  </select>
+                  <Button onClick={addStamp} disabled={busy} className={GREEN}>
+                    Add {qty} {qty === 1 ? "stamp" : "stamps"}
+                  </Button>
+                </div>
               )}
               {card.rewardsEarned > 0 && (
                 <p className="text-xs text-muted-foreground">Rewards claimed so far: {card.rewardsEarned}</p>
@@ -349,19 +450,28 @@ function LoyaltyManager({ entityType, entityId }: { entityType: string; entityId
             </div>
           )}
         </div>
+        ) : (
+          <div className="space-y-2 rounded-lg border border-dashed border-border/60 p-3">
+            <p className="text-sm font-semibold">Add a stamp</p>
+            <p className="text-xs text-muted-foreground">Turn the loyalty card on above and tap &ldquo;Save card settings&rdquo; to start adding stamps for customers.</p>
+          </div>
+        )}
       </CardContent>
+      )}
     </Card>
   );
 }
 
 export default function PartnerDashboard() {
   const [entity, setEntity] = useState<EntityData | null>(null);
-  const [entityType, setEntityType] = useState<"restaurant" | "service" | "attraction" | null>(null);
+  const [entityType, setEntityType] = useState<"restaurant" | "service" | "attraction" | "accommodation" | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState<any[]>([]);
   const [views, setViews] = useState<{ thisMonth: number; allTime: number } | null>(null);
   const [editing, setEditing] = useState(false);
   const [showGate, setShowGate] = useState(false);
+  const [gateMode, setGateMode] = useState<"edit" | "suggest">("edit");
+  const [suggestUnlocked, setSuggestUnlocked] = useState(false);
   const [editCodeInput, setEditCodeInput] = useState("");
   const [showEdit, setShowEdit] = useState(false);
   const [verifiedEditCode, setVerifiedEditCode] = useState("");
@@ -390,16 +500,19 @@ export default function PartnerDashboard() {
       setEntityType(user.entityType);
       const backend = getAuthenticatedBackend();
 
-      let data: EntityData;
+      let data: any;
       if (user.entityType === "restaurant") {
         const restaurants = await backend.restaurant.list({});
         data = restaurants.restaurants.find((r: Restaurant) => r.id === user.entityId)!;
       } else if (user.entityType === "service") {
         const services = await backend.service.list({});
         data = services.services.find((s: ServiceData) => s.id === user.entityId)!;
-      } else {
+      } else if (user.entityType === "attraction") {
         const attractions = await backend.attraction.list({});
         data = attractions.attractions.find((a: AttractionData) => a.id === user.entityId)!;
+      } else {
+        // accommodation signed in via the Business/Service Partner panel
+        data = await backend.accommodation.get({ id: user.entityId });
       }
 
       setEntity(data);
@@ -453,7 +566,8 @@ export default function PartnerDashboard() {
         setShowGate(false);
         setVerifiedEditCode(editCodeInput.trim());
         setEditCodeInput("");
-        setEditing(true);
+        if (gateMode === "suggest") setSuggestUnlocked(true);
+        else setEditing(true);
       } else {
         toast({ title: "Incorrect code", description: "That edit code doesn't match. Check with the Around You team if unsure.", variant: "destructive" });
       }
@@ -515,6 +629,84 @@ export default function PartnerDashboard() {
           {entityType === "attraction" && (
             <AttractionForm attractionId={(entity as AttractionData).attractionId} onClose={closeAndReload} partnerEdit editCode={verifiedEditCode} />
           )}
+          {entityType === "accommodation" && (
+            <AccommodationForm accommodation={entity as any} partnerEdit editCode={verifiedEditCode} onClose={closeAndReload} />
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Accommodation owners manage their profile here (signed in via the Partner
+  // panel). A focused view: edit the profile and manage suggestions, both gated
+  // by the Edit Code — the guest page no longer shows any edit controls.
+  if (entityType === "accommodation") {
+    const acc = entity as any;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#39FF14]/10 to-background p-6">
+        <div className="max-w-2xl mx-auto space-y-6 py-8">
+          <div className="relative text-center">
+            <div className="flex justify-center mb-2"><AppLogo src="/logo-dark.png" /></div>
+            <h1 className="text-3xl font-bold text-foreground">Partner Portal</h1>
+            <p className="text-lg text-muted-foreground mt-1">{acc?.name}</p>
+            <Button variant="ghost" onClick={handleLogout} className="absolute top-0 right-0 flex items-center gap-2">
+              <LogOut className="h-5 w-5" />
+              Logout
+            </Button>
+          </div>
+
+          <AppInstallButtons />
+
+          <Button
+            className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold"
+            onClick={() => { setGateMode("edit"); setShowGate(true); }}
+          >
+            Edit Profile
+          </Button>
+
+          <Button
+            variant="outline"
+            className="w-full border-[#0FB89B] text-[#0FB89B] hover:bg-[#0FB89B]/10 font-semibold"
+            onClick={() => { setGateMode("suggest"); setShowGate(true); }}
+          >
+            My Suggestions
+          </Button>
+
+          {suggestUnlocked && (
+            <SuggestionsManager
+              ownerType="accommodation"
+              ownerId={(entity as { id: number }).id}
+              editCode={verifiedEditCode}
+              onClose={() => setSuggestUnlocked(false)}
+            />
+          )}
+
+          {showGate && (
+            <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowGate(false)}>
+              <div className="bg-background rounded-lg shadow-lg max-w-sm w-full p-5 space-y-4" onClick={(ev) => ev.stopPropagation()}>
+                <h3 className="text-lg font-semibold">Enter your Edit Code</h3>
+                <p className="text-sm text-muted-foreground">Enter the Edit Code the Around You team gave you to unlock editing of your profile.</p>
+                <div className="space-y-1">
+                  <Label htmlFor="acc-edit-code" className="text-xs">Edit code</Label>
+                  <Input
+                    id="acc-edit-code"
+                    type={showEdit ? "text" : "password"}
+                    value={editCodeInput}
+                    onChange={(ev) => setEditCodeInput(ev.target.value)}
+                    placeholder="Edit code"
+                    className="font-mono tracking-widest"
+                    onKeyDown={(ev) => { if (ev.key === "Enter") verifyAndOpen(); }}
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setShowGate(false)} disabled={verifying}>Cancel</Button>
+                  <Button onClick={verifyAndOpen} disabled={verifying} className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black">
+                    {verifying ? "Checking…" : "Unlock"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -539,7 +731,7 @@ export default function PartnerDashboard() {
         <div className="relative text-center">
           <div className="flex justify-center mb-2"><AppLogo src="/logo-dark.png" /></div>
           <h1 className="text-4xl font-bold text-foreground">Partner Portal</h1>
-          <p className="text-lg text-muted-foreground mt-2">{getEntityTypeName()} Dashboard</p>
+          <p className="text-lg text-muted-foreground mt-2">{entity.name}</p>
           <Button
             variant="ghost"
             onClick={handleLogout}
@@ -550,14 +742,33 @@ export default function PartnerDashboard() {
           </Button>
         </div>
 
+        <SuggestionsBanner ownerType={entityType || ""} ownerId={(entity as { id: number }).id} backName={entity.name} />
+
         <AppInstallButtons />
 
         <Button
           className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold"
-          onClick={() => setShowGate(true)}
+          onClick={() => { setGateMode("edit"); setShowGate(true); }}
         >
           Edit Profile
         </Button>
+
+        <Button
+          variant="outline"
+          className="w-full border-[#0FB89B] text-[#0FB89B] hover:bg-[#0FB89B]/10 font-semibold"
+          onClick={() => { setGateMode("suggest"); setShowGate(true); }}
+        >
+          My Suggestions
+        </Button>
+
+        {suggestUnlocked && (
+          <SuggestionsManager
+            ownerType={entityType || ""}
+            ownerId={(entity as { id: number }).id}
+            editCode={verifiedEditCode}
+            onClose={() => setSuggestUnlocked(false)}
+          />
+        )}
 
         <RedeemScanner />
 
@@ -687,6 +898,9 @@ export default function PartnerDashboard() {
 
               {entityType === "restaurant" && e.cuisineTypes?.length > 0 && (
                 <Section title="Cuisine Types"><TagList items={e.cuisineTypes} /></Section>
+              )}
+              {entityType === "restaurant" && e.chefRecommendation && (
+                <Section title="Chef's Recommendation"><p className="text-sm whitespace-pre-line">{e.chefRecommendation}</p></Section>
               )}
               {entityType === "service" && e.serviceCategories?.length > 0 && (
                 <Section title="Business/Service Categories"><TagList items={e.serviceCategories} /></Section>

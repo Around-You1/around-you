@@ -9,7 +9,7 @@ interface PreOrderItem {
   price: number;
   leadTimeMinutes: number;
 }
-interface RestaurantLike {
+interface EntityLike {
   id: number;
   name: string;
   preOrderItems?: PreOrderItem[];
@@ -20,14 +20,15 @@ interface RestaurantLike {
 // Guest-facing pre-order for a restaurant's takeaway/delivery items. Only shows
 // the fulfilment options the restaurant actually offers, and emails the order
 // to the restaurant on submit (no payment is taken in-app).
-export default function RestaurantPreOrder({ restaurant }: { restaurant: RestaurantLike }) {
-  const items = restaurant.preOrderItems || [];
+export default function RestaurantPreOrder({ entity, entityType }: { entity: EntityLike; entityType?: "restaurant" | "service" | "attraction" }) {
+  const isRestaurant = (entityType || "restaurant") === "restaurant";
+  const items = entity.preOrderItems || [];
   const fulfilOptions = useMemo(() => {
     const o: string[] = [];
-    if (restaurant.serviceTakeaway) o.push("Collection");
-    if (restaurant.serviceDelivery) o.push("Delivery");
+    if (isRestaurant && entity.serviceTakeaway) o.push("Collection");
+    if (isRestaurant && entity.serviceDelivery) o.push("Delivery");
     return o;
-  }, [restaurant.serviceTakeaway, restaurant.serviceDelivery]);
+  }, [isRestaurant, entity.serviceTakeaway, entity.serviceDelivery]);
 
   const [open, setOpen] = useState(false);
   const [qty, setQty] = useState<Record<string, number>>({});
@@ -43,7 +44,8 @@ export default function RestaurantPreOrder({ restaurant }: { restaurant: Restaur
   const [done, setDone] = useState(false);
   const [err, setErr] = useState("");
 
-  if (items.length === 0 || fulfilOptions.length === 0) return null;
+  if (items.length === 0) return null;
+  if (isRestaurant && fulfilOptions.length === 0) return null;
 
   const total = items.reduce((sum, it) => sum + it.price * (qty[it.name] || 0), 0);
   const setItemQty = (n: string, v: number) => setQty((s) => ({ ...s, [n]: Math.max(0, v) }));
@@ -55,17 +57,19 @@ export default function RestaurantPreOrder({ restaurant }: { restaurant: Restaur
     if (!name.trim()) { setErr("Please enter your name."); return; }
     if (!email.trim()) { setErr("Please enter your email."); return; }
     if (!date.trim()) { setErr("Please choose a preferred date."); return; }
-    if (fulfilment === "Delivery" && !deliveryAddress.trim()) { setErr("Please enter a delivery address."); return; }
+    if (isRestaurant && fulfilment === "Delivery" && !deliveryAddress.trim()) { setErr("Please enter a delivery address."); return; }
     setSubmitting(true);
     try {
       const backend = getAuthenticatedBackend();
       await backend.preorder.submit({
-        restaurantId: restaurant.id,
+        entityType: entityType || "restaurant",
+        entityId: entity.id,
+        restaurantId: entity.id,
         customerName: name.trim(),
         customerEmail: email.trim(),
         customerPhone: phone.trim(),
-        fulfilment,
-        deliveryAddress: deliveryAddress.trim(),
+        fulfilment: isRestaurant ? fulfilment : "",
+        deliveryAddress: isRestaurant ? deliveryAddress.trim() : "",
         preferredDate: date,
         preferredTime: time,
         items: chosen,
@@ -83,15 +87,15 @@ export default function RestaurantPreOrder({ restaurant }: { restaurant: Restaur
     <div className="mt-2">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full sm:w-auto text-sm font-medium px-4 py-2 rounded-md bg-orange-500 text-white hover:bg-orange-600"
+        className="w-full sm:w-auto text-sm font-semibold px-4 py-2 rounded-md bg-[#39FF14] text-black hover:bg-[#39FF14]/90"
       >
-        {open ? "Hide pre-order" : "Click here to pre-order (takeaway / delivery)"}
+        {open ? "Hide pre-order" : (isRestaurant ? "Click here to pre-order (takeaway / delivery)" : "Click here to pre-order")}
       </button>
 
       {open && (
         <div className="mt-3 rounded-lg border border-border p-3 space-y-3 text-sm">
           {done ? (
-            <p className="text-green-700 font-medium">Your pre-order has been sent to {restaurant.name}. They'll contact you to confirm.</p>
+            <p className="text-green-700 font-medium">Your pre-order has been sent to {entity.name}. They'll contact you to confirm.</p>
           ) : (
             <>
               <div className="space-y-2">
@@ -113,18 +117,21 @@ export default function RestaurantPreOrder({ restaurant }: { restaurant: Restaur
 
               <p className="font-semibold">Total: R{total.toFixed(2)}</p>
 
-              <div className="flex gap-2">
-                {fulfilOptions.map((o) => (
-                  <label key={o} className="flex items-center gap-1.5">
-                    <input type="radio" name={`fulfil-${restaurant.id}`} checked={fulfilment === o} onChange={() => setFulfilment(o)} />
-                    {o}
-                  </label>
-                ))}
-              </div>
-
-              {fulfilment === "Delivery" && (
-                <input className="w-full border border-border rounded-md px-3 py-2" placeholder="Delivery address"
-                  value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} />
+              {isRestaurant && (
+                <>
+                  <div className="flex gap-2">
+                    {fulfilOptions.map((o) => (
+                      <label key={o} className="flex items-center gap-1.5">
+                        <input type="radio" name={`fulfil-${entity.id}`} checked={fulfilment === o} onChange={() => setFulfilment(o)} />
+                        {o}
+                      </label>
+                    ))}
+                  </div>
+                  {fulfilment === "Delivery" && (
+                    <input className="w-full border border-border rounded-md px-3 py-2" placeholder="Delivery address"
+                      value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} />
+                  )}
+                </>
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -151,7 +158,7 @@ export default function RestaurantPreOrder({ restaurant }: { restaurant: Restaur
                 className="w-full py-2.5 rounded-md bg-orange-600 text-white font-semibold disabled:opacity-60">
                 {submitting ? "Sending…" : "Send pre-order"}
               </button>
-              <p className="text-xs text-muted-foreground text-center">No payment is taken here — the restaurant confirms and arranges payment with you.</p>
+              <p className="text-xs text-muted-foreground text-center">No payment is taken here — the partner confirms and arranges payment with you.</p>
             </>
           )}
         </div>

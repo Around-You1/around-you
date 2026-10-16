@@ -19,7 +19,13 @@ const RAMP_DURATION_MS = 3200;
 // along that same span at a constant size.
 const BAR_LEFT = 24; // ~ horizontal centre of the JHB skyline
 const BAR_WIDTH = 52; // ~24%..76% (centre of JHB .. centre of Table Mountain)
-const BASELINE_BOTTOM = "40%"; // the neon baseline the skyline + logo sit on
+// The whole composition sits in the upper two-thirds of the screen: the skyline
+// + logo rest on a baseline about a third from the top, and the loading bar sits
+// two-thirds of the way down. Internal spacing (car above bar, % below bar) is
+// preserved relative to the bar.
+const BASELINE_BOTTOM = "63%"; // neon baseline the skyline + logo sit on (~1/3 from top)
+const BAR_BOTTOM = "33%";      // loading bar sits ~2/3 of the way down the page
+const PCT_BOTTOM = "27%";      // percentage sits just below the bar
 
 interface Props {
   // True once whatever the app is actually waiting on (session check, code
@@ -124,7 +130,7 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
           draggable={false}
           style={{
             position: "absolute",
-            bottom: "calc(10% + 26px)",
+            bottom: `calc(${BAR_BOTTOM} + 26px)`,
             left: `${carLeft}%`,
             transform: "translateX(-50%)",
             width: "clamp(90px, 13%, 190px)",
@@ -139,7 +145,7 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
             position: "absolute",
             left: `${BAR_LEFT}%`,
             width: `${BAR_WIDTH}%`,
-            bottom: "10%",
+            bottom: BAR_BOTTOM,
             height: 26,
             borderRadius: 999,
             border: `2px solid ${LUMO}`,
@@ -170,7 +176,7 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
             position: "absolute",
             left: 0,
             right: 0,
-            bottom: "4%",
+            bottom: PCT_BOTTOM,
             textAlign: "center",
             color: LUMO,
             fontWeight: 700,

@@ -120,6 +120,7 @@ function partnerEntity(
           longitude: req?.longitude,
           radiusKm: req?.radiusKm,
           postalCode: req?.postalCode,
+          nonProfit: req?.nonProfit,
         },
       }),
     get: (req: any) => request("GET", `${base}/get`, { query: { [idParam]: req?.[idParam] } }),
@@ -142,7 +143,7 @@ function partnerEntity(
 
 export const backend = {
   auth: {
-    accessCodeLogin: (req: { accessCode: string }) =>
+    accessCodeLogin: (req: { accessCode: string; asPartner?: boolean }) =>
       request("POST", "/auth/access-code-login", { body: req }),
     secondaryLogin: (req: any) =>
       request("POST", "/auth/secondary-login", { body: req }),
@@ -153,6 +154,7 @@ export const backend = {
     repLogin: (req: { fullName: string; repCode: string; accessCode?: string }) =>
       request("POST", "/auth/rep-login", { body: req }),
     repApplication: (req: any) => request("POST", "/auth/rep-application", { body: req }),
+    repCodeInfo: (req: { code: string }) => request("GET", "/auth/rep-code-info", { query: { code: req?.code } }),
     repIdDocument: (req: { repCode: string }) => request("GET", "/auth/rep/id-document", { query: { repCode: req?.repCode } }),
     setRepIdDocument: (req: { repCode: string; idDocument: string }) => request("POST", "/auth/rep/id-document", { body: req }),
     accLogin: (req: { accessCode: string }) =>
@@ -210,6 +212,7 @@ export const backend = {
     invoicePreview: () => request("GET", "/billing/invoice-preview"),
     emailLog: () => request("GET", "/billing/email-log"),
     resendInvoice: (req: { invoiceId: number }) => request("POST", "/billing/invoice/resend", { body: req }),
+    resendWelcome: (req: { partnerType: string; partnerId: number }) => request("POST", "/partner/resend-welcome", { body: req }),
     sendTestInvoice: (req?: { to?: string }) => request("POST", "/billing/invoice/test-send", { body: req || {} }),
   },
 
@@ -225,7 +228,7 @@ export const backend = {
     }) => request("POST", "/loyalty/program/set", { body: req }),
     lookup: (req: { partnerType: string; partnerId: number; phone: string }) =>
       request("POST", "/loyalty/lookup", { body: req }),
-    stamp: (req: { partnerType: string; partnerId: number; phone: string }) =>
+    stamp: (req: { partnerType: string; partnerId: number; phone: string; count?: number }) =>
       request("POST", "/loyalty/stamp", { body: req }),
     redeem: (req: { partnerType: string; partnerId: number; phone: string }) =>
       request("POST", "/loyalty/redeem", { body: req }),
@@ -247,6 +250,17 @@ export const backend = {
     // Locals dropdown. Omit userId (or pass 0) for totals across all locals.
     localLoginTotals: (req: { period: "daily" | "weekly" | "monthly" | "yearly"; userId?: number }) =>
       request("GET", "/analytics/locals/logins", { query: req }),
+    // The individual sign-ins (emails) inside one clicked bucket of the Locals
+    // chart. periodKey is the bucket label the user clicked.
+    localSignins: (req: { period: "daily" | "weekly" | "monthly" | "yearly"; periodKey: string; userId?: number }) =>
+      request("GET", "/analytics/locals/signins", { query: req }),
+    // "Holiday Guests" — the dropdown of accommodations that have had a guest
+    // sign in, mirroring the Locals analytics but keyed by accommodation.
+    holidayGuests: () => request("GET", "/analytics/holiday-guests"),
+    holidayGuestLoginTotals: (req: { period: "daily" | "weekly" | "monthly" | "yearly"; accommodationId?: number }) =>
+      request("GET", "/analytics/holiday-guests/logins", { query: req }),
+    holidayGuestSignins: (req: { period: "daily" | "weekly" | "monthly" | "yearly"; periodKey: string; accommodationId?: number }) =>
+      request("GET", "/analytics/holiday-guests/signins", { query: req }),
   },
   events: {
     record: (req: {
@@ -355,6 +369,8 @@ export const backend = {
     get: (req: any) => request("GET", "/accommodation/get", { query: { id: req?.id } }),
     create: (req: any) => request("POST", "/accommodation", { body: req }),
     update: (req: any) => request("PUT", "/accommodation", { body: req }),
+    regenerateAccessCode: (req: any) =>
+      request("POST", "/accommodation/access-code/regenerate", { body: req }),
     deleteAccommodation: (req: any) =>
       request("DELETE", "/accommodation", { body: req }),
     template: () => request("GET", "/accommodation/template"),
@@ -432,6 +448,28 @@ export const backend = {
   repInvoice: {
     preview: () => request("GET", "/rep-invoice/preview"),
     submit: (req: any) => request("POST", "/rep-invoice/submit", { body: req }),
+  },
+  // Reads a hand-filled onboarding PDF, or one or more WhatsApp/photo
+  // screenshots, with Claude and returns structured fields to pre-fill the
+  // onboarding form (a human reviews before saving).
+  onboarding: {
+    extract: (req: { category: string; files: { mediaType: string; data: string }[] }) =>
+      request("POST", "/onboarding/extract", { body: req }),
+  },
+  // "My Suggestions": a profile recommends up to 10 other nearby businesses.
+  suggestions: {
+    nearby: (req: { ownerType: string; ownerId: number }) =>
+      request("GET", "/suggestions/nearby", { query: req }),
+    get: (req: { ownerType: string; ownerId: number }) =>
+      request("GET", "/suggestions", { query: req }),
+    save: (req: { ownerType: string; ownerId: number; editCode: string; items: { type: string; id: number }[] }) =>
+      request("POST", "/suggestions/save", { body: req }),
+  },
+  // Emergency button: five key contacts for a postal code (guesthouse fields +
+  // highest-rated Doctor/Vet partners).
+  emergency: {
+    contacts: (req: { postalCode: string; accommodationId?: number }) =>
+      request("GET", "/emergency/contacts", { query: req }),
   },
 };
 

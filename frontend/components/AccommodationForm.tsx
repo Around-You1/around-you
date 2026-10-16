@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import AppLogo from "./AppLogo";
 import MultiImageUpload from "./MultiImageUpload";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
@@ -15,6 +16,7 @@ import { getAuthenticatedBackend } from "../lib/backend";
 import type { Accommodation } from "~backend/accommodation/types";
 import { useToast } from "@/components/ui/use-toast";
 import ProfileReferenceCodeDisplay from "./ProfileReferenceCodeDisplay";
+import AccommodationAccessCode from "./AccommodationAccessCode";
 import { SA_PROVINCES } from "../lib/saRegions";
 
 const MAX_IMAGES = 10;
@@ -24,6 +26,7 @@ const FACILITIES = [
   "Fly Fishing",
   "Golf",
   "Gym",
+  "Lapa",
   "Laundry",
   "Spa",
   "Swimming Pool",
@@ -89,9 +92,14 @@ function EmergencyEntryEditor({
 interface AccommodationFormProps {
   accommodation: Accommodation | null;
   onClose: () => void;
+  // Owner self-service edit: the accommodation owner unlocked this form on the
+  // guest dashboard with their Edit Code. Hides admin-only sections and sends
+  // the edit code so the backend authorises the update.
+  partnerEdit?: boolean;
+  editCode?: string;
 }
 
-export default function AccommodationForm({ accommodation, onClose }: AccommodationFormProps) {
+export default function AccommodationForm({ accommodation, onClose, partnerEdit = false, editCode }: AccommodationFormProps) {
   // Initialised straight from the `accommodation` prop rather than blank-then-
   // filled-by-useEffect. The Province <Select> reads its value when it mounts
   // and does not re-sync if the value arrives a render later, which is why it
@@ -105,8 +113,8 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
     officialRepName: accommodation?.officialRepName || "",
     companyRegNumber: accommodation?.companyRegNumber || "",
     companyVatNumber: accommodation?.companyVatNumber || "",
-    guestType: accommodation?.guestType || "",
-    accessLevel: accommodation?.accessLevel || "",
+    guestType: accommodation?.guestType || "Both",
+    accessLevel: accommodation?.accessLevel || "Tier 2",
   }));
 
   const [formData, setFormData] = useState(() => ({
@@ -164,12 +172,14 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
         officialRepName: accommodation.officialRepName || "",
         companyRegNumber: accommodation.companyRegNumber || "",
         companyVatNumber: accommodation.companyVatNumber || "",
-        guestType: accommodation.guestType || "",
-        accessLevel: accommodation.accessLevel || "",
+        guestType: accommodation.guestType || "Both",
+        accessLevel: accommodation.accessLevel || "Tier 2",
       });
-      loadCharity("accommodation", accommodation.id).then((cats) =>
-        setOfficialUse((o) => ({ ...o, charity: cats })),
-      );
+      if (!partnerEdit) {
+        loadCharity("accommodation", accommodation.id).then((cats) =>
+          setOfficialUse((o) => ({ ...o, charity: cats })),
+        );
+      }
       setFormData({
         name: accommodation.name,
         address: accommodation.address,
@@ -241,18 +251,26 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
           longitude: formData.longitude ? parseFloat(formData.longitude) : undefined,
           area: formData.area || undefined,
           imageUrls: formData.imageUrls,
-          officialHoldingCompany: officialUse.officialHoldingCompany || undefined,
-          officialContactName: officialUse.officialContactName || undefined,
-          officialContactNumber: officialUse.officialContactNumber || undefined,
-          officialEmail: officialUse.officialEmail || undefined,
-          officialRepCode: officialUse.officialRepCode || undefined,
-          officialRepName: officialUse.officialRepName || undefined,
-          companyRegNumber: officialUse.companyRegNumber || undefined,
-          companyVatNumber: officialUse.companyVatNumber || undefined,
-          guestType: officialUse.guestType || undefined,
-          accessLevel: officialUse.accessLevel || undefined,
+          // Owner self-service edits carry the Edit Code and never touch the
+          // admin-only Official-Use fields (omitted -> preserved server-side).
+          ...(partnerEdit
+            ? { editCode: editCode || undefined }
+            : {
+                officialHoldingCompany: officialUse.officialHoldingCompany || undefined,
+                officialContactName: officialUse.officialContactName || undefined,
+                officialContactNumber: officialUse.officialContactNumber || undefined,
+                officialEmail: officialUse.officialEmail || undefined,
+                officialRepCode: officialUse.officialRepCode || undefined,
+                officialRepName: officialUse.officialRepName || undefined,
+                companyRegNumber: officialUse.companyRegNumber || undefined,
+                companyVatNumber: officialUse.companyVatNumber || undefined,
+                guestType: "Both",
+                accessLevel: "Tier 2",
+              }),
         });
-        await saveCharity("accommodation", accommodation.id, officialUse.charity || []);
+        if (!partnerEdit) {
+          await saveCharity("accommodation", accommodation.id, officialUse.charity || []);
+        }
         toast({
           title: "Success",
           description: "Accommodation updated successfully",
@@ -271,8 +289,8 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
           officialRepName: officialUse.officialRepName || undefined,
           companyRegNumber: officialUse.companyRegNumber || undefined,
           companyVatNumber: officialUse.companyVatNumber || undefined,
-          guestType: officialUse.guestType || undefined,
-          accessLevel: officialUse.accessLevel || undefined,
+          guestType: "Both",
+          accessLevel: "Tier 2",
         });
         await saveCharity("accommodation", createdAcc.id, officialUse.charity || []);
         toast({
@@ -296,11 +314,19 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{accommodation ? "Edit" : "Add"} Accommodation</CardTitle>
+        {partnerEdit && (
+          <div className="flex flex-col items-center gap-2 mb-2">
+            <AppLogo src="/logo-dark.png" size={110} />
+            <div className="text-lg font-bold text-center break-words">{formData.name || "Your Profile"}</div>
+          </div>
+        )}
+        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${accommodation ? "Edit" : "Add"} Accommodation`}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <OfficialUseSection data={officialUse} onChange={setOfficialUse} showTierFields={false} />
+          {!partnerEdit && (
+            <OfficialUseSection data={officialUse} onChange={setOfficialUse} showTierFields={false} />
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
@@ -486,7 +512,7 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
 
           <div className="space-y-2">
             <Label>Facilities</Label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 border rounded-md">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-4 border rounded-md">
               {FACILITIES.map((facility) => (
                 <div key={facility} className="flex items-center space-x-2">
                   <Checkbox
@@ -706,12 +732,16 @@ export default function AccommodationForm({ accommodation, onClose }: Accommodat
             />
           </div>
 
-          {accommodation && (
+          {accommodation && !partnerEdit && (
             <ProfileReferenceCodeDisplay
               entityType="accommodation"
               entityId={accommodation.id}
               currentCode={accommodation.profileReferenceCode}
             />
+          )}
+
+          {accommodation && partnerEdit && (
+            <AccommodationAccessCode accommodationId={accommodation.id} editCode={editCode} />
           )}
 
           <div className="flex items-center space-x-2">

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import AppLogo from "./AppLogo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,7 +67,7 @@ const CUISINE_TYPES = [
   "Vetkoek",
 ];
 
-const RESTAURANT_TYPES = ["Food Truck", "Home Meals", "Take Away", "Pop Up", "Restaurant"];
+const RESTAURANT_TYPES = ["Food Truck", "Home Meals", "Take Away", "Delivery", "Pop Up", "Restaurant"];
 const ATMOSPHERE_OPTIONS = ["Family-friendly", "Romantic", "Trendy / Modern", "Quiet", "Lively", "Outdoor Seating", "Sea View", "Mountain View", "Rooftop", "Garden"];
 const RESTAURANT_FEATURES = ["Walk-ins Welcome", "Live Music", "Free Wi-Fi"];
 const DIETARY_OPTIONS = ["Gluten Free", "Halaal", "Kosher", "Nut Free", "Signature Dish", "Chef Recommendation"];
@@ -87,13 +88,14 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
     officialRepName: "",
     companyRegNumber: "",
     companyVatNumber: "",
-    guestType: "",
-    accessLevel: "",
+    guestType: "Both",
+    accessLevel: "Tier 2",
   });
 
   const [formData, setFormData] = useState({
     name: "",
     address: "",
+    accountingAddress: "",
     latitude: "" as string | number,
     longitude: "" as string | number,
     country: "South Africa",
@@ -106,6 +108,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
     atmosphere: [] as string[],
     features: [] as string[],
     dietaryOptions: [] as string[],
+    chefRecommendation: "",
     offersBookings: false,
     worksFromClientAddress: false,
     menuLink: "",
@@ -200,8 +203,8 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
         officialRepName: data.officialRepName || "",
         companyRegNumber: data.companyRegNumber || "",
         companyVatNumber: data.companyVatNumber || "",
-        guestType: data.guestType || "",
-        accessLevel: data.accessLevel || "",
+        guestType: data.guestType || "Both",
+        accessLevel: data.accessLevel || "Tier 2",
       });
       loadCharity("restaurant", restaurantId).then((cats) =>
         setOfficialUse((o) => ({ ...o, charity: cats })),
@@ -210,6 +213,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
       setFormData({
         name: data.name,
         address: data.address,
+        accountingAddress: data.accountingAddress || "",
         latitude: data.latitude ?? "",
         longitude: data.longitude ?? "",
         country: data.country,
@@ -222,6 +226,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
         atmosphere: data.atmosphere || [],
         features: data.features || [],
         dietaryOptions: data.dietaryOptions || [],
+        chefRecommendation: data.chefRecommendation || "",
         offersBookings: data.offersBookings ?? false,
         worksFromClientAddress: data.worksFromClientAddress ?? false,
         menuLink: data.menuLink || "",
@@ -319,8 +324,8 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
           officialRepName: officialUse.officialRepName || undefined,
           companyRegNumber: officialUse.companyRegNumber || undefined,
           companyVatNumber: officialUse.companyVatNumber || undefined,
-          guestType: officialUse.guestType || undefined,
-          accessLevel: (formData.offersBookings || offersPreOrders) ? "Booking" : (officialUse.accessLevel || undefined),
+          guestType: "Both",
+          accessLevel: (formData.offersBookings || offersPreOrders) ? "Booking" : "Tier 2",
         });
         await saveCharity("restaurant", restaurantId, officialUse.charity || []);
         toast({
@@ -342,8 +347,8 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
           officialRepName: officialUse.officialRepName || undefined,
           companyRegNumber: officialUse.companyRegNumber || undefined,
           companyVatNumber: officialUse.companyVatNumber || undefined,
-          guestType: officialUse.guestType || undefined,
-          accessLevel: (formData.offersBookings || offersPreOrders) ? "Booking" : (officialUse.accessLevel || undefined),
+          guestType: "Both",
+          accessLevel: (formData.offersBookings || offersPreOrders) ? "Booking" : "Tier 2",
         });
         await saveCharity("restaurant", createdRest.id, officialUse.charity || []);
         toast({
@@ -403,11 +408,17 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
   return (
     <Card>
       <CardHeader>
+        {partnerEdit && (
+          <div className="flex flex-col items-center gap-2 mb-2">
+            <AppLogo src="/logo-dark.png" size={110} />
+            <div className="text-lg font-bold text-center break-words">{formData.name || "Your Profile"}</div>
+          </div>
+        )}
         <CardTitle>{partnerEdit ? "Edit Your Profile" : `${restaurantId ? "Edit" : "Add"} Restaurant/Takeaway`}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {!partnerEdit && <OfficialUseSection data={officialUse} onChange={setOfficialUse} />}
+          {!partnerEdit && <OfficialUseSection data={officialUse} onChange={setOfficialUse} address={formData.accountingAddress} onAddressChange={(v) => setFormData({ ...formData, accountingAddress: v })} />}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
@@ -421,12 +432,16 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
+              <Label htmlFor="address">Restaurant/Takeaway Address</Label>
               <Input
                 id="address"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                placeholder="Street address"
               />
+              <p className="text-xs text-muted-foreground">
+                Shown on the Guest &amp; Local pages for a business premises. Hidden from Guests &amp; Locals when &quot;Do you work from different addresses?&quot; is ticked.
+              </p>
             </div>
 
             <div className="space-y-2 md:col-span-2 rounded-md border p-3">
@@ -436,7 +451,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
                   checked={formData.worksFromClientAddress}
                   onCheckedChange={(c) => setFormData({ ...formData, worksFromClientAddress: c === true })}
                 />
-                <Label htmlFor="worksFromClientAddress" className="cursor-pointer">Do you offer to work from different addresses?</Label>
+                <Label htmlFor="worksFromClientAddress" className="cursor-pointer">Do you work from different addresses?</Label>
               </div>
               <p className="text-xs text-muted-foreground">Tick if you travel to the client and have no fixed address. You'll still appear in every nearby/radius search even without coordinates.</p>
             </div>
@@ -699,6 +714,18 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
                 </div>
               ))}
             </div>
+            {formData.dietaryOptions.includes("Chef Recommendation") && (
+              <div className="space-y-1 pt-1">
+                <Label htmlFor="chefRecommendation">Chef Recommendation</Label>
+                <Textarea
+                  id="chefRecommendation"
+                  value={formData.chefRecommendation}
+                  onChange={(e) => setFormData({ ...formData, chefRecommendation: e.target.value })}
+                  placeholder="e.g. Chef's signature lamb shank, slow-cooked for 6 hours — served with rosemary mash."
+                  rows={2}
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex items-center space-x-2">
@@ -915,7 +942,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Bookable Items (Restaurants/Takeaways)</Label>
             <p className="text-sm text-muted-foreground">
-              Tables a guest can book (name and price in Rand). Booking partners are Premium and pay R400/month plus R10 per cover.
+              Tables a guest can book (name and price in Rand). Booking partners pay R300/month plus R10 per cover.
             </p>
             {formData.bookingItems.map((item, i) => (
               <div key={i} className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_auto] gap-2 items-end">

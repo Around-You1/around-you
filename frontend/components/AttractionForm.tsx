@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import AppLogo from "./AppLogo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,12 +56,13 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
     officialRepName: "",
     companyRegNumber: "",
     companyVatNumber: "",
-    guestType: "",
-    accessLevel: "",
+    guestType: "Both",
+    accessLevel: "Tier 2",
   });
   const [formData, setFormData] = useState({
     name: "",
     address: "",
+    accountingAddress: "",
     latitude: "",
     worksFromClientAddress: false,
     longitude: "",
@@ -110,6 +112,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
     offersBookings: false,
     isActive: false,
     bookingItems: [] as { name: string; price: number; duration: number }[],
+    preOrderItems: [] as { name: string; price: number; leadTimeMinutes: number }[],
   });
   const { toast } = useToast();
 
@@ -149,8 +152,8 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
         officialRepName: data.officialRepName || "",
         companyRegNumber: data.companyRegNumber || "",
         companyVatNumber: data.companyVatNumber || "",
-        guestType: data.guestType || "",
-        accessLevel: data.accessLevel || "",
+        guestType: data.guestType || "Both",
+        accessLevel: data.accessLevel || "Tier 2",
       });
       loadCharity("attraction", data.id).then((cats) =>
         setOfficialUse((o) => ({ ...o, charity: cats })),
@@ -159,6 +162,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
       setFormData({
         name: data.name,
         address: data.address,
+        accountingAddress: data.accountingAddress || "",
         latitude: data.latitude != null ? String(data.latitude) : "",
         worksFromClientAddress: data.worksFromClientAddress ?? false,
         longitude: data.longitude != null ? String(data.longitude) : "",
@@ -208,6 +212,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
         offersBookings: data.offersBookings || false,
         isActive: data.isActive,
         bookingItems: data.bookingItems || [],
+        preOrderItems: data.preOrderItems || [],
       });
     } catch (error) {
       console.error("Failed to load attraction:", error);
@@ -246,6 +251,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           editCode: editCode || undefined,
           name: formData.name,
           address: formData.address,
+          accountingAddress: formData.accountingAddress,
           latitude: formData.latitude ? parseFloat(formData.latitude) : null,
           worksFromClientAddress: formData.worksFromClientAddress,
           longitude: formData.longitude ? parseFloat(formData.longitude) : null,
@@ -302,9 +308,10 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           officialRepName: officialUse.officialRepName || undefined,
           companyRegNumber: officialUse.companyRegNumber || undefined,
           companyVatNumber: officialUse.companyVatNumber || undefined,
-          guestType: officialUse.guestType || undefined,
-          accessLevel: formData.offersBookings ? "Booking" : (officialUse.accessLevel || undefined),
+          guestType: "Both",
+          accessLevel: (formData.offersBookings || formData.preOrderItems.length > 0) ? "Booking" : "Tier 2",
           bookingItems: formData.bookingItems,
+          preOrderItems: formData.preOrderItems,
         });
         await saveCharity("attraction", attractionData?.id, officialUse.charity || []);
         toast({
@@ -315,6 +322,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
         const createdAtt: any = await backend.attraction.create({
           name: formData.name,
           address: formData.address,
+          accountingAddress: formData.accountingAddress,
           latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
           worksFromClientAddress: formData.worksFromClientAddress,
           longitude: formData.longitude ? parseFloat(formData.longitude) : undefined,
@@ -370,9 +378,10 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           officialRepName: officialUse.officialRepName || undefined,
           companyRegNumber: officialUse.companyRegNumber || undefined,
           companyVatNumber: officialUse.companyVatNumber || undefined,
-          guestType: officialUse.guestType || undefined,
-          accessLevel: formData.offersBookings ? "Booking" : (officialUse.accessLevel || undefined),
+          guestType: "Both",
+          accessLevel: (formData.offersBookings || formData.preOrderItems.length > 0) ? "Booking" : "Tier 2",
           bookingItems: formData.bookingItems,
+          preOrderItems: formData.preOrderItems,
         });
         await saveCharity("attraction", createdAtt.id, officialUse.charity || []);
         toast({
@@ -413,15 +422,21 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
   return (
     <Card>
       <CardHeader>
+        {partnerEdit && (
+          <div className="flex flex-col items-center gap-2 mb-2">
+            <AppLogo src="/logo-dark.png" size={110} />
+            <div className="text-lg font-bold text-center break-words">{formData.name || "Your Profile"}</div>
+          </div>
+        )}
         <CardTitle>{partnerEdit ? "Edit Your Profile" : `${attractionId ? "Edit" : "Add"} Attraction`}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!partnerEdit && <OfficialUseSection data={officialUse} onChange={setOfficialUse} />}
+          {!partnerEdit && <OfficialUseSection data={officialUse} onChange={setOfficialUse} address={formData.accountingAddress} onAddressChange={(v) => setFormData({ ...formData, accountingAddress: v })} />}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Attraction Name *</Label>
+              <Label htmlFor="name">Attraction/Activities Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -429,6 +444,19 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
                 required
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="premises-address">Attraction/Activities Address</Label>
+            <Input
+              id="premises-address"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              placeholder="Street address"
+            />
+            <p className="text-xs text-muted-foreground">
+              Shown on the Guest &amp; Local pages for a business premises. Hidden from Guests &amp; Locals when &quot;Do you work from different addresses?&quot; is ticked.
+            </p>
           </div>
 
           <div className="space-y-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
@@ -456,27 +484,19 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           </div>
 
-          <div className="space-y-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
-            <Label htmlFor="address">Address</Label>
-            <Input
-              id="address"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            />
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2 md:col-span-2 rounded-md border p-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2 sm:col-span-2 rounded-md border p-3">
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="worksFromClientAddress"
                   checked={formData.worksFromClientAddress}
                   onCheckedChange={(c) => setFormData({ ...formData, worksFromClientAddress: c === true })}
                 />
-                <Label htmlFor="worksFromClientAddress" className="cursor-pointer">Do you offer to work from different addresses?</Label>
+                <Label htmlFor="worksFromClientAddress" className="cursor-pointer">Do you work from different addresses?</Label>
               </div>
               <p className="text-xs text-muted-foreground">Tick if you travel to the client and have no fixed address. You'll still appear in every nearby/radius search even without coordinates.</p>
             </div>
@@ -502,7 +522,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
               />
             </div>
 
-            <div className="space-y-1 md:col-span-2">
+            <div className="space-y-1 sm:col-span-2">
               <Button type="button" variant="outline" onClick={captureLocation} disabled={locating}>
                 {locating ? "Getting your location…" : "📍 Use my current location"}
               </Button>
@@ -512,7 +532,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="country">Country *</Label>
               <Input
@@ -768,7 +788,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
 
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Payment Options</Label>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="flex items-center space-x-2">
                 <Switch
                   id="paymentCard"
@@ -838,7 +858,7 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
 
           <div className="space-y-4" style={{ display: tierNum >= 1 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Accessibility</Label>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex items-center space-x-2">
                 <Switch
                   id="wheelchairAccess"
@@ -897,6 +917,40 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
             <Button type="button" variant="outline"
               onClick={() => setFormData({ ...formData, bookingItems: [...formData.bookingItems, { name: "", price: 0, duration: 0 }] })}>
               + Add Item
+            </Button>
+          </div>
+
+          <div className="space-y-4">
+            <Label className="text-base font-semibold">Pre-Order Items</Label>
+            <p className="text-sm text-muted-foreground">
+              Items a guest can pre-order ahead (name, price in Rand, lead time in minutes). Adding any item enables pre-orders on this profile.
+            </p>
+            {formData.preOrderItems.map((item, i) => (
+              <div key={i} className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_auto] gap-2 items-end">
+                <div className="space-y-1">
+                  <Label className="text-xs">Item</Label>
+                  <Input value={item.name}
+                    onChange={(e) => setFormData({ ...formData, preOrderItems: formData.preOrderItems.map((r, idx) => (idx === i ? { ...r, name: e.target.value } : r)) })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Price (R)</Label>
+                  <Input type="number" step="any" value={item.price}
+                    onChange={(e) => setFormData({ ...formData, preOrderItems: formData.preOrderItems.map((r, idx) => (idx === i ? { ...r, price: parseFloat(e.target.value) || 0 } : r)) })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Lead time (min)</Label>
+                  <Input type="number" step="1" value={item.leadTimeMinutes}
+                    onChange={(e) => setFormData({ ...formData, preOrderItems: formData.preOrderItems.map((r, idx) => (idx === i ? { ...r, leadTimeMinutes: parseInt(e.target.value) || 0 } : r)) })} />
+                </div>
+                <Button type="button" variant="outline"
+                  onClick={() => setFormData({ ...formData, preOrderItems: formData.preOrderItems.filter((_, idx) => idx !== i) })}>
+                  Remove
+                </Button>
+              </div>
+            ))}
+            <Button type="button" variant="outline"
+              onClick={() => setFormData({ ...formData, preOrderItems: [...formData.preOrderItems, { name: "", price: 0, leadTimeMinutes: 0 }] })}>
+              + Add Pre-Order Item
             </Button>
           </div>
 

@@ -1,0 +1,261 @@
+"use client";
+
+import { useState, Fragment } from "react";
+
+const LUMO = "#39FF14";
+const LUMO_DARK = "#2dd10f";
+
+// Lumo call-to-action used inside expandable sections (onboard / register links).
+const ctaStyle: React.CSSProperties = {
+  display: "inline-block",
+  marginTop: 6,
+  background: `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`,
+  color: "#000",
+  fontWeight: 700,
+  borderRadius: 8,
+  padding: "10px 16px",
+  textDecoration: "none",
+};
+
+interface Section {
+  id: string;
+  title: string;
+  content: React.ReactNode;
+}
+
+function InfoSquareBtn({
+  title,
+  isOpen,
+  dimmed,
+  onToggle,
+}: {
+  title: string;
+  isOpen: boolean;
+  dimmed: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      disabled={dimmed}
+      aria-expanded={isOpen}
+      style={{
+        background: "#000",
+        border: `2px solid ${dimmed ? "#3a3a3a" : isOpen ? "#5fff3a" : LUMO}`,
+        color: dimmed ? "#555" : isOpen ? "#5fff3a" : LUMO,
+        opacity: dimmed ? 0.55 : 1,
+        pointerEvents: dimmed ? "none" : "auto",
+        borderRadius: 10,
+        fontWeight: 700,
+        fontSize: "0.65rem",
+        cursor: dimmed ? "default" : "pointer",
+        textAlign: "center",
+        letterSpacing: "0.03em",
+        transition: "all 0.2s ease",
+        aspectRatio: "2 / 1",
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "4px",
+        minHeight: 0,
+        lineHeight: 1.25,
+      }}
+      className="touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39FF14] focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1.2)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1)";
+      }}
+      onMouseDown={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.98)";
+      }}
+      onMouseUp={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
+      }}
+    >
+      {title}
+    </button>
+  );
+}
+
+// InfoSquares renders the six informational buttons (About Us … Join our Sales
+// Team) as a 3-column grid with inline expandable content. Shown on the Sign In
+// page (the old landing page has been removed).
+export default function InfoSquares() {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const handleToggle = (id: string) => setOpenId((prev) => (prev === id ? null : id));
+
+  const sections: (Section | { id: string; title: string; href: string })[] = [
+    {
+      id: "about",
+      title: "About Us",
+      content: (
+        <>
+          <p>Around You welcomes guests with instant access to verified accommodation info, curated local partners, and exclusive perks.</p>
+          <p>As a Holiday Guest, log in with the accommodation's unique QR Code or Access Code to unlock seamless navigation, trusted recommendations, and meaningful savings.</p>
+          <p>As a Local, log in with your email address, province, and municipal area to search for restaurants, business/services, and attractions 'Around You.'</p>
+          <p>Everything you need—where to go, what to enjoy, and how to get there—is just one tap away.</p>
+          <p>It's hospitality, elevated.</p>
+        </>
+      ),
+    },
+    {
+      id: "heart",
+      title: "Our Values",
+      content: (
+        <>
+          <p>We believe hospitality should go beyond the stay. That's why Around You partners with Trinity CSR, a social impact initiative committed to giving back.</p>
+          <p>Through this collaboration, a portion of all platform sales supports causes that matter—like vulnerable communities, animal welfare, and grassroots organizations.</p>
+        </>
+      ),
+    },
+    {
+      id: "how",
+      title: "How It Works",
+      content: (
+        <>
+          <p>Around You gives you instant access to everything worth knowing near where you're staying — verified accommodation info, trusted local restaurants, business/services and attractions, exclusive discounts, and one-tap directions. Here's how to get started.</p>
+
+          <p className="font-semibold" style={{ color: LUMO }}>For Holiday Guests</p>
+          <p>Your accommodation gives you an Access Code or a QR code when you arrive.</p>
+          <ol className="list-decimal pl-5 space-y-1">
+            <li>Open Around You and tap <strong>Guest</strong> on the sign-in screen.</li>
+            <li>Enter your 12-character <strong>Access Code</strong> (or scan the QR code — it fills the code in for you), then tap <strong>Sign In</strong>. You can also sign in with your accommodation's name, address, province and postal code.</li>
+            <li>You'll land on your accommodation's page with everything you need — Wi-Fi, check-in and check-out details, house rules, amenities, emergency contacts and directions.</li>
+            <li>Explore what's Around You: browse restaurants, business/services and attractions near your stay using the radius slider (from 10 km up to 150 km). Search by cuisine, category or keyword.</li>
+            <li>Save money: when a place offers a discount, tap <strong>Redeem discount</strong> to get your QR code — show it to the venue to redeem. You can also book a restaurant table right in the app.</li>
+            <li>After you've visited, leave a star rating to help other guests.</li>
+          </ol>
+
+          <p className="font-semibold" style={{ color: LUMO }}>For Locals</p>
+          <p>Live in the area? Around You is for you too.</p>
+          <ol className="list-decimal pl-5 space-y-1">
+            <li>Tap <strong>Locals</strong> on the sign-in screen.</li>
+            <li>Sign in with your email, province and postal code. The first time, we'll email you a one-time code (OTP) to verify it's you.</li>
+            <li>After that, you can sign in without the code — up to 5 times a month (or 10 if you're awarded <strong>Super Local</strong> status).</li>
+            <li>Browse restaurants, business/services and attractions near you with the radius slider (up to 50 km), search, and grab exclusive discounts the same way — tap <strong>Redeem discount</strong> and show your QR to the venue.</li>
+            <li>Rate the places you visit to help your community.</li>
+          </ol>
+        </>
+      ),
+    },
+    {
+      id: "partner",
+      title: "Promote your Business",
+      content: (
+        <>
+          <p>Become part of the Around You Partner Family and choose the package that suits you best. Each package gives you access to our tools, marketing support, and exclusive partner benefits, so you can grow your reach and earnings.</p>
+          <p>
+            Contact us at{" "}
+            <a href="mailto:partners@aroundyou.co.za" style={{ color: LUMO }} className="hover:underline">
+              partners@aroundyou.co.za
+            </a>
+            , where we will assist you in selecting a plan, completing a questionnaire for onboarding purposes, and starting to promote right away.
+          </p>
+          <p>Ready to get started? Onboard your business online — choose your category and complete the short application.</p>
+          <a href="/apply?rep=Rep00000001" style={ctaStyle}>Onboard your business →</a>
+        </>
+      ),
+    },
+    { id: "support", title: "Contact Support", href: "mailto:support@aroundyou.co.za" },
+    {
+      id: "sales",
+      title: "Join our Sales Team",
+      content: (
+        <>
+          <p>Become part of our sales family and earn BIG commission on all sales every month.</p>
+          <p>Your sales carry forward and compound: what you sell in Month 1 is added to your Month 2 total; Month 1 + Month 2 are added to Month 3, and so on. This means consistent selling builds larger monthly totals and bigger payouts over time.</p>
+          <p>Commissions are calculated and paid at month end, so you can track your progress and rewards each pay cycle.</p>
+          <p>
+            Contact us at{" "}
+            <a href="mailto:sales@aroundyou.co.za" style={{ color: LUMO }} className="hover:underline">
+              sales@aroundyou.co.za
+            </a>
+            .
+          </p>
+          <p>Ready to join? Register your rep application below.</p>
+          <a href="/rep-login?mode=apply" style={ctaStyle}>Register as a rep →</a>
+        </>
+      ),
+    },
+  ];
+
+  return (
+          <div className="grid grid-cols-3 gap-1.5">
+            {sections.map((section) => {
+              const dimmed = openId !== null && openId !== section.id;
+              return (
+              <Fragment key={section.id}>
+                {"href" in section ? (
+                  <a
+                    href={dimmed ? undefined : section.href}
+                    aria-disabled={dimmed}
+                    style={{
+                      background: "#000",
+                      border: `2px solid ${dimmed ? "#3a3a3a" : LUMO}`,
+                      color: dimmed ? "#555" : LUMO,
+                      opacity: dimmed ? 0.55 : 1,
+                      pointerEvents: dimmed ? "none" : "auto",
+                      borderRadius: 10,
+                      fontWeight: 700,
+                      fontSize: "0.65rem",
+                      cursor: "pointer",
+                      textAlign: "center",
+                      letterSpacing: "0.03em",
+                      transition: "all 0.2s ease",
+                      aspectRatio: "2 / 1",
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "4px",
+                      minHeight: 0,
+                      lineHeight: 1.25,
+                      textDecoration: "none",
+                    }}
+                    className="touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39FF14] focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.filter = "brightness(1.2)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.filter = "brightness(1)"; }}
+                    onMouseDown={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = "scale(0.98)"; }}
+                    onMouseUp={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1)"; }}
+                  >
+                    {section.title}
+                  </a>
+                ) : (
+                  <InfoSquareBtn
+                    title={section.title}
+                    isOpen={openId === section.id}
+                    dimmed={dimmed}
+                    onToggle={() => handleToggle(section.id)}
+                  />
+                )}
+
+                {/* The open section's message renders as a full-width row right
+                    after its button, so subsequent buttons fall below it. */}
+                {!("href" in section) && openId === section.id && (
+                  <div id={`content-${section.id}`} style={{ gridColumn: "1 / -1" }}>
+                    <div
+                      className="px-4 py-4 text-sm leading-relaxed space-y-3"
+                      style={{
+                        color: "#a0a0a0",
+                        background: "rgba(57,255,20,0.04)",
+                        borderRadius: 10,
+                        border: "1px solid rgba(57,255,20,0.18)",
+                      }}
+                    >
+                      <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: LUMO }}>
+                        {section.title}
+                      </p>
+                      {section.content}
+                    </div>
+                  </div>
+                )}
+              </Fragment>
+              );
+            })}
+          </div>
+  );
+}

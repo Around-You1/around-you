@@ -39,6 +39,12 @@ export default function AccommodationTab({ onUpdate }: AccommodationTabProps) {
     setFilteredAccommodations(applySortState(searched, sortState));
   }, [searchQuery, accommodations, sortState]);
 
+  useEffect(() => {
+    const onChanged = () => loadAccommodations();
+    window.addEventListener("pending-apps-changed", onChanged);
+    return () => window.removeEventListener("pending-apps-changed", onChanged);
+  }, []);
+
   const loadAccommodations = async () => {
     try {
       const backend = getAuthenticatedBackend();

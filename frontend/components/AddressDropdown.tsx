@@ -9,6 +9,9 @@ interface AddressDropdownProps {
   province?: string;
   postalCode?: string;
   country?: string;
+  // Mobile partners that travel to the client have no fixed address — their
+  // address is kept for official use only and never shown on the guest/local page.
+  worksFromClientAddress?: boolean;
 }
 
 export default function AddressDropdown({
@@ -17,6 +20,7 @@ export default function AddressDropdown({
   province,
   postalCode,
   country,
+  worksFromClientAddress,
 }: AddressDropdownProps) {
   const hasAny = address || area || province || postalCode || country;
 
@@ -27,7 +31,9 @@ export default function AddressDropdown({
         Address
       </CollapsibleTrigger>
       <CollapsibleContent className="pl-6 pt-2 text-sm text-muted-foreground space-y-0.5">
-        {hasAny ? (
+        {worksFromClientAddress ? (
+          <span className="italic">No fixed address — this partner travels to you.</span>
+        ) : hasAny ? (
           <>
             {address && <p>{address}</p>}
             {area && <p>{area}</p>}

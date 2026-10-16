@@ -190,7 +190,7 @@ export default function AboutYouPage() {
     { id: "support", title: "Contact Support", href: "mailto:support@aroundyou.co.za" },
     {
       id: "sales",
-      title: "Sell for Us",
+      title: "Join our Sales Team",
       content: (
         <>
           <p>Become part of our sales family and earn BIG commission on all sales every month.</p>

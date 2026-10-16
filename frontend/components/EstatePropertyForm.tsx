@@ -21,9 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import MultiImageUpload from "./MultiImageUpload";
 
 const ONE_TO_TEN = Array.from({ length: 10 }, (_, i) => String(i + 1));
+// Keep in step with PROPERTY_TYPES / FEATURES in EstateRepFlow.tsx.
+const PROPERTY_TYPES = ["House", "Apartment", "Townhouse", "Plot", "Farm", "Commercial", "Land", "Industrial"];
+const FEATURES = ["Pool", "Tennis Court", "Garden", "Security Estate", "Double Garage", "Borehole", "Solar", "Fibre", "Sea View", "Mountain View", "Pet Friendly", "Fireplace", "Staff Quarters", "Backup Power"];
 
 export interface PropertyListing {
   id?: number; // set for listings already saved in the database
@@ -31,12 +35,20 @@ export interface PropertyListing {
   isShowHouse: boolean;
   showHouseNumber: number; // 1..10 when isShowHouse (assigned by the parent), else 0
   listingType: "" | "sale" | "rent";
+  propertyType: string; // House / Apartment / Plot / …
+  title: string;
   code: string;
   price: string; // free text
   bedrooms: string; // "1".."10"
   bathrooms: string;
   garages: string;
+  plotSizeM2: string;
+  houseSizeM2: string;
+  features: string[];
+  address: string;
+  description: string;
   url: string;
+  videoUrl: string;
 }
 
 export const newListing = (): PropertyListing => ({
@@ -44,12 +56,20 @@ export const newListing = (): PropertyListing => ({
   isShowHouse: false,
   showHouseNumber: 0,
   listingType: "",
+  propertyType: "",
+  title: "",
   code: "",
   price: "",
   bedrooms: "",
   bathrooms: "",
   garages: "",
+  plotSizeM2: "",
+  houseSizeM2: "",
+  features: [],
+  address: "",
+  description: "",
   url: "",
+  videoUrl: "",
 });
 
 function numberSelect(value: string, onChange: (v: string) => void, placeholder = "Select…") {
@@ -89,6 +109,16 @@ export default function PropertyListingFields({
         maxImages={10}
       />
 
+      {/* Title */}
+      <div className="space-y-1.5">
+        <Label>Title</Label>
+        <Input
+          value={value.title}
+          onChange={(e) => set("title", e.target.value)}
+          placeholder="e.g. Sea-view family home"
+        />
+      </div>
+
       {/* Show House (auto-numbered), Sale, Rent */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
         <div className="flex items-center gap-2">
@@ -117,6 +147,23 @@ export default function PropertyListingFields({
           />
           <Label className="cursor-pointer">Rent</Label>
         </div>
+      </div>
+
+      {/* Type */}
+      <div className="space-y-1.5">
+        <Label>Type</Label>
+        <Select value={value.propertyType} onValueChange={(v) => set("propertyType", v)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select property type…" />
+          </SelectTrigger>
+          <SelectContent>
+            {PROPERTY_TYPES.map((t) => (
+              <SelectItem key={t} value={t}>
+                {t}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Code */}
@@ -155,6 +202,72 @@ export default function PropertyListingFields({
         </div>
       </div>
 
+      {/* Plot / House size */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label>Plot size (m²)</Label>
+          <Input
+            type="number"
+            value={value.plotSizeM2}
+            onChange={(e) => set("plotSizeM2", e.target.value)}
+            placeholder="e.g. 620"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label>House size (m²)</Label>
+          <Input
+            type="number"
+            value={value.houseSizeM2}
+            onChange={(e) => set("houseSizeM2", e.target.value)}
+            placeholder="e.g. 180"
+          />
+        </div>
+      </div>
+
+      {/* Features */}
+      <div className="space-y-1.5">
+        <Label>Features</Label>
+        <div className="flex flex-wrap gap-2">
+          {FEATURES.map((f) => {
+            const on = value.features.includes(f);
+            return (
+              <button
+                key={f}
+                type="button"
+                onClick={() => set("features", on ? value.features.filter((x) => x !== f) : [...value.features, f])}
+                className={
+                  "rounded-full border px-3 py-1.5 text-xs font-medium transition " +
+                  (on ? "border-[#00C7BE] bg-[#AEECE4] text-[#054b47]" : "border-border bg-background text-muted-foreground")
+                }
+              >
+                {f}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Address */}
+      <div className="space-y-1.5">
+        <Label>Address</Label>
+        <Input
+          value={value.address}
+          onChange={(e) => set("address", e.target.value)}
+          placeholder="Street address"
+        />
+      </div>
+
+      {/* Description */}
+      <div className="space-y-1.5">
+        <Label>Description</Label>
+        <Textarea
+          value={value.description}
+          onChange={(e) => set("description", e.target.value)}
+          placeholder="Describe the property — key features, location highlights, etc."
+          rows={3}
+        />
+      </div>
+
       {/* URL */}
       <div className="space-y-1.5">
         <Label>URL</Label>
@@ -164,6 +277,18 @@ export default function PropertyListingFields({
           onChange={(e) => set("url", e.target.value)}
           placeholder="https://…"
         />
+      </div>
+
+      {/* Video link */}
+      <div className="space-y-1.5">
+        <Label>Video link (YouTube or Vimeo)</Label>
+        <Input
+          type="url"
+          value={value.videoUrl}
+          onChange={(e) => set("videoUrl", e.target.value)}
+          placeholder="https://youtu.be/… or https://vimeo.com/…"
+        />
+        <p className="text-xs text-muted-foreground">Optional. Paste a YouTube or Vimeo link to show a video player on the listing.</p>
       </div>
     </div>
   );

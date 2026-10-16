@@ -30,6 +30,7 @@ interface PropertyRow {
   title: string; propertyType: string; listingType: string; priceRand: string;
   plotSizeM2: string; houseSizeM2: string; bedrooms: string; bathrooms: string; garages: string;
   features: string[]; address: string; province: string; postalCode: string; description: string;
+  code: string; showHouse: boolean; listingUrl: string; videoUrl: string;
   images: Preview[]; agentRef: number;
 }
 interface AgentRow {
@@ -39,7 +40,7 @@ interface AgentRow {
 const newProperty = (): PropertyRow => ({
   title: "", propertyType: "House", listingType: "sale", priceRand: "", plotSizeM2: "", houseSizeM2: "",
   bedrooms: "", bathrooms: "", garages: "", features: [], address: "", province: "", postalCode: "",
-  description: "", images: [], agentRef: -1,
+  description: "", code: "", showHouse: false, listingUrl: "", videoUrl: "", images: [], agentRef: -1,
 });
 const newAgent = (): AgentRow => ({ name: "", contactNumber: "", email: "", bio: "", officialRepCode: "", photo: [] });
 
@@ -154,6 +155,13 @@ function ImgUpload({ label, images, onChange, max = 10 }: { label: string; image
 }
 
 const num = (v: string) => (v.trim() === "" ? null : Number(v));
+// Price is captured as free text (e.g. "R 4 600 000" or "R 12 000 / month"),
+// matching the Admin form. priceCents is a best-effort numeric value from the
+// digits, for sorting/filtering; the free text is what guests see.
+const priceToCents = (text: string): number => {
+  const digits = (text || "").replace(/[^\d]/g, "");
+  return digits ? Number(digits) * 100 : 0;
+};
 
 export default function EstateRepFlow({ repCode, repName, onDone }: { repCode: string; repName: string; onDone: () => void }) {
   const [agency, setAgency] = useState({
@@ -221,8 +229,9 @@ export default function EstateRepFlow({ repCode, repName, onDone }: { repCode: s
           agencyId, agentId: p.agentRef >= 0 ? agentIdByIndex[p.agentRef] : null,
           title: p.title, propertyType: p.propertyType, plotSizeM2: num(p.plotSizeM2), houseSizeM2: num(p.houseSizeM2),
           bedrooms: num(p.bedrooms), bathrooms: num(p.bathrooms), garages: num(p.garages), features: p.features,
-          priceCents: p.priceRand.trim() ? Math.round(Number(p.priceRand) * 100) : 0, listingType: p.listingType,
+          priceText: p.priceRand.trim(), priceCents: priceToCents(p.priceRand), listingType: p.listingType,
           address: p.address, province: p.province, country: "South Africa", postalCode: p.postalCode,
+          code: p.code, showHouse: p.showHouse, showHouseNumber: p.showHouse ? i + 1 : 0, listingUrl: p.listingUrl, videoUrl: p.videoUrl,
           description: p.description, imageUrl: urls[0] || "", imageUrls: urls, isActive: true,
         });
       }
@@ -258,8 +267,9 @@ export default function EstateRepFlow({ repCode, repName, onDone }: { repCode: s
         await backend.estate.createProperty({
           agentId, title: p.title, propertyType: p.propertyType, plotSizeM2: num(p.plotSizeM2), houseSizeM2: num(p.houseSizeM2),
           bedrooms: num(p.bedrooms), bathrooms: num(p.bathrooms), garages: num(p.garages), features: p.features,
-          priceCents: p.priceRand.trim() ? Math.round(Number(p.priceRand) * 100) : 0, listingType: p.listingType,
+          priceText: p.priceRand.trim(), priceCents: priceToCents(p.priceRand), listingType: p.listingType,
           address: p.address, province: p.province, country: "South Africa", postalCode: p.postalCode,
+          code: p.code, showHouse: p.showHouse, showHouseNumber: p.showHouse ? i + 1 : 0, listingUrl: p.listingUrl, videoUrl: p.videoUrl,
           description: p.description, imageUrl: urls[0] || "", imageUrls: urls, isActive: true,
         });
       }
@@ -321,9 +331,11 @@ export default function EstateRepFlow({ repCode, repName, onDone }: { repCode: s
               <Btn kind="ghost" onClick={() => setProperties((prev) => prev.filter((_, idx) => idx !== i))}>Remove</Btn>
             </div>
             <Field label="Title *" value={p.title} onChange={(v) => setProp(i, { title: v })} />
+            <Field label="Code" value={p.code} onChange={(v) => setProp(i, { code: v })} />
             <Dropdown label="Type" value={p.propertyType} options={PROPERTY_TYPES.map((t) => ({ v: t, l: t }))} onChange={(v) => setProp(i, { propertyType: v })} />
             <Dropdown label="For Sale / Rent" value={p.listingType} options={[{ v: "sale", l: "For Sale" }, { v: "rent", l: "For Rent" }]} onChange={(v) => setProp(i, { listingType: v })} />
-            <Field label="Price (R)" type="number" value={p.priceRand} onChange={(v) => setProp(i, { priceRand: v })} />
+            <Pills label="Show House (open viewing this weekend)" options={["Show House"]} selected={p.showHouse ? ["Show House"] : []} onToggle={() => setProp(i, { showHouse: !p.showHouse })} />
+            <Field label="Price (e.g. R 1 200 000 or R 6 000 / month)" value={p.priceRand} onChange={(v) => setProp(i, { priceRand: v })} />
             <Field label="Plot Size (m²)" type="number" value={p.plotSizeM2} onChange={(v) => setProp(i, { plotSizeM2: v })} />
             <Field label="House Size (m²)" type="number" value={p.houseSizeM2} onChange={(v) => setProp(i, { houseSizeM2: v })} />
             <Field label="Bedrooms" type="number" value={p.bedrooms} onChange={(v) => setProp(i, { bedrooms: v })} />
@@ -334,6 +346,8 @@ export default function EstateRepFlow({ repCode, repName, onDone }: { repCode: s
             <Dropdown label="Province" value={p.province} options={[{ v: "", l: "Select province" }, ...SA_PROVINCES.map((x) => ({ v: x, l: x }))]} onChange={(v) => setProp(i, { province: v })} />
             <Field label="Postal Code" value={p.postalCode} onChange={(v) => setProp(i, { postalCode: v })} />
             <Field label="Description" area value={p.description} onChange={(v) => setProp(i, { description: v })} />
+            <Field label="URL" value={p.listingUrl} onChange={(v) => setProp(i, { listingUrl: v })} />
+            <Field label="Video link (YouTube or Vimeo)" value={p.videoUrl} onChange={(v) => setProp(i, { videoUrl: v })} />
             <ImgUpload label="Property Images" images={p.images} onChange={(next) => setProp(i, { images: next })} max={10} />
           </div>
         ))}
@@ -375,9 +389,11 @@ export default function EstateRepFlow({ repCode, repName, onDone }: { repCode: s
             <Btn kind="ghost" onClick={() => setProperties((prev) => prev.filter((_, idx) => idx !== i))}>Remove</Btn>
           </div>
           <Field label="Title *" value={p.title} onChange={(v) => setProp(i, { title: v })} />
+          <Field label="Code" value={p.code} onChange={(v) => setProp(i, { code: v })} />
           <Dropdown label="Type" value={p.propertyType} options={PROPERTY_TYPES.map((t) => ({ v: t, l: t }))} onChange={(v) => setProp(i, { propertyType: v })} />
           <Dropdown label="For Sale / Rent" value={p.listingType} options={[{ v: "sale", l: "For Sale" }, { v: "rent", l: "For Rent" }]} onChange={(v) => setProp(i, { listingType: v })} />
-          <Field label="Price (R)" type="number" value={p.priceRand} onChange={(v) => setProp(i, { priceRand: v })} />
+          <Pills label="Show House (open viewing this weekend)" options={["Show House"]} selected={p.showHouse ? ["Show House"] : []} onToggle={() => setProp(i, { showHouse: !p.showHouse })} />
+          <Field label="Price (e.g. R 1 200 000 or R 6 000 / month)" value={p.priceRand} onChange={(v) => setProp(i, { priceRand: v })} />
           <Field label="Plot Size (m²)" type="number" value={p.plotSizeM2} onChange={(v) => setProp(i, { plotSizeM2: v })} />
           <Field label="House Size (m²)" type="number" value={p.houseSizeM2} onChange={(v) => setProp(i, { houseSizeM2: v })} />
           <Field label="Bedrooms" type="number" value={p.bedrooms} onChange={(v) => setProp(i, { bedrooms: v })} />
@@ -388,6 +404,8 @@ export default function EstateRepFlow({ repCode, repName, onDone }: { repCode: s
           <Dropdown label="Province" value={p.province} options={[{ v: "", l: "Select province" }, ...SA_PROVINCES.map((x) => ({ v: x, l: x }))]} onChange={(v) => setProp(i, { province: v })} />
           <Field label="Postal Code" value={p.postalCode} onChange={(v) => setProp(i, { postalCode: v })} />
           <Field label="Description" area value={p.description} onChange={(v) => setProp(i, { description: v })} />
+          <Field label="URL" value={p.listingUrl} onChange={(v) => setProp(i, { listingUrl: v })} />
+            <Field label="Video link (YouTube or Vimeo)" value={p.videoUrl} onChange={(v) => setProp(i, { videoUrl: v })} />
           <ImgUpload label="Property Images" images={p.images} onChange={(next) => setProp(i, { images: next })} max={10} />
         </div>
       ))}

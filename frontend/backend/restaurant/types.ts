@@ -16,7 +16,9 @@ export interface PreOrderItem {
 export interface Restaurant {
   id: number;
   name: string;
+  supportOrgName?: string;
   address: string;
+  accountingAddress?: string;
 
   latitude?: number | null;
   longitude?: number | null;
@@ -39,6 +41,7 @@ export interface Restaurant {
   atmosphere?: string[];
   features?: string[];
   dietaryOptions?: string[];
+  chefRecommendation?: string;
   offersBookings?: boolean;
   menuLink?: string;
   serviceDineIn: boolean;

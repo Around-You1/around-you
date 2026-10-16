@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, Printer } from "lucide-react";
+import { Download, FileDown, Printer } from "lucide-react";
 import {
   downloadQrCard,
+  downloadQrCardPdf,
   printQrCard,
   renderQrCardDataUrl,
   type QrCardOptions,
@@ -31,6 +32,9 @@ export default function RepQRCode({
     description,
     data: applyUrl,
     sparkle: true,
+    // Newer layout: green border frame, instructions top-left, Rep Code over the
+    // QR on the left, phone-in-hand mockup (partner sign-up screen) on the right.
+    sideImageUrl: "/qr-partner-phone.png",
   };
 
   const [preview, setPreview] = useState<string | null>(null);
@@ -51,12 +55,22 @@ export default function RepQRCode({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title, applyUrl, description]);
 
-  const fileName = `${(title || "Around-You-Rep").replace(/\s+/g, "-")}-QR-A5.png`;
+  const baseName = `${(title || "Around-You-Rep").replace(/\s+/g, "-")}-QR-A5`;
+  const fileName = `${baseName}.png`;
 
   const handleDownload = async () => {
     setBusy(true);
     try {
       await downloadQrCard(card, fileName);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    setBusy(true);
+    try {
+      await downloadQrCardPdf(card, `${baseName}.pdf`);
     } finally {
       setBusy(false);
     }
@@ -95,7 +109,7 @@ export default function RepQRCode({
         Downloads &amp; prints at A5 size (210 × 148 mm).
       </p>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap justify-center gap-2">
         <Button
           type="button"
           variant="outline"
@@ -106,7 +120,19 @@ export default function RepQRCode({
           style={{ borderColor: "rgba(57,255,20,0.4)", color: "#39FF14", background: "transparent" }}
         >
           <Download className="w-3 h-3" />
-          Download A5
+          Download PNG
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleDownloadPdf}
+          disabled={busy || !preview}
+          className="h-8 text-xs gap-1"
+          style={{ borderColor: "rgba(57,255,20,0.4)", color: "#39FF14", background: "transparent" }}
+        >
+          <FileDown className="w-3 h-3" />
+          Download PDF
         </Button>
         <Button
           type="button"

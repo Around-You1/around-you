@@ -6,11 +6,20 @@ export interface BookingItem {
   duration: number; // minutes
 }
 
+export interface PreOrderItem {
+  name: string;
+  description?: string;
+  price: number;
+  leadTimeMinutes: number;
+}
+
 export interface AttractionData {
   id: number;
   attractionId: string;
   name: string;
+  supportOrgName?: string;
   address: string;
+  accountingAddress?: string;
 
   latitude?: number | null;
   longitude?: number | null;
@@ -58,6 +67,7 @@ export interface AttractionData {
   accessLevel?: string;
 
   bookingItems?: BookingItem[];
+  preOrderItems?: PreOrderItem[];
 
   createdAt: string;
   updatedAt: string;

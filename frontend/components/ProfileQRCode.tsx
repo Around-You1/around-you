@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, Printer } from "lucide-react";
+import { Download, FileDown, Printer } from "lucide-react";
 import {
   downloadQrCard,
+  downloadQrCardPdf,
   printQrCard,
   renderQrCardDataUrl,
   type QrCardOptions,
@@ -22,14 +23,17 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
 
   const description =
     entityType === "accommodation"
-      ? "Scan this QR code, then click “Log In” and then click “Sign In” to automatically log in to be able to see all that the Guesthouse has to offer. You will also be able to view Restaurants/Takeaways, Business/Services and Attractions/Activities in and ‘Around You’ up to 150 kilometers."
-      : "Scan this QR code, then click “Log In” and then click “Sign In” to automatically log in to be able to see all that this business has to offer.";
+      ? "Scan this QR Code, open the link, click “Sign In” to automatically see all that the Guesthouse has to offer. You will also be able to view Restaurants/Takeaways, Business/Services and Attractions/Activities in and ‘Around You’ up to 150 kilometers."
+      : "Scan this QR Code, open the link, click “Sign In” to automatically see all that this business has to offer.";
 
   const card: QrCardOptions = {
     title: profileName,
     description,
     data: loginUrl,
     sparkle: entityType !== "accommodation",
+    // Newer Partner layout: green border frame, instructions top-left, business
+    // name over the QR on the left, phone-in-hand mockup on the right.
+    sideImageUrl: "/qr-partner-phone.png",
   };
 
   const [preview, setPreview] = useState<string | null>(null);
@@ -50,12 +54,22 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loginUrl, profileName, entityType]);
 
-  const fileName = `${(profileName || "around-you").replace(/\s+/g, "-")}-QR-A5.png`;
+  const baseName = `${(profileName || "around-you").replace(/\s+/g, "-")}-QR-A5`;
+  const fileName = `${baseName}.png`;
 
   const handleDownload = async () => {
     setBusy(true);
     try {
       await downloadQrCard(card, fileName);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    setBusy(true);
+    try {
+      await downloadQrCardPdf(card, `${baseName}.pdf`);
     } finally {
       setBusy(false);
     }
@@ -94,7 +108,7 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
         Downloads &amp; prints at A5 size (210 × 148 mm).
       </p>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap justify-center gap-2">
         <Button
           type="button"
           variant="outline"
@@ -105,7 +119,19 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
           style={{ borderColor: "rgba(57,255,20,0.4)", color: "#39FF14", background: "transparent" }}
         >
           <Download className="w-3 h-3" />
-          Download A5
+          Download PNG
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleDownloadPdf}
+          disabled={busy || !preview}
+          className="h-8 text-xs gap-1"
+          style={{ borderColor: "rgba(57,255,20,0.4)", color: "#39FF14", background: "transparent" }}
+        >
+          <FileDown className="w-3 h-3" />
+          Download PDF
         </Button>
         <Button
           type="button"

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Upload, Download, FileText, Search } from "lucide-react";
@@ -19,6 +19,13 @@ export default function AttractionTab({ onUpdate }: AttractionTabProps) {
   const [showImport, setShowImport] = useState(false);
   const [editingAttractionId, setEditingAttractionId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const onChanged = () => setRefreshKey((k) => k + 1);
+    window.addEventListener("pending-apps-changed", onChanged);
+    return () => window.removeEventListener("pending-apps-changed", onChanged);
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [sortState, setSortState] = useState<SortState>(DEFAULT_SORT_STATE);
   const { toast } = useToast();

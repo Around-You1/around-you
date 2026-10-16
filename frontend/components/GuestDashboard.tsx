@@ -11,12 +11,14 @@ import { Phone, ExternalLink, Tag, ChevronDown, Search, Eye, EyeOff, MapPin, Glo
 import AddressDropdown from "../components/AddressDropdown";
 import DirectionsDropdown from "../components/DirectionsDropdown";
 import AddressDirectionsButton from "../components/AddressDirectionsButton";
+import WhatsAppButton from "../components/WhatsAppButton";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { getCurrentPosition } from "../lib/geolocation";
 import { useToast } from "@/components/ui/use-toast";
 import { useSwipe } from "../lib/useSwipe";
 import ImageCarousel from "../components/ImageCarousel";
 import RestaurantPreOrder from "../components/RestaurantPreOrder";
+import SupportBadge from "../components/SupportBadge";
 import { EstateAgenciesBrowse } from "../components/EstatePublic";
 import SwipeIndicator from "../components/SwipeIndicator";
 import type { Accommodation } from "~backend/accommodation/types";
@@ -25,14 +27,17 @@ import type { ServiceData } from "~backend/service/types";
 import type { AttractionData } from "~backend/attraction/types";
 import AppLogo from "../components/AppLogo";
 import AppInstallButtons from "../components/AppInstallButtons";
+import AccommodationForm from "../components/AccommodationForm";
+import SuggestionsBanner from "../components/SuggestionsBanner";
+import EmergencyButton from "../components/EmergencyButton";
+import SuggestionsManager from "../components/SuggestionsManager";
 
 const FALLBACK = "The company has opted not to make this information visible.";
 
-// Tier gating for guest/local visibility. accessLevel is "Tier 1".."Tier 4"
-// ("Both" is stored as Tier 4). Anything without a digit (e.g. "Booking") is
-// treated as full access. Address shows at Tier 2+, Directions at Tier 4+.
-const tierOf = (accessLevel?: string) =>
-  parseInt((accessLevel || "").replace(/[^0-9]/g, ""), 10) || 4;
+// Visibility is fully open: every profile is treated as the old "Both" audience
+// + "Premium" tier, so all content (Address, Directions, etc.) shows to both
+// Guests and Locals regardless of the partner's stored audience/tier.
+const tierOf = (_accessLevel?: string) => 4;
 
 // Mirrors backend/app/rating/types.go Summary. myRating is 0/absent until
 // this guest has voted; averageRating/ratingCount cover everyone's votes.
@@ -79,6 +84,12 @@ export default function GuestDashboard() {
   const [showMyStamps, setShowMyStamps] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [showAccInfo, setShowAccInfo] = useState(false);
+  // Accommodation owner self-service edit (unlocked with the Edit Code).
+  const [showEditGate, setShowEditGate] = useState(false);
+  const [ownerEditCode, setOwnerEditCode] = useState("");
+  const [verifyingOwner, setVerifyingOwner] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [verifiedOwnerCode, setVerifiedOwnerCode] = useState("");
   const fireEvent = (eventType: string, extra?: { entityType?: string; entityId?: number; searchTerm?: string }) => {
     try {
       getAuthenticatedBackend()
@@ -370,6 +381,34 @@ export default function GuestDashboard() {
     }
   };
 
+  // Verify the owner's Edit Code server-side, then reveal the editable profile
+  // form. Any accommodation session can see the gate; only the owner holds the
+  // code, so only they can unlock it.
+  const verifyOwnerAndEdit = async () => {
+    if (!accommodation) return;
+    if (!ownerEditCode.trim()) {
+      toast({ title: "Enter your edit code", variant: "destructive" });
+      return;
+    }
+    setVerifyingOwner(true);
+    try {
+      const b = getAuthenticatedBackend();
+      const res = await b.editCode.verify({ entityType: "accommodation", entityId: accommodation.id, code: ownerEditCode.trim() });
+      if ((res as { valid?: boolean }).valid) {
+        setVerifiedOwnerCode(ownerEditCode.trim());
+        setOwnerEditCode("");
+        setShowEditGate(false);
+        setEditingProfile(true);
+      } else {
+        toast({ title: "Incorrect code", description: "That edit code doesn't match. Check with the Around You team if unsure.", variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: "Couldn't verify", description: error?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setVerifyingOwner(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#39FF14]/10 to-background flex items-center justify-center">
@@ -379,13 +418,48 @@ export default function GuestDashboard() {
   }
 
   if (!isLocalMode && !accommodation) {
+    // Only a genuine Holiday Guest (role "Guest") whose access code has no
+    // accommodation attached should ever see an accommodation message. A Local
+    // has nothing to do with accommodations, so if a local session ever reaches
+    // here without its role, send them back to sign in instead.
+    const isGuest = user.role === "Guest";
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#39FF14]/10 to-background flex items-center justify-center p-6">
         <Card>
-          <CardContent className="p-8">
-            <p>No accommodation assigned</p>
+          <CardContent className="p-8 text-center space-y-4">
+            <p>{isGuest ? "No accommodation assigned" : "Your session has ended. Please sign in again."}</p>
+            {!isGuest && (
+              <Button
+                className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold"
+                onClick={() => { window.location.href = "/portal"; }}
+              >
+                Sign In
+              </Button>
+            )}
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  // Owner editing their own accommodation profile (Edit Code verified above).
+  if (editingProfile && accommodation) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#39FF14]/10 to-background p-6">
+        <div className="max-w-4xl mx-auto py-8">
+          <AccommodationForm
+            accommodation={accommodation}
+            partnerEdit
+            editCode={verifiedOwnerCode}
+            onClose={() => {
+              setEditingProfile(false);
+              loadAccommodationDetails();
+            }}
+          />
+          <div className="mt-6">
+            <SuggestionsManager ownerType="accommodation" ownerId={accommodation.id} editCode={verifiedOwnerCode} />
+          </div>
+        </div>
       </div>
     );
   }
@@ -404,6 +478,7 @@ export default function GuestDashboard() {
               <h1 className="text-3xl font-bold text-foreground">Around You</h1>
               <p className="text-lg text-muted-foreground">Local Guest</p>
             </div>
+            <EmergencyButton postalCode={localPostal} />
             <AppInstallButtons />
           </div>
         ) : (
@@ -413,7 +488,9 @@ export default function GuestDashboard() {
               <h1 className="text-3xl font-bold text-foreground">Welcome to</h1>
               <p className="text-lg text-muted-foreground">{accommodation!.name}</p>
             </div>
+            <EmergencyButton postalCode={accommodation!.postalCode || ""} accommodationId={accommodation!.id} />
             <AppInstallButtons />
+            <SuggestionsBanner ownerType="accommodation" ownerId={accommodation!.id} backName={accommodation!.name} />
             <Card>
               <CardContent className="p-4">
                 <div className="mb-4 mx-auto w-full max-w-xl">
@@ -438,6 +515,7 @@ export default function GuestDashboard() {
                 >
                   {showAccInfo ? "Less info" : "More info"}
                 </Button>
+
 
                 {showAccInfo && (
                 <div className="mt-4 space-y-2">
@@ -483,6 +561,7 @@ export default function GuestDashboard() {
                               Call
                             </Button>
                           </div>
+                          <WhatsAppButton number={selectedContact || accommodation!.primaryContact} />
                         </div>
                       ) : (
                         fallbackSpan
@@ -616,7 +695,7 @@ export default function GuestDashboard() {
                       <ChevronDown className="h-4 w-4" />
                       Emergency Numbers
                     </CollapsibleTrigger>
-                    <CollapsibleContent className={`${contentClass} space-y-2`}>
+                    <CollapsibleContent className={`${contentClass} space-y-2 max-w-xl`}>
                       {accommodation!.primaryContact || accommodation!.policeContact || accommodation!.doctorContact || (accommodation!.doctors && accommodation!.doctors.length > 0) || accommodation!.ambulanceContact || accommodation!.privateAmbulanceContact || accommodation!.hospitalContact || accommodation!.fireDepartmentContact || accommodation!.snakeCatchersContact || accommodation!.nsriContact || accommodation!.vetContact || (accommodation!.vets && accommodation!.vets.length > 0) || accommodation!.communityWatchContact || accommodation!.localSecurityContact ? (
                         <>
                           {accommodation!.ambulanceContact && (
@@ -764,8 +843,17 @@ export default function GuestDashboard() {
         )}
 
         <div className="space-y-4">
-          <Button className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold" onClick={() => setShowMyBookings(true)}>Bookings I have made</Button>
+          <Button className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold" onClick={() => setShowMyBookings(true)}>Bookings / Pre-Orders I have made</Button>
           <Button className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold" onClick={() => setShowMyStamps(true)}>My Stamp Cards</Button>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
+            <TabsList className="flex flex-col w-full gap-1 p-1 bg-muted rounded-md" style={{ height: "auto" }}>
+              <TabsTrigger value="restaurants" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Restaurants/Takeaways ({filteredRestaurants.length})</TabsTrigger>
+              <TabsTrigger value="services" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Business/Services ({filteredServices.length})</TabsTrigger>
+              <TabsTrigger value="attractions" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Attractions/Activities ({filteredAttractions.length})</TabsTrigger>
+              <TabsTrigger value="realestate" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Real Estate</TabsTrigger>
+              <TabsTrigger value="nonprofit" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Non Profit Organization</TabsTrigger>
+            </TabsList>
           {isLocalMode ? (
             <Label className="text-lg font-medium">Local Partners</Label>
           ) : (
@@ -798,7 +886,7 @@ export default function GuestDashboard() {
           <div className="flex flex-wrap items-center gap-2">
             <Select value={String(minRating)} onValueChange={(v) => setMinRating(Number(v))}>
               <SelectTrigger className="w-auto min-w-[140px] h-9">
-                <Star className="h-4 w-4 mr-1 text-black fill-black" />
+                <Star className="h-4 w-4 mr-1 text-yellow-400 fill-yellow-400" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -831,16 +919,15 @@ export default function GuestDashboard() {
             )}
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="flex w-full gap-1 p-1 bg-muted rounded-md overflow-x-auto" style={{ height: "auto" }}>
-              <TabsTrigger value="restaurants" className="min-h-[44px] shrink-0 whitespace-nowrap touch-manipulation text-xs sm:text-sm px-3">Restaurants/Takeaways ({filteredRestaurants.length})</TabsTrigger>
-              <TabsTrigger value="services" className="min-h-[44px] shrink-0 whitespace-nowrap touch-manipulation text-xs sm:text-sm px-3">Business/Services ({filteredServices.length})</TabsTrigger>
-              <TabsTrigger value="attractions" className="min-h-[44px] shrink-0 whitespace-nowrap touch-manipulation text-xs sm:text-sm px-3">Attractions ({filteredAttractions.length})</TabsTrigger>
-              <TabsTrigger value="realestate" className="min-h-[44px] shrink-0 whitespace-nowrap touch-manipulation text-xs sm:text-sm px-3">Real Estate</TabsTrigger>
-            </TabsList>
-
             <TabsContent value="realestate" className="space-y-3 mt-6">
               <EstateAgenciesBrowse />
+            </TabsContent>
+
+            <TabsContent value="nonprofit" className="space-y-3 mt-6">
+              <div className="rounded-lg border border-border p-10 text-center">
+                <p className="text-lg font-semibold">Non Profit Organizations are coming soon</p>
+                <p className="mt-2 text-sm text-muted-foreground">This section is being set up — please check back shortly.</p>
+              </div>
             </TabsContent>
 
             <TabsContent value="restaurants" className="space-y-3 mt-6" {...swipeHandlers}>
@@ -866,6 +953,7 @@ export default function GuestDashboard() {
                           <div className="flex-1 min-w-0 space-y-2">
                             <div className="flex items-center gap-2 flex-wrap">
                               <h4 className="font-semibold truncate">{restaurant.name}</h4>
+                              <SupportBadge orgName={restaurant.supportOrgName} />
                               {restaurant.littleExplorerApproved && <span title="Child Friendly">👶</span>}
                             </div>
 
@@ -885,7 +973,7 @@ export default function GuestDashboard() {
                                 Click here to book at this establishment.
                               </Button>
                             )}
-                            <RestaurantPreOrder restaurant={restaurant as any} />
+                            <RestaurantPreOrder entity={restaurant as any} entityType="restaurant" />
                             {discOffered(restaurant) && (
                               <Button
                                 size="sm"
@@ -901,6 +989,13 @@ export default function GuestDashboard() {
                             </Button>
                             {expandedCards.has("restaurant:" + restaurant.id) && (
                               <>
+
+                            {tierOf(restaurant.accessLevel) >= 2 && (
+                              <DirectionsDropdown
+                                latitude={restaurant.latitude}
+                                longitude={restaurant.longitude}
+                              />
+                            )}
 
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
@@ -996,6 +1091,18 @@ export default function GuestDashboard() {
                                       <span key={d} className="px-2 py-0.5 text-black rounded text-xs">{d}</span>
                                     ))}
                                   </div>
+                                </CollapsibleContent>
+                              </Collapsible>
+                            )}
+
+                            {restaurant.chefRecommendation && (
+                              <Collapsible>
+                                <CollapsibleTrigger className={triggerClass}>
+                                  <ChevronDown className="h-4 w-4" />
+                                  Chef&apos;s Recommendation
+                                </CollapsibleTrigger>
+                                <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground whitespace-pre-line`}>
+                                  {restaurant.chefRecommendation}
                                 </CollapsibleContent>
                               </Collapsible>
                             )}
@@ -1189,13 +1296,16 @@ export default function GuestDashboard() {
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm space-y-1`}>
                                 {restaurant.contactNumber ? (
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-muted-foreground">Contact Number:</span>
-                                    <a href={`tel:${restaurant.contactNumber}`} className="text-black hover:underline flex items-center gap-1">
-                                      <Phone className="h-3 w-3" />
-                                      {restaurant.contactNumber}
-                                    </a>
-                                  </div>
+                                  <>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-muted-foreground">Contact Number:</span>
+                                      <a href={`tel:${restaurant.contactNumber}`} className="text-black hover:underline flex items-center gap-1">
+                                        <Phone className="h-3 w-3" />
+                                        {restaurant.contactNumber}
+                                      </a>
+                                    </div>
+                                    <WhatsAppButton number={restaurant.contactNumber} className="mt-2" />
+                                  </>
                                 ) : (
                                   fallbackSpan
                                 )}
@@ -1237,12 +1347,7 @@ export default function GuestDashboard() {
                                 province={restaurant.province}
                                 postalCode={restaurant.postalCode}
                                 country={restaurant.country}
-                              />
-                            )}
-                            {tierOf(restaurant.accessLevel) >= 2 && (
-                              <DirectionsDropdown
-                                latitude={restaurant.latitude}
-                                longitude={restaurant.longitude}
+                                worksFromClientAddress={(restaurant as any).worksFromClientAddress}
                               />
                             )}
 
@@ -1333,7 +1438,10 @@ export default function GuestDashboard() {
                             intervalMs={3000}
                           />
                           <div className="flex-1 min-w-0 space-y-2">
-                            <h4 className="font-semibold truncate">{service.name}</h4>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="font-semibold truncate">{service.name}</h4>
+                              <SupportBadge orgName={service.supportOrgName} />
+                            </div>
 
                             <StarRating
                               entityType="service"
@@ -1351,6 +1459,7 @@ export default function GuestDashboard() {
                                 Click here to book at this establishment.
                               </Button>
                             )}
+                            <RestaurantPreOrder entity={service as any} entityType="service" />
                             {discOffered(service) && (
                               <Button
                                 size="sm"
@@ -1366,6 +1475,13 @@ export default function GuestDashboard() {
                             </Button>
                             {expandedCards.has("service:" + service.id) && (
                               <>
+
+                            {tierOf(service.accessLevel) >= 2 && (
+                              <DirectionsDropdown
+                                latitude={service.latitude}
+                                longitude={service.longitude}
+                              />
+                            )}
 
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
@@ -1480,13 +1596,16 @@ export default function GuestDashboard() {
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm space-y-1`}>
                                 {service.contactNumber ? (
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-muted-foreground">Contact Number:</span>
-                                    <a href={`tel:${service.contactNumber}`} className="text-black hover:underline flex items-center gap-1">
-                                      <Phone className="h-3 w-3" />
-                                      {service.contactNumber}
-                                    </a>
-                                  </div>
+                                  <>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-muted-foreground">Contact Number:</span>
+                                      <a href={`tel:${service.contactNumber}`} className="text-black hover:underline flex items-center gap-1">
+                                        <Phone className="h-3 w-3" />
+                                        {service.contactNumber}
+                                      </a>
+                                    </div>
+                                    <WhatsAppButton number={service.contactNumber} className="mt-2" />
+                                  </>
                                 ) : (
                                   fallbackSpan
                                 )}
@@ -1528,12 +1647,7 @@ export default function GuestDashboard() {
                                 province={service.province}
                                 postalCode={service.postalCode}
                                 country={service.country}
-                              />
-                            )}
-                            {tierOf(service.accessLevel) >= 2 && (
-                              <DirectionsDropdown
-                                latitude={service.latitude}
-                                longitude={service.longitude}
+                                worksFromClientAddress={(service as any).worksFromClientAddress}
                               />
                             )}
                               </>
@@ -1568,7 +1682,10 @@ export default function GuestDashboard() {
                             intervalMs={3000}
                           />
                           <div className="flex-1 min-w-0 space-y-2">
-                            <h4 className="font-semibold truncate">{attraction.name}</h4>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="font-semibold truncate">{attraction.name}</h4>
+                              <SupportBadge orgName={attraction.supportOrgName} />
+                            </div>
 
                             <StarRating
                               entityType="attraction"
@@ -1586,6 +1703,7 @@ export default function GuestDashboard() {
                                 Click here to book at this establishment.
                               </Button>
                             )}
+                            <RestaurantPreOrder entity={attraction as any} entityType="attraction" />
                             {discOffered(attraction) && (
                               <Button
                                 size="sm"
@@ -1601,6 +1719,13 @@ export default function GuestDashboard() {
                             </Button>
                             {expandedCards.has("attraction:" + attraction.id) && (
                               <>
+
+                            {tierOf(attraction.accessLevel) >= 2 && (
+                              <DirectionsDropdown
+                                latitude={attraction.latitude}
+                                longitude={attraction.longitude}
+                              />
+                            )}
 
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
@@ -1715,13 +1840,16 @@ export default function GuestDashboard() {
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm space-y-1`}>
                                 {attraction.contactNumber ? (
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-muted-foreground">Contact Number:</span>
-                                    <a href={`tel:${attraction.contactNumber}`} className="text-black hover:underline flex items-center gap-1">
-                                      <Phone className="h-3 w-3" />
-                                      {attraction.contactNumber}
-                                    </a>
-                                  </div>
+                                  <>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-muted-foreground">Contact Number:</span>
+                                      <a href={`tel:${attraction.contactNumber}`} className="text-black hover:underline flex items-center gap-1">
+                                        <Phone className="h-3 w-3" />
+                                        {attraction.contactNumber}
+                                      </a>
+                                    </div>
+                                    <WhatsAppButton number={attraction.contactNumber} className="mt-2" />
+                                  </>
                                 ) : (
                                   fallbackSpan
                                 )}
@@ -1763,12 +1891,7 @@ export default function GuestDashboard() {
                                 province={attraction.province}
                                 postalCode={attraction.postalCode}
                                 country={attraction.country}
-                              />
-                            )}
-                            {tierOf(attraction.accessLevel) >= 2 && (
-                              <DirectionsDropdown
-                                latitude={attraction.latitude}
-                                longitude={attraction.longitude}
+                                worksFromClientAddress={(attraction as any).worksFromClientAddress}
                               />
                             )}
                               </>
@@ -1886,7 +2009,7 @@ function StarRating({
             <Star
               className={`h-5 w-5 sm:h-4 sm:w-4 transition-colors ${
                 star <= highlighted
-                  ? "fill-black text-black"
+                  ? "fill-yellow-400 text-yellow-400"
                   : "text-muted-foreground/40"
               }`}
             />
@@ -2005,7 +2128,7 @@ function BookingModal({ onClose, entityType, entityId, entityName, items }: {
         <div className="space-y-1"><Label className="text-xs">Your name</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
         <div className="space-y-1"><Label className="text-xs">Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
         <div className="space-y-1"><Label className="text-xs">Phone (optional)</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-        <p className="text-xs text-muted-foreground">You can change or cancel this booking yourself from "Bookings I have made" using this email. The partner cannot change or cancel it.</p>
+        <p className="text-xs text-muted-foreground">You can change or cancel this booking yourself from "Bookings / Pre-Orders I have made" using this email. The partner cannot change or cancel it.</p>
         <div className="flex justify-end gap-2 pt-1">
           <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black">{saving ? "Sending…" : "Confirm Booking"}</Button>
@@ -2098,7 +2221,7 @@ function InlineRater({ entityType, entityId }: { entityType: RatableType; entity
       <span className="text-xs text-muted-foreground mr-1">Rate your visit:</span>
       {[1, 2, 3, 4, 5].map((s) => (
         <button key={s} type="button" disabled={saving} onClick={() => rate(s)} className="disabled:opacity-50">
-          <Star className={`h-4 w-4 ${s <= saved ? "fill-black text-black" : "text-muted-foreground/40"}`} />
+          <Star className={`h-4 w-4 ${s <= saved ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/40"}`} />
         </button>
       ))}
     </div>
@@ -2164,7 +2287,7 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-background rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold">Bookings I have made</h3>
+        <h3 className="text-lg font-semibold">Bookings / Pre-Orders I have made</h3>
         <p className="text-xs text-muted-foreground">Enter the email you booked with to see, cancel, or rate your bookings.</p>
         <div className="flex gap-2">
           <Input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -2232,7 +2355,14 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
 // MyStampCardsModal lets a customer see their loyalty stamp cards by entering the
 // mobile number the partner stamps against. Read-only — only partners add stamps.
 function MyStampCardsModal({ onClose }: { onClose: () => void }) {
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(() => {
+    try {
+      const g = JSON.parse(localStorage.getItem("localGuestInfo") || "{}");
+      if (g.cell) return g.cell;
+      const a = JSON.parse(localStorage.getItem("aroundYouLogin") || "{}");
+      return a?.local?.cell || "";
+    } catch { return ""; }
+  });
   const [cards, setCards] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -2252,22 +2382,43 @@ function MyStampCardsModal({ onClose }: { onClose: () => void }) {
       <div className="bg-background rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-semibold">My Stamp Cards</h3>
         <p className="text-xs text-muted-foreground">
-          Enter the mobile number you give the shop to see your stamp cards. Partners add a stamp each time you buy — collect enough and the reward is yours.
+          Enter the mobile number you give the shop to see your stamp cards and get your QR code to show at the till. Partners add a stamp each time you buy — collect enough and the reward is yours.
         </p>
         <div className="flex gap-2">
           <Input inputMode="tel" placeholder="Your mobile number" value={phone} onChange={(e) => setPhone(e.target.value)} />
           <Button onClick={find} disabled={loading} className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black whitespace-nowrap">{loading ? "…" : "Find"}</Button>
         </div>
+        {cards !== null && phone.replace(/[^0-9]/g, "").length >= 9 && (
+          <div className="rounded-md border p-3 flex flex-col items-center gap-2">
+            <p className="text-xs text-muted-foreground text-center">Show this at the till — the shop scans it to add your stamp.</p>
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent("aystamp:" + phone.replace(/[^0-9]/g, ""))}&bgcolor=000000&color=39FF14&margin=10`}
+              alt="Your stamp-card QR code"
+              width={200}
+              height={200}
+              className="rounded-lg"
+            />
+            <p className="text-[11px] text-muted-foreground text-center">No code reader? Just give the shop your mobile number.</p>
+          </div>
+        )}
         {cards !== null && (cards.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No stamp cards yet for that number. Ask a participating partner to add your first stamp.</p>
+          <p className="text-sm text-muted-foreground">No cards available to view yet.</p>
         ) : (
           <div className="space-y-3">
             {cards.map((c, idx) => (
               <div key={idx} className="border rounded-md p-3 space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-sm">{c.partnerName || "Partner"}</span>
-                  {c.rewardReady && <span className="text-xs px-2 py-0.5 rounded bg-[#39FF14] text-black font-semibold">Reward ready!</span>}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-semibold text-sm truncate">{c.partnerName || "Partner"}</span>
+                    {c.area && <span className="text-[11px] text-muted-foreground">{c.area}</span>}
+                  </div>
+                  {c.rewardReady && <span className="text-xs px-2 py-0.5 rounded bg-[#39FF14] text-black font-semibold flex-shrink-0">Reward ready!</span>}
                 </div>
+                {c.rewardText && (
+                  <div className="text-xs font-medium rounded px-2 py-1 border border-[#39FF14]/40 bg-[#39FF14]/10">
+                    🎁 Reward: {c.rewardText}
+                  </div>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {Array.from({ length: c.threshold }).map((_, i) => (
                     <span key={i}
@@ -2279,7 +2430,7 @@ function MyStampCardsModal({ onClose }: { onClose: () => void }) {
                   ))}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {c.stamps} of {c.threshold} stamps{c.rewardText ? ` · Reward: ${c.rewardText}` : ""}
+                  {c.stamps} of {c.threshold} stamps
                 </div>
                 {c.rewardReady && <p className="text-xs">Show this to {c.partnerName || "the partner"} to claim your reward.</p>}
               </div>

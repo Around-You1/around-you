@@ -32,7 +32,13 @@ export default function ProfileReferenceCodeDisplay({
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
-  const displayCode = currentCode || "";
+  // Access-code regeneration (accommodation only). accessOverride shows the
+  // freshly issued code without needing the parent to refetch.
+  const [accessOverride, setAccessOverride] = useState<string | null>(null);
+  const [isRegenAccess, setIsRegenAccess] = useState(false);
+  const [showAccessRegenDialog, setShowAccessRegenDialog] = useState(false);
+
+  const displayCode = accessOverride ?? (currentCode || "");
 
   // The partner "edit code" applies to all four partner entity types. It is
   // fetched separately (it is never part of the entity JSON, to avoid leaking
@@ -80,6 +86,23 @@ export default function ProfileReferenceCodeDisplay({
     }
   };
 
+  const handleRegenerateAccess = async () => {
+    setIsRegenAccess(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const res = await backend.accommodation.regenerateAccessCode({ id: entityId });
+      const code = (res as { accessCode?: string }).accessCode ?? null;
+      if (code) setAccessOverride(code);
+      toast({ title: "Access Code Regenerated", description: "The previous code (and any old QR) no longer works. Share the new code with the owner." });
+    } catch (error) {
+      console.error("Failed to regenerate access code:", error);
+      toast({ title: "Error", description: "Failed to regenerate access code. Please try again.", variant: "destructive" });
+    } finally {
+      setIsRegenAccess(false);
+      setShowAccessRegenDialog(false);
+    }
+  };
+
   const handleRegenerateEdit = async () => {
     setIsRegenerating(true);
     try {
@@ -108,6 +131,11 @@ export default function ProfileReferenceCodeDisplay({
           <Button type="button" variant="outline" size="sm" onClick={copyToClipboard} disabled={!displayCode}>
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           </Button>
+          {entityType === "accommodation" && (
+            <Button type="button" variant="outline" size="sm" onClick={() => setShowAccessRegenDialog(true)} disabled={isRegenAccess} title="Regenerate access code">
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         {supportsEditCode && (
@@ -128,6 +156,23 @@ export default function ProfileReferenceCodeDisplay({
           </div>
         )}
       </div>
+
+      <AlertDialog open={showAccessRegenDialog} onOpenChange={setShowAccessRegenDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Regenerate Access Code?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This generates a new Profile Access Code and invalidates the current one immediately. Anyone using the old code — or an old printed QR code — will no longer be able to sign in. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRegenerateAccess} disabled={isRegenAccess}>
+              {isRegenAccess ? "Regenerating..." : "Regenerate"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={showRegenDialog} onOpenChange={setShowRegenDialog}>
         <AlertDialogContent>

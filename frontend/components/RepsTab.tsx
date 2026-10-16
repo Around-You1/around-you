@@ -453,7 +453,7 @@ export default function RepsTab() {
                     <RepQRCode
                       title={rep.repCode ? `Rep Code: ${rep.repCode}` : "Rep Code"}
                       applyUrl={`https://aroundyou.co.za/apply?rep=${rep.repCode}`}
-                      description="Scan this QR code to open the Rep Onboarding page, where you can onboard your business as part of the Around You Partner Team."
+                      description="Scan this QR code, choose which category suites your business, complete all the fields and Submit."
                     />
                   </div>
 

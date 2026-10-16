@@ -9,6 +9,7 @@ import ProfileQRCode from "./ProfileQRCode";
 import ProfileClassificationGroups from "./ProfileClassificationGroups";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
+import ResendWelcomeButton from "./ResendWelcomeButton";
 import { getCurrentPosition, buildDirectionsUrl } from "../lib/geolocation";
 import type { AttractionData } from "~backend/attraction/types";
 import { SortState, DEFAULT_SORT_STATE, applySortState } from "./SortControls";
@@ -269,7 +270,7 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
                   <CollapsibleTrigger asChild>
                     <button className="flex items-center gap-2 flex-1 min-w-0 text-left">
                       {isOpen ? <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />}
-                      <h3 className="font-semibold text-sm text-foreground truncate min-w-[120px]">{attraction.name}</h3>
+                      <h3 className="font-semibold text-sm text-foreground truncate min-w-0">{attraction.name}</h3>
                       <StarRatingDisplay
                         average={ratings[attraction.id]?.averageRating ?? 0}
                         count={ratings[attraction.id]?.ratingCount ?? 0}
@@ -350,6 +351,7 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
                           profileCode={attraction.profileReferenceCode}
                           entityType="attraction"
                         />
+                        <ResendWelcomeButton partnerType="attraction" partnerId={attraction.id} partnerName={attraction.name} />
                       </div>
                     )}
                   </div>

@@ -8,11 +8,21 @@ export interface BookingItem {
   duration: number; // minutes
 }
 
+export interface PreOrderItem {
+  name: string;
+  description?: string;
+  price: number;
+  leadTimeMinutes: number;
+}
+
 export interface ServiceData {
   id: number;
   serviceId: string;
   name: string;
+  supportOrgName?: string;
   address: string;
+  accountingAddress?: string;
+  isNonProfit?: boolean;
   latitude?: number | null;
   longitude?: number | null;
   country: string;
@@ -51,6 +61,7 @@ export interface ServiceData {
   accessLevel?: string;
 
   bookingItems?: BookingItem[];
+  preOrderItems?: PreOrderItem[];
 
   createdAt: string;
   updatedAt: string;

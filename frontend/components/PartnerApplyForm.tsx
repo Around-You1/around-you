@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import backend from "~backend/client";
+import { getAuthenticatedBackend } from "../lib/backend";
 import AppLogo from "../components/AppLogo";
 
 const LUMO = "#39FF14";
@@ -20,16 +21,25 @@ const CATEGORIES: { key: string; label: string }[] = [
   { key: "estate", label: "Real Estate & Rentals" },
 ];
 
+// Per-category pricing shown prominently near the top of each application.
+const PRICING: Record<string, string> = {
+  accommodation: "R300 per month.",
+  restaurant: "R300 per month, plus Bookings @ R10 per cover and Pre-Orders @ 5% of the bill.",
+  service: "R300 per month, plus Bookings @ 10% of the bill and Pre-Orders @ 10% of the bill.",
+  attraction: "R300 per month, plus Bookings @ 10% of the bill and Pre-Orders @ 10% of the bill.",
+  estate: "Estate Agencies R500 per month and Agents R300 per month each.",
+};
+
 const PROVINCES = ["Eastern Cape", "Free State", "Gauteng", "KwaZulu Natal", "Limpopo", "Mpumalanga", "Northern Cape", "North West", "Western Cape"];
 const PAYMENTS = ["Card", "Cash", "Gaap", "Mobile Tap", "Snap Scan", "Yoco", "Zapper"];
 const ACCESS = ["Wheelchair Access", "Parking Availability"];
 const DIETARY = ["Gluten Free", "Halaal", "Kosher", "Nut Free", "Signature Dish", "Chef Recommendation"];
 const ATMOSPHERE = ["Family-friendly", "Romantic", "Trendy / Modern", "Quiet", "Lively", "Outdoor Seating", "Sea View", "Mountain View", "Rooftop", "Garden"];
 const REST_FEATURES = ["Walk-ins Welcome", "Live Music", "Free Wi-Fi"];
-const REST_TYPES = ["Food Truck", "Home Meals", "Take Away", "Pop Up", "Restaurant"];
+const REST_TYPES = ["Food Truck", "Home Meals", "Take Away", "Delivery", "Pop Up", "Restaurant"];
 const CUISINE = ["African", "À la carte", "American", "Asian", "BBQ", "Bakery", "Boerewors Rolls", "Breakfast", "Bunny Chow", "Burgers", "Cafe", "Cake", "Chinese", "Coffee Shop", "Curry", "Deli", "Fast Food", "Fine Dining", "French", "Greek", "Indian", "Italian", "Jaffels", "Japanese", "Mediterranean", "Mexican", "Middle Eastern", "Pasta", "Pizza", "Ribs", "Roast", "Sandwiches", "Seafood", "Spanish", "Steaks", "Sushi", "Thai", "Vegan", "Vegetarian"];
 const ATTRACTION_CATS = ["Artisanal Tastings & Pairings", "Beaches & Coastal", "Cultural & Historical", "Entertainment & Events", "Free", "Nature & Outdoors", "Shopping & Markets", "Sports & Adventure", "Water-Based Activities", "Wellness & Retreats", "Wildlife & Eco"];
-const FACILITIES = ["Braai", "Fly Fishing", "Golf", "Gym", "Laundry", "Spa", "Swimming Pool"];
+const FACILITIES = ["Braai", "Fly Fishing", "Golf", "Gym", "Lapa", "Laundry", "Spa", "Swimming Pool"];
 const SERVICE_GROUPS = [
   { label: "Business & Admin", options: ["Accounting & Bookkeeping", "Business Consulting", "HR & Recruitment", "IT Support & Networking", "Legal & Compliance", "Printing & Document Services"] },
   { label: "Health & Wellness", options: ["Beauty Treatments", "Fitness & Gyms", "Grooming Services", "Holistic Therapies", "Skin Care & Aesthetics", "Spas & Beauty Treatments"] },
@@ -38,7 +48,7 @@ const SERVICE_GROUPS = [
   { label: "Services & Trades", options: ["Appliance Repairs", "Carpenters", "Electricians", "Gas Provider/Refill", "Handyman Services", "Locksmiths", "Mechanics", "Painters", "Plumbers", "Welders"] },
   { label: "Transport", options: ["Delivery & Courier Services", "Equipment Hire", "Moving Services", "Shuttle Services", "Taxi & Ride Hailing", "Towing Services", "Vehicle Rentals"] },
   { label: "Food & Drink", options: ["Bakeries", "Butcheries & Fishmongers", "Catering Services", "Fresh Produce Markets", "Grocery Stores"] },
-  { label: "Safety", options: ["Emergency Services", "First Aid Training", "Medical Services", "Pharmacies", "Security Services"] },
+  { label: "Safety", options: ["Emergency Services", "First Aid Training", "Medical Services", "Pharmacies", "Security Services", "Veterinary"] },
   { label: "Community & Local", options: ["Charity & Non Profit Services", "Community Centres", "Local Events & Activities", "Religious Organizations"] },
 ];
 
@@ -53,7 +63,12 @@ const businessSection = (nameLabel: string): Section => ({
     { key: "Contact email", type: "text", top: "contactEmail", required: true },
     { key: "Contact number", type: "text", top: "contactNumber", required: true },
     { key: "Province", type: "select", options: PROVINCES, top: "province", required: true },
-    { key: "Physical address", type: "text" },
+    { key: "Area", type: "text", required: true, note: "your town or suburb — used to list you in the right area" },
+    { key: "Physical address", type: "text", note: "shown to Guests & Locals (hidden if you tick the box below)" },
+    { key: "Works from different addresses", type: "multi", options: [
+      "Yes — I work from different addresses (hide my address on Guest & Local pages)",
+    ], note: "tick if you have no fixed public address; add your office address below for Official Use" },
+    { key: "Office address (Official Use)", type: "text", note: "for accounts/admin only — never shown publicly" },
     { key: "Postal code", type: "text" },
     { key: "Holding company (if any)", type: "text" },
     { key: "Company registration number", type: "text" },
@@ -62,19 +77,14 @@ const businessSection = (nameLabel: string): Section => ({
 });
 // Per-category booking charge shown on the "How you'd like to appear" section.
 const BOOKING_NOTE: Record<string, string> = {
-  restaurant: "R400/month + R10 per cover",
-  service: "R400/month + 10% per service",
-  attraction: "R400/month + 10% per person",
+  restaurant: "R300/month + R10 per cover",
+  service: "R300/month + 10% per service",
+  attraction: "R300/month + 10% per person",
 };
 function appearSection(cat: string): Section {
   return {
     title: "How you'd like to appear",
     fields: [
-      { key: "Show profile to (tick one)", type: "radio", options: [
-        "Guest only — R300/month",
-        "Local only — R300/month",
-        "Both guests and locals — R400/month",
-      ], note: "R300/month to reach either guests or locals; R400/month to reach both" },
       { key: "Bookings", label: "Bookable items", type: "multi", options: [
         `We take bookings — ${BOOKING_NOTE[cat] || "R300/month"}`,
       ], note: "tick if guests can reserve or book with you" },
@@ -96,103 +106,24 @@ const accessibilitySection: Section = { title: "Accessibility & family", fields:
   { key: "Accessibility options", type: "multi", options: ACCESS },
   { key: "Child friendly", type: "multi", options: ["Child Friendly"] },
 ] };
-const charitySection: Section = { title: "Charity you'd like to support", fields: [
+const charitySection: Section = { title: "Please give us the details of the charity you wish US to support", fields: [
   { key: "Charity name", type: "text" },
   { key: "Charity address", type: "text" },
   { key: "Charity contact number", type: "text" },
 ] };
 
 function specsFor(cat: string): Section[] {
-  if (cat === "restaurant") return [
-    businessSection("Restaurant/Takeaway name"),
-    { title: "Trading hours", fields: [
-      { key: "Trading hours", type: "textarea" },
-      { key: "Public holidays", type: "textarea" },
-    ] },
-    { title: "Restaurant/Takeaway details", fields: [
-      { key: "Restaurant type", label: "Restaurant/Takeaway type", type: "select", options: REST_TYPES },
-      { key: "Cuisine type(s)", type: "multi", options: CUISINE },
-      { key: "Atmosphere", type: "multi", options: ATMOSPHERE },
-      { key: "Features", type: "multi", options: REST_FEATURES },
-      { key: "Dietary options", type: "multi", options: DIETARY },
-      { key: "Description", type: "textarea" },
-      { key: "Menu link", type: "text" },
-      { key: "Service options", type: "multi", options: ["Dine-in", "Takeaway", "Delivery"] },
-      { key: "Wi-Fi network name", type: "text" }, { key: "Wi-Fi password", type: "text" },
-    ] },
-    { title: "Pre-orders (takeaway / delivery)", fields: [
-      { key: "Pre Orders", type: "multi", options: ["We take pre-orders — 10% of the sale"], note: "tick if guests can pre-order takeaway/delivery items" },
-      { key: "Pre-order items", type: "itemrows", note: "if ticked above — add each item with its price and duration" },
-    ] },
-    appearSection(cat), discountsSection, paymentsSection, socialsSection, accessibilitySection, charitySection,
-  ];
-  if (cat === "service") return [
-    businessSection("Business/Service name"),
-    { title: "Trading hours", fields: [
-      { key: "Trading hours", type: "textarea" },
-      { key: "Public holidays", type: "textarea" },
-    ] },
-    { title: "Business/Service details", fields: [
-      { key: "Service category(ies)", label: "Business/Service category(ies)", type: "multigroup", groups: SERVICE_GROUPS },
-      { key: "Description", type: "textarea" },
-    ] },
-    { title: "Good-to-know info", fields: [
-      { key: "Safety information", type: "text" }, { key: "Age restrictions", type: "text" },
-      { key: "Fitness level", type: "text" }, { key: "Best time of day", type: "text" }, { key: "What to bring", type: "text" },
-    ] },
-    appearSection(cat), discountsSection, paymentsSection, socialsSection, accessibilitySection, charitySection,
-  ];
-  if (cat === "attraction") return [
-    businessSection("Attraction/Activity name"),
-    { title: "Trading hours", fields: [
-      { key: "Trading hours", type: "textarea" },
-      { key: "Public holidays", type: "textarea" },
-    ] },
-    { title: "Attraction/Activity details", fields: [
-      { key: "Attraction category(ies)", label: "Attraction/Activity category(ies)", type: "multi", options: ATTRACTION_CATS },
-      { key: "Description", type: "textarea" },
-    ] },
-    { title: "Good-to-know info", fields: [
-      { key: "Safety information", type: "text" }, { key: "Age restrictions", type: "text" }, { key: "Fitness level", type: "text" },
-      { key: "Best time of day", type: "text" }, { key: "What to bring", type: "text" }, { key: "Trail difficulty", type: "text" },
-      { key: "Wildlife cautions", type: "text" }, { key: "Tide warnings", type: "text" }, { key: "Parking notes", type: "text" }, { key: "Photography spots", type: "text" },
-    ] },
-    appearSection(cat), discountsSection, paymentsSection, socialsSection, accessibilitySection, charitySection,
-  ];
+  if (cat === "restaurant") return [businessSection("Restaurant/Takeaway name")];
+  if (cat === "service") return [businessSection("Business/Service name")];
+  if (cat === "attraction") return [businessSection("Attraction/Activity name")];
   if (cat === "accommodation") return [
     businessSection("Accommodation name"),
     { title: "Accommodation details", fields: [
       { key: "Number of units / rooms", type: "text", note: "sets your monthly price", priceRows: ["1–5 units — R300", "6–10 units — R500", "11–20 units — R800", "21–40 units — R1,200", "40+ units — Custom quote"] },
-      { key: "Contact", type: "text" }, { key: "Description", type: "textarea" },
-      { key: "Check-in instructions", type: "textarea" }, { key: "Check-out instructions", type: "textarea" },
-      { key: "Amenities", type: "textarea" }, { key: "House guidelines", type: "textarea" },
-      { key: "Facilities", type: "multi", options: FACILITIES },
-      { key: "Wi-Fi network name", type: "text" }, { key: "Wi-Fi password", type: "text" },
     ] },
-    { title: "Emergency contacts (shown to guests)", fields: [
-      { key: "Ambulance", type: "text" }, { key: "Police", type: "text" }, { key: "Fire department", type: "text" },
-      { key: "Nearest hospital — number", type: "text" }, { key: "Nearest hospital — address", type: "text" },
-      { key: "Doctor — name / number / address", type: "text" }, { key: "Vet — name / number / address", type: "text" },
-      { key: "Sea Rescue / NSRI", type: "text" }, { key: "Snake catcher", type: "text" }, { key: "Community watch", type: "text" }, { key: "Local security", type: "text" },
-    ] },
-    accessibilitySection, charitySection,
   ];
   // estate
-  return [
-    businessSection("Agency name"),
-    { title: "Agency details", fields: [{ key: "Agency description", type: "textarea" }] },
-    { title: "Agent details (if applicable)", fields: [
-      { key: "Agent full name", type: "text" }, { key: "Agent contact number", type: "text" },
-      { key: "Agent email", type: "text" }, { key: "Agent bio", type: "textarea" },
-    ] },
-    { title: "Property listing (if listing one now)", fields: [
-      { key: "Property title", type: "text" }, { key: "Property type", type: "text" },
-      { key: "Listing type", type: "radio", options: ["For Sale", "To Rent"] },
-      { key: "Price (Rand)", type: "text" }, { key: "Bedrooms", type: "text" }, { key: "Bathrooms", type: "text" }, { key: "Garages", type: "text" },
-      { key: "Plot size (m2)", type: "text" }, { key: "House size (m2)", type: "text" },
-      { key: "Features", type: "text" }, { key: "Property description", type: "textarea" },
-    ] },
-  ];
+  return [businessSection("Agency name")];
 }
 
 const wrap: React.CSSProperties = { minHeight: "100vh", background: "#0a0a0a", padding: "24px 12px" };
@@ -209,6 +140,8 @@ export default function PartnerApplyForm() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [err, setErr] = useState("");
+  const [isStaff, setIsStaff] = useState(false);
+  const [autofillStatus, setAutofillStatus] = useState("");
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
@@ -217,6 +150,13 @@ export default function PartnerApplyForm() {
     // Default to the internal/test rep so a self-onboarding partner always has a
     // rep code; they (or a real rep) can change it in the field below.
     setRep(q.get("rep") || "Rep00000005");
+    // Reps / admins (signed in) get an extra tool: upload a completed onboarding
+    // PDF and Claude pre-fills the form. Public visitors never see it.
+    try {
+      const u = JSON.parse(localStorage.getItem("user") || "{}");
+      const tok = localStorage.getItem("token") || "";
+      if (tok && ["Rep", "SuperAdmin", "Admin"].includes(u?.role)) setIsStaff(true);
+    } catch { /* not signed in — fine */ }
   }, []);
 
   const sections = useMemo(() => (cat ? specsFor(cat) : []), [cat]);
@@ -226,6 +166,87 @@ export default function PartnerApplyForm() {
       const arr: string[] = Array.isArray(s[k]) ? s[k] : [];
       return { ...s, [k]: arr.includes(opt) ? arr.filter((x) => x !== opt) : [...arr, opt] };
     });
+
+  // Staff-only: upload a hand-filled onboarding PDF, or one or more WhatsApp /
+  // photo screenshots; Claude reads them all and the form pre-fills for review.
+  // Restaurant only for now. Never auto-submits.
+  const autofillFromFiles = async (fileList: FileList) => {
+    const files = Array.from(fileList);
+    if (!files.length) return;
+    setAutofillStatus(`Reading ${files.length === 1 ? "the file" : files.length + " files"} with Claude\u2026 this can take ~20 seconds.`);
+    try {
+      const readOne = (file: File) =>
+        new Promise<{ mediaType: string; data: string }>((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () =>
+            resolve({ mediaType: file.type || "application/octet-stream", data: String(fr.result || "") });
+          fr.onerror = () => reject(new Error("Could not read " + file.name));
+          fr.readAsDataURL(file);
+        });
+      const payloadFiles = await Promise.all(files.map(readOne));
+      const res: any = await getAuthenticatedBackend().onboarding.extract({
+        category: "restaurant",
+        files: payloadFiles,
+      });
+      const f = res?.fields || {};
+      const d = f.data || {};
+      const strip = (x: any) => (x == null ? "" : String(x).trim());
+      const norm = (s2: string) => s2.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+      const canon = (opts: string[], arr: any): string[] =>
+        (Array.isArray(arr) ? arr : [])
+          .map((v) => opts.find((o) => norm(o) === norm(String(v))) || String(v))
+          .filter(Boolean);
+      const soc = d.socialLinks || {};
+      const next: Record<string, any> = {
+        "Restaurant/Takeaway name": strip(d.name),
+        "Contact person": strip(d.personResponsible),
+        "Contact email": strip(d.businessEmail),
+        "Contact number": strip(d.contactNumber) || strip(d.personResponsibleNumber),
+        "Province": strip(f.province),
+        "Physical address": strip(d.address),
+        "Postal code": strip(d.postalCode),
+        "Holding company (if any)": strip(d.holdingCompany),
+        "Company registration number": strip(d.companyRegNumber),
+        "VAT number (if registered)": strip(d.companyVatNumber),
+        "Trading hours": strip(d.tradingHours),
+        "Public holidays": strip(d.publicHolidays),
+        "Restaurant type": canon(REST_TYPES, d.restaurantType)[0] || "",
+        "Cuisine type(s)": canon(CUISINE, d.cuisineTypes),
+        "Atmosphere": canon(ATMOSPHERE, d.atmosphere),
+        "Features": canon(REST_FEATURES, d.features),
+        "Dietary options": canon(DIETARY, d.dietary),
+        "Chef recommendation": strip(d.chefRecommendation),
+        "Description": strip(d.description),
+        "Menu link": strip(d.menuLink),
+        "Service options": canon(["Dine-in", "Takeaway", "Delivery"], f.serviceOptions),
+        "Wi-Fi network name": strip(d.wifiName),
+        "Wi-Fi password": strip(d.wifiPassword),
+        "Guest discount \u2014 offer": strip(d.discountOffered),
+        "Guest discount code": strip(d.discountCode),
+        "Local discount \u2014 offer": strip(d.localDiscountOffered),
+        "Local discount code": strip(d.localDiscountCode),
+        "Payment methods": canon(PAYMENTS, d.paymentOptions),
+        "Website": strip(soc.Website),
+        "Facebook": strip(soc.Facebook),
+        "Instagram": strip(soc.Instagram),
+        "TikTok": strip(soc.Tiktok),
+        "X (Twitter)": strip(soc.X),
+        "Accessibility options": canon(ACCESS, d.accessibility),
+        "Child friendly": canon(["Child Friendly"], d.childFriendly),
+      };
+      // Only write non-empty values so a re-upload never blanks a field.
+      setVals((cur) => {
+        const merged = { ...cur };
+        for (const [k, v] of Object.entries(next)) {
+          if (Array.isArray(v) ? v.length : strip(v)) merged[k] = v;
+        }
+        return merged;
+      });
+      setAutofillStatus("\u2713 Form pre-filled \u2014 please review every field, correct anything the reader missed, then submit.");
+    } catch (e: any) {
+      setAutofillStatus("Could not read that: " + (e?.message || "please try again, or enter the details manually."));
+    }
+  };
 
   const catLabel = CATEGORIES.find((c) => c.key === cat)?.label || "";
 
@@ -240,6 +261,11 @@ export default function PartnerApplyForm() {
     if (!(vals["Contact person"] || "").trim()) { setErr("Please enter a contact person."); return; }
     if (!(vals["Contact email"] || "").trim()) { setErr("Please enter a contact email."); return; }
     if (!(vals["Contact number"] || "").trim()) { setErr("Please enter a contact number."); return; }
+    if (!(vals["Area"] || "").trim()) { setErr("Please enter your Area (town or suburb)."); return; }
+    const worksFrom = Array.isArray(vals["Works from different addresses"]) && vals["Works from different addresses"].length > 0;
+    if (worksFrom && !(vals["Office address (Official Use)"] || "").trim()) {
+      setErr("You ticked \"works from different addresses\" — please enter an Office address (Official Use)."); return;
+    }
     if (!agree) { setErr("Please tick the agreement box to submit."); return; }
 
     // Build fields (everything except the top-level five) using the label as key.
@@ -324,11 +350,39 @@ export default function PartnerApplyForm() {
         Please complete the fields below. Fields marked * are required.
       </p>
 
+      {PRICING[cat] && (
+        <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 8, border: `1px solid ${LUMO}`, background: "rgba(57,255,20,0.07)", color: "#eafff0", fontSize: 13, textAlign: "center" }}>
+          <span style={{ color: LUMO, fontWeight: 800 }}>Pricing: </span>{PRICING[cat]}
+        </div>
+      )}
+
       <div style={{ marginTop: 12 }}>
         <label style={labelSt}>Rep Code</label>
         <input style={input} value={rep} onChange={(e) => setRep(e.target.value)} placeholder="Rep00000005" />
         <p style={{ color: "#7f857f", fontSize: 11, marginTop: 4 }}>Leave this as Rep00000005 unless a representative gave you their own code, then please change accordingly.</p>
       </div>
+
+      {isStaff && cat === "restaurant" && (
+        <div style={{ marginTop: 14, padding: 14, borderRadius: 10, border: `1px dashed ${LUMO}`, background: "rgba(57,255,20,0.05)" }}>
+          <div style={{ color: LUMO, fontWeight: 700, fontSize: 14, marginBottom: 4 }}>Rep tool \u2014 auto-fill from a completed form</div>
+          <p style={{ color: "#a0a0a0", fontSize: 12, margin: "0 0 10px" }}>
+            Have a hand-filled onboarding PDF, or WhatsApp screenshots of the owner's details? Upload the PDF <strong>or</strong> the screenshots (select them all at once) and Claude will read them and pre-fill the fields below for you to review before submitting.
+          </p>
+          <label style={{ display: "inline-block", padding: "9px 14px", borderRadius: 8, border: `2px solid ${LUMO}`, background: "#000", color: LUMO, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+            Upload PDF or screenshots to auto-fill
+            <input
+              type="file"
+              accept="application/pdf,image/*"
+              multiple
+              style={{ display: "none" }}
+              onChange={(e) => { const fl = e.target.files; if (fl && fl.length) autofillFromFiles(fl); e.currentTarget.value = ""; }}
+            />
+          </label>
+          {autofillStatus && (
+            <p style={{ color: autofillStatus.startsWith("\u2713") ? LUMO : "#d0a0a0", fontSize: 12, marginTop: 10 }}>{autofillStatus}</p>
+          )}
+        </div>
+      )}
 
       {sections.map((sec) => (
         <div key={sec.title}>
@@ -413,6 +467,10 @@ export default function PartnerApplyForm() {
           ))}
         </div>
       ))}
+
+      <p style={{ marginTop: 14, fontSize: 13, color: "#cfd3cf", lineHeight: 1.45, borderTop: "1px solid rgba(57,255,20,0.15)", paddingTop: 12 }}>
+        Once submitted and you receive your Access and Edit codes, you will be able to edit all of the other information you can show on your Partner Profile.
+      </p>
 
       <label style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 18, fontSize: 13, color: "#cfd3cf" }}>
         <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} style={{ marginTop: 3 }} />

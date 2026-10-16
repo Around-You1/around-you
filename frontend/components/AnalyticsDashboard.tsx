@@ -8,7 +8,8 @@ import { ChevronDown, ArrowLeft, Download } from "lucide-react";
 
 // When true (during "Download PDF"), every Section renders its content open so
 // the whole dashboard is captured, not just the sections the user expanded.
-const PrintContext = createContext(false);
+type PrintState = { printing: boolean; only: string | null; onDownload: (key: string) => void };
+const PrintContext = createContext<PrintState>({ printing: false, only: null, onDownload: () => {} });
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -102,11 +103,28 @@ interface LocalLoginPoint {
   count: number;
 }
 
+interface LocalSignin {
+  email: string;
+  area: string;
+  signedInAt: string;
+}
+
 type LocalsPeriod = "daily" | "weekly" | "monthly" | "yearly";
+
+interface HolidayAccommodationOption {
+  accommodationId: number;
+  name: string;
+  totalLogins: number;
+}
+
+interface HolidayGuestSignin {
+  accommodation: string;
+  signedInAt: string;
+}
 
 const TIER_ORDER = ["Tier 1", "Tier 2", "Tier 3", "Tier 4", "N/A"];
 // Display label for a stored tier key. Data keys stay "Tier 1".."Tier 4".
-const tierLabel = (k: string) => (k === "Tier 1" ? "Basic" : k === "Tier 2" ? "Premium" : k);
+const tierLabel = (k: string) => (k === "Tier 1" || k === "Tier 2" ? "Standard" : k);
 
 const rand = (cents: number) => `R${(cents / 100).toFixed(2)}`;
 
@@ -128,18 +146,33 @@ function Section({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
-  const forceOpen = useContext(PrintContext);
+  const pc = useContext(PrintContext);
+  const forceOpen = pc.printing && (pc.only === null || pc.only === title);
   const isOpen = open || forceOpen;
+  // During a single-section PDF, hide every other section from the printout.
+  const hideForPrint = pc.printing && pc.only !== null && pc.only !== title;
   return (
-    <Card>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-4 py-1.5 text-left"
-      >
-        <span className="text-sm font-semibold">{title}</span>
-        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-      </button>
+    <Card className={hideForPrint ? "print:hidden" : undefined}>
+      <div className="w-full flex items-center justify-between px-4 py-1.5 gap-2">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="flex-1 flex items-center justify-between text-left"
+        >
+          <span className="text-sm font-semibold">{title}</span>
+          <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        </button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="shrink-0 h-7 px-2 text-xs print:hidden"
+          onClick={() => pc.onDownload(title)}
+          title={`Download ${title} as PDF`}
+        >
+          <Download className="w-3.5 h-3.5 mr-1" />
+          Download PDF
+        </Button>
+      </div>
       {isOpen && <CardContent className="pt-0">{children}</CardContent>}
     </Card>
   );
@@ -153,6 +186,7 @@ export default function AnalyticsDashboard() {
   const [events, setEvents] = useState<EventsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [printMode, setPrintMode] = useState(false);
+  const [printOnly, setPrintOnly] = useState<string | null>(null);
   const [charityProvinces, setCharityProvinces] = useState<{ province: string; charities: { name: string; address: string; contact: string; partners: string[] }[] }[]>([]);
   const [charityMonth, setCharityMonth] = useState("");
   const [openCharity, setOpenCharity] = useState<Record<string, boolean>>({});
@@ -164,6 +198,20 @@ export default function AnalyticsDashboard() {
   const [localsPeriod, setLocalsPeriod] = useState<LocalsPeriod>("daily");
   const [localPoints, setLocalPoints] = useState<LocalLoginPoint[]>([]);
   const [localsPointsLoading, setLocalsPointsLoading] = useState(false);
+  // Clicking a bar reveals the individual sign-ins (emails) for that bucket.
+  const [selectedPeriodKey, setSelectedPeriodKey] = useState<string | null>(null);
+  const [signins, setSignins] = useState<LocalSignin[]>([]);
+  const [signinsLoading, setSigninsLoading] = useState(false);
+
+  // Holiday Guests — dropdown of accommodations with guest sign-ins + totals.
+  const [holidayAccoms, setHolidayAccoms] = useState<HolidayAccommodationOption[]>([]);
+  const [selectedAccomId, setSelectedAccomId] = useState<number>(0); // 0 = All Accommodations
+  const [hgPeriod, setHgPeriod] = useState<LocalsPeriod>("daily");
+  const [hgPoints, setHgPoints] = useState<LocalLoginPoint[]>([]);
+  const [hgPointsLoading, setHgPointsLoading] = useState(false);
+  const [hgSelectedPeriodKey, setHgSelectedPeriodKey] = useState<string | null>(null);
+  const [hgSignins, setHgSignins] = useState<HolidayGuestSignin[]>([]);
+  const [hgSigninsLoading, setHgSigninsLoading] = useState(false);
 
   useEffect(() => {
     load();
@@ -171,7 +219,7 @@ export default function AnalyticsDashboard() {
 
   // Reset print mode once the browser's print/save dialog closes.
   useEffect(() => {
-    const after = () => setPrintMode(false);
+    const after = () => { setPrintMode(false); setPrintOnly(null); };
     window.addEventListener("afterprint", after);
     return () => window.removeEventListener("afterprint", after);
   }, []);
@@ -179,27 +227,43 @@ export default function AnalyticsDashboard() {
   // Refetch Locals totals whenever the selected local or period changes.
   useEffect(() => {
     loadLocalPoints();
+    setSelectedPeriodKey(null);
+    setSignins([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLocalId, localsPeriod]);
 
+  // Refetch Holiday Guest totals whenever the selected accommodation or period changes.
+  useEffect(() => {
+    loadHgPoints();
+    setHgSelectedPeriodKey(null);
+    setHgSignins([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAccomId, hgPeriod]);
+
   // Force every section open, let it render, then open the browser's
   // print-to-PDF dialog so the full dashboard downloads as a .pdf.
-  const downloadPdf = () => {
+  const runPrint = (only: string | null) => {
+    setPrintOnly(only);
     setPrintMode(true);
     setTimeout(() => window.print(), 350);
   };
+  // Top button downloads the whole dashboard; per-section buttons download just
+  // that platform/section.
+  const downloadPdf = () => runPrint(null);
+  const downloadSection = (key: string) => runPrint(key);
 
   const load = async () => {
     setLoading(true);
     try {
       const backend = getAuthenticatedBackend();
-      const [activity, stats, biz, ev, charity, localsList] = await Promise.all([
+      const [activity, stats, biz, ev, charity, localsList, hgList] = await Promise.all([
         backend.analytics.repActivity(),
         backend.analytics.reps(),
         backend.analytics.business(),
         backend.analytics.events(),
         backend.charity.byProvince().catch(() => ({ provinces: [], month: "" })),
         backend.analytics.locals().catch(() => ({ locals: [] })),
+        backend.analytics.holidayGuests().catch(() => ({ accommodations: [] })),
       ]);
       setReps(activity.reps);
       setRepStats(stats);
@@ -208,6 +272,7 @@ export default function AnalyticsDashboard() {
       setCharityProvinces((charity as any).provinces || []);
       setCharityMonth((charity as any).month || "");
       setLocals((localsList as any).locals || []);
+      setHolidayAccoms((hgList as any).accommodations || []);
     } catch (error) {
       console.error("Failed to load analytics:", error);
       toast({ title: "Error", description: "Failed to load analytics", variant: "destructive" });
@@ -233,9 +298,64 @@ export default function AnalyticsDashboard() {
     }
   };
 
+  const loadSignins = async (periodKey: string) => {
+    setSelectedPeriodKey(periodKey);
+    setSigninsLoading(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const res = await backend.analytics.localSignins({
+        period: localsPeriod,
+        periodKey,
+        userId: selectedLocalId || undefined,
+      });
+      setSignins((res as any).signins || []);
+    } catch (error) {
+      console.error("Failed to load sign-ins:", error);
+      toast({ title: "Error", description: "Failed to load sign-ins for that period", variant: "destructive" });
+    } finally {
+      setSigninsLoading(false);
+    }
+  };
+
+  const loadHgPoints = async () => {
+    setHgPointsLoading(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const res = await backend.analytics.holidayGuestLoginTotals({
+        period: hgPeriod,
+        accommodationId: selectedAccomId || undefined,
+      });
+      setHgPoints((res as any).points || []);
+    } catch (error) {
+      console.error("Failed to load holiday guest totals:", error);
+      toast({ title: "Error", description: "Failed to load Holiday Guests totals", variant: "destructive" });
+    } finally {
+      setHgPointsLoading(false);
+    }
+  };
+
+  const loadHgSignins = async (periodKey: string) => {
+    setHgSelectedPeriodKey(periodKey);
+    setHgSigninsLoading(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const res = await backend.analytics.holidayGuestSignins({
+        period: hgPeriod,
+        periodKey,
+        accommodationId: selectedAccomId || undefined,
+      });
+      setHgSignins((res as any).signins || []);
+    } catch (error) {
+      console.error("Failed to load holiday guest sign-ins:", error);
+      toast({ title: "Error", description: "Failed to load sign-ins for that period", variant: "destructive" });
+    } finally {
+      setHgSigninsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
-      <PrintContext.Provider value={printMode}>
+      <PrintContext.Provider value={{ printing: printMode, only: printOnly, onDownload: downloadSection }}>
       <div className="max-w-7xl mx-auto space-y-2">
         <div className="flex items-center justify-between gap-2 print:hidden">
           <Button variant="outline" size="sm" onClick={() => router.push("/admin-dashboard")}>
@@ -313,23 +433,28 @@ export default function AnalyticsDashboard() {
               <div className="flex gap-3 overflow-x-auto pb-3 mb-4">
                 {(() => {
                   const max = Math.max(1, ...localPoints.map((p) => p.count));
-                  return localPoints.map((p) => (
-                    <div
+                  return localPoints.map((p) => {
+                    const isSel = selectedPeriodKey === p.period;
+                    return (
+                    <button
+                      type="button"
                       key={p.period}
-                      className="flex flex-col items-center shrink-0"
+                      onClick={() => loadSignins(p.period)}
+                      className="flex flex-col items-center shrink-0 group cursor-pointer print:cursor-default"
                       style={{ width: 88 }}
-                      title={`${p.period}: ${p.count}`}
+                      title={`${p.period}: ${p.count} — click to see who signed in`}
                     >
                       <div className="h-64 w-full flex flex-col items-center justify-end">
                         <span className="text-xl font-bold mb-1">{p.count}</span>
                         <div
-                          className="w-full rounded-t bg-[#AEECE4]"
+                          className={`w-full rounded-t transition-colors ${isSel ? "bg-[#00C7BE]" : "bg-[#AEECE4] group-hover:bg-[#8fe0d6]"}`}
                           style={{ height: `${Math.max(4, (p.count / max) * 80)}%` }}
                         />
                       </div>
-                      <span className="text-sm text-muted-foreground mt-2 whitespace-nowrap">{p.period}</span>
-                    </div>
-                  ));
+                      <span className={`text-sm mt-2 whitespace-nowrap ${isSel ? "text-foreground font-semibold" : "text-muted-foreground"}`}>{p.period}</span>
+                    </button>
+                    );
+                  });
                 })()}
               </div>
               <p className="text-base text-muted-foreground">
@@ -339,6 +464,170 @@ export default function AnalyticsDashboard() {
                 </span>{" "}
                 sign-in{localPoints.reduce((sum, p) => sum + p.count, 0) === 1 ? "" : "s"}
               </p>
+              <p className="text-xs text-muted-foreground mt-1 print:hidden">Tip: click a bar to see which locals signed in.</p>
+
+              {selectedPeriodKey && (
+                <div className="mt-4 rounded-lg border border-border p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold">
+                      Sign-ins on {selectedPeriodKey}
+                      {!signinsLoading && signins.length > 0 ? ` (${signins.length})` : ""}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedPeriodKey(null); setSignins([]); }}
+                      className="text-xs text-muted-foreground hover:text-foreground print:hidden"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  {signinsLoading ? (
+                    <Pending loading={true} />
+                  ) : signins.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No sign-ins found for this period.</p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {signins.map((s, i) => (
+                        <li key={i} className="text-sm flex flex-wrap items-center gap-x-2">
+                          <span className="font-mono">{s.email}</span>
+                          {s.area ? <span className="text-muted-foreground">— {s.area}</span> : null}
+                          <span className="text-muted-foreground">· {s.signedInAt}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </Section>
+
+        <Section title="Holiday Guests">
+          <p className="text-sm text-muted-foreground mb-4">
+            Every accommodation a holiday guest has signed into. Pick an accommodation to see its sign-in history, or
+            leave "All Accommodations" selected to see totals across all of them.
+          </p>
+
+          <div className="flex flex-wrap items-end gap-3 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Accommodation</label>
+              <select
+                value={selectedAccomId}
+                onChange={(e) => setSelectedAccomId(Number(e.target.value))}
+                className="text-base rounded border border-border bg-background px-3 py-2 min-w-[280px]"
+              >
+                <option value={0}>All Accommodations{holidayAccoms.length > 0 ? ` (${holidayAccoms.length})` : ""}</option>
+                {holidayAccoms.map((a) => (
+                  <option key={a.accommodationId} value={a.accommodationId}>
+                    {a.name} ({a.totalLogins} sign-in{a.totalLogins === 1 ? "" : "s"})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Totals per</label>
+              <div className="flex gap-1">
+                {([
+                  ["daily", "Daily"],
+                  ["weekly", "Weekly"],
+                  ["monthly", "Monthly"],
+                  ["yearly", "Yearly"],
+                ] as [LocalsPeriod, string][]).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setHgPeriod(value)}
+                    className={`text-base px-4 py-2 rounded border ${
+                      hgPeriod === value
+                        ? "bg-[#AEECE4] border-[#AEECE4] text-black font-semibold"
+                        : "bg-muted/40 border-border text-muted-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {loading ? (
+            <Pending loading={loading} />
+          ) : holidayAccoms.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No holiday guests have signed in yet.</p>
+          ) : hgPointsLoading ? (
+            <Pending loading={true} />
+          ) : hgPoints.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No sign-ins in this period yet.</p>
+          ) : (
+            <>
+              <div className="flex gap-3 overflow-x-auto pb-3 mb-4">
+                {(() => {
+                  const max = Math.max(1, ...hgPoints.map((p) => p.count));
+                  return hgPoints.map((p) => {
+                    const isSel = hgSelectedPeriodKey === p.period;
+                    return (
+                    <button
+                      type="button"
+                      key={p.period}
+                      onClick={() => loadHgSignins(p.period)}
+                      className="flex flex-col items-center shrink-0 group cursor-pointer print:cursor-default"
+                      style={{ width: 88 }}
+                      title={`${p.period}: ${p.count} — click to see who signed in`}
+                    >
+                      <div className="h-64 w-full flex flex-col items-center justify-end">
+                        <span className="text-xl font-bold mb-1">{p.count}</span>
+                        <div
+                          className={`w-full rounded-t transition-colors ${isSel ? "bg-[#00C7BE]" : "bg-[#AEECE4] group-hover:bg-[#8fe0d6]"}`}
+                          style={{ height: `${Math.max(4, (p.count / max) * 80)}%` }}
+                        />
+                      </div>
+                      <span className={`text-sm mt-2 whitespace-nowrap ${isSel ? "text-foreground font-semibold" : "text-muted-foreground"}`}>{p.period}</span>
+                    </button>
+                    );
+                  });
+                })()}
+              </div>
+              <p className="text-base text-muted-foreground">
+                Total for this selection:{" "}
+                <span className="text-3xl font-bold text-foreground">
+                  {hgPoints.reduce((sum, p) => sum + p.count, 0)}
+                </span>{" "}
+                sign-in{hgPoints.reduce((sum, p) => sum + p.count, 0) === 1 ? "" : "s"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 print:hidden">Tip: click a bar to see which guests signed in.</p>
+
+              {hgSelectedPeriodKey && (
+                <div className="mt-4 rounded-lg border border-border p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold">
+                      Sign-ins on {hgSelectedPeriodKey}
+                      {!hgSigninsLoading && hgSignins.length > 0 ? ` (${hgSignins.length})` : ""}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { setHgSelectedPeriodKey(null); setHgSignins([]); }}
+                      className="text-xs text-muted-foreground hover:text-foreground print:hidden"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  {hgSigninsLoading ? (
+                    <Pending loading={true} />
+                  ) : hgSignins.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No sign-ins found for this period.</p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {hgSignins.map((s, i) => (
+                        <li key={i} className="text-sm flex flex-wrap items-center gap-x-2">
+                          <span className="font-medium">{s.accommodation}</span>
+                          <span className="text-muted-foreground">· {s.signedInAt}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </>
           )}
         </Section>

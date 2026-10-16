@@ -32,7 +32,7 @@ const emptyApp = {
   fullName: "", idNumber: "", dateOfBirth: "", phone: "", email: "",
   residentialAddress: "", postalCode: "", province: "", region: "", taxNumber: "", vatNumber: "",
   bankAccountName: "", bankName: "", bankAccountNumber: "", bankBranchCode: "", bankAccountType: "",
-  uplineRepCode: "", popiaConsent: false, agreementConsent: false, signatureName: "",
+  uplineRepCode: "", isTeamLeader: false, teamLeaderCode: "", popiaConsent: false, agreementConsent: false, signatureName: "",
   idDocument: "",
 };
 
@@ -54,7 +54,27 @@ export default function RepLoginPage() {
 
   const [app, setApp] = useState({ ...emptyApp });
   const [submitting, setSubmitting] = useState(false);
+  // When the entered upline code belongs to a Team Leader organization, banking
+  // is hidden (the applicant is staff; commissions go to the organization).
+  const [uplineIsTL, setUplineIsTL] = useState(false);
+  const [uplineOrgName, setUplineOrgName] = useState("");
   const [newCode, setNewCode] = useState<string | null>(null);
+
+  // Debounced lookup: is the entered upline code a Team Leader organization?
+  useEffect(() => {
+    const code = app.uplineRepCode.trim();
+    if (app.isTeamLeader || !code) { setUplineIsTL(false); setUplineOrgName(""); return; }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      try {
+        const info: any = await backend.auth.repCodeInfo({ code });
+        if (cancelled) return;
+        setUplineIsTL(!!info?.isTeamLeader);
+        setUplineOrgName(info?.isTeamLeader ? (info?.name || "") : "");
+      } catch { if (!cancelled) { setUplineIsTL(false); setUplineOrgName(""); } }
+    }, 400);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [app.uplineRepCode, app.isTeamLeader]);
   // Terms gate: a new applicant must read + accept the responsibility & payment
   // terms before the application form (personal info) is shown.
   const [agreedTerms, setAgreedTerms] = useState(false);
@@ -86,6 +106,11 @@ export default function RepLoginPage() {
   async function handleApply(e: React.FormEvent) {
     e.preventDefault();
     // All fields required except SARS tax number, VAT number and upline rep code.
+    const bankingNeeded = app.isTeamLeader || !uplineIsTL;
+    if (app.isTeamLeader && !String(app.teamLeaderCode).trim()) {
+      toast({ title: "Team Leader code required", description: "Please enter your organization's Team Leader code (e.g. Care).", variant: "destructive" });
+      return;
+    }
     const required: [string, string][] = [
       ["Full Legal Name", app.fullName],
       ["SA ID / Passport No.", app.idNumber],
@@ -96,16 +121,27 @@ export default function RepLoginPage() {
       ["Postal Code", app.postalCode],
       ["Province", app.province],
       ["Region", app.region],
-      ["Account Holder", app.bankAccountName],
-      ["Bank", app.bankName],
-      ["Account Type", app.bankAccountType],
-      ["Account Number", app.bankAccountNumber],
-      ["Branch Code", app.bankBranchCode],
       ["Signature", app.signatureName],
     ];
-    const missing = required.find(([, v]) => !String(v).trim());
-    if (missing) {
-      toast({ title: "Please complete all fields", description: `${missing[0]} is required.`, variant: "destructive" });
+    if (bankingNeeded) {
+      required.push(
+        ["Account Holder", app.bankAccountName],
+        ["Bank", app.bankName],
+        ["Account Type", app.bankAccountType],
+        ["Account Number", app.bankAccountNumber],
+        ["Branch Code", app.bankBranchCode],
+      );
+    }
+    const missing = required.filter(([, v]) => !String(v).trim()).map(([label]) => label);
+    if (missing.length > 0) {
+      toast({
+        title: "Please complete all required fields",
+        description:
+          missing.length === 1
+            ? `${missing[0]} is required.`
+            : `Still needed: ${missing.join(", ")}.`,
+        variant: "destructive",
+      });
       return;
     }
     if (!app.popiaConsent || !app.agreementConsent) {
@@ -255,9 +291,9 @@ export default function RepLoginPage() {
                 <Field label="Postal Code *" value={app.postalCode} onChange={setA("postalCode")} />
                 <div style={{ flex: 1 }}>
                   <label className={labelCls} style={labelStyle}>Province *</label>
-                  <select value={app.province} onChange={(e) => setA("province")(e.target.value)} style={{ ...inputStyle, marginTop: 6 }}>
-                    <option value="">Select…</option>
-                    {PROVINCES.map((p) => (<option key={p} value={p}>{p}</option>))}
+                  <select value={app.province} onChange={(e) => setA("province")(e.target.value)} style={{ ...inputStyle, marginTop: 6, background: "#000", color: "#fff" }}>
+                    <option value="" style={{ background: "#000", color: "#fff" }}>Select…</option>
+                    {PROVINCES.map((p) => (<option key={p} value={p} style={{ background: "#000", color: "#fff" }}>{p}</option>))}
                   </select>
                 </div>
               </div>
@@ -267,17 +303,33 @@ export default function RepLoginPage() {
                 <Field label="VAT No. (optional)" value={app.vatNumber} onChange={setA("vatNumber")} />
               </div>
 
+              {/* Team Leader (organization) + recruiting Team Leader code — above banking */}
+              <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12, color: "#bcd", cursor: "pointer", marginTop: 6 }}>
+                <input type="checkbox" checked={app.isTeamLeader} onChange={(e) => setA("isTeamLeader")(e.target.checked)} style={{ accentColor: LUMO, marginTop: 2 }} />
+                We are an organization applying as a Team Leader (our staff will sign up under us, and all commissions are paid to our bank account).
+              </label>
+              {app.isTeamLeader && (
+                <Field label="Your Team Leader code (e.g. Care) *" value={app.teamLeaderCode} onChange={setA("teamLeaderCode")} placeholder="e.g. Care" />
+              )}
+              <Field label="The Rep Code of the rep (Team Leader) who recruited you (optional)" value={app.uplineRepCode} onChange={setA("uplineRepCode")} placeholder="e.g. Rep00000001 or Care" />
+              {uplineIsTL && !app.isTeamLeader && (
+                <p style={{ fontSize: 12, color: LUMO, marginTop: 4 }}>
+                  You&apos;re joining {uplineOrgName || "a Team Leader organization"}. Commissions are paid to the organization&apos;s bank account, so no banking details are needed below.
+                </p>
+              )}
+              {(app.isTeamLeader || !uplineIsTL) && (
+              <>
               <p className={labelCls} style={{ ...labelStyle, marginTop: 6 }}>Banking (for commission payouts)</p>
               <Field label="Account Holder *" value={app.bankAccountName} onChange={setA("bankAccountName")} />
               <div style={{ display: "flex", gap: 8 }}>
                 <Field label="Bank *" value={app.bankName} onChange={setA("bankName")} />
                 <div style={{ flex: 1 }}>
                   <label className={labelCls} style={labelStyle}>Account Type *</label>
-                  <select value={app.bankAccountType} onChange={(e) => setA("bankAccountType")(e.target.value)} style={{ ...inputStyle, marginTop: 6 }}>
-                    <option value="">Select…</option>
-                    <option>Savings</option>
-                    <option>Current</option>
-                    <option>Cheque</option>
+                  <select value={app.bankAccountType} onChange={(e) => setA("bankAccountType")(e.target.value)} style={{ ...inputStyle, marginTop: 6, background: "#000", color: "#fff" }}>
+                    <option value="" style={{ background: "#000", color: "#fff" }}>Select…</option>
+                    <option style={{ background: "#000", color: "#fff" }}>Savings</option>
+                    <option style={{ background: "#000", color: "#fff" }}>Current</option>
+                    <option style={{ background: "#000", color: "#fff" }}>Cheque</option>
                   </select>
                 </div>
               </div>
@@ -285,8 +337,8 @@ export default function RepLoginPage() {
                 <Field label="Account Number *" value={app.bankAccountNumber} onChange={setA("bankAccountNumber")} />
                 <Field label="Branch Code *" value={app.bankBranchCode} onChange={setA("bankBranchCode")} />
               </div>
-
-              <Field label="The Rep Code of the rep (Team Leader) who recruited you (optional)" value={app.uplineRepCode} onChange={setA("uplineRepCode")} placeholder="e.g. Rep00000001" />
+              </>
+              )}
 
               <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12, color: "#bcd", cursor: "pointer" }}>
                 <input type="checkbox" checked={app.popiaConsent} onChange={(e) => setA("popiaConsent")(e.target.checked)} style={{ accentColor: LUMO, marginTop: 2 }} />

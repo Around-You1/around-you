@@ -10,6 +10,7 @@ import ProfileClassificationGroups from "./ProfileClassificationGroups";
 import type { Restaurant } from "~backend/restaurant/types";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
+import ResendWelcomeButton from "./ResendWelcomeButton";
 import { getCurrentPosition, buildDirectionsUrl } from "../lib/geolocation";
 
 interface RestaurantListProps {
@@ -232,7 +233,7 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
                   <CollapsibleTrigger asChild>
                     <button className="flex items-center gap-2 flex-1 min-w-0 text-left">
                       {isOpen ? <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />}
-                      <h3 className="font-semibold text-sm text-foreground truncate min-w-[120px]">{restaurant.name}</h3>
+                      <h3 className="font-semibold text-sm text-foreground truncate min-w-0">{restaurant.name}</h3>
                       <StarRatingDisplay
                         average={ratings[restaurant.id]?.averageRating ?? 0}
                         count={ratings[restaurant.id]?.ratingCount ?? 0}
@@ -315,6 +316,7 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
                           profileCode={restaurant.profileReferenceCode}
                           entityType="restaurant"
                         />
+                        <ResendWelcomeButton partnerType="restaurant" partnerId={restaurant.id} partnerName={restaurant.name} />
                       </div>
                     )}
                   </div>

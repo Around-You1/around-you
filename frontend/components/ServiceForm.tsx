@@ -17,12 +17,14 @@ import type { ServiceData, ServiceCategory } from "~backend/service/types";
 import { SA_PROVINCES } from "../lib/saRegions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X } from "lucide-react";
+import AppLogo from "./AppLogo";
 
 interface ServiceFormProps {
   serviceId: string | null;
   onClose: () => void;
   partnerEdit?: boolean;
   editCode?: string;
+  nonProfit?: boolean;
 }
 
 interface CategoryGroup {
@@ -130,6 +132,7 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
       "First Aid Training",
       "Medical Services",
       "Occupational Health",
+      "Veterinary",
       "Pharmacies",
       "Security Services",
     ],
@@ -166,7 +169,7 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
   },
 ];
 
-export default function ServiceForm({ serviceId, onClose, partnerEdit = false, editCode }: ServiceFormProps) {
+export default function ServiceForm({ serviceId, onClose, partnerEdit = false, editCode, nonProfit = false }: ServiceFormProps) {
   const [loading, setLoading] = useState(false);
   // Gate the form render until the record has loaded. The Province <Select>
   // reads its value when it mounts and does not re-sync if the value arrives a
@@ -183,12 +186,14 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
     officialRepName: "",
     companyRegNumber: "",
     companyVatNumber: "",
-    guestType: "",
-    accessLevel: "",
+    guestType: "Both",
+    accessLevel: "Tier 2",
   });
   const [formData, setFormData] = useState({
     name: "",
     address: "",
+    accountingAddress: "",
+    isNonProfit: nonProfit,
     latitude: "",
     worksFromClientAddress: false,
     longitude: "",
@@ -233,6 +238,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
     offersBookings: false,
     isActive: false,
     bookingItems: [] as { name: string; price: number; duration: number }[],
+    preOrderItems: [] as { name: string; price: number; leadTimeMinutes: number }[],
   });
   const { toast } = useToast();
 
@@ -272,8 +278,8 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
         officialRepName: data.officialRepName || "",
         companyRegNumber: data.companyRegNumber || "",
         companyVatNumber: data.companyVatNumber || "",
-        guestType: data.guestType || "",
-        accessLevel: data.accessLevel || "",
+        guestType: data.guestType || "Both",
+        accessLevel: data.accessLevel || "Tier 2",
       });
       loadCharity("service", data.id).then((cats) =>
         setOfficialUse((o) => ({ ...o, charity: cats })),
@@ -282,6 +288,8 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
       setFormData({
         name: data.name,
         address: data.address,
+        accountingAddress: data.accountingAddress || "",
+        isNonProfit: data.isNonProfit ?? nonProfit,
         latitude: data.latitude != null ? String(data.latitude) : "",
         worksFromClientAddress: data.worksFromClientAddress ?? false,
         longitude: data.longitude != null ? String(data.longitude) : "",
@@ -326,6 +334,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
         offersBookings: data.offersBookings || false,
         isActive: data.isActive,
         bookingItems: data.bookingItems || [],
+        preOrderItems: data.preOrderItems || [],
       });
     } catch (error) {
       console.error("Failed to load service:", error);
@@ -364,6 +373,8 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           editCode: editCode || undefined,
           name: formData.name,
           address: formData.address,
+          accountingAddress: formData.accountingAddress,
+          isNonProfit: formData.isNonProfit,
           latitude: formData.latitude ? parseFloat(formData.latitude) : null,
           worksFromClientAddress: formData.worksFromClientAddress,
           longitude: formData.longitude ? parseFloat(formData.longitude) : null,
@@ -415,9 +426,10 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           officialRepName: officialUse.officialRepName || undefined,
           companyRegNumber: officialUse.companyRegNumber || undefined,
           companyVatNumber: officialUse.companyVatNumber || undefined,
-          guestType: officialUse.guestType || undefined,
-          accessLevel: formData.offersBookings ? "Booking" : (officialUse.accessLevel || undefined),
+          guestType: "Both",
+          accessLevel: (formData.offersBookings || formData.preOrderItems.length > 0) ? "Booking" : "Tier 2",
           bookingItems: formData.bookingItems,
+          preOrderItems: formData.preOrderItems,
         });
         await saveCharity("service", serviceData?.id, officialUse.charity || []);
         toast({
@@ -428,6 +440,8 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
         const createdSvc: any = await backend.service.create({
           name: formData.name,
           address: formData.address,
+          accountingAddress: formData.accountingAddress,
+          isNonProfit: formData.isNonProfit,
           latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
           worksFromClientAddress: formData.worksFromClientAddress,
           longitude: formData.longitude ? parseFloat(formData.longitude) : undefined,
@@ -478,9 +492,10 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           officialRepName: officialUse.officialRepName || undefined,
           companyRegNumber: officialUse.companyRegNumber || undefined,
           companyVatNumber: officialUse.companyVatNumber || undefined,
-          guestType: officialUse.guestType || undefined,
-          accessLevel: formData.offersBookings ? "Booking" : (officialUse.accessLevel || undefined),
+          guestType: "Both",
+          accessLevel: (formData.offersBookings || formData.preOrderItems.length > 0) ? "Booking" : "Tier 2",
           bookingItems: formData.bookingItems,
+          preOrderItems: formData.preOrderItems,
         });
         await saveCharity("service", createdSvc.id, officialUse.charity || []);
         toast({
@@ -537,13 +552,19 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${serviceId ? "Edit" : "Add"} Business/Service`}</CardTitle>
+        {partnerEdit && (
+          <div className="flex flex-col items-center gap-2 mb-2">
+            <AppLogo src="/logo-dark.png" size={110} />
+            <div className="text-lg font-bold text-center break-words">{formData.name || "Your Business"}</div>
+          </div>
+        )}
+        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${serviceId ? "Edit" : "Add"} ${nonProfit ? "Non Profit Organization" : "Business/Service"}`}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!partnerEdit && <OfficialUseSection data={officialUse} onChange={setOfficialUse} />}
+          {!partnerEdit && <OfficialUseSection data={officialUse} onChange={setOfficialUse} address={formData.accountingAddress} onAddressChange={(v) => setFormData({ ...formData, accountingAddress: v })} />}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Business/Service Name *</Label>
               <Input
@@ -563,24 +584,28 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
             </div>
           </div>
 
-          <div className="space-y-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
-            <Label htmlFor="address">Address</Label>
+          <div className="space-y-2">
+            <Label htmlFor="address">Business/Service Address</Label>
             <Input
               id="address"
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              placeholder="Street address"
             />
+            <p className="text-xs text-muted-foreground">
+              Shown on the Guest &amp; Local pages for a business premises. Hidden from Guests &amp; Locals when &quot;Do you work from different addresses?&quot; is ticked.
+            </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2 md:col-span-2 rounded-md border p-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2 sm:col-span-2 rounded-md border p-3">
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="worksFromClientAddress"
                   checked={formData.worksFromClientAddress}
                   onCheckedChange={(c) => setFormData({ ...formData, worksFromClientAddress: c === true })}
                 />
-                <Label htmlFor="worksFromClientAddress" className="cursor-pointer">Do you offer to work from different addresses?</Label>
+                <Label htmlFor="worksFromClientAddress" className="cursor-pointer">Do you work from different addresses?</Label>
               </div>
               <p className="text-xs text-muted-foreground">Tick if you travel to the client and have no fixed address. You'll still appear in every nearby/radius search even without coordinates.</p>
             </div>
@@ -606,7 +631,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
               />
             </div>
 
-            <div className="space-y-1 md:col-span-2">
+            <div className="space-y-1 sm:col-span-2">
               <Button type="button" variant="outline" onClick={captureLocation} disabled={locating}>
                 {locating ? "Getting your location…" : "📍 Use my current location"}
               </Button>
@@ -616,7 +641,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="country">Country *</Label>
               <Input
@@ -871,7 +896,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
 
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Payment Options</Label>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="flex items-center space-x-2">
                 <Switch
                   id="paymentCard"
@@ -941,7 +966,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
 
           <div className="space-y-4" style={{ display: tierNum >= 1 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Accessibility</Label>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex items-center space-x-2">
                 <Switch
                   id="wheelchairAccess"
@@ -1000,6 +1025,40 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
             <Button type="button" variant="outline"
               onClick={() => setFormData({ ...formData, bookingItems: [...formData.bookingItems, { name: "", price: 0, duration: 0 }] })}>
               + Add Item
+            </Button>
+          </div>
+
+          <div className="space-y-4">
+            <Label className="text-base font-semibold">Pre-Order Items</Label>
+            <p className="text-sm text-muted-foreground">
+              Items a guest can pre-order ahead (name, price in Rand, lead time in minutes). Adding any item enables pre-orders on this profile.
+            </p>
+            {formData.preOrderItems.map((item, i) => (
+              <div key={i} className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_auto] gap-2 items-end">
+                <div className="space-y-1">
+                  <Label className="text-xs">Item</Label>
+                  <Input value={item.name}
+                    onChange={(e) => setFormData({ ...formData, preOrderItems: formData.preOrderItems.map((r, idx) => (idx === i ? { ...r, name: e.target.value } : r)) })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Price (R)</Label>
+                  <Input type="number" step="any" value={item.price}
+                    onChange={(e) => setFormData({ ...formData, preOrderItems: formData.preOrderItems.map((r, idx) => (idx === i ? { ...r, price: parseFloat(e.target.value) || 0 } : r)) })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Lead time (min)</Label>
+                  <Input type="number" step="1" value={item.leadTimeMinutes}
+                    onChange={(e) => setFormData({ ...formData, preOrderItems: formData.preOrderItems.map((r, idx) => (idx === i ? { ...r, leadTimeMinutes: parseInt(e.target.value) || 0 } : r)) })} />
+                </div>
+                <Button type="button" variant="outline"
+                  onClick={() => setFormData({ ...formData, preOrderItems: formData.preOrderItems.filter((_, idx) => idx !== i) })}>
+                  Remove
+                </Button>
+              </div>
+            ))}
+            <Button type="button" variant="outline"
+              onClick={() => setFormData({ ...formData, preOrderItems: [...formData.preOrderItems, { name: "", price: 0, leadTimeMinutes: 0 }] })}>
+              + Add Pre-Order Item
             </Button>
           </div>
 

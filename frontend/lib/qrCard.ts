@@ -29,6 +29,13 @@ export interface QrCardOptions {
   data: string;
   /** Show the small green sparkle under the caption (Partner / Rep cards). */
   sparkle?: boolean;
+  /**
+   * Optional same-origin image (e.g. the phone-in-hand mockup) shown on the
+   * right. When set, the card uses the newer Partner layout: a green border
+   * frame, the instructions across the top-left, and the business name over the
+   * QR on the left. When omitted, the card keeps the original logo-left layout.
+   */
+  sideImageUrl?: string;
 }
 
 function loadImage(src: string, crossOrigin?: boolean): Promise<HTMLImageElement> {
@@ -129,19 +136,130 @@ function drawCard(
   }
 }
 
+// New Partner-card layout, matching the mockup: a lumo-green border frame, a
+// dark felt interior, the white instructions across the top-left, the business
+// name in green over a neon-green QR on the left, and a phone-in-hand mockup on
+// the right. Drawn directly in full A5 pixel coordinates.
+function drawPartnerCard(
+  ctx: CanvasRenderingContext2D,
+  opts: QrCardOptions,
+  qrImg: HTMLImageElement,
+  sideImg: HTMLImageElement
+) {
+  const W = CARD_W;
+  const H = CARD_H;
+  const B = 42; // green border thickness
+
+  // Dark felt interior (matches the mockup's background tone).
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(0, 0, W, H);
+
+  // Phone-in-hand mockup (right), bottom-aligned against the border. The asset
+  // is feathered on its top/left edges so it blends into the felt background.
+  const aspect = sideImg.width / sideImg.height;
+  const phoneH = 1600;
+  const phoneW = phoneH * aspect;
+  const phoneRight = W - B;
+  const phoneLeft = phoneRight - phoneW;
+  const phoneBottom = H - B;
+  const phoneTop = phoneBottom - phoneH;
+  ctx.drawImage(sideImg, phoneLeft, phoneTop, phoneW, phoneH);
+
+  // Left column geometry.
+  const colL = 95;
+  const colR = phoneLeft - 55;
+  const colCenter = (B + phoneLeft) / 2;
+
+  // White instructions (top-left, word-wrapped, auto-sized down to fit 4 lines).
+  const maxTextW = colR - colL;
+  const fontAt = (s: number) =>
+    `600 ${s}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+
+  const wrap = (text: string, fs: number): string[] => {
+    ctx.font = fontAt(fs);
+    const words = text.split(" ");
+    const out: string[] = [];
+    let line = "";
+    for (const w of words) {
+      const test = line ? `${line} ${w}` : w;
+      if (ctx.measureText(test).width > maxTextW && line) {
+        out.push(line);
+        line = w;
+      } else {
+        line = test;
+      }
+    }
+    if (line) out.push(line);
+    return out;
+  };
+
+  let textFs = 66;
+  let lines = wrap(opts.description, textFs);
+  while (lines.length > 4 && textFs > 34) {
+    textFs -= 2;
+    lines = wrap(opts.description, textFs);
+  }
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = fontAt(textFs);
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  const lineH = Math.round(textFs * 1.34);
+  const textTop = 150;
+  let by = textTop + textFs;
+  for (const ln of lines) {
+    ctx.fillText(ln, colL, by);
+    by += lineH;
+  }
+  const textBottom = by - lineH + Math.round(textFs * 0.3);
+
+  // Business name (green, bold, centred over the QR, auto-fit).
+  const maxTitleW = 1180;
+  let titleFs = 72;
+  const titleFont = (s: number) =>
+    `700 ${s}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+  do {
+    ctx.font = titleFont(titleFs);
+    if (ctx.measureText(opts.title).width <= maxTitleW) break;
+    titleFs -= 2;
+  } while (titleFs > 28);
+  ctx.font = titleFont(titleFs);
+  ctx.fillStyle = LUMO;
+  ctx.textAlign = "center";
+  const titleBaseline = textBottom + 70 + titleFs;
+  ctx.fillText(opts.title, colCenter, titleBaseline);
+
+  // QR (green on black), centred in the left column, sized to the space left.
+  const qrTop = titleBaseline + 45;
+  const qrBottomLimit = H - B - 70;
+  const availH = qrBottomLimit - qrTop;
+  let qrSize = Math.min(availH, maxTextW, 1050);
+  qrSize = Math.max(560, Math.min(qrSize, 1050));
+  const qrX = colCenter - qrSize / 2;
+  ctx.drawImage(qrImg, qrX, qrTop, qrSize, qrSize);
+
+  if (opts.sparkle) {
+    ctx.fillStyle = LUMO;
+    ctx.font = `700 34px system-ui, sans-serif`;
+    ctx.fillText("✦", colCenter, Math.min(qrTop + qrSize + 48, H - B - 18));
+  }
+
+  // Green border frame last, so it sits cleanly over the phone's cut edges.
+  ctx.fillStyle = LUMO;
+  ctx.fillRect(0, 0, W, B);
+  ctx.fillRect(0, H - B, W, B);
+  ctx.fillRect(0, 0, B, H);
+  ctx.fillRect(W - B, 0, B, H);
+}
+
 /**
  * Render the card onto a fresh canvas at A5 (2480 × 1748) and return it. Loads
- * the logo (same-origin) and the QR (cross-origin, so the canvas stays
- * untainted and can be exported).
+ * the logo / side image (same-origin) and the QR (cross-origin, so the canvas
+ * stays untainted and can be exported).
  */
 export async function renderQrCardCanvas(
   opts: QrCardOptions
 ): Promise<HTMLCanvasElement> {
-  const [logoImg, qrImg] = await Promise.all([
-    loadImage(LOGO_SRC),
-    loadImage(qrImageUrl(opts.data), true),
-  ]);
-
   const canvas = document.createElement("canvas");
   canvas.width = CARD_W;
   canvas.height = CARD_H;
@@ -151,6 +269,22 @@ export async function renderQrCardCanvas(
   // Full black background (covers the thin side margins left by centring).
   ctx.fillStyle = "#000000";
   ctx.fillRect(0, 0, CARD_W, CARD_H);
+
+  // Newer Partner layout: phone mockup on the right, green border frame.
+  if (opts.sideImageUrl) {
+    const [qrImg, sideImg] = await Promise.all([
+      loadImage(qrImageUrl(opts.data), true),
+      loadImage(opts.sideImageUrl),
+    ]);
+    drawPartnerCard(ctx, opts, qrImg, sideImg);
+    return canvas;
+  }
+
+  // Original layout: full logo on the left, title over the QR, caption below.
+  const [logoImg, qrImg] = await Promise.all([
+    loadImage(LOGO_SRC),
+    loadImage(qrImageUrl(opts.data), true),
+  ]);
 
   // Uniformly scale the tuned base layout up to A5 and centre it horizontally.
   const k = CARD_H / BASE_H;
@@ -241,6 +375,82 @@ export async function downloadQrCard(
   const canvas = await renderQrCardCanvas(opts);
   const blob = await canvasToTaggedBlob(canvas);
   if (!blob) return;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// --- PDF export (A5 landscape, dependency-free) -------------------------
+
+function latin1Bytes(s: string): Uint8Array {
+  const a = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i) & 0xff;
+  return a;
+}
+
+/**
+ * Build a minimal, valid single-page PDF that places a JPEG image to fill an
+ * A5-landscape page. No external library — we emit the object table and a
+ * correct xref by tracking byte offsets as we go.
+ */
+function buildImagePdf(jpeg: Uint8Array, wPx: number, hPx: number, pageWpt: number, pageHpt: number): Uint8Array {
+  const parts: Uint8Array[] = [];
+  let len = 0;
+  const push = (u: Uint8Array) => { parts.push(u); len += u.length; };
+  const pushStr = (s: string) => push(latin1Bytes(s));
+  const off: Record<number, number> = {};
+
+  pushStr("%PDF-1.4\n%âãÏÓ\n");
+
+  off[1] = len; pushStr("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+  off[2] = len; pushStr("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n");
+  off[3] = len; pushStr(
+    `3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWpt.toFixed(2)} ${pageHpt.toFixed(2)}] ` +
+    `/Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`,
+  );
+  off[4] = len;
+  pushStr(
+    `4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${wPx} /Height ${hPx} ` +
+    `/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`,
+  );
+  push(jpeg);
+  pushStr("\nendstream\nendobj\n");
+
+  const content = `q ${pageWpt.toFixed(2)} 0 0 ${pageHpt.toFixed(2)} 0 0 cm /Im0 Do Q\n`;
+  off[5] = len;
+  pushStr(`5 0 obj\n<< /Length ${content.length} >>\nstream\n${content}endstream\nendobj\n`);
+
+  const xrefAt = len;
+  let xref = "xref\n0 6\n0000000000 65535 f \n";
+  for (let n = 1; n <= 5; n++) xref += String(off[n]).padStart(10, "0") + " 00000 n \n";
+  pushStr(xref);
+  pushStr(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefAt}\n%%EOF`);
+
+  const out = new Uint8Array(len);
+  let o = 0;
+  for (const p of parts) { out.set(p, o); o += p.length; }
+  return out;
+}
+
+/** Render the card and download it as a print-ready A5-landscape PDF. */
+export async function downloadQrCardPdf(opts: QrCardOptions, fileName: string): Promise<void> {
+  const canvas = await renderQrCardCanvas(opts);
+  const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+  const bin = atob(dataUrl.split(",")[1]);
+  const jpeg = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) jpeg[i] = bin.charCodeAt(i);
+
+  const MM = 72 / 25.4; // points per mm
+  const pdf = buildImagePdf(jpeg, CARD_W, CARD_H, 210 * MM, 148 * MM); // A5 landscape
+
+  // Wrap in a fresh ArrayBuffer-backed view so the type is Uint8Array<ArrayBuffer>
+  // (TypeScript 5.7+ rejects Uint8Array<ArrayBufferLike> as a BlobPart).
+  const blob = new Blob([new Uint8Array(pdf)], { type: "application/pdf" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

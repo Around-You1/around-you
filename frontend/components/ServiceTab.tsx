@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Upload, Download, FileText, Search } from "lucide-react";
@@ -12,13 +12,21 @@ import SortControls, { SortState, DEFAULT_SORT_STATE } from "./SortControls";
 
 interface ServiceTabProps {
   onUpdate?: () => void;
+  nonProfit?: boolean;
 }
 
-export default function ServiceTab({ onUpdate }: ServiceTabProps) {
+export default function ServiceTab({ onUpdate, nonProfit = false }: ServiceTabProps) {
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const onChanged = () => setRefreshKey((k) => k + 1);
+    window.addEventListener("pending-apps-changed", onChanged);
+    return () => window.removeEventListener("pending-apps-changed", onChanged);
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [sortState, setSortState] = useState<SortState>(DEFAULT_SORT_STATE);
   const { toast } = useToast();
@@ -116,7 +124,7 @@ export default function ServiceTab({ onUpdate }: ServiceTabProps) {
             className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add Business/Service
+            Add {nonProfit ? "Non Profit Organization" : "Business/Service"}
           </Button>
         </div>
 
@@ -151,15 +159,16 @@ export default function ServiceTab({ onUpdate }: ServiceTabProps) {
         </div>
       </div>
 
-      {!showForm && <PendingApplications category="service" />}
+      {!showForm && !nonProfit && <PendingApplications category="service" />}
 
       {showForm ? (
         <ServiceForm
           serviceId={editingServiceId}
           onClose={handleFormClose}
+          nonProfit={nonProfit}
         />
       ) : (
-        <ServiceList key={refreshKey} onEdit={handleEdit} onUpdate={onUpdate} searchQuery={searchQuery} sortState={sortState} />
+        <ServiceList key={refreshKey} onEdit={handleEdit} onUpdate={onUpdate} searchQuery={searchQuery} sortState={sortState} nonProfit={nonProfit} />
       )}
 
       {showImport && (

@@ -40,6 +40,12 @@ export default function RestaurantTab({ onUpdate }: RestaurantTabProps) {
     setFilteredRestaurants(applySortState(searched, sortState));
   }, [searchQuery, restaurants, sortState]);
 
+  useEffect(() => {
+    const onChanged = () => loadRestaurants();
+    window.addEventListener("pending-apps-changed", onChanged);
+    return () => window.removeEventListener("pending-apps-changed", onChanged);
+  }, []);
+
   const loadRestaurants = async () => {
     try {
       const backend = getAuthenticatedBackend();

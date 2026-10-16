@@ -11,7 +11,7 @@ import LoadingScreen from "@/components/LoadingScreen";
 // component relies on browser APIs (navigation, localStorage) that must not run
 // during SSR. LoadingScreen (JHB/Table Mountain splash) covers the load, so no
 // separate fallback UI is needed here.
-const AboutYouPage = dynamic(() => import("@/components/AboutYouPage"), {
+const LoginPage = dynamic(() => import("@/components/LoginPage"), {
   ssr: false,
   loading: () => null,
 });
@@ -31,7 +31,7 @@ export default function Page() {
 
   useEffect(() => {
     let active = true;
-    import("@/components/AboutYouPage").then(() => {
+    import("@/components/LoginPage").then(() => {
       if (active) setChunkLoaded(true);
     });
     return () => {
@@ -43,6 +43,14 @@ export default function Page() {
     const timer = setTimeout(() => setMinTimeElapsed(true), 3200);
     return () => clearTimeout(timer);
   }, []);
+
+  // A QR/link that carries ?accessCode=XXXXXXXXXXXX (12 chars) deep-links
+  // straight to the auto-login route (kept from the old landing page).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const ac = new URLSearchParams(window.location.search).get("accessCode");
+    if (ac && ac.length === 12) router.replace(`/${ac}`);
+  }, [router]);
 
   useEffect(() => {
     let active = true;
@@ -109,5 +117,5 @@ export default function Page() {
     return <LoadingScreen ready={ready} onFinished={() => setShowLoader(false)} />;
   }
 
-  return <AboutYouPage />;
+  return <LoginPage />;
 }

@@ -31,12 +31,15 @@ function getRepSession() {
   }
 }
 
+// Live print routes — each opens a blank form generated from the shared schema
+// (lib/onboardingSchema.ts) and pops the browser's Save-as-PDF dialog, so the
+// printed form is always the latest version. No static PDFs to keep in sync.
 const ONBOARDING_PDF: Record<string, string> = {
-  Accommodations: "/onboarding/accommodation-onboarding.pdf",
-  Restaurants: "/onboarding/restaurant-onboarding.pdf",
-  Services: "/onboarding/service-onboarding.pdf",
-  Attractions: "/onboarding/attraction-onboarding.pdf",
-  "Real Estate & Rentals": "/onboarding/real-estate-onboarding.pdf",
+  Accommodations: "/onboarding/print/accommodation",
+  Restaurants: "/onboarding/print/restaurant",
+  Services: "/onboarding/print/service",
+  Attractions: "/onboarding/print/attraction",
+  "Real Estate & Rentals": "/onboarding/print/real-estate",
 };
 const typeLabel = (t: string) => (t === "Services" ? "Business/Services" : t === "Attractions" ? "Attractions/Activities" : t);
 
@@ -115,6 +118,48 @@ export default function RepAcademy() {
           Rep: {rep.repName || "—"} · Code: {rep.repCode || "—"}
         </p>
 
+        {/* Open the application form yourself — prominent, top of page */}
+        <div
+          style={{
+            background: colors.surface,
+            border: `2px solid ${colors.primary}`,
+            borderRadius: 16,
+            padding: 16,
+            marginBottom: 18,
+            boxShadow: "0 0 24px rgba(57,255,20,0.12)",
+          }}
+        >
+          <p style={{ color: colors.primary, fontSize: 16, fontWeight: 800, margin: 0 }}>
+            Sign a partner up now
+          </p>
+          <p style={{ color: colors.textSecondary, fontSize: 12.5, lineHeight: 1.55, margin: "6px 0 14px" }}>
+            Open the <b style={{ color: colors.textPrimary }}>Join Around You</b> application and complete a new
+            partner&apos;s listing with them on the spot — choose{" "}
+            <b style={{ color: colors.textPrimary }}>Accommodation</b>,{" "}
+            <b style={{ color: colors.textPrimary }}>Restaurant/Takeaway</b>,{" "}
+            <b style={{ color: colors.textPrimary }}>Business/Service</b>,{" "}
+            <b style={{ color: colors.textPrimary }}>Attraction/Activity</b> or{" "}
+            <b style={{ color: colors.textPrimary }}>Real Estate &amp; Rentals</b>. It opens pre-filled with your rep
+            code ({rep.repCode || "—"}), so the sign-up — and its commission — is credited to you automatically.
+          </p>
+          <button
+            onClick={startApplication}
+            style={{
+              width: "100%",
+              padding: "16px 12px",
+              borderRadius: 14,
+              background: colors.primary,
+              color: "#000",
+              border: "none",
+              fontWeight: 800,
+              fontSize: 16,
+              cursor: "pointer",
+            }}
+          >
+            ➕ Onboard a New Partner
+          </button>
+        </div>
+
         {/* Copy application link */}
         <button
           onClick={copyApplyLink}
@@ -138,13 +183,22 @@ export default function RepAcademy() {
           </p>
           {Object.entries(ONBOARDING_PDF).map(([label, href]) => (
             <a key={label} href={href} target="_blank" rel="noopener noreferrer"
-              style={{ color: colors.primary, fontSize: 15, fontWeight: 700, textDecoration: "none" }}>
-              ⬇ {typeLabel(label)}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                background: colors.primary, color: "#000", fontSize: 15, fontWeight: 800,
+                textDecoration: "none", padding: "12px 16px", borderRadius: 12, textAlign: "center",
+              }}>
+              ⬇ Download {typeLabel(label)} form
             </a>
           ))}
-          <a href="/onboarding/rep-guide.pdf" target="_blank" rel="noopener noreferrer"
-            style={{ color: colors.accent, fontSize: 15, fontWeight: 700, textDecoration: "none", marginTop: 4 }}>
-            📘 Rep guide — how to complete the forms (PDF)
+          <a href="/onboarding/rep-guide.pdf" download
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              background: "transparent", color: colors.accent, fontSize: 15, fontWeight: 800,
+              textDecoration: "none", padding: "12px 16px", borderRadius: 12, marginTop: 4,
+              border: `1px solid ${colors.accent}`, textAlign: "center",
+            }}>
+            📘 Download Rep guide (PDF)
           </a>
         </div>
 
@@ -205,6 +259,33 @@ export default function RepAcademy() {
               )}
             </div>
           )}
+        </div>
+
+        {/* Training videos */}
+        <div style={{ marginTop: 28, display: "flex", flexDirection: "column", gap: 8 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: colors.textSecondary, margin: 0 }}>Videos</p>
+          <a href="https://youtu.be/G8k-ILOYOos" target="_blank" rel="noopener noreferrer"
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              background: colors.surface, color: colors.primary, fontSize: 15, fontWeight: 800,
+              textDecoration: "none", padding: "12px 16px", borderRadius: 12,
+              border: `1px solid ${colors.primary}`, textAlign: "center",
+            }}>
+            ▶ Why Accommodation should join
+          </a>
+          <a href="https://youtu.be/rKTS1obzq_o" target="_blank" rel="noopener noreferrer"
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              background: colors.surface, color: colors.primary, fontSize: 15, fontWeight: 800,
+              textDecoration: "none", padding: "12px 16px", borderRadius: 12,
+              border: `1px solid ${colors.primary}`, textAlign: "center",
+            }}>
+            ▶ Why Partner with us
+          </a>
+          <p style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 1.55, margin: "4px 0 0" }}>
+            In order to send a video to a prospective Partner, right click on the video and then select
+            &ldquo;copy link address&rdquo;. Then send the link.
+          </p>
         </div>
 
         {/* Sign In -> Join Around You (pre-filled with the rep's code) */}

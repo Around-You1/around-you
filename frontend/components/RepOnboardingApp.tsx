@@ -77,7 +77,7 @@ const ACCESSIBILITY_OPTIONS = ["Wheelchair Access", "Parking Availability"];
 const DIETARY_OPTIONS = ["Gluten Free", "Halaal", "Kosher", "Nut Free", "Signature Dish", "Chef Recommendation"];
 const SOCIAL_LINKS_OPTIONS = ["Website", "Facebook", "Instagram", "Tiktok", "X"];
 const PAYMENT_OPTIONS = ["Card", "Cash", "Gaap", "Mobile Tap", "Snap Scan", "Yoco", "Zapper"];
-const FACILITIES = ["Braai", "Fly Fishing", "Golf", "Gym", "Laundry", "Spa", "Swimming Pool"];
+const FACILITIES = ["Braai", "Fly Fishing", "Golf", "Gym", "Lapa", "Laundry", "Spa", "Swimming Pool"];
 
 const CATEGORY_GROUPS = [
   {
@@ -241,7 +241,7 @@ const CUISINE_TYPES = [
   "Vegan", "Vegetarian", "Vetkoek",
 ];
 
-const RESTAURANT_TYPES = ["Food Truck", "Home Meals", "Take Away", "Pop Up", "Restaurant"];
+const RESTAURANT_TYPES = ["Food Truck", "Home Meals", "Take Away", "Delivery", "Pop Up", "Restaurant"];
 
 // Rep's own session — the real signed-in rep, from Rep sign-in (full name +
 // rep code), read from the same localStorage the rest of the app already
@@ -369,7 +369,7 @@ function CharityPicker({ value = [], onChange }) {
   );
   return (
     <div style={{ marginBottom: 12 }}>
-      <label style={labelStyle}>Charity</label>
+      <label style={labelStyle}>Please give us the details of the charity you wish US to support</label>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {CHARITY_GROUPS.map((g) => pill(g, group === g, () => selectGroup(g)))}
       </div>
@@ -413,7 +413,7 @@ function SocialLinksField({ label = "Social Media", value = {}, onChange }) {
   );
 }
 
-function DietaryOptionsField({ selected = [], onChange, extraValue, onExtraChange }) {
+function DietaryOptionsField({ selected = [], onChange, extraValue, onExtraChange, chefValue, onChefChange }) {
   const toggle = (opt) => {
     const next = selected.includes(opt) ? selected.filter((o) => o !== opt) : [...selected, opt];
     onChange(next);
@@ -443,6 +443,15 @@ function DietaryOptionsField({ selected = [], onChange, extraValue, onExtraChang
           placeholder="Signature dish name / details"
           value={extraValue || ""}
           onChange={(e) => onExtraChange(e.target.value)}
+          style={{ ...inputStyle, marginTop: 8 }}
+        />
+      )}
+      {selected.includes("Chef Recommendation") && (
+        <textarea
+          placeholder="Chef recommendation — e.g. Chef's signature lamb shank, slow-cooked for 6 hours."
+          value={chefValue || ""}
+          onChange={(e) => onChefChange(e.target.value)}
+          rows={2}
           style={{ ...inputStyle, marginTop: 8 }}
         />
       )}
@@ -565,10 +574,31 @@ export default function RepOnboardingApp() {
   const [images, setImages] = useState([]);
   const [charity, setCharity] = useState<string[]>([]);
   const [autoSaveStatus, setAutoSaveStatus] = useState("");
+  const [autofillStatus, setAutofillStatus] = useState("");
   const [submitted, setSubmitted] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const set = (id) => (val) => setData((d) => ({ ...d, [id]: val }));
+
+  // Upload a completed onboarding PDF -> Claude extracts the fields -> we
+  // pre-fill the form for the rep/admin to review before saving.
+  const handleAutofillPdf = async (file: File) => {
+    if (!file) return;
+    setAutofillStatus("Reading the form\u2026 this can take up to a minute.");
+    try {
+      const dataUrl = (await fileToDataURL(file)) as string;
+      const backend = getAuthenticatedBackend();
+      const res: any = await backend.onboarding.extract({ category: "restaurant", files: [{ mediaType: file.type || "application/pdf", data: dataUrl }] });
+      const f = (res && res.fields) || {};
+      if (f.data && typeof f.data === "object") setData((d) => ({ ...d, ...f.data }));
+      if (typeof f.province === "string" && f.province.trim()) setProvince([f.province.trim()]);
+      if (typeof f.country === "string" && f.country.trim()) setCountry([f.country.trim()]);
+      if (Array.isArray(f.serviceOptions) && f.serviceOptions.length) setServiceOptions(f.serviceOptions);
+      setAutofillStatus("Pre-filled from the PDF \u2014 please check every field below before saving.");
+    } catch (e: any) {
+      setAutofillStatus("Couldn't read that PDF: " + (e?.message || "please enter the details by hand."));
+    }
+  };
 
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState("");
@@ -725,7 +755,8 @@ export default function RepOnboardingApp() {
       } else if (isRestaurant) {
         created = await backend.restaurant.create({
           name: data.name || data.companyName,
-          address: data.address || "",
+          address: data.publicAddress || "",
+          accountingAddress: data.address || "",
           latitude,
           worksFromClientAddress: Boolean(data.worksFromClientAddress),
           longitude,
@@ -740,6 +771,8 @@ export default function RepOnboardingApp() {
           restaurantType: data.restaurantType || [],
           atmosphere: data.atmosphere || [],
           features: data.features || [],
+          dietaryOptions: data.dietary || [],
+          chefRecommendation: data.chefRecommendation || "",
           menuLink: data.menuLink || "",
           serviceDineIn: serviceOptions.includes("Dine-in"),
           serviceTakeaway: serviceOptions.includes("Takeaway"),
@@ -796,7 +829,8 @@ export default function RepOnboardingApp() {
       } else if (isService) {
         created = await backend.service.create({
           name: data.name || data.companyName,
-          address: data.address || "",
+          address: data.publicAddress || "",
+          accountingAddress: data.address || "",
           latitude,
           worksFromClientAddress: Boolean(data.worksFromClientAddress),
           longitude,
@@ -856,7 +890,8 @@ export default function RepOnboardingApp() {
       } else {
         created = await backend.attraction.create({
           name: data.name || data.companyName,
-          address: data.address || "",
+          address: data.publicAddress || "",
+          accountingAddress: data.address || "",
           latitude,
           worksFromClientAddress: Boolean(data.worksFromClientAddress),
           longitude,
@@ -1091,10 +1126,33 @@ export default function RepOnboardingApp() {
               </div>
             )}
 
+            {isRestaurant && (
+              <div style={{ marginBottom: 14, padding: 12, border: `1px solid ${colors.border}`, borderRadius: 10, background: colors.surface2 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: colors.textPrimary, marginBottom: 6 }}>
+                  Have the completed form as a PDF?
+                </div>
+                <div style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 8 }}>
+                  Upload the filled-in onboarding PDF and we&apos;ll read it and pre-fill the fields below for you to check.
+                </div>
+                <label style={{ display: "inline-block", cursor: "pointer", background: colors.accent, color: "#000", fontWeight: 700, fontSize: 13, borderRadius: 8, padding: "10px 14px" }}>
+                  Upload completed form (PDF) to auto-fill
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    style={{ display: "none" }}
+                    onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleAutofillPdf(f); e.currentTarget.value = ""; }}
+                  />
+                </label>
+                {autofillStatus && (
+                  <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 8 }}>{autofillStatus}</div>
+                )}
+              </div>
+            )}
+
             <SectionTitle>Company Details</SectionTitle>
             <TextField label="Company Name" value={data.companyName} onChange={set("companyName")} />
             <TextField label="Holding Company" value={data.holdingCompany} onChange={set("holdingCompany")} />
-            <TextField label="Address" value={data.address} onChange={set("address")} />
+            <TextField label="Accounting Address" value={data.address} onChange={set("address")} />
             <TextField label="Contact Number" value={data.contactNumber} onChange={set("contactNumber")} />
             <TextField label="Business Email" value={data.businessEmail} onChange={set("businessEmail")} />
             <TextField label="Person Responsible" value={data.personResponsible} onChange={set("personResponsible")} />
@@ -1116,7 +1174,7 @@ export default function RepOnboardingApp() {
             <TextField label="Postal Code" value={data.postalCode} onChange={set("postalCode")} />
             {!isAccommodation && (
               <ToggleField
-                label="Do you offer to work from different addresses?"
+                label="Do you work from different addresses?"
                 checked={data.worksFromClientAddress}
                 onChange={set("worksFromClientAddress")}
               />
@@ -1437,6 +1495,8 @@ export default function RepOnboardingApp() {
                       onChange={set("dietary")}
                       extraValue={data.signatureDishDetail}
                       onExtraChange={set("signatureDishDetail")}
+                      chefValue={data.chefRecommendation}
+                      onChefChange={set("chefRecommendation")}
                     />
                     <TextField label="Menu Link (URL)" value={data.menuLink} onChange={set("menuLink")} />
                     <TextField label="Wifi Name" value={data.wifiName} onChange={set("wifiName")} />
