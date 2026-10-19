@@ -321,6 +321,9 @@ export default function LoginPage() {
   const [localProvince, setLocalProvince] = useState("");
   const [localPostalCode, setLocalPostalCode] = useState("");
   const [localCell, setLocalCell] = useState("");
+  // True once this Local has finished first-time registration (info + mobile +
+  // email verified). Persisted per-browser so the button stays "Sign In" after.
+  const [localRegistered, setLocalRegistered] = useState(false);
 
   const [partnerCode, setPartnerCode] = useState("");
   const [partnerCodeError, setPartnerCodeError] = useState(false);
@@ -359,6 +362,7 @@ export default function LoginPage() {
   useEffect(() => {
     let saved: any = {};
     try { saved = JSON.parse(localStorage.getItem("aroundYouLogin") || "{}"); } catch { saved = {}; }
+    try { if (localStorage.getItem("aroundYouLocalRegistered") === "1") setLocalRegistered(true); } catch { /* best-effort */ }
     const hasQrCode = !!searchParams.get("code");
 
     if (saved.local) {
@@ -482,6 +486,12 @@ export default function LoginPage() {
     // roleLabel (e.g. "a Local") is used instead of a name where the sign-in
     // name is just an email prefix that would read oddly (e.g. "partners").
     const displayName = welcomeName.replace(/^(guest|partner)@/, "");
+    if (roleLabel === "a Local") {
+      // First-time registration is now complete (verified email just finished);
+      // the Local button becomes "Sign In" from here on.
+      try { localStorage.setItem("aroundYouLocalRegistered", "1"); } catch { /* best-effort */ }
+      setLocalRegistered(true);
+    }
     toast({ title: "Welcome!", description: roleLabel ? `Welcome as ${roleLabel}` : `Signed in as ${displayName}` });
     navigate(path);
   }
@@ -791,7 +801,7 @@ export default function LoginPage() {
                 />
               </div>
               <p className="text-xs" style={{ color: "#555" }}>You may sign in up to 10 times per month with this email.</p>
-              <LumoButton disabled={loading}>{loading ? "Signing in…" : "Sign In"}</LumoButton>
+              <LumoButton disabled={loading}>{loading ? (localRegistered ? "Signing in…" : "Registering…") : (localRegistered ? "Sign In" : "Register")}</LumoButton>
             </form>
           </PanelWrap>
 

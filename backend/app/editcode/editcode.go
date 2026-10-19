@@ -140,7 +140,7 @@ func Regenerate(ctx context.Context, req *RegenerateRequest) (*CodeResponse, err
 	if !privileged(ctx) {
 		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "not allowed"}
 	}
-	code, err := regenCode(ctx, req.EntityType, req.EntityID, appdb.RandomCode(10))
+	code, err := regenCode(ctx, req.EntityType, req.EntityID, appdb.RandomCode(12))
 	if err != nil {
 		return nil, mapNotFound(err)
 	}

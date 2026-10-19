@@ -3,16 +3,18 @@
 // reinstate + permanent purge.
 //
 // Lifecycle rules (per Dave's spec):
-//   * Deactivate  -> is_active=false AND the profile's Access Code + Edit Code
-//                    are disabled (access code toggled inactive, edit code
-//                    rotated to a fresh unknown value).
-//   * Activate    -> is_active=true AND brand-new Access + Edit codes are issued.
-//   * Delete      -> the full profile is moved to archived_partners (a JSON
-//                    snapshot) and removed from its live table; its codes go
-//                    with it.
-//   * Reinstate   -> the profile is re-created from the snapshot with a NEW id
-//                    and brand-new Access + Edit codes; the archive row is removed.
-//   * Purge       -> the archive row is permanently deleted.
+//   - Deactivate  -> is_active=false and the Access Code is disabled (toggled
+//     inactive). Both code VALUES are kept unchanged.
+//   - Activate    -> is_active=true and the Access Code is re-enabled. Codes are
+//     issued only on the FIRST activation; a later re-activation
+//     restores the SAME Access + Edit codes. Codes change only
+//     when an Admin clicks Regenerate.
+//   - Delete      -> the full profile is moved to archived_partners (a JSON
+//     snapshot) and removed from its live table; its codes go
+//     with it.
+//   - Reinstate   -> the profile is re-created from the snapshot with a NEW id
+//     and brand-new Access + Edit codes; the archive row is removed.
+//   - Purge       -> the archive row is permanently deleted.
 package admin
 
 import (
@@ -118,41 +120,64 @@ func BulkSetActive(ctx context.Context, req *BulkRequest) (*BulkResponse, error)
 	return &BulkResponse{Affected: len(req.IDs)}, nil
 }
 
-// disableCodes turns the Access Code off and rotates the Edit Code so the old
-// one stops working. Best-effort — errors are non-fatal.
+// disableCodes turns the Access Code off WITHOUT changing either code value, so
+// a later re-activation restores the SAME codes. Best-effort — errors are
+// non-fatal. Codes only ever change via the explicit Regenerate buttons.
 func disableCodes(ctx context.Context, entityType string, id int64) {
-	rot := appdb.RandomCode(12)
 	switch entityType {
 	case "restaurant":
 		_ = restaurants.TogglePartnerCode(ctx, id, false)
-		_, _ = restaurants.RegenerateEditCode(ctx, id, rot)
 	case "service":
 		_ = services.TogglePartnerCode(ctx, id, false)
-		_, _ = services.RegenerateEditCode(ctx, id, rot)
 	case "attraction":
 		_ = attractions.TogglePartnerCode(ctx, id, false)
-		_, _ = attractions.RegenerateEditCode(ctx, id, rot)
 	case "accommodation":
 		_ = accommodations.ToggleAccessCode(ctx, id, false)
-		_, _ = accommodations.RegenerateEditCode(ctx, id, rot)
 	}
 }
 
-// enableCodes issues a brand-new Access Code (active) and Edit Code.
+// enableCodes activates the partner's codes. Codes are issued ONCE, on the first
+// activation; a later re-activation re-enables the SAME Access Code and leaves
+// the Edit Code untouched, so a partner's saved/printed codes and QR keep
+// working. Only the explicit Regenerate buttons ever change a code. Best-effort.
 func enableCodes(ctx context.Context, entityType string, id int64) {
 	switch entityType {
 	case "restaurant":
-		_, _, _ = restaurants.RegeneratePartnerCode(ctx, id, appdb.RandomCode(12))
-		_, _ = restaurants.RegenerateEditCode(ctx, id, appdb.RandomCode(12))
+		if code, _, err := restaurants.GetPartnerCode(ctx, id); err == nil && strings.TrimSpace(code) != "" {
+			_ = restaurants.TogglePartnerCode(ctx, id, true)
+		} else {
+			_, _, _ = restaurants.RegeneratePartnerCode(ctx, id, appdb.RandomCode(12))
+		}
+		if ec, err := restaurants.GetEditCode(ctx, id); err != nil || strings.TrimSpace(ec) == "" {
+			_, _ = restaurants.RegenerateEditCode(ctx, id, appdb.RandomCode(12))
+		}
 	case "service":
-		_, _, _ = services.RegeneratePartnerCode(ctx, id, appdb.RandomCode(12))
-		_, _ = services.RegenerateEditCode(ctx, id, appdb.RandomCode(12))
+		if code, _, err := services.GetPartnerCode(ctx, id); err == nil && strings.TrimSpace(code) != "" {
+			_ = services.TogglePartnerCode(ctx, id, true)
+		} else {
+			_, _, _ = services.RegeneratePartnerCode(ctx, id, appdb.RandomCode(12))
+		}
+		if ec, err := services.GetEditCode(ctx, id); err != nil || strings.TrimSpace(ec) == "" {
+			_, _ = services.RegenerateEditCode(ctx, id, appdb.RandomCode(12))
+		}
 	case "attraction":
-		_, _, _ = attractions.RegeneratePartnerCode(ctx, id, appdb.RandomCode(12))
-		_, _ = attractions.RegenerateEditCode(ctx, id, appdb.RandomCode(12))
+		if code, _, err := attractions.GetPartnerCode(ctx, id); err == nil && strings.TrimSpace(code) != "" {
+			_ = attractions.TogglePartnerCode(ctx, id, true)
+		} else {
+			_, _, _ = attractions.RegeneratePartnerCode(ctx, id, appdb.RandomCode(12))
+		}
+		if ec, err := attractions.GetEditCode(ctx, id); err != nil || strings.TrimSpace(ec) == "" {
+			_, _ = attractions.RegenerateEditCode(ctx, id, appdb.RandomCode(12))
+		}
 	case "accommodation":
-		_, _, _ = accommodations.RegenerateAccessCode(ctx, id, appdb.RandomCode(12))
-		_, _ = accommodations.RegenerateEditCode(ctx, id, appdb.RandomCode(12))
+		if code, _, err := accommodations.GetAccessCode(ctx, id); err == nil && strings.TrimSpace(code) != "" {
+			_ = accommodations.ToggleAccessCode(ctx, id, true)
+		} else {
+			_, _, _ = accommodations.RegenerateAccessCode(ctx, id, appdb.RandomCode(12))
+		}
+		if ec, err := accommodations.GetEditCode(ctx, id); err != nil || strings.TrimSpace(ec) == "" {
+			_, _ = accommodations.RegenerateEditCode(ctx, id, appdb.RandomCode(12))
+		}
 	}
 }
 
