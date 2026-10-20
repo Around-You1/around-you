@@ -564,6 +564,22 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
         <form onSubmit={handleSubmit} className="space-y-4">
           {!partnerEdit && <OfficialUseSection data={officialUse} onChange={setOfficialUse} address={formData.accountingAddress} onAddressChange={(v) => setFormData({ ...formData, accountingAddress: v })} />}
 
+          {!partnerEdit && (
+            <div className="space-y-2 rounded-md border p-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="isNonProfit"
+                  checked={formData.isNonProfit}
+                  onCheckedChange={(c) => setFormData({ ...formData, isNonProfit: c === true })}
+                />
+                <Label htmlFor="isNonProfit" className="cursor-pointer">Non Profit Organization</Label>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Tick to list this under the Non Profit Organization tab (free) instead of Business/Service. Untick to move it back to Business/Service.
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Business/Service Name *</Label>
