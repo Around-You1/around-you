@@ -19,6 +19,7 @@ import { useSwipe } from "../lib/useSwipe";
 import ImageCarousel from "../components/ImageCarousel";
 import RestaurantPreOrder from "../components/RestaurantPreOrder";
 import { useTutorial } from "../components/tutorial/TutorialProvider";
+import WifiConnect from "../components/WifiConnect";
 import SupportBadge from "../components/SupportBadge";
 import { EstateAgenciesBrowse } from "../components/EstatePublic";
 import SwipeIndicator from "../components/SwipeIndicator";
@@ -582,18 +583,7 @@ export default function GuestDashboard() {
                     </CollapsibleTrigger>
                     <CollapsibleContent className={`${contentClass} text-sm space-y-1`}>
                       {accommodation!.wifiName ? (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <span className="text-muted-foreground">Network:</span>
-                            <span className="font-medium">{accommodation!.wifiName}</span>
-                          </div>
-                          {accommodation!.wifiPassword && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground">Password:</span>
-                              <span className="font-medium">{accommodation!.wifiPassword}</span>
-                            </div>
-                          )}
-                        </>
+                        <WifiConnect name={accommodation!.wifiName} password={accommodation!.wifiPassword} />
                       ) : (
                         fallbackSpan
                       )}
@@ -1263,32 +1253,7 @@ export default function GuestDashboard() {
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm space-y-1`}>
                                 {restaurant.wifiNetwork ? (
-                                  <>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-muted-foreground">Network:</span>
-                                      <span className="font-medium">{restaurant.wifiNetwork}</span>
-                                    </div>
-                                    {restaurant.wifiPassword && (
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-muted-foreground">Password:</span>
-                                        <span className="font-medium font-mono">
-                                          {visiblePasswords.has(restaurant.id) ? restaurant.wifiPassword : "••••••••"}
-                                        </span>
-                                        <button
-                                          onClick={() => {
-                                            const newSet = new Set(visiblePasswords);
-                                            if (newSet.has(restaurant.id)) newSet.delete(restaurant.id);
-                                            else newSet.add(restaurant.id);
-                                            setVisiblePasswords(newSet);
-                                          }}
-                                          className="text-black hover:text-black"
-                                          title={visiblePasswords.has(restaurant.id) ? "Hide password" : "Show password"}
-                                        >
-                                          {visiblePasswords.has(restaurant.id) ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                        </button>
-                                      </div>
-                                    )}
-                                  </>
+                                  <WifiConnect name={restaurant.wifiNetwork} password={restaurant.wifiPassword} />
                                 ) : (
                                   fallbackSpan
                                 )}

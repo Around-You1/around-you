@@ -6,6 +6,7 @@ import { ArrowLeft, MapPin, Phone, Globe, Wifi, Navigation } from "lucide-react"
 import { getAuthenticatedBackend } from "../lib/backend";
 import WhatsAppButton from "../components/WhatsAppButton";
 import SupportBadge from "../components/SupportBadge";
+import WifiConnect from "../components/WifiConnect";
 
 const TYPE_LABEL: Record<string, string> = {
   restaurant: "Restaurant / Takeaway",
@@ -249,13 +250,7 @@ export default function PublicProfileView() {
         {entity.wifiName ? (
           <>
             <div style={sectionTitle}>Wi-Fi</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: "#cfd3cf" }}>
-              <Wifi className="h-4 w-4" style={{ color: GREEN }} />
-              <span>
-                {entity.wifiName}
-                {entity.wifiPassword ? ` · ${entity.wifiPassword}` : ""}
-              </span>
-            </div>
+            <WifiConnect name={entity.wifiName} password={entity.wifiPassword} />
           </>
         ) : null}
 
