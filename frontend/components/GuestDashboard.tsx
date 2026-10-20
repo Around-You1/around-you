@@ -18,6 +18,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useSwipe } from "../lib/useSwipe";
 import ImageCarousel from "../components/ImageCarousel";
 import RestaurantPreOrder from "../components/RestaurantPreOrder";
+import { useTutorial } from "../components/tutorial/TutorialProvider";
 import SupportBadge from "../components/SupportBadge";
 import { EstateAgenciesBrowse } from "../components/EstatePublic";
 import SwipeIndicator from "../components/SwipeIndicator";
@@ -115,6 +116,11 @@ export default function GuestDashboard() {
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isLocalMode = user.role === "LocalGuest";
+  // Guided tutorial: Holiday Guests hear VO4 on arrival (not Local guests).
+  const tutorial = useTutorial();
+  useEffect(() => {
+    if (tutorial && !isLocalMode) tutorial.play("VO4");
+  }, [tutorial, isLocalMode]);
   const localPostal: string = user.postalCode || "";
 
   // "Test" partner isolation: a partner (or the guesthouse) is a test entity when

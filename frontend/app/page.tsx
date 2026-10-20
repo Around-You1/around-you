@@ -6,6 +6,8 @@ import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
 import { getAuthenticatedBackend } from "@/lib/backend";
 import LoadingScreen from "@/components/LoadingScreen";
+import TutorialIntro from "@/components/tutorial/TutorialIntro";
+import { useTutorial } from "@/components/tutorial/TutorialProvider";
 
 // Landing / "About You" entry screen. Rendered client-only because the imported
 // component relies on browser APIs (navigation, localStorage) that must not run
@@ -28,6 +30,10 @@ export default function Page() {
   // guarantees the loading screen stays up long enough to be seen, no matter
   // how quickly everything else finishes.
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+  // The guided-tutorial intro screen (logo + sound check) shows first; the rest
+  // of the landing flow waits until the user taps Start or Skip.
+  const [introDone, setIntroDone] = useState(false);
+  const tutorial = useTutorial();
 
   useEffect(() => {
     let active = true;
@@ -39,10 +45,28 @@ export default function Page() {
     };
   }, []);
 
+  // Skip the tutorial intro for scanned-QR / access-code / magic-link entries —
+  // those users came in to do something specific, not to watch the walkthrough.
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const p = new URLSearchParams(window.location.search);
+    const hash = window.location.hash || "";
+    const authReturn = hash.includes("access_token") || hash.includes("type=");
+    if (p.get("code") || p.get("accessCode") || authReturn) setIntroDone(true);
+  }, []);
+
+  // The minimum loading-screen display time only starts once the intro is done,
+  // so the car/skyline (and VO1) are actually seen after the user taps Start.
+  useEffect(() => {
+    if (!introDone) return;
     const timer = setTimeout(() => setMinTimeElapsed(true), 3200);
     return () => clearTimeout(timer);
-  }, []);
+  }, [introDone]);
+
+  // First voice-over ("Welcome to Around You") plays over the loading screen.
+  useEffect(() => {
+    if (introDone && showLoader) tutorial?.play("VO1");
+  }, [introDone, showLoader, tutorial]);
 
   // A QR/link that carries ?accessCode=XXXXXXXXXXXX (12 chars) deep-links
   // straight to the auto-login route (kept from the old landing page).
@@ -112,6 +136,10 @@ export default function Page() {
   // about to redirect away to /portal), the landing page's code has actually
   // finished loading, AND the minimum display time has passed — never before.
   const ready = !checking && chunkLoaded && minTimeElapsed;
+
+  if (!introDone) {
+    return <TutorialIntro onDone={() => setIntroDone(true)} />;
+  }
 
   if (showLoader) {
     return <LoadingScreen ready={ready} onFinished={() => setShowLoader(false)} />;

@@ -10,6 +10,7 @@ import AppLogo from "../components/AppLogo";
 import InfoSquares from "../components/InfoSquares";
 import { signInWithOtp } from "../lib/auth";
 import { supabase } from "../lib/supabase";
+import { useTutorial } from "../components/tutorial/TutorialProvider";
 
 const VALID_CODE_RE = /^[A-Za-z0-9]*$/;
 const STRIP_RE = /[^A-Za-z0-9]/g;
@@ -426,6 +427,16 @@ export default function LoginPage() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Guided tutorial: play the matching voice-over as each sign-in view appears.
+  const tutorial = useTutorial();
+  useEffect(() => {
+    if (!tutorial) return;
+    if (activePanel === null) tutorial.play("VO2");
+    else if (activePanel === "holiday") tutorial.play("VO3");
+    else if (activePanel === "local") tutorial.play("VO5"); // VO6 auto-follows
+    else if (activePanel === "partner") tutorial.play("VO7");
+  }, [activePanel, tutorial]);
 
   function togglePanel(panel: ActivePanel) {
     setActivePanel((prev) => (prev === panel ? null : panel));

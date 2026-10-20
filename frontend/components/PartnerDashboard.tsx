@@ -13,6 +13,7 @@ import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
 import OptimizedImage from "../components/OptimizedImage";
 import AppLogo from "../components/AppLogo";
+import { useTutorial } from "../components/tutorial/TutorialProvider";
 import AppInstallButtons from "../components/AppInstallButtons";
 import RestaurantForm from "../components/RestaurantForm";
 import ServiceForm from "../components/ServiceForm";
@@ -463,6 +464,11 @@ function LoyaltyManager({ entityType, entityId }: { entityType: string; entityId
 }
 
 export default function PartnerDashboard() {
+  // Guided tutorial: Partner "Edit Profile" voice-over on arrival.
+  const tutorial = useTutorial();
+  useEffect(() => {
+    if (tutorial) tutorial.play("VO8");
+  }, [tutorial]);
   const [entity, setEntity] = useState<EntityData | null>(null);
   const [entityType, setEntityType] = useState<"restaurant" | "service" | "attraction" | "accommodation" | null>(null);
   const [loading, setLoading] = useState(true);
