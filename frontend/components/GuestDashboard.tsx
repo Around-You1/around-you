@@ -346,12 +346,13 @@ export default function GuestDashboard() {
       }
       const lat = coords ? coords.latitude : 0;
       const lng = coords ? coords.longitude : 0;
-      const [r, s, a] = await Promise.all([
+      const [r, s, sNpo, a] = await Promise.all([
         backend.restaurant.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal }),
-        backend.service.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal }),
+        backend.service.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal, nonProfit: false }),
+        backend.service.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal, nonProfit: true }),
         backend.attraction.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal }),
       ]);
-      apply(r, s, a);
+      apply(r, { services: [...(((s as any).services) || []), ...(((sNpo as any).services) || [])] }, a);
     } catch (error) {
       console.error("Failed to load local partners:", error);
       toast({ title: "Error", description: "Failed to load local partners", variant: "destructive" });
@@ -365,15 +366,16 @@ export default function GuestDashboard() {
     if (accommodation!.latitude == null || accommodation!.longitude == null) return;
     try {
       const backend = getAuthenticatedBackend();
-      const [restaurantData, serviceData, attractionData] = await Promise.all([
+      const [restaurantData, serviceData, serviceNpoData, attractionData] = await Promise.all([
         backend.restaurant.listNearby({ latitude: accommodation!.latitude, longitude: accommodation!.longitude, radiusKm: radiusKm[0], postalCode: accommodation!.postalCode || "" }),
-        backend.service.listNearby({ latitude: accommodation!.latitude, longitude: accommodation!.longitude, radiusKm: radiusKm[0], postalCode: accommodation!.postalCode || "" }),
+        backend.service.listNearby({ latitude: accommodation!.latitude, longitude: accommodation!.longitude, radiusKm: radiusKm[0], postalCode: accommodation!.postalCode || "", nonProfit: false }),
+        backend.service.listNearby({ latitude: accommodation!.latitude, longitude: accommodation!.longitude, radiusKm: radiusKm[0], postalCode: accommodation!.postalCode || "", nonProfit: true }),
         backend.attraction.listNearby({ latitude: accommodation!.latitude, longitude: accommodation!.longitude, radiusKm: radiusKm[0], postalCode: accommodation!.postalCode || "" }),
       ]);
       // Only the Test Guesthouse sees test partners; everyone else never does.
       const showOnlyTest = isTestName(accommodation!.name);
       const rr = filterTestVisibility(restaurantData.restaurants, showOnlyTest);
-      const ss = filterTestVisibility(serviceData.services, showOnlyTest);
+      const ss = filterTestVisibility([...((serviceData as any).services || []), ...((serviceNpoData as any).services || [])], showOnlyTest);
       const aa = filterTestVisibility(attractionData.attractions, showOnlyTest);
       setRestaurants(rr);
       setServices(ss);
