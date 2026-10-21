@@ -153,13 +153,13 @@ def build(md, out):
         i += 1
 
     doc = SimpleDocTemplate(out, pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm,
-                            topMargin=16 * mm, bottomMargin=16 * mm, title="Around You — Rep Guide")
+                            topMargin=16 * mm, bottomMargin=16 * mm, title="Around You — Agent Guide")
     doc.build(flow)
     print("wrote", out)
 
 
 MD = r"""
-# Around You — Rep Guide: Completing the Onboarding Forms
+# Around You — Agent Guide: Completing the Onboarding Forms
 
 A plain-English walkthrough of the onboarding forms for reps. Read the first two sections once — they explain the choices that confuse everyone. Then use the per-category checklists.
 
@@ -181,7 +181,7 @@ Pre-Orders (restaurants) are separate again — see section 4.
 
 ## Your commission — always be up-selling
 
-You earn **25% of every sale you make yourself — every month the partner stays active**. If you're a **Team Leader**, you also earn **10% of every sale made by each rep in your downline**, on top of your own 25%.
+You earn **25% of every sale you make yourself — every month the partner stays active**. If you're a **Team Leader**, you also earn **10% of every sale made by each agent in your downline**, on top of your own 25%.
 
 Either way, the bigger the plan, the bigger (and more repeatable) your income, so always aim **up**:
 
@@ -189,7 +189,7 @@ Either way, the bigger the plan, the bigger (and more repeatable) your income, s
 - Go for **Premium** (full profile) rather than Basic.
 - Add **Bookings** where the partner takes reservations, or **Pre-Orders** for a restaurant doing takeaway/delivery (Pre-Orders also opens Premium).
 
-A partner on **Both + Premium** with **Bookings or Pre-Orders** is worth far more to you than a bare listing — and gets you to your rep targets much quicker.
+A partner on **Both + Premium** with **Bookings or Pre-Orders** is worth far more to you than a bare listing — and gets you to your agent targets much quicker.
 
 ---
 
@@ -247,9 +247,9 @@ How to explain it: *List the meals people can order ahead and how long each take
 
 ## 5. Things every form needs (and the small gotchas)
 
-- **Rep Code** — must be your rep code so the partner (and commission) is linked to you. On the online form it pre-fills to Rep00000001 (the free/internal code); a real rep must replace it with their own. Leaving Rep00000001 means the partner is treated as free.
+- **Agent Code** — must be your agent code so the partner (and commission) is linked to you. On the online form it pre-fills to Rep00000001 (the free/internal code); a real agent must replace it with their own. Leaving Rep00000001 means the partner is treated as free.
 - **GPS / location (Latitude & Longitude)** — capture this while standing at the venue. On the onboarding app, tap "Use my current location" just below the Latitude/Longitude fields: allow location access when your phone asks, and the two coordinates fill in automatically from the phone's GPS. Do this outside or near the entrance for the best accuracy, and you can still hand-edit the numbers if needed. The partner doesn't need to know these. (Onboarding remotely rather than on site? Read the coordinates off Google Maps and type them in.)
-- **Images** — the onboarding app has an **Images** field (up to 10 photos) that you upload while onboarding. **Logo & menu PDF** aren't on the form — arrange those with head office by email. The rep app is for **new onboarding only**; to add or change images afterwards, the **partner does it themselves using their Edit Code**.
+- **Images** — the onboarding app has an **Images** field (up to 10 photos) that you upload while onboarding. **Logo & menu PDF** aren't on the form — arrange those with head office by email. The agent app is for **new onboarding only**; to add or change images afterwards, the **partner does it themselves using their Edit Code**.
 - **Discounts** — there are two separate discount options: a Guest discount and a Local discount. Fill in only the audience(s) they're offering to depending who the Partner wishes to target. Each has an optional code.
 - **Charity** — pick one group (Adults / Children / Animals) and one focus (Health / Homes / Food) — e.g. Children – Food. Around You will tally up at the end of each month and a percentage of the total income will go to a charity we deem fit according to the selection.
 - **Payment methods** — tick everything they accept.

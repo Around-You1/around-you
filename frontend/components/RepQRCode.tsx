@@ -23,9 +23,9 @@ interface RepQRCodeProps {
 // RepQRCode shares the Around You card layout (logo left, green title over a
 // neon-green QR, caption below) and downloads / prints at A6 size.
 export default function RepQRCode({
-  title = "Become an Around You Rep",
+  title = "Become an Around You Agent",
   applyUrl = "https://aroundyou.co.za/rep-login",
-  description = "Scan this QR code, click “New Rep Application”, tick the box to accept the Rep Responsibility & Payment Terms, then click “I Agree & Continue”. Complete all of the fields, then click “Submit Application”.",
+  description = "Scan this QR code, click “New Agent Application”, tick the box to accept the Agent Responsibility & Payment Terms, then click “I Agree & Continue”. Complete all of the fields, then click “Submit Application”.",
 }: RepQRCodeProps) {
   const card: QrCardOptions = {
     title,
@@ -55,7 +55,7 @@ export default function RepQRCode({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title, applyUrl, description]);
 
-  const baseName = `${(title || "Around-You-Rep").replace(/\s+/g, "-")}-QR-A5`;
+  const baseName = `${(title || "Around-You-Agent").replace(/\s+/g, "-")}-QR-A5`;
   const fileName = `${baseName}.png`;
 
   const handleDownload = async () => {

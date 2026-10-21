@@ -805,14 +805,14 @@ export default function AnalyticsDashboard() {
           )}
         </Section>
 
-        <Section title="Reps — Performance & Commissions">
+        <Section title="Agents — Performance & Commissions">
           {!repStats ? (
             <Pending loading={loading} />
           ) : (
             <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
               <div className="rounded-lg border border-border p-3">
-                <p className="text-xs text-muted-foreground">Active Reps</p>
+                <p className="text-xs text-muted-foreground">Active Agents</p>
                 <p className="text-2xl font-bold">{repStats.totalActiveReps}</p>
               </div>
               <div className="rounded-lg border border-border p-3">
@@ -837,7 +837,7 @@ export default function AnalyticsDashboard() {
                   <thead>
                     <tr className="text-left text-muted-foreground border-b border-border">
                       <th className="py-2 pr-3">#</th>
-                      <th className="py-2 pr-3">Rep</th>
+                      <th className="py-2 pr-3">Agent</th>
                       <th className="py-2 pr-3">Status</th>
                       <th className="py-2 pr-3">Partners</th>
                       <th className="py-2 pr-3">MRR</th>
@@ -877,7 +877,7 @@ export default function AnalyticsDashboard() {
           )}
         </Section>
 
-        <Section title="Rep Onboarding Activity">
+        <Section title="Agent Onboarding Activity">
           <p className="text-sm text-muted-foreground mb-4">
             How many clients each rep has onboarded, broken down by Tier, and which days they were active.
             Built from the listings each rep has already created — this is a real report, not a placeholder.

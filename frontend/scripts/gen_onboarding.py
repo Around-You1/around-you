@@ -63,15 +63,15 @@ PROVINCE = ["Eastern Cape","Free State","Gauteng","KwaZulu Natal","Limpopo","Mpu
 INTRO = ("Thank you for your interest in listing with Around You — the app that connects holiday guests and "
          "locals with great businesses near them. Please complete the fields below. Fields marked * are required. "
          "Write your details on the lines provided and tick the options that apply.")
-FOOTER = "Questions? Contact your Around You representative or sales@aroundyou.co.za."
+FOOTER = "Questions? Contact your Around You agent or sales@aroundyou.co.za."
 
 # The closing note shown directly under the last field, on every form.
 CLOSING_NOTE = ("Once submitted and you receive your Access and Edit codes, you will be able to edit all of the "
                 "other information you can show on your Partner Profile.")
 
 def repcode():
-    return [*section("Rep Code"),
-        fill("Rep Code", "Leave as Rep00000005 unless a representative gave you their own code, then change accordingly")]
+    return [*section("Agent Code"),
+        fill("Agent Code", "Leave as Rep00000005 unless an agent gave you their own code, then change accordingly")]
 
 def business(nameLabel):
     return [*section("Your business"),

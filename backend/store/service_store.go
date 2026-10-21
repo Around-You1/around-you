@@ -76,7 +76,9 @@ const serviceColumns = `
 	COALESCE(trading_hours, '') as trading_hours,
 	COALESCE(public_holidays, '') as public_holidays,
 	COALESCE(accounting_address, '') as accounting_address,
-	COALESCE(is_nonprofit, false) as is_nonprofit
+	COALESCE(is_nonprofit, false) as is_nonprofit,
+	COALESCE(npo_number, '') as npo_number,
+	COALESCE(pbo_number, '') as pbo_number
 `
 
 type serviceScanner interface {
@@ -112,6 +114,8 @@ func scanService(row serviceScanner) (*appdb.ServiceData, error) {
 		&s.TradingHours, &s.PublicHolidays,
 		&s.AccountingAddress,
 		&s.IsNonProfit,
+		&s.NpoNumber,
+		&s.PboNumber,
 	)
 	if err != nil {
 		return nil, err
@@ -206,11 +210,12 @@ func (s *ServiceStore) Create(ctx context.Context, in *appdb.ServiceData) (*appd
 			payment_eft, trading_hours, public_holidays,
 			accounting_address,
 			is_nonprofit,
-			pre_order_items
+			pre_order_items,
+			npo_number, pbo_number
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,
 			$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,
-			$51,$52,$53,$54,$55,$56,$57,$58,$59,$60,$61,$62
+			$51,$52,$53,$54,$55,$56,$57,$58,$59,$60,$61,$62,$63,$64
 		)
 		RETURNING `+serviceColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -235,6 +240,7 @@ func (s *ServiceStore) Create(ctx context.Context, in *appdb.ServiceData) (*appd
 		in.AccountingAddress,
 		in.IsNonProfit,
 		in.PreOrderItems,
+		in.NpoNumber, in.PboNumber,
 	)
 	return scanService(row)
 }
@@ -244,6 +250,8 @@ type ServicePatch struct {
 	Address           *string
 	AccountingAddress *string
 	IsNonProfit       *bool
+	NpoNumber         *string
+	PboNumber         *string
 	Latitude          *float64
 	Longitude         *float64
 	Country           *string
@@ -329,6 +337,12 @@ func (s *ServiceStore) Update(ctx context.Context, id int64, patch ServicePatch)
 	}
 	if patch.IsNonProfit != nil {
 		sets = append(sets, "is_nonprofit = "+arg(*patch.IsNonProfit))
+	}
+	if patch.NpoNumber != nil {
+		sets = append(sets, "npo_number = "+arg(*patch.NpoNumber))
+	}
+	if patch.PboNumber != nil {
+		sets = append(sets, "pbo_number = "+arg(*patch.PboNumber))
 	}
 	if patch.Latitude != nil {
 		sets = append(sets, "latitude = "+arg(*patch.Latitude))

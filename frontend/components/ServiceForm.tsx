@@ -202,6 +202,8 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
     area: "",
     postalCode: "",
     contactNumber: "",
+    npoNumber: "",
+    pboNumber: "",
     serviceCategories: [] as ServiceCategory[],
     imageUrl: "",
     imageUrls: [] as string[],
@@ -298,6 +300,8 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
         area: data.area || "",
         postalCode: data.postalCode,
         contactNumber: data.contactNumber || "",
+        npoNumber: (data as any).npoNumber || "",
+        pboNumber: (data as any).pboNumber || "",
         serviceCategories: data.serviceCategories,
         imageUrl: data.imageUrl || "",
         imageUrls: data.imageUrls || [],
@@ -383,6 +387,8 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           area: formData.area || undefined,
           postalCode: formData.postalCode,
           contactNumber: formData.contactNumber || undefined,
+          npoNumber: formData.npoNumber || undefined,
+          pboNumber: formData.pboNumber || undefined,
           serviceCategories: formData.serviceCategories,
           imageUrl: formData.imageUrl || undefined,
           imageUrls: formData.imageUrls || undefined,
@@ -449,6 +455,8 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           province: formData.province,
           postalCode: formData.postalCode,
           contactNumber: formData.contactNumber || undefined,
+          npoNumber: formData.npoNumber || undefined,
+          pboNumber: formData.pboNumber || undefined,
           serviceCategories: formData.serviceCategories,
           imageUrl: formData.imageUrl || undefined,
           imageUrls: formData.imageUrls || undefined,
@@ -600,6 +608,29 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
             </div>
           </div>
 
+          {nonProfit && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="npoNumber">NPO Number</Label>
+                <Input
+                  id="npoNumber"
+                  value={formData.npoNumber}
+                  onChange={(e) => setFormData({ ...formData, npoNumber: e.target.value })}
+                  placeholder="e.g. 123-456 NPO"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pboNumber">PBO Number</Label>
+                <Input
+                  id="pboNumber"
+                  value={formData.pboNumber}
+                  onChange={(e) => setFormData({ ...formData, pboNumber: e.target.value })}
+                  placeholder="e.g. 930012345"
+                />
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="address">Business/Service Address</Label>
             <Input
@@ -702,6 +733,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
             </div>
           </div>
 
+          {!nonProfit && (
           <div className="space-y-3" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label>Business/Service Categories</Label>
             <div className="space-y-2">
@@ -755,6 +787,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
               })}
             </div>
           </div>
+          )}
 
           <MultiImageUpload
             label="Business/Service Images"
@@ -864,6 +897,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
             />
           </div>
 
+          {!nonProfit && (
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Experience Info</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -909,6 +943,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
               </div>
             </div>
           </div>
+          )}
 
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Payment Options</Label>
@@ -999,6 +1034,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
                 />
                 <Label htmlFor="parkingAvailability">Parking Available</Label>
               </div>
+              {!nonProfit && (
               <div className="flex items-center space-x-2">
                 <Switch
                   id="offersBookings"
@@ -1007,9 +1043,11 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
                 />
                 <Label htmlFor="offersBookings">Bookable Items</Label>
               </div>
+              )}
             </div>
           </div>
 
+          {!nonProfit && (
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Bookable Items</Label>
             <p className="text-sm text-muted-foreground">
@@ -1043,7 +1081,9 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
               + Add Item
             </Button>
           </div>
+          )}
 
+          {!nonProfit && (
           <div className="space-y-4">
             <Label className="text-base font-semibold">Pre-Order Items</Label>
             <p className="text-sm text-muted-foreground">
@@ -1077,6 +1117,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
               + Add Pre-Order Item
             </Button>
           </div>
+          )}
 
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Social Media</Label>

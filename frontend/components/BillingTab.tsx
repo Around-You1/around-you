@@ -593,7 +593,7 @@ export default function BillingTab() {
               onClick={() =>
                 downloadCsv(
                   "subscriptions.csv",
-                  ["Partner", "Type", "Plan", "Monthly (R)", "Rep", "Status", "Next bill"],
+                  ["Partner", "Type", "Plan", "Monthly (R)", "Agent", "Status", "Next bill"],
                   billableSubs.map((s) => [
                     s.partnerName || `${s.partnerType} #${s.partnerId}`,
                     `${s.partnerType} #${s.partnerId}`,
@@ -613,7 +613,7 @@ export default function BillingTab() {
                     <th className="py-2 pr-3">Partner</th>
                     <th className="py-2 pr-3">Plan</th>
                     <th className="py-2 pr-3">Monthly</th>
-                    <th className="py-2 pr-3">Rep</th>
+                    <th className="py-2 pr-3">Agent</th>
                     <th className="py-2 pr-3">Status</th>
                     <th className="py-2 pr-3">Next bill</th>
                   </tr>
@@ -715,7 +715,7 @@ export default function BillingTab() {
               onClick={() =>
                 downloadCsv(
                   "invoices.csv",
-                  ["Invoice", "Partner", "Period start", "Period end", "Total (R)", "Rep", "Status", "Issued"],
+                  ["Invoice", "Partner", "Period start", "Period end", "Total (R)", "Agent", "Status", "Issued"],
                   billableInvoices.map((v) => [
                     v.invoiceNumber,
                     v.billName || `${v.partnerType} #${v.partnerId}`,
@@ -737,7 +737,7 @@ export default function BillingTab() {
                     <th className="py-2 pr-3">Partner</th>
                     <th className="py-2 pr-3">Period</th>
                     <th className="py-2 pr-3">Total</th>
-                    <th className="py-2 pr-3">Rep</th>
+                    <th className="py-2 pr-3">Agent</th>
                     <th className="py-2 pr-3">Status</th>
                     <th className="py-2 pr-3">Issued</th>
                     <th className="py-2 pr-3"></th>
@@ -783,7 +783,7 @@ export default function BillingTab() {
               onClick={() =>
                 downloadCsv(
                   "commissions.csv",
-                  ["Rep", "Type", "From rep", "Partner", "Period", "Amount (R)", "Status"],
+                  ["Agent", "Type", "From agent", "Partner", "Period", "Amount (R)", "Status"],
                   commissions.map((c) => [
                     c.repCode,
                     c.type === "override" ? "Override (10%)" : "Own (25%)",
@@ -800,7 +800,7 @@ export default function BillingTab() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-muted-foreground border-b border-border">
-                    <th className="py-2 pr-3">Rep</th>
+                    <th className="py-2 pr-3">Agent</th>
                     <th className="py-2 pr-3">Type</th>
                     <th className="py-2 pr-3">From rep</th>
                     <th className="py-2 pr-3">Partner</th>
@@ -860,7 +860,7 @@ export default function BillingTab() {
             onClick={() =>
               downloadCsv(
                 `statements-${period}.csv`,
-                ["Rep", "Own 25% (R)", "Override 10% (R)", "Total (R)", "Accrued (R)", "Paid (R)"],
+                ["Agent", "Own 25% (R)", "Override 10% (R)", "Total (R)", "Accrued (R)", "Paid (R)"],
                 statements.map((s) => [
                   s.repCode,
                   (s.ownCents / 100).toFixed(2),
@@ -882,7 +882,7 @@ export default function BillingTab() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-muted-foreground border-b border-border">
-                  <th className="py-2 pr-3">Rep</th>
+                  <th className="py-2 pr-3">Agent</th>
                   <th className="py-2 pr-3">Own 25%</th>
                   <th className="py-2 pr-3">Override 10%</th>
                   <th className="py-2 pr-3">Total</th>
@@ -907,7 +907,7 @@ export default function BillingTab() {
         )}
       </CollapsibleCard>
 
-      <CollapsibleCard title="Rep Commissions (roll-up)" contentClassName="space-y-3">
+      <CollapsibleCard title="Agent Commissions (roll-up)" contentClassName="space-y-3">
         {!commRollup ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : (
@@ -934,7 +934,7 @@ export default function BillingTab() {
                   onClick={() =>
                     downloadCsv(
                       "rep-commissions-rollup.csv",
-                      ["Rep", "Own 25% (R)", "Override 10% (R)", "Total (R)", "Paid (R)", "Accrued (R)"],
+                      ["Agent", "Own 25% (R)", "Override 10% (R)", "Total (R)", "Paid (R)", "Accrued (R)"],
                       commRollup.byRep.map((r) => [
                         r.repCode,
                         (r.ownCents / 100).toFixed(2),
@@ -950,7 +950,7 @@ export default function BillingTab() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-left text-muted-foreground border-b border-border">
-                        <th className="py-2 pr-3">Rep</th>
+                        <th className="py-2 pr-3">Agent</th>
                         <th className="py-2 pr-3">Own (25%)</th>
                         <th className="py-2 pr-3">Override (10%)</th>
                         <th className="py-2 pr-3">Total</th>

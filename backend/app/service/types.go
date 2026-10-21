@@ -32,6 +32,8 @@ type CreateRequest struct {
 	Address           string `json:"address"`
 	AccountingAddress string `json:"accountingAddress,omitempty"`
 	IsNonProfit       bool   `json:"isNonProfit,omitempty"`
+	NpoNumber         string `json:"npoNumber,omitempty"`
+	PboNumber         string `json:"pboNumber,omitempty"`
 
 	Latitude  *float64 `json:"latitude,omitempty"`
 	Longitude *float64 `json:"longitude,omitempty"`
@@ -107,6 +109,8 @@ type UpdateRequest struct {
 	Address           *string `json:"address,omitempty"`
 	AccountingAddress *string `json:"accountingAddress,omitempty"`
 	IsNonProfit       *bool   `json:"isNonProfit,omitempty"`
+	NpoNumber         *string `json:"npoNumber,omitempty"`
+	PboNumber         *string `json:"pboNumber,omitempty"`
 
 	Latitude  *float64 `json:"latitude,omitempty"`
 	Longitude *float64 `json:"longitude,omitempty"`

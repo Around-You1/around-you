@@ -115,7 +115,7 @@ export default function RepsTab() {
         residentialAddress: rep.residentialAddress || "",
         postalCode: rep.postalCode || "",
       });
-      toast({ title: "Rep updated", description: `${rep.fullName} saved` });
+      toast({ title: "Agent updated", description: `${rep.fullName} saved` });
       // Surface the activation welcome-email outcome instead of it being silent.
       if (updated && updated.welcomeEmailSent === true) {
         toast({ title: "Welcome email sent", description: `Sent to ${updated.email || "the rep"}` });
@@ -215,7 +215,7 @@ export default function RepsTab() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Add Rep</CardTitle>
+          <CardTitle>Add Agent</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
@@ -242,11 +242,11 @@ export default function RepsTab() {
             </div>
             <Button onClick={handleCreate} disabled={creating} className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black">
               <UserPlus className="w-4 h-4 mr-2" />
-              {creating ? "Adding…" : "Add Rep"}
+              {creating ? "Adding…" : "Add Agent"}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            A rep code (e.g. Rep00000001) is generated automatically — give the rep both their full name and this code so they can sign in.
+            An agent code (e.g. Rep00000001) is generated automatically — give the agent both their full name and this code so they can sign in.
           </p>
         </CardContent>
       </Card>
@@ -254,7 +254,7 @@ export default function RepsTab() {
       <Card>
         <CardHeader>
           <CardTitle>
-            Existing Reps ({reps.length}) · Team Leaders ({teamLeaderCount})
+            Existing Agents ({reps.length}) · Team Leaders ({teamLeaderCount})
           </CardTitle>
         </CardHeader>
         <CardContent>

@@ -113,7 +113,7 @@ export default function RepAcademy() {
   return (
     <div style={{ minHeight: "100vh", background: colors.background, color: colors.textPrimary, padding: "24px 16px" }}>
       <div style={{ maxWidth: 460, margin: "0 auto" }}>
-        <h1 style={{ color: colors.primary, fontSize: 24, fontWeight: 800, margin: 0 }}>Rep Academy</h1>
+        <h1 style={{ color: colors.primary, fontSize: 24, fontWeight: 800, margin: 0 }}>Agent Academy</h1>
         <p style={{ color: colors.textSecondary, fontSize: 13, margin: "4px 0 20px" }}>
           Rep: {rep.repName || "—"} · Code: {rep.repCode || "—"}
         </p>
@@ -198,7 +198,7 @@ export default function RepAcademy() {
               textDecoration: "none", padding: "12px 16px", borderRadius: 12, marginTop: 4,
               border: `1px solid ${colors.accent}`, textAlign: "center",
             }}>
-            📘 Download Rep guide (PDF)
+            📘 Download Agent guide (PDF)
           </a>
         </div>
 

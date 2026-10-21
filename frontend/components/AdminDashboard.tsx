@@ -160,7 +160,7 @@ export default function AdminDashboard() {
             <h1 className="text-4xl font-bold text-foreground">Admin Dashboard</h1>
             {modOpenCount + pendingTotal + pendingReps > 0 && (
               <span
-                title={`${pendingTotal} pending partner application${pendingTotal === 1 ? "" : "s"} · ${pendingReps} pending rep application${pendingReps === 1 ? "" : "s"} · ${modOpenCount} flagged item${modOpenCount === 1 ? "" : "s"} to review`}
+                title={`${pendingTotal} pending partner application${pendingTotal === 1 ? "" : "s"} · ${pendingReps} pending agent application${pendingReps === 1 ? "" : "s"} · ${modOpenCount} flagged item${modOpenCount === 1 ? "" : "s"} to review`}
                 className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-red-600 text-white text-sm font-bold shadow"
                 aria-label={`${modOpenCount + pendingTotal + pendingReps} items need attention`}
               >
@@ -238,7 +238,7 @@ export default function AdminDashboard() {
           >
             <UserRound className="w-5 h-5 text-red-600 shrink-0" />
             <span className="text-sm text-foreground">
-              <strong>{pendingReps}</strong> new rep {pendingReps === 1 ? "application" : "applications"} awaiting approval. Click to review.
+              <strong>{pendingReps}</strong> new agent {pendingReps === 1 ? "application" : "applications"} awaiting approval. Click to review.
             </span>
           </button>
         )}
@@ -292,7 +292,7 @@ export default function AdminDashboard() {
                 {/* Row 2: admin sections */}
                 <TabsList className="grid w-full h-auto! grid-cols-2 sm:grid-cols-4 gap-1">
                   <TabsTrigger value="reps" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">
-                    Reps
+                    Agents
                     {pendingReps > 0 && (
                       <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold h-4 min-w-[16px] px-1">
                         {pendingReps}

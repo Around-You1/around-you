@@ -497,6 +497,12 @@ export default function GuestDashboard() {
                               <h4 className="font-semibold truncate">{service.name}</h4>
                               <SupportBadge orgName={service.supportOrgName} />
                             </div>
+                            {(service as any).isNonProfit && (((service as any).npoNumber || (service as any).pboNumber)) && (
+                              <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3">
+                                {(service as any).npoNumber && <span>NPO: {(service as any).npoNumber}</span>}
+                                {(service as any).pboNumber && <span>PBO: {(service as any).pboNumber}</span>}
+                              </div>
+                            )}
 
                             <StarRating
                               entityType="service"
@@ -505,7 +511,7 @@ export default function GuestDashboard() {
                               onRated={applyRatingSummary}
                               readOnly={service.accessLevel === "Booking"}
                             />
-                            {(service.offersBookings || service.accessLevel === "Booking") && (service.bookingItems?.length ?? 0) > 0 && (
+                            {!(service as any).isNonProfit && (service.offersBookings || service.accessLevel === "Booking") && (service.bookingItems?.length ?? 0) > 0 && (
                               <Button
                                 size="sm"
                                 className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black w-full sm:w-auto"
@@ -514,7 +520,7 @@ export default function GuestDashboard() {
                                 Click here to book at this establishment.
                               </Button>
                             )}
-                            <RestaurantPreOrder entity={service as any} entityType="service" />
+                            {!(service as any).isNonProfit && <RestaurantPreOrder entity={service as any} entityType="service" />}
                             {discOffered(service) && (
                               <Button
                                 size="sm"
@@ -568,6 +574,7 @@ export default function GuestDashboard() {
                               </CollapsibleContent>
                             </Collapsible>
 
+                            {!(service as any).isNonProfit && (
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
@@ -588,7 +595,9 @@ export default function GuestDashboard() {
                               </CollapsibleContent>
                             </Collapsible>
 
-                            {service.offersBookings && (
+                            )}
+
+                            {!(service as any).isNonProfit && service.offersBookings && (
                               <div className="mt-1">
                                 <span className="inline-block px-2 py-0.5 text-black rounded text-xs font-medium">Takes bookings</span>
                               </div>

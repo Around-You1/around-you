@@ -313,7 +313,7 @@ export default function PartnerApplyForm() {
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><AppLogo /></div>
         <div style={{ fontSize: 40 }}>✅</div>
         <h2 style={{ color: LUMO, margin: "8px 0" }}>Thank you!</h2>
-        <p style={{ color: "#a0a0a0", fontSize: 15 }}>Your application has been received. An Around You representative will be in touch to complete your listing.</p>
+        <p style={{ color: "#a0a0a0", fontSize: 15 }}>Your application has been received. An Around You agent will be in touch to complete your listing.</p>
       </div></div>
     );
   }
@@ -357,14 +357,14 @@ export default function PartnerApplyForm() {
       )}
 
       <div style={{ marginTop: 12 }}>
-        <label style={labelSt}>Rep Code</label>
+        <label style={labelSt}>Agent Code</label>
         <input style={input} value={rep} onChange={(e) => setRep(e.target.value)} placeholder="Rep00000005" />
-        <p style={{ color: "#7f857f", fontSize: 11, marginTop: 4 }}>Leave this as Rep00000005 unless a representative gave you their own code, then please change accordingly.</p>
+        <p style={{ color: "#7f857f", fontSize: 11, marginTop: 4 }}>Leave this as Rep00000005 unless an agent gave you their own code, then please change accordingly.</p>
       </div>
 
       {isStaff && cat === "restaurant" && (
         <div style={{ marginTop: 14, padding: 14, borderRadius: 10, border: `1px dashed ${LUMO}`, background: "rgba(57,255,20,0.05)" }}>
-          <div style={{ color: LUMO, fontWeight: 700, fontSize: 14, marginBottom: 4 }}>Rep tool \u2014 auto-fill from a completed form</div>
+          <div style={{ color: LUMO, fontWeight: 700, fontSize: 14, marginBottom: 4 }}>Agent tool \u2014 auto-fill from a completed form</div>
           <p style={{ color: "#a0a0a0", fontSize: 12, margin: "0 0 10px" }}>
             Have a hand-filled onboarding PDF, or WhatsApp screenshots of the owner's details? Upload the PDF <strong>or</strong> the screenshots (select them all at once) and Claude will read them and pre-fill the fields below for you to review before submitting.
           </p>
@@ -484,7 +484,7 @@ export default function PartnerApplyForm() {
         {submitting ? "Submitting…" : "Submit application"}
       </button>
       <p style={{ color: "#7f857f", fontSize: 11, textAlign: "center", marginTop: 10 }}>
-        Your logo and photos will be arranged with your Around You representative.
+        Your logo and photos will be arranged with your Around You agent.
       </p>
     </div></div>
   );

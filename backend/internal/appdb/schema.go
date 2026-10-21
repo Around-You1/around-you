@@ -397,6 +397,8 @@ type ServiceData struct {
 	Address           string `json:"address"`
 	AccountingAddress string `json:"accountingAddress,omitempty"`
 	IsNonProfit       bool   `json:"isNonProfit"`
+	NpoNumber         string `json:"npoNumber,omitempty"`
+	PboNumber         string `json:"pboNumber,omitempty"`
 
 	Latitude  *float64 `json:"latitude"`
 	Longitude *float64 `json:"longitude"`

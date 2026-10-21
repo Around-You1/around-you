@@ -880,7 +880,7 @@ export default function LoginPage() {
               className="text-sm transition-colors hover:underline underline-offset-4"
               style={{ color: LUMO }}
             >
-              Rep
+              Agent
             </button>
             <button
               type="button"

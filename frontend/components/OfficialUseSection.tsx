@@ -170,12 +170,12 @@ export default function OfficialUseSection({ data, onChange, address, onAddressC
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="officialRepCode">Rep Code</Label>
+            <Label htmlFor="officialRepCode">Agent Code</Label>
             <Input
               id="officialRepCode"
               value={data.officialRepCode}
               onChange={set("officialRepCode")}
-              placeholder="Rep code"
+              placeholder="Agent code"
             />
           </div>
           <div className="space-y-2">
@@ -184,7 +184,7 @@ export default function OfficialUseSection({ data, onChange, address, onAddressC
               id="officialRepName"
               value={data.officialRepName}
               onChange={set("officialRepName")}
-              placeholder="Rep's full name"
+              placeholder="Agent's full name"
             />
           </div>
         </div>

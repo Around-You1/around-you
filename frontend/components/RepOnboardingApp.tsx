@@ -1083,7 +1083,7 @@ export default function RepOnboardingApp() {
               ))}
               <a href="/onboarding/rep-guide.pdf" target="_blank" rel="noopener noreferrer"
                 style={{ color: colors.accent, fontSize: 14, fontWeight: 700, textDecoration: "none", marginTop: 4 }}>
-                📘 Rep guide — how to complete the forms (PDF)
+                📘 Agent guide — how to complete the forms (PDF)
               </a>
             </div>
           </>

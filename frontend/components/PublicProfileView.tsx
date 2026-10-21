@@ -133,7 +133,7 @@ export default function PublicProfileView() {
     { label: "Atmosphere", items: asArray(entity.atmosphere) },
     { label: "Features", items: asArray(entity.features) },
     { label: "Dietary", items: asArray(entity.dietary) },
-    { label: "Categories", items: asArray(entity.serviceCategories) },
+    { label: "Categories", items: (entity as any).isNonProfit ? [] : asArray(entity.serviceCategories) },
     { label: "Categories", items: asArray(entity.attractionType) },
     { label: "Facilities", items: asArray(entity.facilities) },
     { label: "Amenities", items: asArray(entity.amenities) },
@@ -175,6 +175,12 @@ export default function PublicProfileView() {
         <h1 style={{ color: "#fff", fontSize: 22, margin: "2px 0 6px" }}>{name}</h1>
         {entity.supportOrgName ? (
           <div style={{ margin: "0 0 8px" }}><SupportBadge orgName={entity.supportOrgName} /></div>
+        ) : null}
+        {(entity as any).isNonProfit && (((entity as any).npoNumber || (entity as any).pboNumber)) ? (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px", fontSize: 13, color: "#b9beb9", margin: "0 0 8px" }}>
+            {(entity as any).npoNumber ? <span>NPO: {(entity as any).npoNumber}</span> : null}
+            {(entity as any).pboNumber ? <span>PBO: {(entity as any).pboNumber}</span> : null}
+          </div>
         ) : null}
 
         {address ? (

@@ -23,7 +23,7 @@ interface Flag {
 }
 
 const sourceLabel = (s: string) =>
-  s === "rep_onboarding" ? "Rep onboarding" : s === "duplicate" ? "Duplicate check" : "Partner profile";
+  s === "rep_onboarding" ? "Agent onboarding" : s === "duplicate" ? "Duplicate check" : "Partner profile";
 
 const baseCat = (c: string) => c.replace(/^ai:/, "");
 const isAI = (c: string) => c.startsWith("ai:");

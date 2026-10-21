@@ -40,7 +40,7 @@ def steps(items):
         out.append(Paragraph(f'<b>{i}.</b>  {txt}', step))
     return out
 
-FOOTER = "Questions? Contact your Around You representative or sales@aroundyou.co.za."
+FOOTER = "Questions? Contact your Around You agent or sales@aroundyou.co.za."
 
 story = []
 if os.path.exists(LOGO):
