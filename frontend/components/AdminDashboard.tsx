@@ -286,7 +286,7 @@ export default function AdminDashboard() {
                   <TabsTrigger value="services" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Business/Services{catBadge("service")}</TabsTrigger>
                   <TabsTrigger value="attractions" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Attractions/Activities{catBadge("attraction")}</TabsTrigger>
                   <TabsTrigger value="realestate" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Real Estate{catBadge("estate")}</TabsTrigger>
-                  <TabsTrigger value="nonprofit" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Non Profit Organization</TabsTrigger>
+                  <TabsTrigger value="nonprofit" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">NPO / PBO</TabsTrigger>
                 </TabsList>
 
                 {/* Row 2: admin sections */}

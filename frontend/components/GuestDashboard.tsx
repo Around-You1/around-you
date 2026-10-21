@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Phone, ExternalLink, Tag, ChevronDown, Search, Eye, EyeOff, MapPin, Globe, Instagram, Twitter, Youtube, Music, Star } from "lucide-react";
+import { Phone, ExternalLink, Tag, ChevronDown, ChevronLeft, ChevronRight, Search, Eye, EyeOff, MapPin, Globe, Instagram, Twitter, Youtube, Music, Star } from "lucide-react";
 import AddressDropdown from "../components/AddressDropdown";
 import DirectionsDropdown from "../components/DirectionsDropdown";
 import AddressDirectionsButton from "../components/AddressDirectionsButton";
@@ -848,7 +848,7 @@ export default function GuestDashboard() {
               <TabsTrigger value="services" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Business/Services ({filteredServices.length})</TabsTrigger>
               <TabsTrigger value="attractions" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Attractions/Activities ({filteredAttractions.length})</TabsTrigger>
               <TabsTrigger value="realestate" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Real Estate</TabsTrigger>
-              <TabsTrigger value="nonprofit" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Non Profit Organization</TabsTrigger>
+              <TabsTrigger value="nonprofit" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">NPO / PBO</TabsTrigger>
             </TabsList>
           {isLocalMode ? (
             <Label className="text-lg font-medium">Local Partners</Label>
@@ -921,7 +921,7 @@ export default function GuestDashboard() {
 
             <TabsContent value="nonprofit" className="space-y-3 mt-6">
               <div className="rounded-lg border border-border p-10 text-center">
-                <p className="text-lg font-semibold">Non Profit Organizations are coming soon</p>
+                <p className="text-lg font-semibold">NPO / PBO listings are coming soon</p>
                 <p className="mt-2 text-sm text-muted-foreground">This section is being set up — please check back shortly.</p>
               </div>
             </TabsContent>
@@ -2336,17 +2336,44 @@ function MyStampCardsModal({ onClose }: { onClose: () => void }) {
   });
   const [cards, setCards] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [active, setActive] = useState(0);
+  const touchX = useRef<number | null>(null);
   const { toast } = useToast();
-  const find = async () => {
-    if (!phone.trim()) { toast({ title: "Enter your mobile number", variant: "destructive" }); return; }
-    setLoading(true);
+  const digits = phone.replace(/[^0-9]/g, "");
+  const load = async (silent: boolean) => {
+    if (!phone.trim()) { if (!silent) toast({ title: "Enter your mobile number", variant: "destructive" }); return; }
+    if (!silent) setLoading(true);
     try {
       const backend = getAuthenticatedBackend();
       const res: any = await backend.loyalty.myCards({ phone: phone.trim() });
       setCards(res.cards || []);
     } catch (error: any) {
-      toast({ title: "Couldn't load cards", description: error?.message || "Please try again.", variant: "destructive" });
-    } finally { setLoading(false); }
+      if (!silent) toast({ title: "Couldn't load cards", description: error?.message || "Please try again.", variant: "destructive" });
+    } finally { if (!silent) setLoading(false); }
+  };
+  const find = () => load(false);
+
+  // Live refresh: once cards are loaded, re-fetch every 5s (and whenever the tab
+  // regains focus) so a stamp the partner just added appears without the guest
+  // having to close and reopen this window.
+  const loaded = cards !== null;
+  useEffect(() => {
+    if (!loaded || digits.length < 9) return;
+    const id = setInterval(() => { load(true); }, 5000);
+    const onFocus = () => load(true);
+    window.addEventListener("focus", onFocus);
+    return () => { clearInterval(id); window.removeEventListener("focus", onFocus); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, digits]);
+
+  // Keep the swipe index valid as the number of cards changes.
+  useEffect(() => {
+    if (cards && active > cards.length - 1) setActive(Math.max(0, cards.length - 1));
+  }, [cards, active]);
+
+  const go = (dir: number) => {
+    if (!cards || cards.length === 0) return;
+    setActive((a) => (a + dir + cards.length) % cards.length);
   };
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
@@ -2375,37 +2402,77 @@ function MyStampCardsModal({ onClose }: { onClose: () => void }) {
         {cards !== null && (cards.length === 0 ? (
           <p className="text-sm text-muted-foreground">No cards available to view yet.</p>
         ) : (
-          <div className="space-y-3">
-            {cards.map((c, idx) => (
-              <div key={idx} className="border rounded-md p-3 space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-semibold text-sm truncate">{c.partnerName || "Partner"}</span>
-                    {c.area && <span className="text-[11px] text-muted-foreground">{c.area}</span>}
+          <div>
+            <div
+              className="relative"
+              onTouchStart={(e) => { touchX.current = e.touches[0].clientX; }}
+              onTouchEnd={(e) => {
+                if (touchX.current === null) return;
+                const dx = e.changedTouches[0].clientX - touchX.current;
+                if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+                touchX.current = null;
+              }}
+            >
+              {(() => {
+                const c = cards[Math.min(active, cards.length - 1)];
+                return (
+                  <div className="border rounded-md p-3 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-semibold text-sm truncate">{c.partnerName || "Partner"}</span>
+                        {c.area && <span className="text-[11px] text-muted-foreground">{c.area}</span>}
+                      </div>
+                      {c.rewardReady && <span className="text-xs px-2 py-0.5 rounded bg-[#39FF14] text-black font-semibold flex-shrink-0">Reward ready!</span>}
+                    </div>
+                    {c.rewardText && (
+                      <div className="text-xs font-medium rounded px-2 py-1 border border-[#39FF14]/40 bg-[#39FF14]/10">
+                        🎁 Reward: {c.rewardText}
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                      {Array.from({ length: c.threshold }).map((_, i) => (
+                        <span key={i}
+                          className={`h-7 w-7 rounded-full border flex items-center justify-center text-xs font-bold ${
+                            i < c.stamps ? "bg-[#39FF14] border-[#39FF14] text-black" : "border-border text-muted-foreground"
+                          }`}>
+                          {i < c.stamps ? "✓" : i + 1}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {c.stamps} of {c.threshold} stamps
+                    </div>
+                    {c.rewardReady && <p className="text-xs">Show this to {c.partnerName || "the partner"} to claim your reward.</p>}
                   </div>
-                  {c.rewardReady && <span className="text-xs px-2 py-0.5 rounded bg-[#39FF14] text-black font-semibold flex-shrink-0">Reward ready!</span>}
-                </div>
-                {c.rewardText && (
-                  <div className="text-xs font-medium rounded px-2 py-1 border border-[#39FF14]/40 bg-[#39FF14]/10">
-                    🎁 Reward: {c.rewardText}
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  {Array.from({ length: c.threshold }).map((_, i) => (
-                    <span key={i}
-                      className={`h-7 w-7 rounded-full border flex items-center justify-center text-xs font-bold ${
-                        i < c.stamps ? "bg-[#39FF14] border-[#39FF14] text-black" : "border-border text-muted-foreground"
-                      }`}>
-                      {i < c.stamps ? "✓" : i + 1}
-                    </span>
-                  ))}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {c.stamps} of {c.threshold} stamps
-                </div>
-                {c.rewardReady && <p className="text-xs">Show this to {c.partnerName || "the partner"} to claim your reward.</p>}
+                );
+              })()}
+
+              {cards.length > 1 && (
+                <>
+                  <button type="button" aria-label="Previous card" onClick={() => go(-1)}
+                    className="absolute left-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/90 border flex items-center justify-center shadow-sm">
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button type="button" aria-label="Next card" onClick={() => go(1)}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/90 border flex items-center justify-center shadow-sm">
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {cards.length > 1 && (
+              <div className="flex items-center justify-center gap-1.5 pt-2">
+                {cards.map((_, i) => (
+                  <button key={i} type="button" aria-label={`Card ${i + 1}`} onClick={() => setActive(i)}
+                    className={`h-2 rounded-full transition-all ${i === active ? "w-5 bg-[#39FF14]" : "w-2 bg-border"}`} />
+                ))}
+                <span className="ml-2 text-[11px] text-muted-foreground">{Math.min(active, cards.length - 1) + 1} / {cards.length}</span>
               </div>
-            ))}
+            )}
+            {cards.length > 1 && (
+              <p className="text-[11px] text-muted-foreground text-center pt-1">Swipe to see your other cards.</p>
+            )}
           </div>
         ))}
         <div className="flex justify-end pt-1"><Button variant="outline" onClick={onClose}>Close</Button></div>

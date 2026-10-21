@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import backend from "~backend/client";
@@ -298,6 +298,7 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const { toast, dismiss } = useToast();
   const [loading, setLoading] = useState(false);
+  const pathname = usePathname();
   const scannedCode = searchParams.get("code");
   const scannedRole = searchParams.get("role");
   // When arriving from a scanned QR (a code is present in the URL) we skip the
@@ -415,6 +416,10 @@ export default function LoginPage() {
   // (province/postal are pre-filled from last time if we have them), and the
   // already-verified path finishes the sign-in.
   useEffect(() => {
+    // Only the post-email-confirmation portal should auto-open the Local panel
+    // from a live session. The landing page ("/") always starts with every tab
+    // closed, even when a returning Local still has a lingering session.
+    if (pathname !== "/portal") return;
     if (searchParams.get("code")) return; // a scanned QR wins
     if (searchParams.get("pendingRole") === "local") return; // /verify code flow handles this
     (async () => {

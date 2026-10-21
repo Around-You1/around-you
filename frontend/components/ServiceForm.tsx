@@ -558,7 +558,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
             <div className="text-lg font-bold text-center break-words">{formData.name || "Your Business"}</div>
           </div>
         )}
-        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${serviceId ? "Edit" : "Add"} ${nonProfit ? "Non Profit Organization" : "Business/Service"}`}</CardTitle>
+        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${serviceId ? "Edit" : "Add"} ${nonProfit ? "NPO / PBO" : "Business/Service"}`}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -572,10 +572,10 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
                   checked={formData.isNonProfit}
                   onCheckedChange={(c) => setFormData({ ...formData, isNonProfit: c === true })}
                 />
-                <Label htmlFor="isNonProfit" className="cursor-pointer">Non Profit Organization</Label>
+                <Label htmlFor="isNonProfit" className="cursor-pointer">NPO / PBO</Label>
               </div>
               <p className="text-xs text-muted-foreground">
-                Tick to list this under the Non Profit Organization tab (free) instead of Business/Service. Untick to move it back to Business/Service.
+                Tick to list this under the NPO / PBO tab (free) instead of Business/Service. Untick to move it back to Business/Service.
               </p>
             </div>
           )}

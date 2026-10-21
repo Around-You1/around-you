@@ -124,7 +124,7 @@ export default function ServiceTab({ onUpdate, nonProfit = false }: ServiceTabPr
             className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add {nonProfit ? "Non Profit Organization" : "Business/Service"}
+            Add {nonProfit ? "NPO / PBO" : "Business/Service"}
           </Button>
         </div>
 
