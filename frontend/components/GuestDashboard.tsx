@@ -475,6 +475,242 @@ export default function GuestDashboard() {
   const contentClass = "pl-6 pt-2";
   const fallbackSpan = <span className="text-sm text-muted-foreground italic">{FALLBACK}</span>;
 
+  // NPO / PBO businesses are services flagged is_nonprofit; split them out of
+  // Business/Services into their own tab, sharing one card renderer.
+  const bizServices = filteredServices.filter((x) => !(x as any).isNonProfit);
+  const npoServices = filteredServices.filter((x) => (x as any).isNonProfit);
+  const renderServiceCard = (service: ServiceData) => (
+    <Card key={service.id} className="hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
+                      <CardContent className="p-4">
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <ImageCarousel
+                            images={service.imageUrls && service.imageUrls.length > 0 ? service.imageUrls : (service.imageUrl ? [service.imageUrl] : [])}
+                            alt={service.name}
+                            className="w-full sm:w-20 h-32 sm:h-20 object-cover rounded flex-shrink-0"
+                            placeholderClassName="w-full sm:w-20 h-32 sm:h-20 rounded flex-shrink-0"
+                            intervalMs={3000}
+                          />
+                          <div className="flex-1 min-w-0 space-y-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="font-semibold truncate">{service.name}</h4>
+                              <SupportBadge orgName={service.supportOrgName} />
+                            </div>
+
+                            <StarRating
+                              entityType="service"
+                              entityId={Number(service.id)}
+                              summary={ratings[ratingKey("service", service.id)]}
+                              onRated={applyRatingSummary}
+                              readOnly={service.accessLevel === "Booking"}
+                            />
+                            {(service.offersBookings || service.accessLevel === "Booking") && (service.bookingItems?.length ?? 0) > 0 && (
+                              <Button
+                                size="sm"
+                                className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black w-full sm:w-auto"
+                                onClick={() => setBookingFor({ entityType: "service", entityId: Number(service.id), entityName: service.name, items: (service.bookingItems || []) as BookItem[] })}
+                              >
+                                Click here to book at this establishment.
+                              </Button>
+                            )}
+                            <RestaurantPreOrder entity={service as any} entityType="service" />
+                            {discOffered(service) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full sm:w-auto border-[#39FF14] text-black"
+                                onClick={() => setRedeemFor({ entityType: "service", entityId: Number(service.id), entityName: service.name, discount: discOffered(service), discountCode: discCode(service) })}
+                              >
+                                Redeem discount
+                              </Button>
+                            )}
+                            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => toggleCard("service:" + service.id)}>
+                              {expandedCards.has("service:" + service.id) ? "Less info" : "More info"}
+                            </Button>
+                            {expandedCards.has("service:" + service.id) && (
+                              <>
+
+                            {tierOf(service.accessLevel) >= 2 && (
+                              <DirectionsDropdown
+                                latitude={service.latitude}
+                                longitude={service.longitude}
+                              />
+                            )}
+
+                            <Collapsible>
+                              <CollapsibleTrigger className={triggerClass}>
+                                <ChevronDown className="h-4 w-4" />
+                                Description
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
+                                {service.description || fallbackSpan}
+                              </CollapsibleContent>
+                            </Collapsible>
+
+                            <Collapsible>
+                              <CollapsibleTrigger className={triggerClass}>
+                                <ChevronDown className="h-4 w-4" />
+                                Trading Hours
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground whitespace-pre-line`}>
+                                {service.tradingHours || fallbackSpan}
+                              </CollapsibleContent>
+                            </Collapsible>
+
+                            <Collapsible>
+                              <CollapsibleTrigger className={triggerClass}>
+                                <ChevronDown className="h-4 w-4" />
+                                Public Holidays
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground whitespace-pre-line`}>
+                                {service.publicHolidays || fallbackSpan}
+                              </CollapsibleContent>
+                            </Collapsible>
+
+                            <Collapsible>
+                              <CollapsibleTrigger className={triggerClass}>
+                                <ChevronDown className="h-4 w-4" />
+                                Business/Service Categories
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
+                                {service.serviceCategories && service.serviceCategories.length > 0 ? (
+                                  <div className="flex flex-wrap gap-2">
+                                    {service.serviceCategories.map((category) => (
+                                      <span key={category} className="px-2 py-0.5 text-black rounded text-xs">
+                                        {category}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  fallbackSpan
+                                )}
+                              </CollapsibleContent>
+                            </Collapsible>
+
+                            {service.offersBookings && (
+                              <div className="mt-1">
+                                <span className="inline-block px-2 py-0.5 text-black rounded text-xs font-medium">Takes bookings</span>
+                              </div>
+                            )}
+
+                            <Collapsible>
+                              <CollapsibleTrigger className={triggerClass}>
+                                <ChevronDown className="h-4 w-4" />
+                                Payment Options
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
+                                {service.paymentCard || service.paymentCash || service.paymentMobile || service.paymentEft ? (
+                                  <div className="flex flex-wrap gap-2">
+                                    {service.paymentCard && <span className="px-2 py-0.5 text-black rounded text-xs">Card</span>}
+                                    {service.paymentCash && <span className="px-2 py-0.5 text-black rounded text-xs">Cash</span>}
+                                    {service.paymentMobile && <span className="px-2 py-0.5 text-black rounded text-xs">Mobile</span>}
+                                    {service.paymentEft && <span className="px-2 py-0.5 text-black rounded text-xs">EFT — Please contact for more info</span>}
+                                  </div>
+                                ) : (
+                                  fallbackSpan
+                                )}
+                              </CollapsibleContent>
+                            </Collapsible>
+
+                            <Collapsible>
+                              <CollapsibleTrigger className={triggerClass}>
+                                <ChevronDown className="h-4 w-4" />
+                                Accessibility
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
+                                {service.wheelchairAccess || service.parkingAvailability ? (
+                                  <div className="flex flex-wrap gap-2">
+                                    {service.wheelchairAccess && <span className="px-2 py-0.5 text-black rounded text-xs">Wheelchair Access</span>}
+                                    {service.parkingAvailability && <span className="px-2 py-0.5 text-black rounded text-xs">Parking Available</span>}
+                                  </div>
+                                ) : (
+                                  fallbackSpan
+                                )}
+                              </CollapsibleContent>
+                            </Collapsible>
+
+                            <Collapsible>
+                              <CollapsibleTrigger className={triggerClass}>
+                                <ChevronDown className="h-4 w-4" />
+                                Child Friendly
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
+                                {service.littleExplorerApproved ? (
+                                  <span className="px-2 py-0.5 text-black rounded text-xs">with pleasure</span>
+                                ) : (
+                                  fallbackSpan
+                                )}
+                              </CollapsibleContent>
+                            </Collapsible>
+
+                            <Collapsible>
+                              <CollapsibleTrigger className={triggerClass}>
+                                <ChevronDown className="h-4 w-4" />
+                                Contact
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className={`${contentClass} text-sm space-y-1`}>
+                                {service.contactNumber ? (
+                                  <>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-muted-foreground">Contact Number:</span>
+                                      <a href={`tel:${service.contactNumber}`} className="text-black hover:underline flex items-center gap-1">
+                                        <Phone className="h-3 w-3" />
+                                        {service.contactNumber}
+                                      </a>
+                                    </div>
+                                    <WhatsAppButton number={service.contactNumber} className="mt-2" />
+                                  </>
+                                ) : (
+                                  fallbackSpan
+                                )}
+                              </CollapsibleContent>
+                            </Collapsible>
+
+                            <Collapsible>
+                              <CollapsibleTrigger className={triggerClass}>
+                                <ChevronDown className="h-4 w-4" />
+                                Discount and Discount Code
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className={`${contentClass} text-sm`}>
+                                {discOffered(service) || discCode(service) ? (
+                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#39FF14]/10 border border-[#39FF14] rounded-lg">
+                                    {discOffered(service) && (
+                                      <div className="flex items-center gap-1.5 text-black">
+                                        <Tag className="h-4 w-4" />
+                                        <span className="font-semibold text-sm whitespace-nowrap">{discOffered(service)}</span>
+                                      </div>
+                                    )}
+                                    {discCode(service) && (
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-xs text-muted-foreground">Code:</span>
+                                        <span className="px-2 py-0.5 bg-[#39FF14] text-black rounded font-mono text-xs font-bold">
+                                          {discCode(service)}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  fallbackSpan
+                                )}
+                              </CollapsibleContent>
+                            </Collapsible>
+
+                            {tierOf(service.accessLevel) >= 2 && (
+                              <AddressDropdown
+                                address={service.address}
+                                province={service.province}
+                                postalCode={service.postalCode}
+                                country={service.country}
+                                worksFromClientAddress={(service as any).worksFromClientAddress}
+                              />
+                            )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#39FF14]/10 to-background px-6 pt-3 pb-6">
       <div className="max-w-7xl mx-auto space-y-6 pt-3 pb-8">
@@ -845,10 +1081,10 @@ export default function GuestDashboard() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
             <TabsList className="flex flex-col w-full gap-1 p-1 bg-muted rounded-md" style={{ height: "auto" }}>
               <TabsTrigger value="restaurants" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Restaurants/Takeaways ({filteredRestaurants.length})</TabsTrigger>
-              <TabsTrigger value="services" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Business/Services ({filteredServices.length})</TabsTrigger>
+              <TabsTrigger value="services" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Business/Services ({bizServices.length})</TabsTrigger>
               <TabsTrigger value="attractions" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Attractions/Activities ({filteredAttractions.length})</TabsTrigger>
               <TabsTrigger value="realestate" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Real Estate</TabsTrigger>
-              <TabsTrigger value="nonprofit" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">NPO / PBO</TabsTrigger>
+              <TabsTrigger value="nonprofit" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">NPO / PBO ({npoServices.length})</TabsTrigger>
             </TabsList>
           {isLocalMode ? (
             <Label className="text-lg font-medium">Local Partners</Label>
@@ -919,11 +1155,18 @@ export default function GuestDashboard() {
               <EstateAgenciesBrowse />
             </TabsContent>
 
-            <TabsContent value="nonprofit" className="space-y-3 mt-6">
-              <div className="rounded-lg border border-border p-10 text-center">
-                <p className="text-lg font-semibold">NPO / PBO listings are coming soon</p>
-                <p className="mt-2 text-sm text-muted-foreground">This section is being set up — please check back shortly.</p>
-              </div>
+            <TabsContent value="nonprofit" className="space-y-3 mt-6" {...swipeHandlers}>
+              {npoServices.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center text-muted-foreground">
+                    {searchQuery.trim() ? "No NPO / PBO listings match your search" : isLocalMode ? "No NPO / PBO listings found within 50km" : `No NPO / PBO listings found within ${radiusKm[0]}km`}
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-2">
+                  {npoServices.map(renderServiceCard)}
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="restaurants" className="space-y-3 mt-6" {...swipeHandlers}>
@@ -1389,7 +1632,7 @@ export default function GuestDashboard() {
             </TabsContent>
 
             <TabsContent value="services" className="space-y-3 mt-6" {...swipeHandlers}>
-              {filteredServices.length === 0 ? (
+              {bizServices.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
                     {searchQuery.trim() ? "No business/services match your search" : isLocalMode ? "No business/services found within 50km" : `No business/services found within ${radiusKm[0]}km`}
@@ -1397,237 +1640,7 @@ export default function GuestDashboard() {
                 </Card>
               ) : (
                 <div className="space-y-2">
-                  {filteredServices.map((service) => (
-                    <Card key={service.id} className="hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
-                      <CardContent className="p-4">
-                        <div className="flex flex-col sm:flex-row gap-3">
-                          <ImageCarousel
-                            images={service.imageUrls && service.imageUrls.length > 0 ? service.imageUrls : (service.imageUrl ? [service.imageUrl] : [])}
-                            alt={service.name}
-                            className="w-full sm:w-20 h-32 sm:h-20 object-cover rounded flex-shrink-0"
-                            placeholderClassName="w-full sm:w-20 h-32 sm:h-20 rounded flex-shrink-0"
-                            intervalMs={3000}
-                          />
-                          <div className="flex-1 min-w-0 space-y-2">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="font-semibold truncate">{service.name}</h4>
-                              <SupportBadge orgName={service.supportOrgName} />
-                            </div>
-
-                            <StarRating
-                              entityType="service"
-                              entityId={Number(service.id)}
-                              summary={ratings[ratingKey("service", service.id)]}
-                              onRated={applyRatingSummary}
-                              readOnly={service.accessLevel === "Booking"}
-                            />
-                            {(service.offersBookings || service.accessLevel === "Booking") && (service.bookingItems?.length ?? 0) > 0 && (
-                              <Button
-                                size="sm"
-                                className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black w-full sm:w-auto"
-                                onClick={() => setBookingFor({ entityType: "service", entityId: Number(service.id), entityName: service.name, items: (service.bookingItems || []) as BookItem[] })}
-                              >
-                                Click here to book at this establishment.
-                              </Button>
-                            )}
-                            <RestaurantPreOrder entity={service as any} entityType="service" />
-                            {discOffered(service) && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="w-full sm:w-auto border-[#39FF14] text-black"
-                                onClick={() => setRedeemFor({ entityType: "service", entityId: Number(service.id), entityName: service.name, discount: discOffered(service), discountCode: discCode(service) })}
-                              >
-                                Redeem discount
-                              </Button>
-                            )}
-                            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => toggleCard("service:" + service.id)}>
-                              {expandedCards.has("service:" + service.id) ? "Less info" : "More info"}
-                            </Button>
-                            {expandedCards.has("service:" + service.id) && (
-                              <>
-
-                            {tierOf(service.accessLevel) >= 2 && (
-                              <DirectionsDropdown
-                                latitude={service.latitude}
-                                longitude={service.longitude}
-                              />
-                            )}
-
-                            <Collapsible>
-                              <CollapsibleTrigger className={triggerClass}>
-                                <ChevronDown className="h-4 w-4" />
-                                Description
-                              </CollapsibleTrigger>
-                              <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
-                                {service.description || fallbackSpan}
-                              </CollapsibleContent>
-                            </Collapsible>
-
-                            <Collapsible>
-                              <CollapsibleTrigger className={triggerClass}>
-                                <ChevronDown className="h-4 w-4" />
-                                Trading Hours
-                              </CollapsibleTrigger>
-                              <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground whitespace-pre-line`}>
-                                {service.tradingHours || fallbackSpan}
-                              </CollapsibleContent>
-                            </Collapsible>
-
-                            <Collapsible>
-                              <CollapsibleTrigger className={triggerClass}>
-                                <ChevronDown className="h-4 w-4" />
-                                Public Holidays
-                              </CollapsibleTrigger>
-                              <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground whitespace-pre-line`}>
-                                {service.publicHolidays || fallbackSpan}
-                              </CollapsibleContent>
-                            </Collapsible>
-
-                            <Collapsible>
-                              <CollapsibleTrigger className={triggerClass}>
-                                <ChevronDown className="h-4 w-4" />
-                                Business/Service Categories
-                              </CollapsibleTrigger>
-                              <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
-                                {service.serviceCategories && service.serviceCategories.length > 0 ? (
-                                  <div className="flex flex-wrap gap-2">
-                                    {service.serviceCategories.map((category) => (
-                                      <span key={category} className="px-2 py-0.5 text-black rounded text-xs">
-                                        {category}
-                                      </span>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  fallbackSpan
-                                )}
-                              </CollapsibleContent>
-                            </Collapsible>
-
-                            {service.offersBookings && (
-                              <div className="mt-1">
-                                <span className="inline-block px-2 py-0.5 text-black rounded text-xs font-medium">Takes bookings</span>
-                              </div>
-                            )}
-
-                            <Collapsible>
-                              <CollapsibleTrigger className={triggerClass}>
-                                <ChevronDown className="h-4 w-4" />
-                                Payment Options
-                              </CollapsibleTrigger>
-                              <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
-                                {service.paymentCard || service.paymentCash || service.paymentMobile || service.paymentEft ? (
-                                  <div className="flex flex-wrap gap-2">
-                                    {service.paymentCard && <span className="px-2 py-0.5 text-black rounded text-xs">Card</span>}
-                                    {service.paymentCash && <span className="px-2 py-0.5 text-black rounded text-xs">Cash</span>}
-                                    {service.paymentMobile && <span className="px-2 py-0.5 text-black rounded text-xs">Mobile</span>}
-                                    {service.paymentEft && <span className="px-2 py-0.5 text-black rounded text-xs">EFT — Please contact for more info</span>}
-                                  </div>
-                                ) : (
-                                  fallbackSpan
-                                )}
-                              </CollapsibleContent>
-                            </Collapsible>
-
-                            <Collapsible>
-                              <CollapsibleTrigger className={triggerClass}>
-                                <ChevronDown className="h-4 w-4" />
-                                Accessibility
-                              </CollapsibleTrigger>
-                              <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
-                                {service.wheelchairAccess || service.parkingAvailability ? (
-                                  <div className="flex flex-wrap gap-2">
-                                    {service.wheelchairAccess && <span className="px-2 py-0.5 text-black rounded text-xs">Wheelchair Access</span>}
-                                    {service.parkingAvailability && <span className="px-2 py-0.5 text-black rounded text-xs">Parking Available</span>}
-                                  </div>
-                                ) : (
-                                  fallbackSpan
-                                )}
-                              </CollapsibleContent>
-                            </Collapsible>
-
-                            <Collapsible>
-                              <CollapsibleTrigger className={triggerClass}>
-                                <ChevronDown className="h-4 w-4" />
-                                Child Friendly
-                              </CollapsibleTrigger>
-                              <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
-                                {service.littleExplorerApproved ? (
-                                  <span className="px-2 py-0.5 text-black rounded text-xs">with pleasure</span>
-                                ) : (
-                                  fallbackSpan
-                                )}
-                              </CollapsibleContent>
-                            </Collapsible>
-
-                            <Collapsible>
-                              <CollapsibleTrigger className={triggerClass}>
-                                <ChevronDown className="h-4 w-4" />
-                                Contact
-                              </CollapsibleTrigger>
-                              <CollapsibleContent className={`${contentClass} text-sm space-y-1`}>
-                                {service.contactNumber ? (
-                                  <>
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-muted-foreground">Contact Number:</span>
-                                      <a href={`tel:${service.contactNumber}`} className="text-black hover:underline flex items-center gap-1">
-                                        <Phone className="h-3 w-3" />
-                                        {service.contactNumber}
-                                      </a>
-                                    </div>
-                                    <WhatsAppButton number={service.contactNumber} className="mt-2" />
-                                  </>
-                                ) : (
-                                  fallbackSpan
-                                )}
-                              </CollapsibleContent>
-                            </Collapsible>
-
-                            <Collapsible>
-                              <CollapsibleTrigger className={triggerClass}>
-                                <ChevronDown className="h-4 w-4" />
-                                Discount and Discount Code
-                              </CollapsibleTrigger>
-                              <CollapsibleContent className={`${contentClass} text-sm`}>
-                                {discOffered(service) || discCode(service) ? (
-                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#39FF14]/10 border border-[#39FF14] rounded-lg">
-                                    {discOffered(service) && (
-                                      <div className="flex items-center gap-1.5 text-black">
-                                        <Tag className="h-4 w-4" />
-                                        <span className="font-semibold text-sm whitespace-nowrap">{discOffered(service)}</span>
-                                      </div>
-                                    )}
-                                    {discCode(service) && (
-                                      <div className="flex items-center gap-1">
-                                        <span className="text-xs text-muted-foreground">Code:</span>
-                                        <span className="px-2 py-0.5 bg-[#39FF14] text-black rounded font-mono text-xs font-bold">
-                                          {discCode(service)}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  fallbackSpan
-                                )}
-                              </CollapsibleContent>
-                            </Collapsible>
-
-                            {tierOf(service.accessLevel) >= 2 && (
-                              <AddressDropdown
-                                address={service.address}
-                                province={service.province}
-                                postalCode={service.postalCode}
-                                country={service.country}
-                                worksFromClientAddress={(service as any).worksFromClientAddress}
-                              />
-                            )}
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {bizServices.map(renderServiceCard)}
                 </div>
               )}
             </TabsContent>
