@@ -204,6 +204,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
     contactNumber: "",
     npoNumber: "",
     pboNumber: "",
+    brandColor: "",
     serviceCategories: [] as ServiceCategory[],
     imageUrl: "",
     imageUrls: [] as string[],
@@ -302,6 +303,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
         contactNumber: data.contactNumber || "",
         npoNumber: (data as any).npoNumber || "",
         pboNumber: (data as any).pboNumber || "",
+        brandColor: (data as any).brandColor || "",
         serviceCategories: data.serviceCategories,
         imageUrl: data.imageUrl || "",
         imageUrls: data.imageUrls || [],
@@ -389,6 +391,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           contactNumber: formData.contactNumber || undefined,
           npoNumber: formData.npoNumber || undefined,
           pboNumber: formData.pboNumber || undefined,
+          brandColor: formData.brandColor || undefined,
           serviceCategories: formData.serviceCategories,
           imageUrl: formData.imageUrl || undefined,
           imageUrls: formData.imageUrls || undefined,
@@ -457,6 +460,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           contactNumber: formData.contactNumber || undefined,
           npoNumber: formData.npoNumber || undefined,
           pboNumber: formData.pboNumber || undefined,
+          brandColor: formData.brandColor || undefined,
           serviceCategories: formData.serviceCategories,
           imageUrl: formData.imageUrl || undefined,
           imageUrls: formData.imageUrls || undefined,
@@ -557,13 +561,29 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
   // identity/location fields + images stay in the Tier 1 baseline.
   const tierNum = parseInt((officialUse.accessLevel || "").replace(/[^0-9]/g, ""), 10) || 1;
 
+  const BRAND_COLORS = [
+    { name: "Red", hex: "#E11D2A" },
+    { name: "Orange", hex: "#EA580C" },
+    { name: "Gold / Yellow", hex: "#CA8A04" },
+    { name: "Green", hex: "#16A34A" },
+    { name: "Teal", hex: "#0D9488" },
+    { name: "Sky Blue", hex: "#0284C7" },
+    { name: "Blue", hex: "#2563EB" },
+    { name: "Navy", hex: "#1E40AF" },
+    { name: "Purple", hex: "#7C3AED" },
+    { name: "Pink", hex: "#DB2777" },
+    { name: "Maroon", hex: "#9F1239" },
+    { name: "Brown", hex: "#92400E" },
+    { name: "Charcoal", hex: "#374151" },
+  ];
+
   return (
     <Card>
       <CardHeader>
         {partnerEdit && (
           <div className="flex flex-col items-center gap-2 mb-2">
             <AppLogo src="/logo-dark.png" size={110} />
-            <div className="text-lg font-bold text-center break-words">{formData.name || "Your Business"}</div>
+            <div className="text-lg font-bold text-center break-words" style={{ color: formData.brandColor || undefined }}>{formData.name || "Your Business"}</div>
           </div>
         )}
         <CardTitle>{partnerEdit ? "Edit Your Profile" : `${serviceId ? "Edit" : "Add"} ${nonProfit ? "NPO / PBO" : "Business/Service"}`}</CardTitle>
@@ -606,6 +626,25 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
                 onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="brandColor">Brand Colour</Label>
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-9 w-9 rounded border flex-shrink-0" style={{ backgroundColor: formData.brandColor || "transparent" }} />
+              <select
+                id="brandColor"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                value={formData.brandColor}
+                onChange={(e) => setFormData({ ...formData, brandColor: e.target.value })}
+              >
+                <option value="">No colour</option>
+                {BRAND_COLORS.map((c) => (
+                  <option key={c.hex} value={c.hex}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <p className="text-xs text-muted-foreground">Pick your main brand colour — your business name shows in this colour on the app so locals spot you quickly.</p>
           </div>
 
           {nonProfit && (

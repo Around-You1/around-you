@@ -399,6 +399,7 @@ type ServiceData struct {
 	IsNonProfit       bool   `json:"isNonProfit"`
 	NpoNumber         string `json:"npoNumber,omitempty"`
 	PboNumber         string `json:"pboNumber,omitempty"`
+	BrandColor        string `json:"brandColor,omitempty"`
 
 	Latitude  *float64 `json:"latitude"`
 	Longitude *float64 `json:"longitude"`

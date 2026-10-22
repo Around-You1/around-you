@@ -34,6 +34,7 @@ type CreateRequest struct {
 	IsNonProfit       bool   `json:"isNonProfit,omitempty"`
 	NpoNumber         string `json:"npoNumber,omitempty"`
 	PboNumber         string `json:"pboNumber,omitempty"`
+	BrandColor        string `json:"brandColor,omitempty"`
 
 	Latitude  *float64 `json:"latitude,omitempty"`
 	Longitude *float64 `json:"longitude,omitempty"`
@@ -111,6 +112,7 @@ type UpdateRequest struct {
 	IsNonProfit       *bool   `json:"isNonProfit,omitempty"`
 	NpoNumber         *string `json:"npoNumber,omitempty"`
 	PboNumber         *string `json:"pboNumber,omitempty"`
+	BrandColor        *string `json:"brandColor,omitempty"`
 
 	Latitude  *float64 `json:"latitude,omitempty"`
 	Longitude *float64 `json:"longitude,omitempty"`

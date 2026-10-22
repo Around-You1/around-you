@@ -78,7 +78,8 @@ const serviceColumns = `
 	COALESCE(accounting_address, '') as accounting_address,
 	COALESCE(is_nonprofit, false) as is_nonprofit,
 	COALESCE(npo_number, '') as npo_number,
-	COALESCE(pbo_number, '') as pbo_number
+	COALESCE(pbo_number, '') as pbo_number,
+	COALESCE(brand_color, '') as brand_color
 `
 
 type serviceScanner interface {
@@ -116,6 +117,7 @@ func scanService(row serviceScanner) (*appdb.ServiceData, error) {
 		&s.IsNonProfit,
 		&s.NpoNumber,
 		&s.PboNumber,
+		&s.BrandColor,
 	)
 	if err != nil {
 		return nil, err
@@ -211,11 +213,11 @@ func (s *ServiceStore) Create(ctx context.Context, in *appdb.ServiceData) (*appd
 			accounting_address,
 			is_nonprofit,
 			pre_order_items,
-			npo_number, pbo_number
+			npo_number, pbo_number, brand_color
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,
 			$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,
-			$51,$52,$53,$54,$55,$56,$57,$58,$59,$60,$61,$62,$63,$64
+			$51,$52,$53,$54,$55,$56,$57,$58,$59,$60,$61,$62,$63,$64,$65
 		)
 		RETURNING `+serviceColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -240,7 +242,7 @@ func (s *ServiceStore) Create(ctx context.Context, in *appdb.ServiceData) (*appd
 		in.AccountingAddress,
 		in.IsNonProfit,
 		in.PreOrderItems,
-		in.NpoNumber, in.PboNumber,
+		in.NpoNumber, in.PboNumber, in.BrandColor,
 	)
 	return scanService(row)
 }
@@ -252,6 +254,7 @@ type ServicePatch struct {
 	IsNonProfit       *bool
 	NpoNumber         *string
 	PboNumber         *string
+	BrandColor        *string
 	Latitude          *float64
 	Longitude         *float64
 	Country           *string
@@ -343,6 +346,9 @@ func (s *ServiceStore) Update(ctx context.Context, id int64, patch ServicePatch)
 	}
 	if patch.PboNumber != nil {
 		sets = append(sets, "pbo_number = "+arg(*patch.PboNumber))
+	}
+	if patch.BrandColor != nil {
+		sets = append(sets, "brand_color = "+arg(*patch.BrandColor))
 	}
 	if patch.Latitude != nil {
 		sets = append(sets, "latitude = "+arg(*patch.Latitude))

@@ -494,7 +494,7 @@ export default function GuestDashboard() {
                           />
                           <div className="flex-1 min-w-0 space-y-2">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="font-semibold truncate">{service.name}</h4>
+                              <h4 className="font-semibold truncate" style={{ color: (service as any).brandColor || undefined }}>{service.name}</h4>
                               <SupportBadge orgName={service.supportOrgName} />
                             </div>
                             {(service as any).isNonProfit && (((service as any).npoNumber || (service as any).pboNumber)) && (
@@ -2449,7 +2449,7 @@ function MyStampCardsModal({ onClose }: { onClose: () => void }) {
                       {c.rewardReady && <span className="text-xs px-2 py-0.5 rounded bg-[#39FF14] text-black font-semibold flex-shrink-0">Reward ready!</span>}
                     </div>
                     {c.rewardText && (
-                      <div className="text-xs font-medium rounded px-2 py-1 border border-[#39FF14]/40 bg-[#39FF14]/10">
+                      <div className="text-xs font-medium rounded px-2 py-1 border border-[#39FF14]/40 bg-[#39FF14]/10 text-[#39FF14]">
                         🎁 Reward: {c.rewardText}
                       </div>
                     )}
