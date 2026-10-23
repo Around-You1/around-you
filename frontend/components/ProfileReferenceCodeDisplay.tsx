@@ -49,7 +49,9 @@ export default function ProfileReferenceCodeDisplay({
     entityType === "attraction" ||
     entityType === "accommodation" ||
     entityType === "estate_agency" ||
-    entityType === "estate_agent";
+    entityType === "estate_agent" ||
+    entityType === "retail" ||
+    entityType === "nonprofit";
   const [editCode, setEditCode] = useState<string | null>(null);
   const [editCopied, setEditCopied] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
