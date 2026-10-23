@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Edit, Trash2, Navigation, Loader2, Copy, ChevronDown, ChevronRight, Star } from "lucide-react";
 import ProfileQRCode from "./ProfileQRCode";
+import SupportBadge from "./SupportBadge";
 import ProfileClassificationGroups from "./ProfileClassificationGroups";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
@@ -20,6 +21,7 @@ interface ServiceListProps {
   searchQuery?: string;
   sortState?: SortState;
   nonProfit?: boolean;
+  entityKind?: "service" | "retail" | "nonprofit";
 }
 
 const FALLBACK = "The company has opted not to make this information visible.";
@@ -59,7 +61,8 @@ function FieldRow({ label, value }: { label: string; value: string | number | bo
   );
 }
 
-export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortState = DEFAULT_SORT_STATE, nonProfit = false }: ServiceListProps) {
+export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortState = DEFAULT_SORT_STATE, nonProfit = false, entityKind }: ServiceListProps) {
+  const kind: "service" | "retail" | "nonprofit" = entityKind ?? (nonProfit ? "nonprofit" : "service");
   const [services, setServices] = useState<ServiceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [gettingDirections, setGettingDirections] = useState<string | null>(null);
@@ -132,7 +135,6 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortSt
   }, [services.map((s) => s.id).join(",")]);
 
   const searchedServices = services.filter((service) => {
-    if (!!service.isNonProfit !== nonProfit) return false;
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -151,7 +153,7 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortSt
   const loadServices = async () => {
     try {
       const backend = getAuthenticatedBackend();
-      const data = await backend.service.list({});
+      const data = await (backend as any)[kind].list({});
       setServices(data.services);
     } catch (error) {
       console.error("Failed to load services:", error);
@@ -174,7 +176,7 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortSt
     if (!confirm(`Are you sure you want to delete ${name}?`)) return;
     try {
       const backend = getAuthenticatedBackend();
-      await backend.service.deleteService({ serviceId });
+      await (backend as any)[kind].deleteEntity({ serviceId });
       toast({ title: "Success", description: "Business/Service deleted successfully" });
       loadServices();
       onUpdate?.();
@@ -257,7 +259,7 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortSt
           <Collapsible key={service.serviceId} open={isOpen} onOpenChange={() => toggleOpen(service.serviceId)}>
             <Card>
               <CardContent className="p-2">
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                   {isAdmin && (
                     <input
                       type="checkbox"
@@ -269,9 +271,10 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortSt
                     />
                   )}
                   <CollapsibleTrigger asChild>
-                    <button className="flex items-center gap-2 flex-1 min-w-0 text-left">
+                    <button className="flex items-center flex-wrap gap-2 flex-1 min-w-0 text-left w-full">
                       {isOpen ? <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />}
-                      <h3 className="font-semibold text-sm text-foreground truncate min-w-0">{service.name}</h3>
+                      <h3 className="font-semibold text-sm text-foreground min-w-0">{service.name}</h3>
+                      <SupportBadge orgName={service.supportOrgName} />
                       <StarRatingDisplay
                         average={ratings[service.id]?.averageRating ?? 0}
                         count={ratings[service.id]?.ratingCount ?? 0}
@@ -292,7 +295,7 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortSt
                       )}
                     </button>
                   </CollapsibleTrigger>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
                     {service.profileReferenceCode && (
                       <div className="hidden sm:flex items-center gap-1">
                         <span className="text-xs font-mono text-muted-foreground">{service.profileReferenceCode}</span>

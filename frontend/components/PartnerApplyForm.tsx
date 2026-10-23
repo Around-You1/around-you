@@ -31,7 +31,7 @@ const PRICING: Record<string, string> = {
 };
 
 const PROVINCES = ["Eastern Cape", "Free State", "Gauteng", "KwaZulu Natal", "Limpopo", "Mpumalanga", "Northern Cape", "North West", "Western Cape"];
-const PAYMENTS = ["Card", "Cash", "Gaap", "Mobile Tap", "Snap Scan", "Yoco", "Zapper"];
+const PAYMENTS = ["Card", "Cash", "Gaap", "Mobile Tap", "Snap Scan", "Yoco", "Zapper", "iKhokha", "G Pay", "Samsung Pay", "SASSA", "Apple Pay"];
 const ACCESS = ["Wheelchair Access", "Parking Availability"];
 const DIETARY = ["Gluten Free", "Halaal", "Kosher", "Nut Free", "Signature Dish", "Chef Recommendation"];
 const ATMOSPHERE = ["Family-friendly", "Romantic", "Trendy / Modern", "Quiet", "Lively", "Outdoor Seating", "Sea View", "Mountain View", "Rooftop", "Garden"];

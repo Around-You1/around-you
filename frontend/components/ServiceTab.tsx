@@ -13,9 +13,11 @@ import SortControls, { SortState, DEFAULT_SORT_STATE } from "./SortControls";
 interface ServiceTabProps {
   onUpdate?: () => void;
   nonProfit?: boolean;
+  entityKind?: "service" | "retail" | "nonprofit";
 }
 
-export default function ServiceTab({ onUpdate, nonProfit = false }: ServiceTabProps) {
+export default function ServiceTab({ onUpdate, nonProfit = false, entityKind }: ServiceTabProps) {
+  const kind: "service" | "retail" | "nonprofit" = entityKind ?? (nonProfit ? "nonprofit" : "service");
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
@@ -59,7 +61,7 @@ export default function ServiceTab({ onUpdate, nonProfit = false }: ServiceTabPr
   const handleExport = async () => {
     try {
       const backend = getAuthenticatedBackend();
-      const result = await backend.service.exportServices();
+      const result = await (backend as any)[kind].export();
       const blob = new Blob([result.csv], { type: "text/csv" });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -86,7 +88,7 @@ export default function ServiceTab({ onUpdate, nonProfit = false }: ServiceTabPr
   const handleDownloadTemplate = async () => {
     try {
       const backend = getAuthenticatedBackend();
-      const result = await backend.service.template();
+      const result = await (backend as any)[kind].template();
       const blob = new Blob([result.csv], { type: "text/csv" });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -124,7 +126,7 @@ export default function ServiceTab({ onUpdate, nonProfit = false }: ServiceTabPr
             className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add {nonProfit ? "NPO / PBO" : "Business/Service"}
+            Add {kind === "nonprofit" ? "NPO / PBO" : kind === "retail" ? "Retail" : "Business/Service"}
           </Button>
         </div>
 
@@ -159,16 +161,16 @@ export default function ServiceTab({ onUpdate, nonProfit = false }: ServiceTabPr
         </div>
       </div>
 
-      {!showForm && !nonProfit && <PendingApplications category="service" />}
+      {!showForm && <PendingApplications category={kind} />}
 
       {showForm ? (
         <ServiceForm
           serviceId={editingServiceId}
           onClose={handleFormClose}
-          nonProfit={nonProfit}
+          entityKind={kind}
         />
       ) : (
-        <ServiceList key={refreshKey} onEdit={handleEdit} onUpdate={onUpdate} searchQuery={searchQuery} sortState={sortState} nonProfit={nonProfit} />
+        <ServiceList key={refreshKey} onEdit={handleEdit} onUpdate={onUpdate} searchQuery={searchQuery} sortState={sortState} entityKind={kind} />
       )}
 
       {showImport && (

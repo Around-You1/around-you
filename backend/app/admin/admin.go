@@ -39,6 +39,8 @@ var (
 	services       = store.NewServiceStore()
 	attractions    = store.NewAttractionStore()
 	accommodations = store.NewStore()
+	retail         = store.NewRetailStore()
+	nonprofits     = store.NewNonprofitStore()
 )
 
 var tables = map[string]string{
@@ -46,6 +48,8 @@ var tables = map[string]string{
 	"service":       "services",
 	"attraction":    "attractions",
 	"accommodation": "accommodations",
+	"retail":        "retail",
+	"nonprofit":     "nonprofits",
 }
 
 func requireSuperAdmin(ctx context.Context) error {
@@ -129,6 +133,10 @@ func disableCodes(ctx context.Context, entityType string, id int64) {
 		_ = restaurants.TogglePartnerCode(ctx, id, false)
 	case "service":
 		_ = services.TogglePartnerCode(ctx, id, false)
+	case "retail":
+		_ = retail.TogglePartnerCode(ctx, id, false)
+	case "nonprofit":
+		_ = nonprofits.TogglePartnerCode(ctx, id, false)
 	case "attraction":
 		_ = attractions.TogglePartnerCode(ctx, id, false)
 	case "accommodation":
@@ -159,6 +167,24 @@ func enableCodes(ctx context.Context, entityType string, id int64) {
 		}
 		if ec, err := services.GetEditCode(ctx, id); err != nil || strings.TrimSpace(ec) == "" {
 			_, _ = services.RegenerateEditCode(ctx, id, appdb.RandomCode(12))
+		}
+	case "retail":
+		if code, _, err := retail.GetPartnerCode(ctx, id); err == nil && strings.TrimSpace(code) != "" {
+			_ = retail.TogglePartnerCode(ctx, id, true)
+		} else {
+			_, _, _ = retail.RegeneratePartnerCode(ctx, id, appdb.RandomCode(12))
+		}
+		if ec, err := retail.GetEditCode(ctx, id); err != nil || strings.TrimSpace(ec) == "" {
+			_, _ = retail.RegenerateEditCode(ctx, id, appdb.RandomCode(12))
+		}
+	case "nonprofit":
+		if code, _, err := nonprofits.GetPartnerCode(ctx, id); err == nil && strings.TrimSpace(code) != "" {
+			_ = nonprofits.TogglePartnerCode(ctx, id, true)
+		} else {
+			_, _, _ = nonprofits.RegeneratePartnerCode(ctx, id, appdb.RandomCode(12))
+		}
+		if ec, err := nonprofits.GetEditCode(ctx, id); err != nil || strings.TrimSpace(ec) == "" {
+			_, _ = nonprofits.RegenerateEditCode(ctx, id, appdb.RandomCode(12))
 		}
 	case "attraction":
 		if code, _, err := attractions.GetPartnerCode(ctx, id); err == nil && strings.TrimSpace(code) != "" {
@@ -225,6 +251,20 @@ func archiveOne(ctx context.Context, entityType string, id int64, actor string) 
 		}
 		name, province, area = s.Name, s.Province, s.Area
 		payload, err = json.Marshal(s)
+	case "retail":
+		var s *appdb.ServiceData
+		if s, err = retail.Get(ctx, id); err != nil {
+			return err
+		}
+		name, province, area = s.Name, s.Province, s.Area
+		payload, err = json.Marshal(s)
+	case "nonprofit":
+		var s *appdb.ServiceData
+		if s, err = nonprofits.Get(ctx, id); err != nil {
+			return err
+		}
+		name, province, area = s.Name, s.Province, s.Area
+		payload, err = json.Marshal(s)
 	case "attraction":
 		var a *appdb.AttractionData
 		if a, err = attractions.Get(ctx, id); err != nil {
@@ -262,6 +302,10 @@ func deleteLive(ctx context.Context, entityType string, id int64) error {
 		return restaurants.Delete(ctx, id)
 	case "service":
 		return services.Delete(ctx, id)
+	case "retail":
+		return retail.Delete(ctx, id)
+	case "nonprofit":
+		return nonprofits.Delete(ctx, id)
 	case "attraction":
 		return attractions.Delete(ctx, id)
 	case "accommodation":
@@ -380,6 +424,36 @@ func Reinstate(ctx context.Context, req *ReinstateRequest) (*ReinstateResponse, 
 			return nil, err
 		}
 		edit, _ := services.GetEditCode(ctx, created.ID)
+		resp.NewID, resp.Name, resp.AccessCode, resp.EditCode = created.ID, created.Name, created.PartnerCode.Code, edit
+	case "retail":
+		var s appdb.ServiceData
+		if err := json.Unmarshal(payload, &s); err != nil {
+			return nil, err
+		}
+		s.ID = 0
+		s.IsActive = true
+		s.ProfileReferenceCode = appdb.RandomCode(12)
+		s.PartnerCode = appdb.PartnerCode{Code: appdb.RandomCode(12), Active: true}
+		created, err := retail.Create(ctx, &s)
+		if err != nil {
+			return nil, err
+		}
+		edit, _ := retail.GetEditCode(ctx, created.ID)
+		resp.NewID, resp.Name, resp.AccessCode, resp.EditCode = created.ID, created.Name, created.PartnerCode.Code, edit
+	case "nonprofit":
+		var s appdb.ServiceData
+		if err := json.Unmarshal(payload, &s); err != nil {
+			return nil, err
+		}
+		s.ID = 0
+		s.IsActive = true
+		s.ProfileReferenceCode = appdb.RandomCode(12)
+		s.PartnerCode = appdb.PartnerCode{Code: appdb.RandomCode(12), Active: true}
+		created, err := nonprofits.Create(ctx, &s)
+		if err != nil {
+			return nil, err
+		}
+		edit, _ := nonprofits.GetEditCode(ctx, created.ID)
 		resp.NewID, resp.Name, resp.AccessCode, resp.EditCode = created.ID, created.Name, created.PartnerCode.Code, edit
 	case "attraction":
 		var a appdb.AttractionData

@@ -1,0 +1,642 @@
+// NonprofitStore replaces the in-memory appdb.DB.Services map — same fix
+// Restaurant already got (see restaurant_store.go's comment for why this
+// matters: in-memory storage means every server restart silently wipes
+// everything).
+package store
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"strconv"
+	"strings"
+
+	"github.com/lib/pq"
+
+	"backend_encore/internal/appdb"
+)
+
+var ErrNonprofitNotFound = errors.New("service not found")
+
+type NonprofitStore struct{}
+
+func NewNonprofitStore() *NonprofitStore {
+	return &NonprofitStore{}
+}
+
+const nonprofitColumns = `
+	id, service_id, name, address, latitude, longitude, country, province,
+	COALESCE(area, '') as area, postal_code,
+	COALESCE(contact_number, '') as contact_number,
+	COALESCE(description, '') as description,
+	COALESCE(profile_reference_code, '') as profile_reference_code,
+	is_duplicate,
+	COALESCE(duplicate_reason, '') as duplicate_reason,
+	service_categories,
+	little_explorer_approved,
+	payment_card, payment_cash, payment_mobile, payment_gaap, payment_snapscan, payment_yoco, payment_zapper,
+	wheelchair_access, parking_availability,
+	COALESCE(discount_offered, '') as discount_offered,
+	COALESCE(discount_code, '') as discount_code,
+	COALESCE(local_discount_offered, '') as local_discount_offered,
+	COALESCE(local_discount_code, '') as local_discount_code,
+	COALESCE(discount_enabled, false) as discount_enabled,
+	COALESCE(local_discount_enabled, false) as local_discount_enabled,
+	COALESCE(works_from_client_address, false) as works_from_client_address,
+	COALESCE(safety_info, '') as safety_info,
+	COALESCE(age_restrictions, '') as age_restrictions,
+	COALESCE(fitness_level, '') as fitness_level,
+	COALESCE(best_time_of_day, '') as best_time_of_day,
+	COALESCE(what_to_bring, '') as what_to_bring,
+	COALESCE(socials_website, '') as socials_website,
+	COALESCE(socials_facebook, '') as socials_facebook,
+	COALESCE(socials_instagram, '') as socials_instagram,
+	COALESCE(socials_tiktok, '') as socials_tiktok,
+	COALESCE(socials_twitter, '') as socials_twitter,
+	COALESCE(image_url, '') as image_url,
+	image_urls,
+	is_active,
+	COALESCE(official_holding_company, '') as official_holding_company,
+	COALESCE(official_contact_name, '') as official_contact_name,
+	COALESCE(official_contact_number, '') as official_contact_number,
+	COALESCE(official_email, '') as official_email,
+	COALESCE(official_rep_code, '') as official_rep_code,
+	COALESCE(official_rep_name, '') as official_rep_name,
+	COALESCE(company_reg_number, '') as company_reg_number,
+	COALESCE(company_vat_number, '') as company_vat_number,
+	COALESCE(guest_type, '') as guest_type,
+	COALESCE(access_level, '') as access_level,
+	COALESCE(partner_code, '') as partner_code,
+	partner_code_active,
+		COALESCE(booking_items, '[]'::jsonb) as booking_items,
+		COALESCE(pre_order_items, '[]'::jsonb) as pre_order_items,
+	offers_bookings,
+	created_at, updated_at,
+	payment_eft,
+	payment_ikhokha, payment_gpay, payment_samsungpay, payment_sassa, payment_applepay,
+	COALESCE(trading_hours, '') as trading_hours,
+	COALESCE(public_holidays, '') as public_holidays,
+	COALESCE(accounting_address, '') as accounting_address,
+	COALESCE(is_nonprofit, false) as is_nonprofit,
+	COALESCE(npo_number, '') as npo_number,
+	COALESCE(pbo_number, '') as pbo_number,
+	COALESCE(brand_color, '') as brand_color
+`
+
+type nonprofitScanner interface {
+	Scan(dest ...interface{}) error
+}
+
+func scanNonprofit(row nonprofitScanner) (*appdb.ServiceData, error) {
+	var s appdb.ServiceData
+	err := row.Scan(
+		&s.ID, &s.ServiceID, &s.Name, &s.Address, &s.Latitude, &s.Longitude, &s.Country, &s.Province, &s.Area, &s.PostalCode,
+		&s.ContactNumber, &s.Description,
+		&s.ProfileReferenceCode, &s.IsDuplicate, &s.DuplicateReason,
+		pq.Array(&s.ServiceCategories),
+		&s.LittleExplorerApproved,
+		&s.PaymentCard, &s.PaymentCash, &s.PaymentMobile, &s.PaymentGaap, &s.PaymentSnapScan, &s.PaymentYoco, &s.PaymentZapper,
+		&s.WheelchairAccess, &s.ParkingAvailability,
+		&s.DiscountOffered, &s.DiscountCode,
+		&s.LocalDiscountOffered, &s.LocalDiscountCode,
+		&s.DiscountEnabled, &s.LocalDiscountEnabled,
+		&s.WorksFromClientAddress,
+		&s.SafetyInfo, &s.AgeRestrictions, &s.FitnessLevel, &s.BestTimeOfDay, &s.WhatToBring,
+		&s.SocialsWebsite, &s.SocialsFacebook, &s.SocialsInstagram, &s.SocialsTiktok, &s.SocialsTwitter,
+		&s.ImageUrl, pq.Array(&s.ImageUrls), &s.IsActive,
+		&s.OfficialHoldingCompany, &s.OfficialContactName, &s.OfficialContactNumber, &s.OfficialEmail, &s.OfficialRepCode,
+		&s.OfficialRepName, &s.CompanyRegNumber, &s.CompanyVatNumber,
+		&s.GuestType, &s.AccessLevel,
+		&s.PartnerCode.Code, &s.PartnerCode.Active,
+		&s.BookingItems,
+		&s.PreOrderItems,
+		&s.OffersBookings,
+		&s.CreatedAt, &s.UpdatedAt,
+		&s.PaymentEft,
+		&s.PaymentIkhokha,
+		&s.PaymentGpay,
+		&s.PaymentSamsungpay,
+		&s.PaymentSassa,
+		&s.PaymentApplepay,
+		&s.TradingHours, &s.PublicHolidays,
+		&s.AccountingAddress,
+		&s.IsNonProfit,
+		&s.NpoNumber,
+		&s.PboNumber,
+		&s.BrandColor,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &s, nil
+}
+
+func (s *NonprofitStore) List(ctx context.Context, sortBy, sortOrder string) ([]appdb.ServiceData, error) {
+	rows, err := appdb.SQLDB.QueryContext(ctx, "SELECT "+nonprofitColumns+" FROM nonprofits ORDER BY "+sortColumn(sortBy, sortOrder))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := []appdb.ServiceData{}
+	for rows.Next() {
+		item, err := scanNonprofit(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *item)
+	}
+	return out, rows.Err()
+}
+
+func (s *NonprofitStore) ListByMunicipality(ctx context.Context, area string) ([]appdb.ServiceData, error) {
+	rows, err := appdb.SQLDB.QueryContext(ctx,
+		"SELECT "+nonprofitColumns+" FROM nonprofits WHERE is_active = true AND lower(area) = lower($1)", area)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []appdb.ServiceData{}
+	for rows.Next() {
+		item, err := scanNonprofit(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *item)
+	}
+	return out, rows.Err()
+}
+
+func (s *NonprofitStore) ListNearby(ctx context.Context) ([]appdb.ServiceData, error) {
+	rows, err := appdb.SQLDB.QueryContext(ctx,
+		"SELECT "+nonprofitColumns+" FROM nonprofits WHERE is_active = true AND (works_from_client_address = true OR (latitude IS NOT NULL AND longitude IS NOT NULL))")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []appdb.ServiceData{}
+	for rows.Next() {
+		item, err := scanNonprofit(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *item)
+	}
+	return out, rows.Err()
+}
+
+func (s *NonprofitStore) Get(ctx context.Context, id int64) (*appdb.ServiceData, error) {
+	row := appdb.SQLDB.QueryRowContext(ctx, "SELECT "+nonprofitColumns+" FROM nonprofits WHERE id = $1", id)
+	item, err := scanNonprofit(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNonprofitNotFound
+		}
+		return nil, err
+	}
+	return item, nil
+}
+
+func (s *NonprofitStore) Create(ctx context.Context, in *appdb.ServiceData) (*appdb.ServiceData, error) {
+	row := appdb.SQLDB.QueryRowContext(ctx, `
+		INSERT INTO nonprofits (
+			name, address, latitude, longitude, country, province, area, postal_code,
+			contact_number, description, profile_reference_code,
+			service_categories, little_explorer_approved,
+			payment_card, payment_cash, payment_mobile, payment_gaap, payment_snapscan, payment_yoco, payment_zapper,
+			wheelchair_access, parking_availability,
+			discount_offered, discount_code,
+			safety_info, age_restrictions, fitness_level, best_time_of_day, what_to_bring,
+			socials_website, socials_facebook, socials_instagram, socials_tiktok, socials_twitter,
+			image_url, image_urls, is_active,
+			official_holding_company, official_contact_name, official_contact_number, official_email, official_rep_code,
+			official_rep_name, company_reg_number, company_vat_number,
+			guest_type, access_level, partner_code, partner_code_active, booking_items,
+			local_discount_offered, local_discount_code,
+			offers_bookings,
+			discount_enabled, local_discount_enabled, works_from_client_address,
+			payment_eft, trading_hours, public_holidays,
+			accounting_address,
+			is_nonprofit,
+			pre_order_items,
+			npo_number, pbo_number, brand_color,
+			payment_ikhokha, payment_gpay, payment_samsungpay, payment_sassa, payment_applepay
+		) VALUES (
+			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,
+			$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,
+			$51,$52,$53,$54,$55,$56,$57,$58,$59,$60,$61,$62,$63,$64,$65,$66,$67,$68,$69,$70
+		)
+		RETURNING `+nonprofitColumns,
+		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
+		in.ContactNumber, in.Description, in.ProfileReferenceCode,
+		pq.Array(nonNilSlice(in.ServiceCategories)), in.LittleExplorerApproved,
+		in.PaymentCard, in.PaymentCash, in.PaymentMobile, in.PaymentGaap, in.PaymentSnapScan, in.PaymentYoco, in.PaymentZapper,
+		in.WheelchairAccess, in.ParkingAvailability,
+		in.DiscountOffered, in.DiscountCode,
+		in.SafetyInfo, in.AgeRestrictions, in.FitnessLevel, in.BestTimeOfDay, in.WhatToBring,
+		in.SocialsWebsite, in.SocialsFacebook, in.SocialsInstagram, in.SocialsTiktok, in.SocialsTwitter,
+		in.ImageUrl, pq.Array(nonNilSlice(in.ImageUrls)), in.IsActive,
+		in.OfficialHoldingCompany, in.OfficialContactName, in.OfficialContactNumber, in.OfficialEmail, in.OfficialRepCode,
+		in.OfficialRepName, in.CompanyRegNumber, in.CompanyVatNumber,
+		in.GuestType, in.AccessLevel, in.PartnerCode.Code, in.PartnerCode.Active,
+		in.BookingItems,
+		in.LocalDiscountOffered, in.LocalDiscountCode,
+		in.OffersBookings,
+		in.DiscountEnabled, in.LocalDiscountEnabled,
+		in.WorksFromClientAddress,
+		in.PaymentEft,
+		in.TradingHours, in.PublicHolidays,
+		in.AccountingAddress,
+		in.IsNonProfit,
+		in.PreOrderItems,
+		in.NpoNumber, in.PboNumber, in.BrandColor,
+		in.PaymentIkhokha, in.PaymentGpay, in.PaymentSamsungpay, in.PaymentSassa, in.PaymentApplepay,
+	)
+	return scanNonprofit(row)
+}
+
+type NonprofitPatch struct {
+	Name              *string
+	Address           *string
+	AccountingAddress *string
+	IsNonProfit       *bool
+	NpoNumber         *string
+	PboNumber         *string
+	BrandColor        *string
+	Latitude          *float64
+	Longitude         *float64
+	Country           *string
+	Province          *string
+	Area              *string
+	PostalCode        *string
+
+	ContactNumber *string
+	Description   *string
+
+	ServiceCategories      []string
+	OffersBookings         *bool
+	LittleExplorerApproved *bool
+
+	PaymentCard       *bool
+	PaymentCash       *bool
+	PaymentMobile     *bool
+	PaymentGaap       *bool
+	PaymentSnapScan   *bool
+	PaymentYoco       *bool
+	PaymentZapper     *bool
+	PaymentEft        *bool
+	PaymentIkhokha    *bool
+	PaymentGpay       *bool
+	PaymentSamsungpay *bool
+	PaymentSassa      *bool
+	PaymentApplepay   *bool
+	TradingHours      *string
+	PublicHolidays    *string
+
+	WheelchairAccess    *bool
+	ParkingAvailability *bool
+
+	DiscountOffered        *string
+	DiscountCode           *string
+	LocalDiscountOffered   *string
+	LocalDiscountCode      *string
+	DiscountEnabled        *bool
+	LocalDiscountEnabled   *bool
+	WorksFromClientAddress *bool
+
+	SafetyInfo      *string
+	AgeRestrictions *string
+	FitnessLevel    *string
+	BestTimeOfDay   *string
+	WhatToBring     *string
+
+	SocialsWebsite   *string
+	SocialsFacebook  *string
+	SocialsInstagram *string
+	SocialsTiktok    *string
+	SocialsTwitter   *string
+
+	ImageUrl  *string
+	ImageUrls []string
+	IsActive  *bool
+
+	OfficialHoldingCompany *string
+	OfficialContactName    *string
+	OfficialContactNumber  *string
+	OfficialEmail          *string
+	OfficialRepCode        *string
+	OfficialRepName        *string
+	CompanyRegNumber       *string
+	CompanyVatNumber       *string
+	GuestType              *string
+	AccessLevel            *string
+	BookingItems           appdb.BookingItems
+	PreOrderItems          appdb.PreOrderItems
+}
+
+func (s *NonprofitStore) Update(ctx context.Context, id int64, patch NonprofitPatch) (*appdb.ServiceData, error) {
+	sets := []string{}
+	args := []interface{}{}
+	arg := func(v interface{}) string {
+		args = append(args, v)
+		return "$" + strconv.Itoa(len(args))
+	}
+
+	if patch.Name != nil {
+		sets = append(sets, "name = "+arg(*patch.Name))
+	}
+	if patch.Address != nil {
+		sets = append(sets, "address = "+arg(*patch.Address))
+	}
+	if patch.AccountingAddress != nil {
+		sets = append(sets, "accounting_address = "+arg(*patch.AccountingAddress))
+	}
+	if patch.IsNonProfit != nil {
+		sets = append(sets, "is_nonprofit = "+arg(*patch.IsNonProfit))
+	}
+	if patch.NpoNumber != nil {
+		sets = append(sets, "npo_number = "+arg(*patch.NpoNumber))
+	}
+	if patch.PboNumber != nil {
+		sets = append(sets, "pbo_number = "+arg(*patch.PboNumber))
+	}
+	if patch.BrandColor != nil {
+		sets = append(sets, "brand_color = "+arg(*patch.BrandColor))
+	}
+	if patch.Latitude != nil {
+		sets = append(sets, "latitude = "+arg(*patch.Latitude))
+	}
+	if patch.Longitude != nil {
+		sets = append(sets, "longitude = "+arg(*patch.Longitude))
+	}
+	if patch.Country != nil {
+		sets = append(sets, "country = "+arg(*patch.Country))
+	}
+	if patch.Province != nil {
+		sets = append(sets, "province = "+arg(*patch.Province))
+	}
+	if patch.Area != nil {
+		sets = append(sets, "area = "+arg(*patch.Area))
+	}
+	if patch.PostalCode != nil {
+		sets = append(sets, "postal_code = "+arg(*patch.PostalCode))
+	}
+	if patch.ContactNumber != nil {
+		sets = append(sets, "contact_number = "+arg(*patch.ContactNumber))
+	}
+	if patch.Description != nil {
+		sets = append(sets, "description = "+arg(*patch.Description))
+	}
+	if patch.ServiceCategories != nil {
+		sets = append(sets, "service_categories = "+arg(pq.Array(patch.ServiceCategories)))
+	}
+	if patch.OffersBookings != nil {
+		sets = append(sets, "offers_bookings = "+arg(*patch.OffersBookings))
+	}
+	if patch.LittleExplorerApproved != nil {
+		sets = append(sets, "little_explorer_approved = "+arg(*patch.LittleExplorerApproved))
+	}
+	if patch.PaymentCard != nil {
+		sets = append(sets, "payment_card = "+arg(*patch.PaymentCard))
+	}
+	if patch.PaymentCash != nil {
+		sets = append(sets, "payment_cash = "+arg(*patch.PaymentCash))
+	}
+	if patch.PaymentMobile != nil {
+		sets = append(sets, "payment_mobile = "+arg(*patch.PaymentMobile))
+	}
+	if patch.PaymentGaap != nil {
+		sets = append(sets, "payment_gaap = "+arg(*patch.PaymentGaap))
+	}
+	if patch.PaymentSnapScan != nil {
+		sets = append(sets, "payment_snapscan = "+arg(*patch.PaymentSnapScan))
+	}
+	if patch.PaymentYoco != nil {
+		sets = append(sets, "payment_yoco = "+arg(*patch.PaymentYoco))
+	}
+	if patch.PaymentZapper != nil {
+		sets = append(sets, "payment_zapper = "+arg(*patch.PaymentZapper))
+	}
+	if patch.PaymentEft != nil {
+		sets = append(sets, "payment_eft = "+arg(*patch.PaymentEft))
+	}
+	if patch.PaymentIkhokha != nil {
+		sets = append(sets, "payment_ikhokha = "+arg(*patch.PaymentIkhokha))
+	}
+	if patch.PaymentGpay != nil {
+		sets = append(sets, "payment_gpay = "+arg(*patch.PaymentGpay))
+	}
+	if patch.PaymentSamsungpay != nil {
+		sets = append(sets, "payment_samsungpay = "+arg(*patch.PaymentSamsungpay))
+	}
+	if patch.PaymentSassa != nil {
+		sets = append(sets, "payment_sassa = "+arg(*patch.PaymentSassa))
+	}
+	if patch.PaymentApplepay != nil {
+		sets = append(sets, "payment_applepay = "+arg(*patch.PaymentApplepay))
+	}
+	if patch.TradingHours != nil {
+		sets = append(sets, "trading_hours = "+arg(*patch.TradingHours))
+	}
+	if patch.PublicHolidays != nil {
+		sets = append(sets, "public_holidays = "+arg(*patch.PublicHolidays))
+	}
+	if patch.WheelchairAccess != nil {
+		sets = append(sets, "wheelchair_access = "+arg(*patch.WheelchairAccess))
+	}
+	if patch.ParkingAvailability != nil {
+		sets = append(sets, "parking_availability = "+arg(*patch.ParkingAvailability))
+	}
+	if patch.DiscountOffered != nil {
+		sets = append(sets, "discount_offered = "+arg(*patch.DiscountOffered))
+	}
+	if patch.DiscountCode != nil {
+		sets = append(sets, "discount_code = "+arg(*patch.DiscountCode))
+	}
+	if patch.LocalDiscountOffered != nil {
+		sets = append(sets, "local_discount_offered = "+arg(*patch.LocalDiscountOffered))
+	}
+	if patch.LocalDiscountCode != nil {
+		sets = append(sets, "local_discount_code = "+arg(*patch.LocalDiscountCode))
+	}
+	if patch.DiscountEnabled != nil {
+		sets = append(sets, "discount_enabled = "+arg(*patch.DiscountEnabled))
+	}
+	if patch.LocalDiscountEnabled != nil {
+		sets = append(sets, "local_discount_enabled = "+arg(*patch.LocalDiscountEnabled))
+	}
+	if patch.WorksFromClientAddress != nil {
+		sets = append(sets, "works_from_client_address = "+arg(*patch.WorksFromClientAddress))
+	}
+	if patch.SafetyInfo != nil {
+		sets = append(sets, "safety_info = "+arg(*patch.SafetyInfo))
+	}
+	if patch.AgeRestrictions != nil {
+		sets = append(sets, "age_restrictions = "+arg(*patch.AgeRestrictions))
+	}
+	if patch.FitnessLevel != nil {
+		sets = append(sets, "fitness_level = "+arg(*patch.FitnessLevel))
+	}
+	if patch.BestTimeOfDay != nil {
+		sets = append(sets, "best_time_of_day = "+arg(*patch.BestTimeOfDay))
+	}
+	if patch.WhatToBring != nil {
+		sets = append(sets, "what_to_bring = "+arg(*patch.WhatToBring))
+	}
+	if patch.SocialsWebsite != nil {
+		sets = append(sets, "socials_website = "+arg(*patch.SocialsWebsite))
+	}
+	if patch.SocialsFacebook != nil {
+		sets = append(sets, "socials_facebook = "+arg(*patch.SocialsFacebook))
+	}
+	if patch.SocialsInstagram != nil {
+		sets = append(sets, "socials_instagram = "+arg(*patch.SocialsInstagram))
+	}
+	if patch.SocialsTiktok != nil {
+		sets = append(sets, "socials_tiktok = "+arg(*patch.SocialsTiktok))
+	}
+	if patch.SocialsTwitter != nil {
+		sets = append(sets, "socials_twitter = "+arg(*patch.SocialsTwitter))
+	}
+	if patch.ImageUrl != nil {
+		sets = append(sets, "image_url = "+arg(*patch.ImageUrl))
+	}
+	if patch.ImageUrls != nil {
+		sets = append(sets, "image_urls = "+arg(pq.Array(patch.ImageUrls)))
+	}
+	if patch.IsActive != nil {
+		sets = append(sets, "is_active = "+arg(*patch.IsActive))
+	}
+	if patch.OfficialHoldingCompany != nil {
+		sets = append(sets, "official_holding_company = "+arg(*patch.OfficialHoldingCompany))
+	}
+	if patch.OfficialContactName != nil {
+		sets = append(sets, "official_contact_name = "+arg(*patch.OfficialContactName))
+	}
+	if patch.OfficialContactNumber != nil {
+		sets = append(sets, "official_contact_number = "+arg(*patch.OfficialContactNumber))
+	}
+	if patch.OfficialEmail != nil {
+		sets = append(sets, "official_email = "+arg(*patch.OfficialEmail))
+	}
+	if patch.OfficialRepCode != nil {
+		sets = append(sets, "official_rep_code = "+arg(*patch.OfficialRepCode))
+	}
+	if patch.OfficialRepName != nil {
+		sets = append(sets, "official_rep_name = "+arg(*patch.OfficialRepName))
+	}
+	if patch.CompanyRegNumber != nil {
+		sets = append(sets, "company_reg_number = "+arg(*patch.CompanyRegNumber))
+	}
+	if patch.CompanyVatNumber != nil {
+		sets = append(sets, "company_vat_number = "+arg(*patch.CompanyVatNumber))
+	}
+	if patch.GuestType != nil {
+		sets = append(sets, "guest_type = "+arg(*patch.GuestType))
+	}
+	if patch.AccessLevel != nil {
+		sets = append(sets, "access_level = "+arg(*patch.AccessLevel))
+	}
+	if patch.BookingItems != nil {
+		sets = append(sets, "booking_items = "+arg(patch.BookingItems))
+	}
+	if patch.PreOrderItems != nil {
+		sets = append(sets, "pre_order_items = "+arg(patch.PreOrderItems))
+	}
+
+	if len(sets) == 0 {
+		return s.Get(ctx, id)
+	}
+
+	sets = append(sets, "updated_at = now()")
+	query := "UPDATE nonprofits SET " + strings.Join(sets, ", ") + " WHERE id = " + arg(id) + " RETURNING " + nonprofitColumns
+	row := appdb.SQLDB.QueryRowContext(ctx, query, args...)
+	item, err := scanNonprofit(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNonprofitNotFound
+		}
+		return nil, err
+	}
+	return item, nil
+}
+
+func (s *NonprofitStore) Delete(ctx context.Context, id int64) error {
+	res, err := appdb.SQLDB.ExecContext(ctx, "DELETE FROM nonprofits WHERE id = $1", id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrNonprofitNotFound
+	}
+	return nil
+}
+
+// GetEditCode/RegenerateEditCode manage the partner "edit code" (see the
+// editcode package) — kept out of scanNonprofit so it never leaks into JSON.
+
+func (s *NonprofitStore) GetEditCode(ctx context.Context, id int64) (string, error) {
+	var code string
+	err := appdb.SQLDB.QueryRowContext(ctx,
+		"SELECT COALESCE(edit_code, '') FROM nonprofits WHERE id = $1", id,
+	).Scan(&code)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrNonprofitNotFound
+	}
+	return code, err
+}
+
+func (s *NonprofitStore) RegenerateEditCode(ctx context.Context, id int64, newCode string) (string, error) {
+	var code string
+	err := appdb.SQLDB.QueryRowContext(ctx,
+		"UPDATE nonprofits SET edit_code = $1, updated_at = now() WHERE id = $2 RETURNING edit_code",
+		newCode, id,
+	).Scan(&code)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrNonprofitNotFound
+	}
+	return code, err
+}
+
+func (s *NonprofitStore) GetPartnerCode(ctx context.Context, id int64) (code string, active bool, err error) {
+	err = appdb.SQLDB.QueryRowContext(ctx,
+		"SELECT COALESCE(partner_code, ''), partner_code_active FROM nonprofits WHERE id = $1", id,
+	).Scan(&code, &active)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", false, ErrNonprofitNotFound
+	}
+	return code, active, err
+}
+
+func (s *NonprofitStore) RegeneratePartnerCode(ctx context.Context, id int64, newCode string) (code string, active bool, err error) {
+	err = appdb.SQLDB.QueryRowContext(ctx, `
+		UPDATE nonprofits SET partner_code = $1, partner_code_active = true, updated_at = now()
+		WHERE id = $2
+		RETURNING partner_code, partner_code_active`,
+		newCode, id,
+	).Scan(&code, &active)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", false, ErrNonprofitNotFound
+	}
+	return code, active, err
+}
+
+func (s *NonprofitStore) TogglePartnerCode(ctx context.Context, id int64, active bool) error {
+	res, err := appdb.SQLDB.ExecContext(ctx,
+		"UPDATE nonprofits SET partner_code_active = $1, updated_at = now() WHERE id = $2", active, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrNonprofitNotFound
+	}
+	return nil
+}

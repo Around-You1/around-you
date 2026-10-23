@@ -1,0 +1,288 @@
+package nonprofit
+
+import "backend_encore/internal/appdb"
+
+type ListRequest struct {
+	SortBy    string `query:"sortBy"`
+	SortOrder string `query:"sortOrder"`
+}
+
+type ListResponse struct {
+	Services []appdb.ServiceData `json:"services"`
+}
+
+type ListByMunicipalityRequest struct {
+	Area string `query:"area"`
+}
+
+type ListNearbyRequest struct {
+	NonProfit  bool    `query:"nonProfit"`
+	Latitude   float64 `query:"latitude"`
+	Longitude  float64 `query:"longitude"`
+	RadiusKm   float64 `query:"radiusKm"`
+	PostalCode string  `query:"postalCode"`
+}
+
+type GetRequest struct {
+	ServiceID string `query:"serviceId"`
+}
+
+type CreateRequest struct {
+	Name              string `json:"name"`
+	Address           string `json:"address"`
+	AccountingAddress string `json:"accountingAddress,omitempty"`
+	IsNonProfit       bool   `json:"isNonProfit,omitempty"`
+	NpoNumber         string `json:"npoNumber,omitempty"`
+	PboNumber         string `json:"pboNumber,omitempty"`
+	BrandColor        string `json:"brandColor,omitempty"`
+
+	Latitude  *float64 `json:"latitude,omitempty"`
+	Longitude *float64 `json:"longitude,omitempty"`
+
+	Country        string `json:"country"`
+	Province       string `json:"province"`
+	Area           string `json:"area,omitempty"`
+	PostalCode     string `json:"postalCode"`
+	ContactNumber  string `json:"contactNumber,omitempty"`
+	Description    string `json:"description,omitempty"`
+	TradingHours   string `json:"tradingHours,omitempty"`
+	PublicHolidays string `json:"publicHolidays,omitempty"`
+
+	ServiceCategories      []string `json:"serviceCategories"`
+	OffersBookings         bool     `json:"offersBookings"`
+	LittleExplorerApproved bool     `json:"littleExplorerApproved"`
+
+	PaymentCard     bool `json:"paymentCard"`
+	PaymentCash     bool `json:"paymentCash"`
+	PaymentMobile   bool `json:"paymentMobile"`
+	PaymentGaap     bool `json:"paymentGaap"`
+	PaymentSnapScan bool `json:"paymentSnapScan"`
+	PaymentYoco     bool `json:"paymentYoco"`
+	PaymentZapper   bool `json:"paymentZapper"`
+	PaymentEft      bool `json:"paymentEft"`
+
+	WheelchairAccess    bool `json:"wheelchairAccess"`
+	ParkingAvailability bool `json:"parkingAvailability"`
+
+	DiscountOffered string `json:"discountOffered,omitempty"`
+	DiscountCode    string `json:"discountCode,omitempty"`
+
+	LocalDiscountOffered   string `json:"localDiscountOffered,omitempty"`
+	LocalDiscountCode      string `json:"localDiscountCode,omitempty"`
+	DiscountEnabled        bool   `json:"discountEnabled,omitempty"`
+	LocalDiscountEnabled   bool   `json:"localDiscountEnabled,omitempty"`
+	WorksFromClientAddress bool   `json:"worksFromClientAddress,omitempty"`
+
+	SafetyInfo      string `json:"safetyInfo,omitempty"`
+	AgeRestrictions string `json:"ageRestrictions,omitempty"`
+	FitnessLevel    string `json:"fitnessLevel,omitempty"`
+	BestTimeOfDay   string `json:"bestTimeOfDay,omitempty"`
+	WhatToBring     string `json:"whatToBring,omitempty"`
+
+	SocialsWebsite   string `json:"socialsWebsite,omitempty"`
+	SocialsFacebook  string `json:"socialsFacebook,omitempty"`
+	SocialsInstagram string `json:"socialsInstagram,omitempty"`
+	SocialsTiktok    string `json:"socialsTiktok,omitempty"`
+	SocialsTwitter   string `json:"socialsTwitter,omitempty"`
+
+	ImageUrl  string   `json:"imageUrl,omitempty"`
+	ImageUrls []string `json:"imageUrls,omitempty"`
+	IsActive  bool     `json:"isActive"`
+
+	OfficialHoldingCompany string               `json:"officialHoldingCompany,omitempty"`
+	OfficialContactName    string               `json:"officialContactName,omitempty"`
+	OfficialContactNumber  string               `json:"officialContactNumber,omitempty"`
+	OfficialEmail          string               `json:"officialEmail,omitempty"`
+	OfficialRepCode        string               `json:"officialRepCode,omitempty"`
+	OfficialRepName        string               `json:"officialRepName,omitempty"`
+	CompanyRegNumber       string               `json:"companyRegNumber,omitempty"`
+	CompanyVatNumber       string               `json:"companyVatNumber,omitempty"`
+	GuestType              string               `json:"guestType,omitempty"`
+	AccessLevel            string               `json:"accessLevel,omitempty"`
+	BookingItems           []appdb.BookingItem  `json:"bookingItems,omitempty"`
+	PreOrderItems          []appdb.PreOrderItem `json:"preOrderItems,omitempty"`
+}
+
+type UpdateRequest struct {
+	ServiceID string `json:"serviceId"`
+
+	Name              *string `json:"name,omitempty"`
+	Address           *string `json:"address,omitempty"`
+	AccountingAddress *string `json:"accountingAddress,omitempty"`
+	IsNonProfit       *bool   `json:"isNonProfit,omitempty"`
+	NpoNumber         *string `json:"npoNumber,omitempty"`
+	PboNumber         *string `json:"pboNumber,omitempty"`
+	BrandColor        *string `json:"brandColor,omitempty"`
+
+	Latitude  *float64 `json:"latitude,omitempty"`
+	Longitude *float64 `json:"longitude,omitempty"`
+
+	Country        *string `json:"country,omitempty"`
+	Province       *string `json:"province,omitempty"`
+	Area           *string `json:"area,omitempty"`
+	PostalCode     *string `json:"postalCode,omitempty"`
+	ContactNumber  *string `json:"contactNumber,omitempty"`
+	Description    *string `json:"description,omitempty"`
+	TradingHours   *string `json:"tradingHours,omitempty"`
+	PublicHolidays *string `json:"publicHolidays,omitempty"`
+
+	ServiceCategories      []string `json:"serviceCategories,omitempty"`
+	OffersBookings         *bool    `json:"offersBookings,omitempty"`
+	LittleExplorerApproved *bool    `json:"littleExplorerApproved,omitempty"`
+
+	PaymentCard     *bool `json:"paymentCard,omitempty"`
+	PaymentCash     *bool `json:"paymentCash,omitempty"`
+	PaymentMobile   *bool `json:"paymentMobile,omitempty"`
+	PaymentGaap     *bool `json:"paymentGaap,omitempty"`
+	PaymentSnapScan *bool `json:"paymentSnapScan,omitempty"`
+	PaymentYoco     *bool `json:"paymentYoco,omitempty"`
+	PaymentZapper   *bool `json:"paymentZapper,omitempty"`
+	PaymentEft      *bool `json:"paymentEft,omitempty"`
+
+	WheelchairAccess    *bool `json:"wheelchairAccess,omitempty"`
+	ParkingAvailability *bool `json:"parkingAvailability,omitempty"`
+
+	DiscountOffered *string `json:"discountOffered,omitempty"`
+	DiscountCode    *string `json:"discountCode,omitempty"`
+
+	LocalDiscountOffered   *string `json:"localDiscountOffered,omitempty"`
+	LocalDiscountCode      *string `json:"localDiscountCode,omitempty"`
+	DiscountEnabled        *bool   `json:"discountEnabled,omitempty"`
+	LocalDiscountEnabled   *bool   `json:"localDiscountEnabled,omitempty"`
+	WorksFromClientAddress *bool   `json:"worksFromClientAddress,omitempty"`
+
+	// Edit Code the partner typed to unlock editing. Required (and checked
+	// server-side) when a Partner edits their own profile; ignored for staff.
+	EditCode string `json:"editCode,omitempty"`
+
+	SafetyInfo      *string `json:"safetyInfo,omitempty"`
+	AgeRestrictions *string `json:"ageRestrictions,omitempty"`
+	FitnessLevel    *string `json:"fitnessLevel,omitempty"`
+	BestTimeOfDay   *string `json:"bestTimeOfDay,omitempty"`
+	WhatToBring     *string `json:"whatToBring,omitempty"`
+
+	SocialsWebsite   *string `json:"socialsWebsite,omitempty"`
+	SocialsFacebook  *string `json:"socialsFacebook,omitempty"`
+	SocialsInstagram *string `json:"socialsInstagram,omitempty"`
+	SocialsTiktok    *string `json:"socialsTiktok,omitempty"`
+	SocialsTwitter   *string `json:"socialsTwitter,omitempty"`
+
+	ImageUrl  *string  `json:"imageUrl,omitempty"`
+	ImageUrls []string `json:"imageUrls,omitempty"`
+	IsActive  *bool    `json:"isActive,omitempty"`
+
+	OfficialHoldingCompany *string              `json:"officialHoldingCompany,omitempty"`
+	OfficialContactName    *string              `json:"officialContactName,omitempty"`
+	OfficialContactNumber  *string              `json:"officialContactNumber,omitempty"`
+	OfficialEmail          *string              `json:"officialEmail,omitempty"`
+	OfficialRepCode        *string              `json:"officialRepCode,omitempty"`
+	OfficialRepName        *string              `json:"officialRepName,omitempty"`
+	CompanyRegNumber       *string              `json:"companyRegNumber,omitempty"`
+	CompanyVatNumber       *string              `json:"companyVatNumber,omitempty"`
+	GuestType              *string              `json:"guestType,omitempty"`
+	AccessLevel            *string              `json:"accessLevel,omitempty"`
+	BookingItems           []appdb.BookingItem  `json:"bookingItems,omitempty"`
+	PreOrderItems          []appdb.PreOrderItem `json:"preOrderItems,omitempty"`
+}
+
+type DeleteRequest struct {
+	ServiceID string `json:"serviceId"`
+}
+
+type CSVResponse struct {
+	CSV string `json:"csv"`
+}
+
+type ImportRow struct {
+	Name                   string  `json:"name"`
+	Address                string  `json:"address"`
+	Latitude               float64 `json:"latitude"`
+	Longitude              float64 `json:"longitude"`
+	Country                string  `json:"country"`
+	Province               string  `json:"province"`
+	Area                   string  `json:"area,omitempty"`
+	PostalCode             string  `json:"postalCode"`
+	ContactNumber          string  `json:"contactNumber,omitempty"`
+	ServiceCategories      string  `json:"serviceCategories"`
+	ImageUrl               string  `json:"imageUrl,omitempty"`
+	DiscountOffered        string  `json:"discountOffered,omitempty"`
+	DiscountCode           string  `json:"discountCode,omitempty"`
+	Description            string  `json:"description,omitempty"`
+	PaymentCard            string  `json:"paymentCard,omitempty"`
+	PaymentCash            string  `json:"paymentCash,omitempty"`
+	PaymentMobile          string  `json:"paymentMobile,omitempty"`
+	WheelchairAccess       string  `json:"wheelchairAccess,omitempty"`
+	ParkingAvailability    string  `json:"parkingAvailability,omitempty"`
+	LittleExplorerApproved string  `json:"littleExplorerApproved,omitempty"`
+	IsActive               string  `json:"isActive,omitempty"`
+
+	// Extended fields (append-only).
+	GuestType              string `json:"guestType,omitempty"`
+	AccessLevel            string `json:"accessLevel,omitempty"`
+	OfficialRepCode        string `json:"officialRepCode,omitempty"`
+	OfficialRepName        string `json:"officialRepName,omitempty"`
+	OfficialHoldingCompany string `json:"officialHoldingCompany,omitempty"`
+	OfficialContactName    string `json:"officialContactName,omitempty"`
+	OfficialContactNumber  string `json:"officialContactNumber,omitempty"`
+	OfficialEmail          string `json:"officialEmail,omitempty"`
+	CompanyRegNumber       string `json:"companyRegNumber,omitempty"`
+	CompanyVatNumber       string `json:"companyVatNumber,omitempty"`
+	LocalDiscountOffered   string `json:"localDiscountOffered,omitempty"`
+	LocalDiscountCode      string `json:"localDiscountCode,omitempty"`
+	PaymentGaap            string `json:"paymentGaap,omitempty"`
+	PaymentSnapScan        string `json:"paymentSnapScan,omitempty"`
+	PaymentYoco            string `json:"paymentYoco,omitempty"`
+	PaymentZapper          string `json:"paymentZapper,omitempty"`
+	SocialsWebsite         string `json:"socialsWebsite,omitempty"`
+	SocialsFacebook        string `json:"socialsFacebook,omitempty"`
+	SocialsInstagram       string `json:"socialsInstagram,omitempty"`
+	SocialsTiktok          string `json:"socialsTiktok,omitempty"`
+	SocialsTwitter         string `json:"socialsTwitter,omitempty"`
+	ImageUrls              string `json:"imageUrls,omitempty"`
+	SafetyInfo             string `json:"safetyInfo,omitempty"`
+	AgeRestrictions        string `json:"ageRestrictions,omitempty"`
+	FitnessLevel           string `json:"fitnessLevel,omitempty"`
+	BestTimeOfDay          string `json:"bestTimeOfDay,omitempty"`
+	WhatToBring            string `json:"whatToBring,omitempty"`
+	OffersBookings         string `json:"offersBookings,omitempty"`
+}
+
+type ImportRequest struct {
+	Rows []ImportRow `json:"rows"`
+}
+
+type ImportResponse struct {
+	Success  bool     `json:"success"`
+	Imported int      `json:"imported"`
+	Failed   int      `json:"failed"`
+	Errors   []string `json:"errors"`
+}
+
+type PartnerCodeRequest struct {
+	ID int64 `query:"id"`
+}
+
+type RegeneratePartnerCodeRequest struct {
+	ID int64 `json:"id"`
+}
+
+type PartnerCodeResponse struct {
+	PartnerCode string `json:"partnerCode"`
+	CodeActive  bool   `json:"codeActive"`
+}
+
+type TogglePartnerCodeRequest struct {
+	ID     int64 `json:"id"`
+	Active bool  `json:"active"`
+}
+
+// DeleteServiceResponse and TogglePartnerCodeResponse replace the previous
+// anonymous *struct{} responses, which Encore's build rejects — every API
+// response must be a named, exported type.
+type DeleteServiceResponse struct {
+	Success bool `json:"success"`
+}
+
+type TogglePartnerCodeResponse struct {
+	Success bool `json:"success"`
+}

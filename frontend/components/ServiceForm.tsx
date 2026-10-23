@@ -25,6 +25,7 @@ interface ServiceFormProps {
   partnerEdit?: boolean;
   editCode?: string;
   nonProfit?: boolean;
+  entityKind?: "service" | "retail" | "nonprofit";
 }
 
 interface CategoryGroup {
@@ -169,7 +170,14 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
   },
 ];
 
-export default function ServiceForm({ serviceId, onClose, partnerEdit = false, editCode, nonProfit = false }: ServiceFormProps) {
+export default function ServiceForm({ serviceId, onClose, partnerEdit = false, editCode, nonProfit = false, entityKind }: ServiceFormProps) {
+  const kind: "service" | "retail" | "nonprofit" = entityKind ?? (nonProfit ? "nonprofit" : "service");
+  const showNpoPbo = kind === "nonprofit";
+  const showCategories = kind === "service";
+  const showExperience = kind !== "nonprofit";
+  const showDiscounts = kind !== "retail";
+  const showBookings = kind === "service";
+  const showPreOrders = kind === "service";
   const [loading, setLoading] = useState(false);
   // Gate the form render until the record has loaded. The Province <Select>
   // reads its value when it mounts and does not re-sync if the value arrives a
@@ -193,7 +201,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
     name: "",
     address: "",
     accountingAddress: "",
-    isNonProfit: nonProfit,
+    isNonProfit: kind === "nonprofit",
     latitude: "",
     worksFromClientAddress: false,
     longitude: "",
@@ -204,7 +212,6 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
     contactNumber: "",
     npoNumber: "",
     pboNumber: "",
-    brandColor: "",
     serviceCategories: [] as ServiceCategory[],
     imageUrl: "",
     imageUrls: [] as string[],
@@ -225,6 +232,11 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
     paymentYoco: false,
     paymentZapper: false,
     paymentEft: false,
+    paymentIkhokha: false,
+    paymentGpay: false,
+    paymentSamsungpay: false,
+    paymentSassa: false,
+    paymentApplepay: false,
     socialsWebsite: "",
     socialsFacebook: "",
     socialsInstagram: "",
@@ -270,7 +282,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
     setInitialLoading(true);
     try {
       const backend = getAuthenticatedBackend();
-      const data = await backend.service.get({ serviceId });
+      const data = await (backend as any)[kind].get({ serviceId });
       setServiceData(data);
       setOfficialUse({
         officialHoldingCompany: data.officialHoldingCompany || "",
@@ -292,7 +304,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
         name: data.name,
         address: data.address,
         accountingAddress: data.accountingAddress || "",
-        isNonProfit: data.isNonProfit ?? nonProfit,
+        isNonProfit: data.isNonProfit ?? (kind === "nonprofit"),
         latitude: data.latitude != null ? String(data.latitude) : "",
         worksFromClientAddress: data.worksFromClientAddress ?? false,
         longitude: data.longitude != null ? String(data.longitude) : "",
@@ -303,7 +315,6 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
         contactNumber: data.contactNumber || "",
         npoNumber: (data as any).npoNumber || "",
         pboNumber: (data as any).pboNumber || "",
-        brandColor: (data as any).brandColor || "",
         serviceCategories: data.serviceCategories,
         imageUrl: data.imageUrl || "",
         imageUrls: data.imageUrls || [],
@@ -324,6 +335,11 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
         paymentYoco: data.paymentYoco || false,
         paymentZapper: data.paymentZapper || false,
         paymentEft: data.paymentEft || false,
+        paymentIkhokha: data.paymentIkhokha || false,
+        paymentGpay: data.paymentGpay || false,
+        paymentSamsungpay: data.paymentSamsungpay || false,
+        paymentSassa: data.paymentSassa || false,
+        paymentApplepay: data.paymentApplepay || false,
         socialsWebsite: data.socialsWebsite || "",
         socialsFacebook: data.socialsFacebook || "",
         socialsInstagram: data.socialsInstagram || "",
@@ -374,7 +390,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
     try {
       const backend = getAuthenticatedBackend();
       if (serviceId) {
-        await backend.service.update({
+        await (backend as any)[kind].update({
           serviceId,
           editCode: editCode || undefined,
           name: formData.name,
@@ -391,7 +407,6 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           contactNumber: formData.contactNumber || undefined,
           npoNumber: formData.npoNumber || undefined,
           pboNumber: formData.pboNumber || undefined,
-          brandColor: formData.brandColor || undefined,
           serviceCategories: formData.serviceCategories,
           imageUrl: formData.imageUrl || undefined,
           imageUrls: formData.imageUrls || undefined,
@@ -412,6 +427,11 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           paymentYoco: formData.paymentYoco,
           paymentZapper: formData.paymentZapper,
           paymentEft: formData.paymentEft,
+          paymentIkhokha: formData.paymentIkhokha,
+          paymentGpay: formData.paymentGpay,
+          paymentSamsungpay: formData.paymentSamsungpay,
+          paymentSassa: formData.paymentSassa,
+          paymentApplepay: formData.paymentApplepay,
           socialsWebsite: formData.socialsWebsite,
           socialsFacebook: formData.socialsFacebook,
           socialsInstagram: formData.socialsInstagram,
@@ -446,7 +466,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           description: "Business/Service updated successfully",
         });
       } else {
-        const createdSvc: any = await backend.service.create({
+        const createdSvc: any = await (backend as any)[kind].create({
           name: formData.name,
           address: formData.address,
           accountingAddress: formData.accountingAddress,
@@ -460,7 +480,6 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           contactNumber: formData.contactNumber || undefined,
           npoNumber: formData.npoNumber || undefined,
           pboNumber: formData.pboNumber || undefined,
-          brandColor: formData.brandColor || undefined,
           serviceCategories: formData.serviceCategories,
           imageUrl: formData.imageUrl || undefined,
           imageUrls: formData.imageUrls || undefined,
@@ -481,6 +500,11 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           paymentYoco: formData.paymentYoco,
           paymentZapper: formData.paymentZapper,
           paymentEft: formData.paymentEft,
+          paymentIkhokha: formData.paymentIkhokha,
+          paymentGpay: formData.paymentGpay,
+          paymentSamsungpay: formData.paymentSamsungpay,
+          paymentSassa: formData.paymentSassa,
+          paymentApplepay: formData.paymentApplepay,
           socialsWebsite: formData.socialsWebsite,
           socialsFacebook: formData.socialsFacebook,
           socialsInstagram: formData.socialsInstagram,
@@ -561,32 +585,16 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
   // identity/location fields + images stay in the Tier 1 baseline.
   const tierNum = parseInt((officialUse.accessLevel || "").replace(/[^0-9]/g, ""), 10) || 1;
 
-  const BRAND_COLORS = [
-    { name: "Red", hex: "#E11D2A" },
-    { name: "Orange", hex: "#EA580C" },
-    { name: "Gold / Yellow", hex: "#CA8A04" },
-    { name: "Green", hex: "#16A34A" },
-    { name: "Teal", hex: "#0D9488" },
-    { name: "Sky Blue", hex: "#0284C7" },
-    { name: "Blue", hex: "#2563EB" },
-    { name: "Navy", hex: "#1E40AF" },
-    { name: "Purple", hex: "#7C3AED" },
-    { name: "Pink", hex: "#DB2777" },
-    { name: "Maroon", hex: "#9F1239" },
-    { name: "Brown", hex: "#92400E" },
-    { name: "Charcoal", hex: "#374151" },
-  ];
-
   return (
     <Card>
       <CardHeader>
         {partnerEdit && (
           <div className="flex flex-col items-center gap-2 mb-2">
             <AppLogo src="/logo-dark.png" size={110} />
-            <div className="text-lg font-bold text-center break-words" style={{ color: formData.brandColor || undefined }}>{formData.name || "Your Business"}</div>
+            <div className="text-lg font-bold text-center break-words">{formData.name || "Your Business"}</div>
           </div>
         )}
-        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${serviceId ? "Edit" : "Add"} ${nonProfit ? "NPO / PBO" : "Business/Service"}`}</CardTitle>
+        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${serviceId ? "Edit" : "Add"} ${kind === "nonprofit" ? "NPO / PBO" : kind === "retail" ? "Retail" : "Business/Service"}`}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -628,26 +636,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="brandColor">Brand Colour</Label>
-            <div className="flex items-center gap-2">
-              <span className="inline-block h-9 w-9 rounded border flex-shrink-0" style={{ backgroundColor: formData.brandColor || "transparent" }} />
-              <select
-                id="brandColor"
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-                value={formData.brandColor}
-                onChange={(e) => setFormData({ ...formData, brandColor: e.target.value })}
-              >
-                <option value="">No colour</option>
-                {BRAND_COLORS.map((c) => (
-                  <option key={c.hex} value={c.hex}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <p className="text-xs text-muted-foreground">Pick your main brand colour — your business name shows in this colour on the app so locals spot you quickly.</p>
-          </div>
-
-          {nonProfit && (
+          {showNpoPbo && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="npoNumber">NPO Number</Label>
@@ -772,7 +761,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
             </div>
           </div>
 
-          {!nonProfit && (
+          {showCategories && (
           <div className="space-y-3" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label>Business/Service Categories</Label>
             <div className="space-y-2">
@@ -834,6 +823,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
             onChange={(urls) => setFormData({ ...formData, imageUrls: urls, imageUrl: urls[0] || "" })}
           />
 
+          {showDiscounts && (
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             {(officialUse.guestType === "Guest Only" || officialUse.guestType === "Both" || !officialUse.guestType) && (
               <div className="space-y-2 rounded-lg border p-4">
@@ -903,6 +893,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
               </div>
             )}
           </div>
+          )}
 
           <div className="space-y-2" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label htmlFor="description">Description</Label>
@@ -936,7 +927,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
             />
           </div>
 
-          {!nonProfit && (
+          {showExperience && (
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Experience Info</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1051,6 +1042,26 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
                 />
                 <Label htmlFor="paymentEft">EFT</Label>
               </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="paymentIkhokha" checked={formData.paymentIkhokha} onCheckedChange={(checked) => setFormData({ ...formData, paymentIkhokha: checked === true })} />
+                <Label htmlFor="paymentIkhokha">iKhokha</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="paymentGpay" checked={formData.paymentGpay} onCheckedChange={(checked) => setFormData({ ...formData, paymentGpay: checked === true })} />
+                <Label htmlFor="paymentGpay">G Pay</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="paymentSamsungpay" checked={formData.paymentSamsungpay} onCheckedChange={(checked) => setFormData({ ...formData, paymentSamsungpay: checked === true })} />
+                <Label htmlFor="paymentSamsungpay">Samsung Pay</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="paymentSassa" checked={formData.paymentSassa} onCheckedChange={(checked) => setFormData({ ...formData, paymentSassa: checked === true })} />
+                <Label htmlFor="paymentSassa">SASSA</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="paymentApplepay" checked={formData.paymentApplepay} onCheckedChange={(checked) => setFormData({ ...formData, paymentApplepay: checked === true })} />
+                <Label htmlFor="paymentApplepay">Apple Pay</Label>
+              </div>
             </div>
           </div>
 
@@ -1073,7 +1084,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
                 />
                 <Label htmlFor="parkingAvailability">Parking Available</Label>
               </div>
-              {!nonProfit && (
+              {showBookings && (
               <div className="flex items-center space-x-2">
                 <Switch
                   id="offersBookings"
@@ -1086,7 +1097,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
             </div>
           </div>
 
-          {!nonProfit && (
+          {showBookings && (
           <div className="space-y-4" style={{ display: tierNum >= 2 ? undefined : "none" }}>
             <Label className="text-base font-semibold">Bookable Items</Label>
             <p className="text-sm text-muted-foreground">
@@ -1122,7 +1133,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           </div>
           )}
 
-          {!nonProfit && (
+          {showPreOrders && (
           <div className="space-y-4">
             <Label className="text-base font-semibold">Pre-Order Items</Label>
             <p className="text-sm text-muted-foreground">

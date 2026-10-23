@@ -52,14 +52,19 @@ type CreateRequest struct {
 	OffersBookings         bool     `json:"offersBookings"`
 	LittleExplorerApproved bool     `json:"littleExplorerApproved"`
 
-	PaymentCard     bool `json:"paymentCard"`
-	PaymentCash     bool `json:"paymentCash"`
-	PaymentMobile   bool `json:"paymentMobile"`
-	PaymentGaap     bool `json:"paymentGaap"`
-	PaymentSnapScan bool `json:"paymentSnapScan"`
-	PaymentYoco     bool `json:"paymentYoco"`
-	PaymentZapper   bool `json:"paymentZapper"`
-	PaymentEft      bool `json:"paymentEft"`
+	PaymentCard       bool `json:"paymentCard"`
+	PaymentCash       bool `json:"paymentCash"`
+	PaymentMobile     bool `json:"paymentMobile"`
+	PaymentGaap       bool `json:"paymentGaap"`
+	PaymentSnapScan   bool `json:"paymentSnapScan"`
+	PaymentYoco       bool `json:"paymentYoco"`
+	PaymentZapper     bool `json:"paymentZapper"`
+	PaymentEft        bool `json:"paymentEft"`
+	PaymentIkhokha    bool `json:"paymentIkhokha"`
+	PaymentGpay       bool `json:"paymentGpay"`
+	PaymentSamsungpay bool `json:"paymentSamsungpay"`
+	PaymentSassa      bool `json:"paymentSassa"`
+	PaymentApplepay   bool `json:"paymentApplepay"`
 
 	WheelchairAccess    bool `json:"wheelchairAccess"`
 	ParkingAvailability bool `json:"parkingAvailability"`
@@ -130,14 +135,19 @@ type UpdateRequest struct {
 	OffersBookings         *bool    `json:"offersBookings,omitempty"`
 	LittleExplorerApproved *bool    `json:"littleExplorerApproved,omitempty"`
 
-	PaymentCard     *bool `json:"paymentCard,omitempty"`
-	PaymentCash     *bool `json:"paymentCash,omitempty"`
-	PaymentMobile   *bool `json:"paymentMobile,omitempty"`
-	PaymentGaap     *bool `json:"paymentGaap,omitempty"`
-	PaymentSnapScan *bool `json:"paymentSnapScan,omitempty"`
-	PaymentYoco     *bool `json:"paymentYoco,omitempty"`
-	PaymentZapper   *bool `json:"paymentZapper,omitempty"`
-	PaymentEft      *bool `json:"paymentEft,omitempty"`
+	PaymentCard       *bool `json:"paymentCard,omitempty"`
+	PaymentCash       *bool `json:"paymentCash,omitempty"`
+	PaymentMobile     *bool `json:"paymentMobile,omitempty"`
+	PaymentGaap       *bool `json:"paymentGaap,omitempty"`
+	PaymentSnapScan   *bool `json:"paymentSnapScan,omitempty"`
+	PaymentYoco       *bool `json:"paymentYoco,omitempty"`
+	PaymentZapper     *bool `json:"paymentZapper,omitempty"`
+	PaymentEft        *bool `json:"paymentEft,omitempty"`
+	PaymentIkhokha    *bool `json:"paymentIkhokha,omitempty"`
+	PaymentGpay       *bool `json:"paymentGpay,omitempty"`
+	PaymentSamsungpay *bool `json:"paymentSamsungpay,omitempty"`
+	PaymentSassa      *bool `json:"paymentSassa,omitempty"`
+	PaymentApplepay   *bool `json:"paymentApplepay,omitempty"`
 
 	WheelchairAccess    *bool `json:"wheelchairAccess,omitempty"`
 	ParkingAvailability *bool `json:"parkingAvailability,omitempty"`

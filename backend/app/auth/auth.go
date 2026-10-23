@@ -231,6 +231,34 @@ func findByAccessCode(ctx context.Context, code string) (*appdb.User, error) {
 		return nil, err
 	}
 
+	var retID int64
+	var retName string
+	err = appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT id, name FROM retail
+		WHERE upper(profile_reference_code) = upper($1)
+		   OR (partner_code_active AND upper(partner_code) = upper($1))`, code,
+	).Scan(&retID, &retName)
+	if err == nil {
+		return &appdb.User{Email: "partner@" + retName, Role: "Partner", ProfileType: "retail", EntityType: "retail", EntityID: retID}, nil
+	}
+	if !isNoRows(err) {
+		return nil, err
+	}
+
+	var npID int64
+	var npName string
+	err = appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT id, name FROM nonprofits
+		WHERE upper(profile_reference_code) = upper($1)
+		   OR (partner_code_active AND upper(partner_code) = upper($1))`, code,
+	).Scan(&npID, &npName)
+	if err == nil {
+		return &appdb.User{Email: "partner@" + npName, Role: "Partner", ProfileType: "nonprofit", EntityType: "nonprofit", EntityID: npID}, nil
+	}
+	if !isNoRows(err) {
+		return nil, err
+	}
+
 	var attID int64
 	var attName string
 	err = appdb.SQLDB.QueryRowContext(ctx, `
@@ -314,6 +342,34 @@ func findByNameAddressProvince(ctx context.Context, name, address, province stri
 	).Scan(&svcID, &svcName)
 	if err == nil {
 		return &appdb.User{Email: "partner@" + svcName, Role: "Partner", ProfileType: "service", EntityType: "service", EntityID: svcID}, nil
+	}
+	if !isNoRows(err) {
+		return nil, err
+	}
+
+	var retID int64
+	var retName string
+	err = appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT id, name FROM retail
+		WHERE lower(trim(name)) = lower($1) AND lower(trim(address)) = lower($2) AND lower(province) = lower($3)`,
+		name, strings.TrimSpace(address), province,
+	).Scan(&retID, &retName)
+	if err == nil {
+		return &appdb.User{Email: "partner@" + retName, Role: "Partner", ProfileType: "retail", EntityType: "retail", EntityID: retID}, nil
+	}
+	if !isNoRows(err) {
+		return nil, err
+	}
+
+	var npID int64
+	var npName string
+	err = appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT id, name FROM nonprofits
+		WHERE lower(trim(name)) = lower($1) AND lower(trim(address)) = lower($2) AND lower(province) = lower($3)`,
+		name, strings.TrimSpace(address), province,
+	).Scan(&npID, &npName)
+	if err == nil {
+		return &appdb.User{Email: "partner@" + npName, Role: "Partner", ProfileType: "nonprofit", EntityType: "nonprofit", EntityID: npID}, nil
 	}
 	if !isNoRows(err) {
 		return nil, err

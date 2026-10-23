@@ -206,7 +206,7 @@ function RedeemScanner() {
 // needed + reward), then add a stamp for a customer by mobile number and redeem
 // the reward when the card is full. The partner adds every stamp — customers
 // cannot stamp themselves.
-function LoyaltyManager({ entityType, entityId }: { entityType: string; entityId: number }) {
+function LoyaltyManager({ entityType, entityId, initialBrandColor }: { entityType: string; entityId: number; initialBrandColor?: string }) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [enabled, setEnabled] = useState(false);
@@ -226,6 +226,36 @@ function LoyaltyManager({ entityType, entityId }: { entityType: string; entityId
   const activeRef = useRef(false);
 
   const GREEN = "bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold";
+  const BRAND_COLORS = [
+    { name: "Red", hex: "#E11D2A" },
+    { name: "Orange", hex: "#EA580C" },
+    { name: "Gold / Yellow", hex: "#CA8A04" },
+    { name: "Green", hex: "#16A34A" },
+    { name: "Teal", hex: "#0D9488" },
+    { name: "Sky Blue", hex: "#0284C7" },
+    { name: "Blue", hex: "#2563EB" },
+    { name: "Navy", hex: "#1E40AF" },
+    { name: "Purple", hex: "#7C3AED" },
+    { name: "Pink", hex: "#DB2777" },
+    { name: "Maroon", hex: "#9F1239" },
+    { name: "Brown", hex: "#92400E" },
+    { name: "Charcoal", hex: "#374151" },
+  ];
+  const [brandColor, setBrandColor] = useState(initialBrandColor || "");
+  const [savingColor, setSavingColor] = useState(false);
+  const saveBrandColor = async (hex: string) => {
+    setBrandColor(hex);
+    setSavingColor(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.loyalty.setBrandColor({ partnerType: entityType, partnerId: entityId, brandColor: hex });
+      toast({ title: "Brand colour saved" });
+    } catch (e: any) {
+      toast({ title: "Couldn't save colour", description: e?.message || "Please try again", variant: "destructive" });
+    } finally {
+      setSavingColor(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -366,6 +396,28 @@ function LoyaltyManager({ entityType, entityId }: { entityType: string; entityId
       </CardHeader>
       {open && (
       <CardContent className="space-y-4">
+        {entityType === "service" && (
+          <div className="space-y-2 rounded-lg border border-border/60 p-3">
+            <p className="text-sm font-semibold">Brand Colour</p>
+            <p className="text-xs text-muted-foreground">Your business name shows in this colour on the app, so locals spot you quickly.</p>
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-9 w-9 rounded border flex-shrink-0" style={{ backgroundColor: brandColor || "transparent" }} />
+              <select
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                value={brandColor}
+                disabled={savingColor}
+                onChange={(e) => saveBrandColor(e.target.value)}
+              >
+                <option value="">No colour</option>
+                {BRAND_COLORS.map((c) => (
+                  <option key={c.hex} value={c.hex}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <p className="text-sm font-bold" style={{ color: brandColor || undefined }}>Preview — your name in this colour</p>
+          </div>
+        )}
+
         <div className="space-y-3 rounded-lg border border-border/60 p-3">
           <p className="text-sm font-semibold">Card setup</p>
           <label className="flex items-center gap-2 text-sm">
@@ -778,7 +830,7 @@ export default function PartnerDashboard() {
 
         <RedeemScanner />
 
-        <LoyaltyManager entityType={entityType} entityId={(entity as { id: number }).id} />
+        <LoyaltyManager entityType={entityType} entityId={(entity as { id: number }).id} initialBrandColor={(entity as any).brandColor} />
 
         {views && (
           <Card>

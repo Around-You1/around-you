@@ -30,6 +30,8 @@ var validEntityTypes = map[string]string{
 	"restaurant": "restaurants",
 	"service":    "services",
 	"attraction": "attractions",
+	"retail":     "retail",
+	"nonprofit":  "nonprofits",
 }
 
 func callerVoterKey(ctx context.Context) (voterKey, voterType string, err error) {

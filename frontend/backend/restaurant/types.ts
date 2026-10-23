@@ -53,6 +53,11 @@ export interface Restaurant {
   paymentCash: boolean;
   paymentMobile: boolean;
   paymentEft?: boolean;
+  paymentIkhokha?: boolean;
+  paymentGpay?: boolean;
+  paymentSamsungpay?: boolean;
+  paymentSassa?: boolean;
+  paymentApplepay?: boolean;
 
   wheelchairAccess: boolean;
   parkingAvailability: boolean;

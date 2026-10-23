@@ -33,6 +33,10 @@ func partnerNameProvince(ctx context.Context, partnerType string, partnerID int6
 		q = "SELECT name, COALESCE(province,'') FROM restaurants WHERE id=$1"
 	case "service":
 		q = "SELECT name, COALESCE(province,'') FROM services WHERE id=$1"
+	case "retail":
+		q = "SELECT name, COALESCE(province,'') FROM retail WHERE id=$1"
+	case "nonprofit":
+		q = "SELECT name, COALESCE(province,'') FROM nonprofits WHERE id=$1"
 	case "attraction":
 		q = "SELECT name, COALESCE(province,'') FROM attractions WHERE id=$1"
 	case "accommodation":

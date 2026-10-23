@@ -26,6 +26,8 @@ import (
 var partnerTables = map[string]string{
 	"restaurant":    "restaurants",
 	"service":       "services",
+	"retail":        "retail",
+	"nonprofit":     "nonprofits",
 	"attraction":    "attractions",
 	"accommodation": "accommodations",
 	"estate_agency": "estate_agencies",
@@ -58,6 +60,7 @@ type CardView struct {
 	PartnerType   string `json:"partnerType"`
 	PartnerID     int64  `json:"partnerId"`
 	PartnerName   string `json:"partnerName"`
+	BrandColor    string `json:"brandColor"`
 	Area          string `json:"area"`
 	Enabled       bool   `json:"enabled"`
 	Threshold     int    `json:"threshold"`
@@ -144,13 +147,31 @@ func partnerNameArea(ctx context.Context, partnerType string, partnerID int64) (
 	// agencies/agents do not, so fall back to an empty area for those.
 	areaCol := "''"
 	switch partnerType {
-	case "restaurant", "service", "attraction", "accommodation":
+	case "restaurant", "service", "attraction", "accommodation", "retail", "nonprofit":
 		areaCol = "COALESCE(area,'')"
 	}
 	var name, area string
 	_ = appdb.SQLDB.QueryRowContext(ctx,
 		"SELECT COALESCE(name,''), "+areaCol+" FROM "+tbl+" WHERE id = $1", partnerID).Scan(&name, &area)
 	return name, area
+}
+
+func partnerBrandColor(ctx context.Context, partnerType string, partnerID int64) string {
+	var tbl string
+	switch partnerType {
+	case "service":
+		tbl = "services"
+	case "retail":
+		tbl = "retail"
+	case "nonprofit":
+		tbl = "nonprofits"
+	default:
+		return ""
+	}
+	var c string
+	_ = appdb.SQLDB.QueryRowContext(ctx,
+		"SELECT COALESCE(brand_color,'') FROM "+tbl+" WHERE id = $1", partnerID).Scan(&c)
+	return c
 }
 
 // loadProgram returns the partner's config, or a disabled default if none saved.
@@ -171,12 +192,13 @@ func loadProgram(ctx context.Context, partnerType string, partnerID int64) (Prog
 }
 
 // cardView assembles a CardView from a program and the (possibly absent) card row.
-func cardView(prog Program, name, area, phone string, stamps, rewards int) CardView {
+func cardView(prog Program, name, area, brandColor, phone string, stamps, rewards int) CardView {
 	ready := prog.Threshold > 0 && stamps >= prog.Threshold
 	return CardView{
 		PartnerType:   prog.PartnerType,
 		PartnerID:     prog.PartnerID,
 		PartnerName:   name,
+		BrandColor:    brandColor,
 		Area:          area,
 		Enabled:       prog.Enabled,
 		Threshold:     prog.Threshold,
@@ -243,6 +265,68 @@ func SetProgram(ctx context.Context, req *SetProgramRequest) (*Program, error) {
 	}, nil
 }
 
+// SetBrandColorRequest carries a partner's chosen brand colour (a hex value
+// like "#E11D2A", or "" to clear it). Only business/service profiles carry a
+// brand colour today.
+type SetBrandColorRequest struct {
+	PartnerType string `json:"partnerType"`
+	PartnerID   int64  `json:"partnerId"`
+	BrandColor  string `json:"brandColor"`
+}
+
+// BrandColorResponse echoes the stored brand colour.
+type BrandColorResponse struct {
+	BrandColor string `json:"brandColor"`
+}
+
+func brandColorValid(s string) bool {
+	if len(s) != 7 || s[0] != '#' {
+		return false
+	}
+	for _, r := range s[1:] {
+		if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')) {
+			return false
+		}
+	}
+	return true
+}
+
+// SetBrandColor stores a partner's brand colour. The partner's name renders in
+// this colour on the app, so only the owning partner (or staff) may set it.
+// Only business/service profiles support a brand colour.
+//
+//encore:api auth method=POST path=/loyalty/brand-color/set
+func SetBrandColor(ctx context.Context, req *SetBrandColorRequest) (*BrandColorResponse, error) {
+	if !validType(req.PartnerType) || req.PartnerID == 0 {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "invalid partner"}
+	}
+	if err := ownerOrStaff(ctx, req.PartnerType, req.PartnerID); err != nil {
+		return nil, err
+	}
+	var tbl string
+	switch req.PartnerType {
+	case "service":
+		tbl = "services"
+	case "retail":
+		tbl = "retail"
+	case "nonprofit":
+		tbl = "nonprofits"
+	default:
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "brand colour is only available for business, retail and NPO profiles"}
+	}
+	bc := strings.TrimSpace(req.BrandColor)
+	if bc != "" && !brandColorValid(bc) {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "brand colour must be a hex value like #E11D2A"}
+	}
+	if _, err := appdb.SQLDB.ExecContext(ctx,
+		"UPDATE "+tbl+" SET brand_color = $1, updated_at = now() WHERE id = $2",
+		bc, req.PartnerID,
+	); err != nil {
+		return nil, err
+	}
+	return &BrandColorResponse{BrandColor: bc}, nil
+}
+
 // loadCard fetches the current stamp count + lifetime rewards for a card, or
 // zeroes if the customer has none yet.
 func loadCard(ctx context.Context, partnerType string, partnerID int64, phone string) (stamps, rewards int, err error) {
@@ -280,7 +364,7 @@ func LookupCard(ctx context.Context, req *CardRequest) (*CardView, error) {
 		return nil, err
 	}
 	pn, pa := partnerNameArea(ctx, req.PartnerType, req.PartnerID)
-	v := cardView(prog, pn, pa, phone, stamps, rewards)
+	v := cardView(prog, pn, pa, partnerBrandColor(ctx, req.PartnerType, req.PartnerID), phone, stamps, rewards)
 	return &v, nil
 }
 
@@ -357,7 +441,7 @@ func AddStamp(ctx context.Context, req *CardRequest) (*CardView, error) {
 		return nil, err
 	}
 	pn, pa := partnerNameArea(ctx, req.PartnerType, req.PartnerID)
-	v := cardView(prog, pn, pa, phone, stamps, rewards)
+	v := cardView(prog, pn, pa, partnerBrandColor(ctx, req.PartnerType, req.PartnerID), phone, stamps, rewards)
 	return &v, nil
 }
 
@@ -416,7 +500,7 @@ func RedeemReward(ctx context.Context, req *CardRequest) (*CardView, error) {
 		return nil, err
 	}
 	pn, pa := partnerNameArea(ctx, req.PartnerType, req.PartnerID)
-	v := cardView(prog, pn, pa, phone, stampsNow, rewards)
+	v := cardView(prog, pn, pa, partnerBrandColor(ctx, req.PartnerType, req.PartnerID), phone, stampsNow, rewards)
 	return &v, nil
 }
 
@@ -453,7 +537,7 @@ func MyCards(ctx context.Context, req *MyCardsRequest) (*MyCardsResponse, error)
 		}
 		prog := Program{PartnerType: pt, PartnerID: pid, Enabled: true, Threshold: threshold, RewardText: reward}
 		pn, pa := partnerNameArea(ctx, pt, pid)
-		out = append(out, cardView(prog, pn, pa, phone, stamps, rewards))
+		out = append(out, cardView(prog, pn, pa, partnerBrandColor(ctx, pt, pid), phone, stamps, rewards))
 	}
 	return &MyCardsResponse{Cards: out}, rows.Err()
 }

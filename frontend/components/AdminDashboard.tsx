@@ -280,10 +280,11 @@ export default function AdminDashboard() {
             <Tabs value={tab} onValueChange={setTab} className="space-y-6">
               <div className="space-y-2">
                 {/* Row 1: partner categories */}
-                <TabsList className="grid w-full h-auto! grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
+                <TabsList className="grid w-full h-auto! grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-1">
                   <TabsTrigger value="accommodations" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Accommodations{catBadge("accommodation")}</TabsTrigger>
                   <TabsTrigger value="restaurants" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Restaurants/Takeaways{catBadge("restaurant")}</TabsTrigger>
                   <TabsTrigger value="services" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Business/Services{catBadge("service")}</TabsTrigger>
+                  <TabsTrigger value="retail" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Retail{catBadge("retail")}</TabsTrigger>
                   <TabsTrigger value="attractions" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Attractions/Activities{catBadge("attraction")}</TabsTrigger>
                   <TabsTrigger value="realestate" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Real Estate{catBadge("estate")}</TabsTrigger>
                   <TabsTrigger value="nonprofit" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">NPO / PBO</TabsTrigger>
@@ -324,6 +325,10 @@ export default function AdminDashboard() {
                 <ServiceTab onUpdate={loadStats} />
               </TabsContent>
 
+              <TabsContent value="retail">
+                <ServiceTab entityKind="retail" onUpdate={loadStats} />
+              </TabsContent>
+
               <TabsContent value="attractions">
                 <AttractionTab onUpdate={loadStats} />
               </TabsContent>
@@ -349,7 +354,7 @@ export default function AdminDashboard() {
               </TabsContent>
 
               <TabsContent value="nonprofit">
-                <ServiceTab nonProfit onUpdate={loadStats} />
+                <ServiceTab entityKind="nonprofit" onUpdate={loadStats} />
               </TabsContent>
             </Tabs>
           </CardContent>

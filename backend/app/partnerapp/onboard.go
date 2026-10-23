@@ -11,7 +11,9 @@ import (
 	"backend_encore/app/attraction"
 	"backend_encore/app/charity"
 	"backend_encore/app/estate"
+	"backend_encore/app/nonprofit"
 	"backend_encore/app/restaurant"
+	"backend_encore/app/retail"
 	"backend_encore/app/service"
 	"backend_encore/internal/appdb"
 )
@@ -224,6 +226,122 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			return err
 		}
 		partnerID, charityType = created.ID, "service"
+
+	case "retail":
+		created, err := retail.Create(ctx, &retail.CreateRequest{
+			Name:                   a.BusinessName,
+			Address:                a.f("Physical address"),
+			Country:                "South Africa",
+			Province:               a.Province,
+			PostalCode:             a.f("Postal code"),
+			ContactNumber:          a.ContactNumber,
+			Description:            a.f("Description"),
+			TradingHours:           a.f("Trading hours"),
+			PublicHolidays:         a.f("Public holidays"),
+			ServiceCategories:      splitList(a.f("Service category(ies)")),
+			OffersBookings:         offersBookings,
+			LittleExplorerApproved: childFriendly,
+			PaymentCard:            has(pay, "Card"),
+			PaymentCash:            has(pay, "Cash"),
+			PaymentMobile:          has(pay, "Mobile"),
+			PaymentGaap:            has(pay, "Gaap"),
+			PaymentSnapScan:        has(pay, "Snap"),
+			PaymentYoco:            has(pay, "Yoco"),
+			PaymentZapper:          has(pay, "Zapper"),
+			WheelchairAccess:       wheelchair,
+			ParkingAvailability:    parking,
+			DiscountOffered:        a.f("Guest discount — offer"),
+			DiscountCode:           a.f("Guest discount code"),
+			LocalDiscountOffered:   a.f("Local discount — offer"),
+			LocalDiscountCode:      a.f("Local discount code"),
+			DiscountEnabled:        a.f("Guest discount — offer") != "",
+			LocalDiscountEnabled:   a.f("Local discount — offer") != "",
+			WorksFromClientAddress: worksFromClient,
+			Area:                   a.f("Area"),
+			AccountingAddress:      a.f("Office address (Official Use)"),
+			SafetyInfo:             a.f("Safety information"),
+			AgeRestrictions:        a.f("Age restrictions"),
+			FitnessLevel:           a.f("Fitness level"),
+			BestTimeOfDay:          a.f("Best time of day"),
+			WhatToBring:            a.f("What to bring"),
+			SocialsWebsite:         a.f("Website"),
+			SocialsFacebook:        a.f("Facebook"),
+			SocialsInstagram:       a.f("Instagram"),
+			SocialsTiktok:          a.f("TikTok"),
+			SocialsTwitter:         a.f("X (Twitter)"),
+			IsActive:               false,
+			OfficialHoldingCompany: a.f("Holding company (if any)"),
+			OfficialContactName:    a.ContactName,
+			OfficialContactNumber:  a.ContactNumber,
+			OfficialEmail:          a.ContactEmail,
+			OfficialRepCode:        a.RepCode,
+			CompanyRegNumber:       a.f("Company registration number"),
+			CompanyVatNumber:       a.f("VAT number (if registered)"),
+			GuestType:              guestType,
+			AccessLevel:            accessLevel,
+		})
+		if err != nil {
+			return err
+		}
+		partnerID, charityType = created.ID, "retail"
+
+	case "nonprofit":
+		created, err := nonprofit.Create(ctx, &nonprofit.CreateRequest{
+			Name:                   a.BusinessName,
+			Address:                a.f("Physical address"),
+			Country:                "South Africa",
+			Province:               a.Province,
+			PostalCode:             a.f("Postal code"),
+			ContactNumber:          a.ContactNumber,
+			Description:            a.f("Description"),
+			TradingHours:           a.f("Trading hours"),
+			PublicHolidays:         a.f("Public holidays"),
+			ServiceCategories:      splitList(a.f("Service category(ies)")),
+			OffersBookings:         offersBookings,
+			LittleExplorerApproved: childFriendly,
+			PaymentCard:            has(pay, "Card"),
+			PaymentCash:            has(pay, "Cash"),
+			PaymentMobile:          has(pay, "Mobile"),
+			PaymentGaap:            has(pay, "Gaap"),
+			PaymentSnapScan:        has(pay, "Snap"),
+			PaymentYoco:            has(pay, "Yoco"),
+			PaymentZapper:          has(pay, "Zapper"),
+			WheelchairAccess:       wheelchair,
+			ParkingAvailability:    parking,
+			DiscountOffered:        a.f("Guest discount — offer"),
+			DiscountCode:           a.f("Guest discount code"),
+			LocalDiscountOffered:   a.f("Local discount — offer"),
+			LocalDiscountCode:      a.f("Local discount code"),
+			DiscountEnabled:        a.f("Guest discount — offer") != "",
+			LocalDiscountEnabled:   a.f("Local discount — offer") != "",
+			WorksFromClientAddress: worksFromClient,
+			Area:                   a.f("Area"),
+			AccountingAddress:      a.f("Office address (Official Use)"),
+			SafetyInfo:             a.f("Safety information"),
+			AgeRestrictions:        a.f("Age restrictions"),
+			FitnessLevel:           a.f("Fitness level"),
+			BestTimeOfDay:          a.f("Best time of day"),
+			WhatToBring:            a.f("What to bring"),
+			SocialsWebsite:         a.f("Website"),
+			SocialsFacebook:        a.f("Facebook"),
+			SocialsInstagram:       a.f("Instagram"),
+			SocialsTiktok:          a.f("TikTok"),
+			SocialsTwitter:         a.f("X (Twitter)"),
+			IsActive:               false,
+			OfficialHoldingCompany: a.f("Holding company (if any)"),
+			OfficialContactName:    a.ContactName,
+			OfficialContactNumber:  a.ContactNumber,
+			OfficialEmail:          a.ContactEmail,
+			OfficialRepCode:        a.RepCode,
+			CompanyRegNumber:       a.f("Company registration number"),
+			CompanyVatNumber:       a.f("VAT number (if registered)"),
+			GuestType:              guestType,
+			AccessLevel:            accessLevel,
+		})
+		if err != nil {
+			return err
+		}
+		partnerID, charityType = created.ID, "nonprofit"
 
 	case "attraction":
 		created, err := attraction.Create(ctx, &attraction.CreateRequest{

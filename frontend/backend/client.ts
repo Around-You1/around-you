@@ -97,7 +97,7 @@ function safeJson(text: string): any {
 // `deleteKey`/`exportKey`/`importKey` match the Go handler method names the
 // components call.
 function partnerEntity(
-  singular: "restaurant" | "service" | "attraction",
+  singular: "restaurant" | "service" | "attraction" | "retail" | "nonprofit",
   keys: { del: string; export: string; import: string; getIdParam?: string }
 ) {
   const base = `/${singular}`;
@@ -138,6 +138,9 @@ function partnerEntity(
   api[keys.del] = (req: any) => request("DELETE", base, { body: req });
   api[keys.export] = () => request("GET", `${base}/export`);
   api[keys.import] = (req: any) => request("POST", `${base}/import`, { body: req });
+  api.export = api[keys.export];
+  api.import = api[keys.import];
+  api.deleteEntity = api[keys.del];
   return api;
 }
 
@@ -226,6 +229,8 @@ export const backend = {
       threshold: number;
       rewardText: string;
     }) => request("POST", "/loyalty/program/set", { body: req }),
+    setBrandColor: (req: { partnerType: string; partnerId: number; brandColor: string }) =>
+      request("POST", "/loyalty/brand-color/set", { body: req }),
     lookup: (req: { partnerType: string; partnerId: number; phone: string }) =>
       request("POST", "/loyalty/lookup", { body: req }),
     stamp: (req: { partnerType: string; partnerId: number; phone: string; count?: number }) =>
@@ -389,6 +394,18 @@ export const backend = {
     del: "deleteService",
     export: "exportServices",
     import: "importServices",
+    getIdParam: "serviceId",
+  }),
+  retail: partnerEntity("retail", {
+    del: "deleteRetail",
+    export: "exportRetail",
+    import: "importRetail",
+    getIdParam: "serviceId",
+  }),
+  nonprofit: partnerEntity("nonprofit", {
+    del: "deleteNonprofit",
+    export: "exportNonprofit",
+    import: "importNonprofit",
     getIdParam: "serviceId",
   }),
   attraction: partnerEntity("attraction", {

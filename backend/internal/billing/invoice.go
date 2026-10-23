@@ -123,6 +123,9 @@ func OnPartnerActivated(ctx context.Context, partnerType string, partnerID int64
 	// Non Profit Organizations (Services flagged is_nonprofit) are free — no
 	// invoice and no recurring billing — but still receive the onboarding email
 	// with their codes and profile QR.
+	if partnerType == "nonprofit" {
+		return SendComplimentaryOnboardingEmail(ctx, partnerType, partnerID)
+	}
 	if partnerType == "service" {
 		var isNonProfit bool
 		_ = appdb.SQLDB.QueryRowContext(ctx,

@@ -51,7 +51,7 @@ interface RatingSummary {
   myRating?: number;
 }
 
-type RatableType = "restaurant" | "service" | "attraction";
+type RatableType = "restaurant" | "service" | "attraction" | "retail" | "nonprofit";
 type BookItem = { name: string; price: number; duration: number };
 
 const ratingKey = (entityType: string, entityId: number | string) =>
@@ -65,6 +65,10 @@ export default function GuestDashboard() {
   const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
   const [filteredServices, setFilteredServices] = useState<ServiceData[]>([]);
   const [filteredAttractions, setFilteredAttractions] = useState<AttractionData[]>([]);
+  const [retail, setRetail] = useState<ServiceData[]>([]);
+  const [nonprofits, setNonprofits] = useState<ServiceData[]>([]);
+  const [filteredRetail, setFilteredRetail] = useState<ServiceData[]>([]);
+  const [filteredNpo, setFilteredNpo] = useState<ServiceData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [minRating, setMinRating] = useState(0); // 0 = Any; else 3 / 4 / 4.5
   const [discountsOnly, setDiscountsOnly] = useState(false);
@@ -243,7 +247,9 @@ export default function GuestDashboard() {
     setFilteredRestaurants(applyAll("restaurant", restaurants, (r) => [...(r.cuisineTypes || []), ...(r.restaurantType || [])]));
     setFilteredServices(applyAll("service", services, (s) => s.serviceCategories || []));
     setFilteredAttractions(applyAll("attraction", attractions, (a) => a.attractionType || []));
-  }, [searchQuery, restaurants, services, attractions, ratings, minRating, discountsOnly]);
+    setFilteredRetail(applyAll("retail", retail, (s) => s.serviceCategories || []));
+    setFilteredNpo(applyAll("nonprofit", nonprofits, (s) => s.serviceCategories || []));
+  }, [searchQuery, restaurants, services, attractions, retail, nonprofits, ratings, minRating, discountsOnly]);
 
   // Best-effort search analytics: fire a (debounced) search event when the user
   // searches, distinguishing zero-result searches. Query text is not sent.
@@ -324,17 +330,23 @@ export default function GuestDashboard() {
   const LOCAL_RADIUS_KM = 50;
   const loadPartnersByArea = async () => {
     const backend = getAuthenticatedBackend();
-    const apply = (r: any, s: any, a: any) => {
+    const apply = (r: any, s: any, a: any, ret: any, npo: any) => {
       // Locals never have a test guesthouse, so they never see test partners.
       const rr = filterTestVisibility(r.restaurants, false);
       const ss = filterTestVisibility(s.services, false);
       const aa = filterTestVisibility(a.attractions, false);
+      const retl = filterTestVisibility(ret.services, false);
+      const npol = filterTestVisibility(npo.services, false);
       setRestaurants(rr);
       setServices(ss);
       setAttractions(aa);
+      setRetail(retl);
+      setNonprofits(npol);
       setFilteredRestaurants(rr);
       setFilteredServices(ss);
       setFilteredAttractions(aa);
+      setFilteredRetail(retl);
+      setFilteredNpo(npol);
       void loadRatings(rr, ss, aa);
     };
     try {
@@ -346,13 +358,14 @@ export default function GuestDashboard() {
       }
       const lat = coords ? coords.latitude : 0;
       const lng = coords ? coords.longitude : 0;
-      const [r, s, sNpo, a] = await Promise.all([
+      const [r, s, ret, npo, a] = await Promise.all([
         backend.restaurant.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal }),
         backend.service.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal, nonProfit: false }),
-        backend.service.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal, nonProfit: true }),
+        backend.retail.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal }),
+        backend.nonprofit.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal }),
         backend.attraction.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal }),
       ]);
-      apply(r, { services: [...(((s as any).services) || []), ...(((sNpo as any).services) || [])] }, a);
+      apply(r, s, a, ret, npo);
     } catch (error) {
       console.error("Failed to load local partners:", error);
       toast({ title: "Error", description: "Failed to load local partners", variant: "destructive" });
@@ -366,23 +379,30 @@ export default function GuestDashboard() {
     if (accommodation!.latitude == null || accommodation!.longitude == null) return;
     try {
       const backend = getAuthenticatedBackend();
-      const [restaurantData, serviceData, serviceNpoData, attractionData] = await Promise.all([
+      const [restaurantData, serviceData, retailData, npoData, attractionData] = await Promise.all([
         backend.restaurant.listNearby({ latitude: accommodation!.latitude, longitude: accommodation!.longitude, radiusKm: radiusKm[0], postalCode: accommodation!.postalCode || "" }),
         backend.service.listNearby({ latitude: accommodation!.latitude, longitude: accommodation!.longitude, radiusKm: radiusKm[0], postalCode: accommodation!.postalCode || "", nonProfit: false }),
-        backend.service.listNearby({ latitude: accommodation!.latitude, longitude: accommodation!.longitude, radiusKm: radiusKm[0], postalCode: accommodation!.postalCode || "", nonProfit: true }),
+        backend.retail.listNearby({ latitude: accommodation!.latitude, longitude: accommodation!.longitude, radiusKm: radiusKm[0], postalCode: accommodation!.postalCode || "" }),
+        backend.nonprofit.listNearby({ latitude: accommodation!.latitude, longitude: accommodation!.longitude, radiusKm: radiusKm[0], postalCode: accommodation!.postalCode || "" }),
         backend.attraction.listNearby({ latitude: accommodation!.latitude, longitude: accommodation!.longitude, radiusKm: radiusKm[0], postalCode: accommodation!.postalCode || "" }),
       ]);
       // Only the Test Guesthouse sees test partners; everyone else never does.
       const showOnlyTest = isTestName(accommodation!.name);
       const rr = filterTestVisibility(restaurantData.restaurants, showOnlyTest);
-      const ss = filterTestVisibility([...((serviceData as any).services || []), ...((serviceNpoData as any).services || [])], showOnlyTest);
+      const ss = filterTestVisibility((serviceData as any).services || [], showOnlyTest);
+      const retl = filterTestVisibility((retailData as any).services || [], showOnlyTest);
+      const npol = filterTestVisibility((npoData as any).services || [], showOnlyTest);
       const aa = filterTestVisibility(attractionData.attractions, showOnlyTest);
       setRestaurants(rr);
       setServices(ss);
       setAttractions(aa);
+      setRetail(retl);
+      setNonprofits(npol);
       setFilteredRestaurants(rr);
       setFilteredServices(ss);
       setFilteredAttractions(aa);
+      setFilteredRetail(retl);
+      setFilteredNpo(npol);
       void loadRatings(rr, ss, aa);
     } catch (error) {
       console.error("Failed to load nearby partners:", error);
@@ -479,9 +499,13 @@ export default function GuestDashboard() {
 
   // NPO / PBO businesses are services flagged is_nonprofit; split them out of
   // Business/Services into their own tab, sharing one card renderer.
-  const bizServices = filteredServices.filter((x) => !(x as any).isNonProfit);
-  const npoServices = filteredServices.filter((x) => (x as any).isNonProfit);
-  const renderServiceCard = (service: ServiceData) => (
+  const bizServices = filteredServices;
+  const retailServices = filteredRetail;
+  const npoServices = filteredNpo;
+  const renderServiceCard = (service: ServiceData, entityType: "service" | "retail" | "nonprofit" = "service") => {
+    const isNpo = entityType === "nonprofit";
+    const isRetail = entityType === "retail";
+    return (
     <Card key={service.id} className="hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
                       <CardContent className="p-4">
                         <div className="flex flex-col sm:flex-row gap-3">
@@ -494,10 +518,10 @@ export default function GuestDashboard() {
                           />
                           <div className="flex-1 min-w-0 space-y-2">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="font-semibold truncate" style={{ color: (service as any).brandColor || undefined }}>{service.name}</h4>
+                              <h4 className="font-semibold truncate">{service.name}</h4>
                               <SupportBadge orgName={service.supportOrgName} />
                             </div>
-                            {(service as any).isNonProfit && (((service as any).npoNumber || (service as any).pboNumber)) && (
+                            {isNpo && (((service as any).npoNumber || (service as any).pboNumber)) && (
                               <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3">
                                 {(service as any).npoNumber && <span>NPO: {(service as any).npoNumber}</span>}
                                 {(service as any).pboNumber && <span>PBO: {(service as any).pboNumber}</span>}
@@ -505,36 +529,36 @@ export default function GuestDashboard() {
                             )}
 
                             <StarRating
-                              entityType="service"
+                              entityType={entityType}
                               entityId={Number(service.id)}
-                              summary={ratings[ratingKey("service", service.id)]}
+                              summary={ratings[ratingKey(entityType, service.id)]}
                               onRated={applyRatingSummary}
                               readOnly={service.accessLevel === "Booking"}
                             />
-                            {!(service as any).isNonProfit && (service.offersBookings || service.accessLevel === "Booking") && (service.bookingItems?.length ?? 0) > 0 && (
+                            {!isNpo && !isRetail && (service.offersBookings || service.accessLevel === "Booking") && (service.bookingItems?.length ?? 0) > 0 && (
                               <Button
                                 size="sm"
                                 className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black w-full sm:w-auto"
-                                onClick={() => setBookingFor({ entityType: "service", entityId: Number(service.id), entityName: service.name, items: (service.bookingItems || []) as BookItem[] })}
+                                onClick={() => setBookingFor({ entityType: entityType, entityId: Number(service.id), entityName: service.name, items: (service.bookingItems || []) as BookItem[] })}
                               >
                                 Click here to book at this establishment.
                               </Button>
                             )}
-                            {!(service as any).isNonProfit && <RestaurantPreOrder entity={service as any} entityType="service" />}
+                            {!isNpo && !isRetail && <RestaurantPreOrder entity={service as any} entityType={entityType} />}
                             {discOffered(service) && (
                               <Button
                                 size="sm"
                                 variant="outline"
                                 className="w-full sm:w-auto border-[#39FF14] text-black"
-                                onClick={() => setRedeemFor({ entityType: "service", entityId: Number(service.id), entityName: service.name, discount: discOffered(service), discountCode: discCode(service) })}
+                                onClick={() => setRedeemFor({ entityType: entityType, entityId: Number(service.id), entityName: service.name, discount: discOffered(service), discountCode: discCode(service) })}
                               >
                                 Redeem discount
                               </Button>
                             )}
-                            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => toggleCard("service:" + service.id)}>
-                              {expandedCards.has("service:" + service.id) ? "Less info" : "More info"}
+                            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => toggleCard(entityType + ":" + service.id)}>
+                              {expandedCards.has(entityType + ":" + service.id) ? "Less info" : "More info"}
                             </Button>
-                            {expandedCards.has("service:" + service.id) && (
+                            {expandedCards.has(entityType + ":" + service.id) && (
                               <>
 
                             {tierOf(service.accessLevel) >= 2 && (
@@ -574,7 +598,7 @@ export default function GuestDashboard() {
                               </CollapsibleContent>
                             </Collapsible>
 
-                            {!(service as any).isNonProfit && (
+                            {!isNpo && !isRetail && (
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
@@ -597,7 +621,7 @@ export default function GuestDashboard() {
 
                             )}
 
-                            {!(service as any).isNonProfit && service.offersBookings && (
+                            {!isNpo && !isRetail && service.offersBookings && (
                               <div className="mt-1">
                                 <span className="inline-block px-2 py-0.5 text-black rounded text-xs font-medium">Takes bookings</span>
                               </div>
@@ -609,12 +633,17 @@ export default function GuestDashboard() {
                                 Payment Options
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
-                                {service.paymentCard || service.paymentCash || service.paymentMobile || service.paymentEft ? (
+                                {service.paymentCard || service.paymentCash || service.paymentMobile || service.paymentEft || service.paymentIkhokha || service.paymentGpay || service.paymentSamsungpay || service.paymentSassa || service.paymentApplepay ? (
                                   <div className="flex flex-wrap gap-2">
                                     {service.paymentCard && <span className="px-2 py-0.5 text-black rounded text-xs">Card</span>}
                                     {service.paymentCash && <span className="px-2 py-0.5 text-black rounded text-xs">Cash</span>}
                                     {service.paymentMobile && <span className="px-2 py-0.5 text-black rounded text-xs">Mobile</span>}
                                     {service.paymentEft && <span className="px-2 py-0.5 text-black rounded text-xs">EFT — Please contact for more info</span>}
+                                    {service.paymentIkhokha && <span className="px-2 py-0.5 text-black rounded text-xs">iKhokha</span>}
+                                    {service.paymentGpay && <span className="px-2 py-0.5 text-black rounded text-xs">G Pay</span>}
+                                    {service.paymentSamsungpay && <span className="px-2 py-0.5 text-black rounded text-xs">Samsung Pay</span>}
+                                    {service.paymentSassa && <span className="px-2 py-0.5 text-black rounded text-xs">SASSA</span>}
+                                    {service.paymentApplepay && <span className="px-2 py-0.5 text-black rounded text-xs">Apple Pay</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
@@ -720,7 +749,8 @@ export default function GuestDashboard() {
                         </div>
                       </CardContent>
                     </Card>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#39FF14]/10 to-background px-6 pt-3 pb-6">
@@ -1093,6 +1123,7 @@ export default function GuestDashboard() {
             <TabsList className="flex flex-col w-full gap-1 p-1 bg-muted rounded-md" style={{ height: "auto" }}>
               <TabsTrigger value="restaurants" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Restaurants/Takeaways ({filteredRestaurants.length})</TabsTrigger>
               <TabsTrigger value="services" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Business/Services ({bizServices.length})</TabsTrigger>
+              <TabsTrigger value="retail" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Retail ({retailServices.length})</TabsTrigger>
               <TabsTrigger value="attractions" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Attractions/Activities ({filteredAttractions.length})</TabsTrigger>
               <TabsTrigger value="realestate" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Real Estate</TabsTrigger>
               <TabsTrigger value="nonprofit" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">NPO / PBO ({npoServices.length})</TabsTrigger>
@@ -1175,7 +1206,7 @@ export default function GuestDashboard() {
                 </Card>
               ) : (
                 <div className="space-y-2">
-                  {npoServices.map(renderServiceCard)}
+                  {npoServices.map((s) => renderServiceCard(s, "nonprofit"))}
                 </div>
               )}
             </TabsContent>
@@ -1438,12 +1469,17 @@ export default function GuestDashboard() {
                                 Payment Options
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
-                                {restaurant.paymentCard || restaurant.paymentCash || restaurant.paymentMobile || restaurant.paymentEft ? (
+                                {restaurant.paymentCard || restaurant.paymentCash || restaurant.paymentMobile || restaurant.paymentEft || restaurant.paymentIkhokha || restaurant.paymentGpay || restaurant.paymentSamsungpay || restaurant.paymentSassa || restaurant.paymentApplepay ? (
                                   <div className="flex flex-wrap gap-2">
                                     {restaurant.paymentCard && <span className="px-2 py-0.5 text-black rounded text-xs">Card</span>}
                                     {restaurant.paymentCash && <span className="px-2 py-0.5 text-black rounded text-xs">Cash</span>}
                                     {restaurant.paymentMobile && <span className="px-2 py-0.5 text-black rounded text-xs">Mobile</span>}
                                     {restaurant.paymentEft && <span className="px-2 py-0.5 text-black rounded text-xs">EFT — Please contact for more info</span>}
+                                    {restaurant.paymentIkhokha && <span className="px-2 py-0.5 text-black rounded text-xs">iKhokha</span>}
+                                    {restaurant.paymentGpay && <span className="px-2 py-0.5 text-black rounded text-xs">G Pay</span>}
+                                    {restaurant.paymentSamsungpay && <span className="px-2 py-0.5 text-black rounded text-xs">Samsung Pay</span>}
+                                    {restaurant.paymentSassa && <span className="px-2 py-0.5 text-black rounded text-xs">SASSA</span>}
+                                    {restaurant.paymentApplepay && <span className="px-2 py-0.5 text-black rounded text-xs">Apple Pay</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
@@ -1651,7 +1687,21 @@ export default function GuestDashboard() {
                 </Card>
               ) : (
                 <div className="space-y-2">
-                  {bizServices.map(renderServiceCard)}
+                  {bizServices.map((s) => renderServiceCard(s, "service"))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="retail" className="space-y-3 mt-6" {...swipeHandlers}>
+              {retailServices.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center text-muted-foreground">
+                    {searchQuery.trim() ? "No retail match your search" : isLocalMode ? "No retail found within 50km" : `No retail found within ${radiusKm[0]}km`}
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-2">
+                  {retailServices.map((s) => renderServiceCard(s, "retail"))}
                 </div>
               )}
             </TabsContent>
@@ -1784,12 +1834,17 @@ export default function GuestDashboard() {
                                 Payment Options
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
-                                {attraction.paymentCard || attraction.paymentCash || attraction.paymentMobile || attraction.paymentEft ? (
+                                {attraction.paymentCard || attraction.paymentCash || attraction.paymentMobile || attraction.paymentEft || attraction.paymentIkhokha || attraction.paymentGpay || attraction.paymentSamsungpay || attraction.paymentSassa || attraction.paymentApplepay ? (
                                   <div className="flex flex-wrap gap-2">
                                     {attraction.paymentCard && <span className="px-2 py-0.5 text-black rounded text-xs">Card</span>}
                                     {attraction.paymentCash && <span className="px-2 py-0.5 text-black rounded text-xs">Cash</span>}
                                     {attraction.paymentMobile && <span className="px-2 py-0.5 text-black rounded text-xs">Mobile</span>}
                                     {attraction.paymentEft && <span className="px-2 py-0.5 text-black rounded text-xs">EFT — Please contact for more info</span>}
+                                    {attraction.paymentIkhokha && <span className="px-2 py-0.5 text-black rounded text-xs">iKhokha</span>}
+                                    {attraction.paymentGpay && <span className="px-2 py-0.5 text-black rounded text-xs">G Pay</span>}
+                                    {attraction.paymentSamsungpay && <span className="px-2 py-0.5 text-black rounded text-xs">Samsung Pay</span>}
+                                    {attraction.paymentSassa && <span className="px-2 py-0.5 text-black rounded text-xs">SASSA</span>}
+                                    {attraction.paymentApplepay && <span className="px-2 py-0.5 text-black rounded text-xs">Apple Pay</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
@@ -2443,7 +2498,7 @@ function MyStampCardsModal({ onClose }: { onClose: () => void }) {
                   <div className="border rounded-md p-3 space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex flex-col min-w-0">
-                        <span className="font-semibold text-sm truncate">{c.partnerName || "Partner"}</span>
+                        <span className="font-semibold text-sm truncate" style={{ color: (c as any).brandColor || undefined }}>{c.partnerName || "Partner"}</span>
                         {c.area && <span className="text-[11px] text-muted-foreground">{c.area}</span>}
                       </div>
                       {c.rewardReady && <span className="text-xs px-2 py-0.5 rounded bg-[#39FF14] text-black font-semibold flex-shrink-0">Reward ready!</span>}

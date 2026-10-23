@@ -85,6 +85,7 @@ const restaurantColumns = `
 	COALESCE(pre_order_items, '[]'::jsonb) as pre_order_items,
 	created_at, updated_at,
 	payment_eft,
+	payment_ikhokha, payment_gpay, payment_samsungpay, payment_sassa, payment_applepay,
 	COALESCE(trading_hours, '') as trading_hours,
 	COALESCE(public_holidays, '') as public_holidays,
 	COALESCE(chef_recommendation, '') as chef_recommendation,
@@ -127,6 +128,11 @@ func scanRestaurant(row restaurantScanner) (*appdb.Restaurant, error) {
 		&r.PreOrderItems,
 		&r.CreatedAt, &r.UpdatedAt,
 		&r.PaymentEft,
+		&r.PaymentIkhokha,
+		&r.PaymentGpay,
+		&r.PaymentSamsungpay,
+		&r.PaymentSassa,
+		&r.PaymentApplepay,
 		&r.TradingHours, &r.PublicHolidays,
 		&r.ChefRecommendation,
 		&r.AccountingAddress,
@@ -229,11 +235,12 @@ func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*ap
 			discount_enabled, local_discount_enabled, works_from_client_address,
 			payment_eft, trading_hours, public_holidays,
 			chef_recommendation,
-			accounting_address
+			accounting_address,
+			payment_ikhokha, payment_gpay, payment_samsungpay, payment_sassa, payment_applepay
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,
 			$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,$56,$57,
-			$58,$59,$60,$61,$62,$63,$64,$65,$66,$67,$68,$69,$70
+			$58,$59,$60,$61,$62,$63,$64,$65,$66,$67,$68,$69,$70,$71,$72,$73,$74,$75
 		)
 		RETURNING `+restaurantColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -260,6 +267,7 @@ func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*ap
 		in.TradingHours, in.PublicHolidays,
 		in.ChefRecommendation,
 		in.AccountingAddress,
+		in.PaymentIkhokha, in.PaymentGpay, in.PaymentSamsungpay, in.PaymentSassa, in.PaymentApplepay,
 	)
 	return scanRestaurant(row)
 }
@@ -268,15 +276,15 @@ func (s *RestaurantStore) Create(ctx context.Context, in *appdb.Restaurant) (*ap
 // means "don't touch this column", matching how the old in-memory Update
 // only overwrote fields the caller actually sent.
 type RestaurantPatch struct {
-	Name       *string
-	Address    *string
+	Name              *string
+	Address           *string
 	AccountingAddress *string
-	Latitude   *float64
-	Longitude  *float64
-	Country    *string
-	Province   *string
-	Area       *string
-	PostalCode *string
+	Latitude          *float64
+	Longitude         *float64
+	Country           *string
+	Province          *string
+	Area              *string
+	PostalCode        *string
 
 	ContactNumber *string
 	Description   *string
@@ -295,16 +303,21 @@ type RestaurantPatch struct {
 	ServiceDelivery        *bool
 	LittleExplorerApproved *bool
 
-	PaymentCard     *bool
-	PaymentCash     *bool
-	PaymentMobile   *bool
-	PaymentGaap     *bool
-	PaymentSnapScan *bool
-	PaymentYoco     *bool
-	PaymentZapper   *bool
-	PaymentEft      *bool
-	TradingHours    *string
-	PublicHolidays  *string
+	PaymentCard       *bool
+	PaymentCash       *bool
+	PaymentMobile     *bool
+	PaymentGaap       *bool
+	PaymentSnapScan   *bool
+	PaymentYoco       *bool
+	PaymentZapper     *bool
+	PaymentEft        *bool
+	PaymentIkhokha    *bool
+	PaymentGpay       *bool
+	PaymentSamsungpay *bool
+	PaymentSassa      *bool
+	PaymentApplepay   *bool
+	TradingHours      *string
+	PublicHolidays    *string
 
 	WheelchairAccess    *bool
 	ParkingAvailability *bool
@@ -447,6 +460,21 @@ func (s *RestaurantStore) Update(ctx context.Context, id int64, patch Restaurant
 	}
 	if patch.PaymentEft != nil {
 		sets = append(sets, "payment_eft = "+arg(*patch.PaymentEft))
+	}
+	if patch.PaymentIkhokha != nil {
+		sets = append(sets, "payment_ikhokha = "+arg(*patch.PaymentIkhokha))
+	}
+	if patch.PaymentGpay != nil {
+		sets = append(sets, "payment_gpay = "+arg(*patch.PaymentGpay))
+	}
+	if patch.PaymentSamsungpay != nil {
+		sets = append(sets, "payment_samsungpay = "+arg(*patch.PaymentSamsungpay))
+	}
+	if patch.PaymentSassa != nil {
+		sets = append(sets, "payment_sassa = "+arg(*patch.PaymentSassa))
+	}
+	if patch.PaymentApplepay != nil {
+		sets = append(sets, "payment_applepay = "+arg(*patch.PaymentApplepay))
 	}
 	if patch.TradingHours != nil {
 		sets = append(sets, "trading_hours = "+arg(*patch.TradingHours))

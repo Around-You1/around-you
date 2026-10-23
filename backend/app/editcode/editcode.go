@@ -29,6 +29,8 @@ var (
 	accommodations = store.NewStore()
 	estateAgencies = store.NewEstateAgencyStore()
 	estateAgents   = store.NewEstateAgentStore()
+	retail         = store.NewRetailStore()
+	nonprofits     = store.NewNonprofitStore()
 )
 
 type GetRequest struct {
@@ -61,6 +63,10 @@ func getCode(ctx context.Context, entityType string, id int64) (string, error) {
 		return restaurants.GetEditCode(ctx, id)
 	case "service":
 		return services.GetEditCode(ctx, id)
+	case "retail":
+		return retail.GetEditCode(ctx, id)
+	case "nonprofit":
+		return nonprofits.GetEditCode(ctx, id)
 	case "attraction":
 		return attractions.GetEditCode(ctx, id)
 	case "accommodation":
@@ -80,6 +86,10 @@ func regenCode(ctx context.Context, entityType string, id int64, newCode string)
 		return restaurants.RegenerateEditCode(ctx, id, newCode)
 	case "service":
 		return services.RegenerateEditCode(ctx, id, newCode)
+	case "retail":
+		return retail.RegenerateEditCode(ctx, id, newCode)
+	case "nonprofit":
+		return nonprofits.RegenerateEditCode(ctx, id, newCode)
 	case "attraction":
 		return attractions.RegenerateEditCode(ctx, id, newCode)
 	case "accommodation":

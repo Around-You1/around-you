@@ -132,6 +132,11 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
     paymentYoco: false,
     paymentZapper: false,
     paymentEft: false,
+    paymentIkhokha: false,
+    paymentGpay: false,
+    paymentSamsungpay: false,
+    paymentSassa: false,
+    paymentApplepay: false,
     wheelchairAccess: false,
     parkingAvailability: false,
     serviceDineIn: false,
@@ -250,6 +255,11 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
         paymentYoco: data.paymentYoco || false,
         paymentZapper: data.paymentZapper || false,
         paymentEft: data.paymentEft || false,
+        paymentIkhokha: data.paymentIkhokha || false,
+        paymentGpay: data.paymentGpay || false,
+        paymentSamsungpay: data.paymentSamsungpay || false,
+        paymentSassa: data.paymentSassa || false,
+        paymentApplepay: data.paymentApplepay || false,
         wheelchairAccess: data.wheelchairAccess || false,
         parkingAvailability: data.parkingAvailability || false,
         serviceDineIn: data.serviceDineIn || false,
@@ -551,7 +561,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
 
           {tierNum >= 2 && (
             <MultiPdfUpload
-              label="Menu PDF(s)"
+              label="Menu PDF(s) or Images"
               pdfs={formData.menuPdfUrls}
               onChange={(urls) => setFormData({ ...formData, menuPdfUrls: urls })}
             />
@@ -836,6 +846,26 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
                 />
                 <Label htmlFor="paymentEft">EFT</Label>
               </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="paymentIkhokha" checked={formData.paymentIkhokha} onCheckedChange={(checked) => setFormData({ ...formData, paymentIkhokha: checked === true })} />
+                <Label htmlFor="paymentIkhokha">iKhokha</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="paymentGpay" checked={formData.paymentGpay} onCheckedChange={(checked) => setFormData({ ...formData, paymentGpay: checked === true })} />
+                <Label htmlFor="paymentGpay">G Pay</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="paymentSamsungpay" checked={formData.paymentSamsungpay} onCheckedChange={(checked) => setFormData({ ...formData, paymentSamsungpay: checked === true })} />
+                <Label htmlFor="paymentSamsungpay">Samsung Pay</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="paymentSassa" checked={formData.paymentSassa} onCheckedChange={(checked) => setFormData({ ...formData, paymentSassa: checked === true })} />
+                <Label htmlFor="paymentSassa">SASSA</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="paymentApplepay" checked={formData.paymentApplepay} onCheckedChange={(checked) => setFormData({ ...formData, paymentApplepay: checked === true })} />
+                <Label htmlFor="paymentApplepay">Apple Pay</Label>
+              </div>
             </div>
           </div>
 
@@ -985,7 +1015,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
                   if (!on) setFormData((f) => ({ ...f, preOrderItems: [] }));
                 }}
               />
-              <Label htmlFor="offersPreOrders" className="text-base font-semibold cursor-pointer">Pre-Orders (Takeaway / Delivery) — 10% of the sale</Label>
+              <Label htmlFor="offersPreOrders" className="text-base font-semibold cursor-pointer">Pre-Orders (Takeaway / Delivery) — 5% of the sale</Label>
             </div>
             {offersPreOrders && (
             <>

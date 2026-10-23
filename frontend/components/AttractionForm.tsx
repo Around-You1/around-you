@@ -91,6 +91,11 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
     paymentYoco: false,
     paymentZapper: false,
     paymentEft: false,
+    paymentIkhokha: false,
+    paymentGpay: false,
+    paymentSamsungpay: false,
+    paymentSassa: false,
+    paymentApplepay: false,
     socialsWebsite: "",
     socialsFacebook: "",
     socialsInstagram: "",
@@ -191,6 +196,11 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
         paymentYoco: data.paymentYoco || false,
         paymentZapper: data.paymentZapper || false,
         paymentEft: data.paymentEft || false,
+        paymentIkhokha: data.paymentIkhokha || false,
+        paymentGpay: data.paymentGpay || false,
+        paymentSamsungpay: data.paymentSamsungpay || false,
+        paymentSassa: data.paymentSassa || false,
+        paymentApplepay: data.paymentApplepay || false,
         socialsWebsite: data.socialsWebsite || "",
         socialsFacebook: data.socialsFacebook || "",
         socialsInstagram: data.socialsInstagram || "",
@@ -280,6 +290,11 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           paymentYoco: formData.paymentYoco,
           paymentZapper: formData.paymentZapper,
           paymentEft: formData.paymentEft,
+          paymentIkhokha: formData.paymentIkhokha,
+          paymentGpay: formData.paymentGpay,
+          paymentSamsungpay: formData.paymentSamsungpay,
+          paymentSassa: formData.paymentSassa,
+          paymentApplepay: formData.paymentApplepay,
           socialsWebsite: formData.socialsWebsite,
           socialsFacebook: formData.socialsFacebook,
           socialsInstagram: formData.socialsInstagram,
@@ -350,6 +365,11 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
           paymentYoco: formData.paymentYoco,
           paymentZapper: formData.paymentZapper,
           paymentEft: formData.paymentEft,
+          paymentIkhokha: formData.paymentIkhokha,
+          paymentGpay: formData.paymentGpay,
+          paymentSamsungpay: formData.paymentSamsungpay,
+          paymentSassa: formData.paymentSassa,
+          paymentApplepay: formData.paymentApplepay,
           socialsWebsite: formData.socialsWebsite,
           socialsFacebook: formData.socialsFacebook,
           socialsInstagram: formData.socialsInstagram,
@@ -852,6 +872,26 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
                   onCheckedChange={(checked) => setFormData({ ...formData, paymentEft: checked })}
                 />
                 <Label htmlFor="paymentEft">EFT</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="paymentIkhokha" checked={formData.paymentIkhokha} onCheckedChange={(checked) => setFormData({ ...formData, paymentIkhokha: checked === true })} />
+                <Label htmlFor="paymentIkhokha">iKhokha</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="paymentGpay" checked={formData.paymentGpay} onCheckedChange={(checked) => setFormData({ ...formData, paymentGpay: checked === true })} />
+                <Label htmlFor="paymentGpay">G Pay</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="paymentSamsungpay" checked={formData.paymentSamsungpay} onCheckedChange={(checked) => setFormData({ ...formData, paymentSamsungpay: checked === true })} />
+                <Label htmlFor="paymentSamsungpay">Samsung Pay</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="paymentSassa" checked={formData.paymentSassa} onCheckedChange={(checked) => setFormData({ ...formData, paymentSassa: checked === true })} />
+                <Label htmlFor="paymentSassa">SASSA</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="paymentApplepay" checked={formData.paymentApplepay} onCheckedChange={(checked) => setFormData({ ...formData, paymentApplepay: checked === true })} />
+                <Label htmlFor="paymentApplepay">Apple Pay</Label>
               </div>
             </div>
           </div>

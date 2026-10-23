@@ -46,14 +46,19 @@ type OfficialUse struct {
 
 // PaymentMethods are shared across Restaurant, ServiceData, and AttractionData.
 type PaymentMethods struct {
-	PaymentCard     bool `json:"paymentCard"`
-	PaymentCash     bool `json:"paymentCash"`
-	PaymentMobile   bool `json:"paymentMobile"` // labeled "Mobile Tap" in the UI
-	PaymentGaap     bool `json:"paymentGaap"`
-	PaymentSnapScan bool `json:"paymentSnapScan"`
-	PaymentYoco     bool `json:"paymentYoco"`
-	PaymentZapper   bool `json:"paymentZapper"`
-	PaymentEft      bool `json:"paymentEft"` // shows "Please contact for more info" to guests/locals
+	PaymentCard       bool `json:"paymentCard"`
+	PaymentCash       bool `json:"paymentCash"`
+	PaymentMobile     bool `json:"paymentMobile"` // labeled "Mobile Tap" in the UI
+	PaymentGaap       bool `json:"paymentGaap"`
+	PaymentSnapScan   bool `json:"paymentSnapScan"`
+	PaymentYoco       bool `json:"paymentYoco"`
+	PaymentZapper     bool `json:"paymentZapper"`
+	PaymentEft        bool `json:"paymentEft"` // shows "Please contact for more info" to guests/locals
+	PaymentIkhokha    bool `json:"paymentIkhokha"`
+	PaymentGpay       bool `json:"paymentGpay"`
+	PaymentSamsungpay bool `json:"paymentSamsungpay"`
+	PaymentSassa      bool `json:"paymentSassa"`
+	PaymentApplepay   bool `json:"paymentApplepay"`
 }
 
 // Socials is shared by Restaurant, Service, and Attraction — each entity's

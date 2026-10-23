@@ -20,9 +20,11 @@ var (
 	restaurants = store.NewRestaurantStore()
 	services    = store.NewServiceStore()
 	attractions = store.NewAttractionStore()
+	retail      = store.NewRetailStore()
+	nonprofits  = store.NewNonprofitStore()
 )
 
-var validEntities = map[string]bool{"restaurant": true, "service": true, "attraction": true}
+var validEntities = map[string]bool{"restaurant": true, "service": true, "attraction": true, "retail": true, "nonprofit": true}
 
 // localAlreadyRedeemedThisMonth reports whether a Local has already redeemed this
 // partner's discount in the current calendar month. Locals are limited to one
@@ -120,6 +122,14 @@ func partnerNameEmail(ctx context.Context, entityType string, entityID int64) (n
 	case "service":
 		if svc, e := services.Get(ctx, entityID); e == nil {
 			return svc.Name, svc.OfficialEmail
+		}
+	case "retail":
+		if rt, e := retail.Get(ctx, entityID); e == nil {
+			return rt.Name, rt.OfficialEmail
+		}
+	case "nonprofit":
+		if np, e := nonprofits.Get(ctx, entityID); e == nil {
+			return np.Name, np.OfficialEmail
 		}
 	case "attraction":
 		if a, e := attractions.Get(ctx, entityID); e == nil {

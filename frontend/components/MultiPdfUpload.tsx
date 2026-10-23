@@ -30,7 +30,7 @@ export default function MultiPdfUpload({
   const { toast } = useToast();
 
   const validateFile = (file: File): string | null => {
-    if (file.type !== "application/pdf") return `${file.name}: only PDF files are allowed.`;
+    if (file.type !== "application/pdf" && !file.type.startsWith("image/")) return `${file.name}: only PDF or image files are allowed.`;
     if (file.size > maxSizeMB * 1024 * 1024) return `${file.name}: exceeds ${maxSizeMB}MB limit.`;
     return null;
   };
@@ -66,7 +66,7 @@ export default function MultiPdfUpload({
     for (const file of valid) {
       try {
         const dataUrl = await readAsDataURL(file);
-        const result = await backend.storage.upload({ data: dataUrl, contentType: "application/pdf" });
+        const result = await backend.storage.upload({ data: dataUrl, contentType: file.type });
         newUrls.push(result.url);
       } catch (error) {
         console.error("PDF upload failed for", file.name, error);
@@ -152,7 +152,7 @@ export default function MultiPdfUpload({
         </Card>
       )}
 
-      <input ref={fileInputRef} type="file" accept="application/pdf,.pdf" multiple onChange={handleFileSelect} className="hidden" disabled={uploading} />
+      <input ref={fileInputRef} type="file" accept="application/pdf,.pdf,image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" multiple onChange={handleFileSelect} className="hidden" disabled={uploading} />
     </div>
   );
 }

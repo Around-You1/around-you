@@ -22,6 +22,8 @@ const CHARITY_KEY: Record<string, string> = {
   Restaurants: "restaurant",
   Services: "service",
   Attractions: "attraction",
+  Retail: "retail",
+  "NPO / PBO": "nonprofit",
 };
 
 // Downloadable "what we need to onboard you" form per partner type — a rep can
@@ -33,6 +35,8 @@ const ONBOARDING_PDF: Record<string, string> = {
   Services: "/onboarding/service-onboarding.pdf",
   Attractions: "/onboarding/attraction-onboarding.pdf",
   "Real Estate & Rentals": "/onboarding/real-estate-onboarding.pdf",
+  Retail: "/onboarding/retail-onboarding.pdf",
+  "NPO / PBO": "/onboarding/npo-onboarding.pdf",
 };
 
 // Display-only category label; the internal partner-type keys stay "Services"
@@ -76,7 +80,7 @@ const PROVINCE_OPTIONS = [
 const ACCESSIBILITY_OPTIONS = ["Wheelchair Access", "Parking Availability"];
 const DIETARY_OPTIONS = ["Gluten Free", "Halaal", "Kosher", "Nut Free", "Signature Dish", "Chef Recommendation"];
 const SOCIAL_LINKS_OPTIONS = ["Website", "Facebook", "Instagram", "Tiktok", "X"];
-const PAYMENT_OPTIONS = ["Card", "Cash", "Gaap", "Mobile Tap", "Snap Scan", "Yoco", "Zapper"];
+const PAYMENT_OPTIONS = ["Card", "Cash", "Gaap", "Mobile Tap", "Snap Scan", "Yoco", "Zapper", "iKhokha", "G Pay", "Samsung Pay", "SASSA", "Apple Pay"];
 const FACILITIES = ["Braai", "Fly Fishing", "Golf", "Gym", "Lapa", "Laundry", "Spa", "Swimming Pool"];
 
 const CATEGORY_GROUPS = [
@@ -629,7 +633,9 @@ export default function RepOnboardingApp() {
 
   const isAccommodation = partnerType === "Accommodations";
   const isRestaurant = partnerType === "Restaurants";
-  const isService = partnerType === "Services";
+  const isRetail = partnerType === "Retail";
+  const isNpo = partnerType === "NPO / PBO";
+  const isService = partnerType === "Services" || isRetail || isNpo;
   const isAttraction = partnerType === "Attractions";
 
   // Adding pre-order items opens Tier 2 automatically (a pre-order restaurant is
@@ -827,7 +833,7 @@ export default function RepOnboardingApp() {
           accessLevel: resolveAccessLevel(),
         });
       } else if (isService) {
-        created = await backend.service.create({
+        created = await (isRetail ? backend.retail.create : isNpo ? backend.nonprofit.create : backend.service.create)({
           name: data.name || data.companyName,
           address: data.publicAddress || "",
           accountingAddress: data.address || "",
@@ -1040,7 +1046,7 @@ export default function RepOnboardingApp() {
         {!partnerType ? (
           <>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              {["Accommodations", "Restaurants", "Services", "Attractions", "Real Estate & Rentals"].map((type) => (
+              {["Accommodations", "Restaurants", "Services", "Retail", "Attractions", "Real Estate & Rentals", "NPO / PBO"].map((type) => (
                 <button
                   key={type}
                   onClick={() => setPartnerType(type)}
@@ -1294,7 +1300,7 @@ export default function RepOnboardingApp() {
                 {isRestaurant && (serviceOptions.includes("Takeaway") || serviceOptions.includes("Delivery")) && (
                   <div style={{ marginBottom: 12 }}>
                     <ToggleField
-                      label="Pre-Orders (Takeaway / Delivery) — 10% of the sale"
+                      label="Pre-Orders (Takeaway / Delivery) — 5% of the sale"
                       checked={openPreOrders}
                       onChange={(v) => { setOpenPreOrders(v); if (!v) setPreOrderItems([]); }}
                     />

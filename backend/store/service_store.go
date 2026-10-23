@@ -73,6 +73,7 @@ const serviceColumns = `
 	offers_bookings,
 	created_at, updated_at,
 	payment_eft,
+	payment_ikhokha, payment_gpay, payment_samsungpay, payment_sassa, payment_applepay,
 	COALESCE(trading_hours, '') as trading_hours,
 	COALESCE(public_holidays, '') as public_holidays,
 	COALESCE(accounting_address, '') as accounting_address,
@@ -112,6 +113,11 @@ func scanService(row serviceScanner) (*appdb.ServiceData, error) {
 		&s.OffersBookings,
 		&s.CreatedAt, &s.UpdatedAt,
 		&s.PaymentEft,
+		&s.PaymentIkhokha,
+		&s.PaymentGpay,
+		&s.PaymentSamsungpay,
+		&s.PaymentSassa,
+		&s.PaymentApplepay,
 		&s.TradingHours, &s.PublicHolidays,
 		&s.AccountingAddress,
 		&s.IsNonProfit,
@@ -213,11 +219,12 @@ func (s *ServiceStore) Create(ctx context.Context, in *appdb.ServiceData) (*appd
 			accounting_address,
 			is_nonprofit,
 			pre_order_items,
-			npo_number, pbo_number, brand_color
+			npo_number, pbo_number, brand_color,
+			payment_ikhokha, payment_gpay, payment_samsungpay, payment_sassa, payment_applepay
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,
 			$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,
-			$51,$52,$53,$54,$55,$56,$57,$58,$59,$60,$61,$62,$63,$64,$65
+			$51,$52,$53,$54,$55,$56,$57,$58,$59,$60,$61,$62,$63,$64,$65,$66,$67,$68,$69,$70
 		)
 		RETURNING `+serviceColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -243,6 +250,7 @@ func (s *ServiceStore) Create(ctx context.Context, in *appdb.ServiceData) (*appd
 		in.IsNonProfit,
 		in.PreOrderItems,
 		in.NpoNumber, in.PboNumber, in.BrandColor,
+		in.PaymentIkhokha, in.PaymentGpay, in.PaymentSamsungpay, in.PaymentSassa, in.PaymentApplepay,
 	)
 	return scanService(row)
 }
@@ -269,16 +277,21 @@ type ServicePatch struct {
 	OffersBookings         *bool
 	LittleExplorerApproved *bool
 
-	PaymentCard     *bool
-	PaymentCash     *bool
-	PaymentMobile   *bool
-	PaymentGaap     *bool
-	PaymentSnapScan *bool
-	PaymentYoco     *bool
-	PaymentZapper   *bool
-	PaymentEft      *bool
-	TradingHours    *string
-	PublicHolidays  *string
+	PaymentCard       *bool
+	PaymentCash       *bool
+	PaymentMobile     *bool
+	PaymentGaap       *bool
+	PaymentSnapScan   *bool
+	PaymentYoco       *bool
+	PaymentZapper     *bool
+	PaymentEft        *bool
+	PaymentIkhokha    *bool
+	PaymentGpay       *bool
+	PaymentSamsungpay *bool
+	PaymentSassa      *bool
+	PaymentApplepay   *bool
+	TradingHours      *string
+	PublicHolidays    *string
 
 	WheelchairAccess    *bool
 	ParkingAvailability *bool
@@ -406,6 +419,21 @@ func (s *ServiceStore) Update(ctx context.Context, id int64, patch ServicePatch)
 	}
 	if patch.PaymentEft != nil {
 		sets = append(sets, "payment_eft = "+arg(*patch.PaymentEft))
+	}
+	if patch.PaymentIkhokha != nil {
+		sets = append(sets, "payment_ikhokha = "+arg(*patch.PaymentIkhokha))
+	}
+	if patch.PaymentGpay != nil {
+		sets = append(sets, "payment_gpay = "+arg(*patch.PaymentGpay))
+	}
+	if patch.PaymentSamsungpay != nil {
+		sets = append(sets, "payment_samsungpay = "+arg(*patch.PaymentSamsungpay))
+	}
+	if patch.PaymentSassa != nil {
+		sets = append(sets, "payment_sassa = "+arg(*patch.PaymentSassa))
+	}
+	if patch.PaymentApplepay != nil {
+		sets = append(sets, "payment_applepay = "+arg(*patch.PaymentApplepay))
 	}
 	if patch.TradingHours != nil {
 		sets = append(sets, "trading_hours = "+arg(*patch.TradingHours))

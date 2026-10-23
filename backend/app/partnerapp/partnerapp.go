@@ -32,6 +32,8 @@ var validCategory = map[string]string{
 	"attraction":    "Attraction",
 	"accommodation": "Accommodation",
 	"estate":        "Real Estate & Rentals",
+	"retail":        "Retail",
+	"nonprofit":     "NPO / PBO",
 }
 
 // ---- Public submit ----------------------------------------------------------

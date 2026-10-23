@@ -166,4 +166,18 @@ re_ = repcode() + business("Agency name")
 build("real-estate-onboarding.pdf", "Around You — Real Estate & Rentals Application", re_,
       price_txt="Estate Agencies R500 per month and Agents R300 per month each.")
 
+# ===== Retail =====
+retail = repcode() + business("Retail business name")
+build("retail-onboarding.pdf", "Around You \u2014 Retail Application", retail,
+      price_txt="R300 per month.")
+
+# ===== NPO / PBO =====
+npo = repcode() + business("NPO / PBO name") + [
+    *section("Registration numbers"),
+    fill("NPO Number"),
+    fill("PBO Number"),
+]
+build("npo-onboarding.pdf", "Around You \u2014 NPO / PBO Application", npo,
+      price_txt="Free \u2014 no monthly fee for registered NPO / PBO organisations.")
+
 print("done")

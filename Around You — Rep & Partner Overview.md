@@ -27,3 +27,15 @@ Around You is a mobile app that helps people discover great places near them —
 **How it works.** A Rep (or the Around You team) sets up your profile and helps you choose the listing option that fits your business. You pay a simple, affordable monthly subscription, and your profile goes live and starts appearing in nearby searches straight away. You can also choose to support a charity through your listing.
 
 **In short:** an easy, low-cost way to be discovered by nearby holidaymakers and locals — and to reward them for choosing you.
+
+## Partner categories
+
+Around You lists partners under distinct, independent categories, each with its own tab on the Admin Dashboard and the Guest/Local pages, and its own rep-onboarding path and application PDF:
+
+- **Restaurants/Takeaways**, **Business/Services**, **Attractions/Activities**, **Accommodation**, **Real Estate & Rentals** — as before.
+- **Retail** — the same as a Business/Service profile, but without Categories, Discounts (Guest/Local), Bookings or Pre-Orders. Retail keeps the Digital Stamp Card (with a brand-colour company name) and all contact, address, photos, trading hours, payment methods and socials. Billed like a business (R300/month).
+- **NPO / PBO** — a separate, independent category for non-profit and public-benefit organisations. Shows NPO Number and PBO Number, and is **free** (no monthly fee). Reps can onboard NPOs directly, and the commission still flows to the onboarding rep/NPO structure.
+
+**Payment methods** now include iKhokha, G Pay, Samsung Pay, SASSA and Apple Pay in addition to Card, Cash, Mobile Tap, Gaap, Snap Scan, Yoco, Zapper and EFT.
+
+**Restaurant/Takeaway pre-orders** are charged at **5%** of the bill (service and attraction pre-orders remain 10%).
