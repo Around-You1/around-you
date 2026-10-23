@@ -528,6 +528,7 @@ export default function GuestDashboard() {
                               </div>
                             )}
 
+                            {false && (
                             <StarRating
                               entityType={entityType}
                               entityId={Number(service.id)}
@@ -535,6 +536,7 @@ export default function GuestDashboard() {
                               onRated={applyRatingSummary}
                               readOnly={service.accessLevel === "Booking"}
                             />
+                            )}
                             {!isNpo && !isRetail && (service.offersBookings || service.accessLevel === "Booking") && (service.bookingItems?.length ?? 0) > 0 && (
                               <Button
                                 size="sm"
@@ -567,6 +569,35 @@ export default function GuestDashboard() {
                                 longitude={service.longitude}
                               />
                             )}
+
+                            <Collapsible>
+                              <CollapsibleTrigger className={triggerClass}>
+                                <ChevronDown className="h-4 w-4" />
+                                Discount and Discount Code
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className={`${contentClass} text-sm`}>
+                                {discOffered(service) || discCode(service) ? (
+                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#39FF14]/10 border border-[#39FF14] rounded-lg">
+                                    {discOffered(service) && (
+                                      <div className="flex items-center gap-1.5 text-black">
+                                        <Tag className="h-4 w-4" />
+                                        <span className="font-semibold text-sm whitespace-nowrap">{discOffered(service)}</span>
+                                      </div>
+                                    )}
+                                    {discCode(service) && (
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-xs text-muted-foreground">Code:</span>
+                                        <span className="px-2 py-0.5 bg-[#39FF14] text-black rounded font-mono text-xs font-bold">
+                                          {discCode(service)}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  fallbackSpan
+                                )}
+                              </CollapsibleContent>
+                            </Collapsible>
 
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
@@ -705,34 +736,6 @@ export default function GuestDashboard() {
                               </CollapsibleContent>
                             </Collapsible>
 
-                            <Collapsible>
-                              <CollapsibleTrigger className={triggerClass}>
-                                <ChevronDown className="h-4 w-4" />
-                                Discount and Discount Code
-                              </CollapsibleTrigger>
-                              <CollapsibleContent className={`${contentClass} text-sm`}>
-                                {discOffered(service) || discCode(service) ? (
-                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#39FF14]/10 border border-[#39FF14] rounded-lg">
-                                    {discOffered(service) && (
-                                      <div className="flex items-center gap-1.5 text-black">
-                                        <Tag className="h-4 w-4" />
-                                        <span className="font-semibold text-sm whitespace-nowrap">{discOffered(service)}</span>
-                                      </div>
-                                    )}
-                                    {discCode(service) && (
-                                      <div className="flex items-center gap-1">
-                                        <span className="text-xs text-muted-foreground">Code:</span>
-                                        <span className="px-2 py-0.5 bg-[#39FF14] text-black rounded font-mono text-xs font-bold">
-                                          {discCode(service)}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  fallbackSpan
-                                )}
-                              </CollapsibleContent>
-                            </Collapsible>
 
                             {tierOf(service.accessLevel) >= 2 && (
                               <AddressDropdown
@@ -1238,6 +1241,7 @@ export default function GuestDashboard() {
                               {restaurant.littleExplorerApproved && <span title="Child Friendly">👶</span>}
                             </div>
 
+                            {false && (
                             <StarRating
                               entityType="restaurant"
                               entityId={Number(restaurant.id)}
@@ -1245,6 +1249,7 @@ export default function GuestDashboard() {
                               onRated={applyRatingSummary}
                               readOnly={restaurant.accessLevel === "Booking" && (restaurant.bookingItems?.length ?? 0) > 0}
                             />
+                            )}
                             {(restaurant.offersBookings || restaurant.accessLevel === "Booking") && (restaurant.bookingItems?.length ?? 0) > 0 && (
                               <Button
                                 size="sm"
@@ -1277,6 +1282,35 @@ export default function GuestDashboard() {
                                 longitude={restaurant.longitude}
                               />
                             )}
+
+                            <Collapsible>
+                              <CollapsibleTrigger className={triggerClass}>
+                                <ChevronDown className="h-4 w-4" />
+                                Discount and Discount Code
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className={`${contentClass} text-sm`}>
+                                {discOffered(restaurant) || discCode(restaurant) ? (
+                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#39FF14]/10 border border-[#39FF14] rounded-lg">
+                                    {discOffered(restaurant) && (
+                                      <div className="flex items-center gap-1.5 text-black">
+                                        <Tag className="h-4 w-4" />
+                                        <span className="font-semibold text-sm whitespace-nowrap">{discOffered(restaurant)}</span>
+                                      </div>
+                                    )}
+                                    {discCode(restaurant) && (
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-xs text-muted-foreground">Code:</span>
+                                        <span className="px-2 py-0.5 bg-[#39FF14] text-black rounded font-mono text-xs font-bold">
+                                          {discCode(restaurant)}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  fallbackSpan
+                                )}
+                              </CollapsibleContent>
+                            </Collapsible>
 
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
@@ -1573,34 +1607,6 @@ export default function GuestDashboard() {
                               </CollapsibleContent>
                             </Collapsible>
 
-                            <Collapsible>
-                              <CollapsibleTrigger className={triggerClass}>
-                                <ChevronDown className="h-4 w-4" />
-                                Discount and Discount Code
-                              </CollapsibleTrigger>
-                              <CollapsibleContent className={`${contentClass} text-sm`}>
-                                {discOffered(restaurant) || discCode(restaurant) ? (
-                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#39FF14]/10 border border-[#39FF14] rounded-lg">
-                                    {discOffered(restaurant) && (
-                                      <div className="flex items-center gap-1.5 text-black">
-                                        <Tag className="h-4 w-4" />
-                                        <span className="font-semibold text-sm whitespace-nowrap">{discOffered(restaurant)}</span>
-                                      </div>
-                                    )}
-                                    {discCode(restaurant) && (
-                                      <div className="flex items-center gap-1">
-                                        <span className="text-xs text-muted-foreground">Code:</span>
-                                        <span className="px-2 py-0.5 bg-[#39FF14] text-black rounded font-mono text-xs font-bold">
-                                          {discCode(restaurant)}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  fallbackSpan
-                                )}
-                              </CollapsibleContent>
-                            </Collapsible>
 
                             {tierOf(restaurant.accessLevel) >= 2 && (
                               <AddressDropdown
@@ -1732,6 +1738,7 @@ export default function GuestDashboard() {
                               <SupportBadge orgName={attraction.supportOrgName} />
                             </div>
 
+                            {false && (
                             <StarRating
                               entityType="attraction"
                               entityId={Number(attraction.id)}
@@ -1739,6 +1746,7 @@ export default function GuestDashboard() {
                               onRated={applyRatingSummary}
                               readOnly={attraction.accessLevel === "Booking"}
                             />
+                            )}
                             {(attraction.offersBookings || attraction.accessLevel === "Booking") && (attraction.bookingItems?.length ?? 0) > 0 && (
                               <Button
                                 size="sm"
@@ -1771,6 +1779,35 @@ export default function GuestDashboard() {
                                 longitude={attraction.longitude}
                               />
                             )}
+
+                            <Collapsible>
+                              <CollapsibleTrigger className={triggerClass}>
+                                <ChevronDown className="h-4 w-4" />
+                                Discount and Discount Code
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className={`${contentClass} text-sm`}>
+                                {discOffered(attraction) || discCode(attraction) ? (
+                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#39FF14]/10 border border-[#39FF14] rounded-lg">
+                                    {discOffered(attraction) && (
+                                      <div className="flex items-center gap-1.5 text-black">
+                                        <Tag className="h-4 w-4" />
+                                        <span className="font-semibold text-sm whitespace-nowrap">{discOffered(attraction)}</span>
+                                      </div>
+                                    )}
+                                    {discCode(attraction) && (
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-xs text-muted-foreground">Code:</span>
+                                        <span className="px-2 py-0.5 bg-[#39FF14] text-black rounded font-mono text-xs font-bold">
+                                          {discCode(attraction)}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  fallbackSpan
+                                )}
+                              </CollapsibleContent>
+                            </Collapsible>
 
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
@@ -1906,34 +1943,6 @@ export default function GuestDashboard() {
                               </CollapsibleContent>
                             </Collapsible>
 
-                            <Collapsible>
-                              <CollapsibleTrigger className={triggerClass}>
-                                <ChevronDown className="h-4 w-4" />
-                                Discount and Discount Code
-                              </CollapsibleTrigger>
-                              <CollapsibleContent className={`${contentClass} text-sm`}>
-                                {discOffered(attraction) || discCode(attraction) ? (
-                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#39FF14]/10 border border-[#39FF14] rounded-lg">
-                                    {discOffered(attraction) && (
-                                      <div className="flex items-center gap-1.5 text-black">
-                                        <Tag className="h-4 w-4" />
-                                        <span className="font-semibold text-sm whitespace-nowrap">{discOffered(attraction)}</span>
-                                      </div>
-                                    )}
-                                    {discCode(attraction) && (
-                                      <div className="flex items-center gap-1">
-                                        <span className="text-xs text-muted-foreground">Code:</span>
-                                        <span className="px-2 py-0.5 bg-[#39FF14] text-black rounded font-mono text-xs font-bold">
-                                          {discCode(attraction)}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  fallbackSpan
-                                )}
-                              </CollapsibleContent>
-                            </Collapsible>
 
                             {tierOf(attraction.accessLevel) >= 2 && (
                               <AddressDropdown
