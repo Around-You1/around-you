@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 interface ProfileReferenceCodeDisplayProps {
-  entityType: "accommodation" | "restaurant" | "service" | "attraction" | "estate_agency" | "estate_agent";
+  entityType: "accommodation" | "restaurant" | "service" | "attraction" | "estate_agency" | "estate_agent" | "retail" | "nonprofit";
   entityId: number;
   entityStringId?: string;
   currentCode?: string | null;

@@ -174,7 +174,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
   const kind: "service" | "retail" | "nonprofit" = entityKind ?? (nonProfit ? "nonprofit" : "service");
   const showNpoPbo = kind === "nonprofit";
   const showCategories = kind === "service";
-  const showExperience = kind !== "nonprofit";
+  const showExperience = false;
   const showDiscounts = kind !== "retail";
   const showBookings = kind === "service";
   const showPreOrders = kind === "service";
@@ -460,7 +460,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           bookingItems: formData.bookingItems,
           preOrderItems: formData.preOrderItems,
         });
-        await saveCharity("service", serviceData?.id, officialUse.charity || []);
+        await saveCharity(kind, serviceData?.id, officialUse.charity || []);
         toast({
           title: "Success",
           description: "Business/Service updated successfully",
@@ -533,7 +533,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           bookingItems: formData.bookingItems,
           preOrderItems: formData.preOrderItems,
         });
-        await saveCharity("service", createdSvc.id, officialUse.charity || []);
+        await saveCharity(kind, createdSvc.id, officialUse.charity || []);
         toast({
           title: "Success",
           description: "Business/Service created successfully",
@@ -600,21 +600,6 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
         <form onSubmit={handleSubmit} className="space-y-4">
           {!partnerEdit && <OfficialUseSection data={officialUse} onChange={setOfficialUse} address={formData.accountingAddress} onAddressChange={(v) => setFormData({ ...formData, accountingAddress: v })} />}
 
-          {!partnerEdit && (
-            <div className="space-y-2 rounded-md border p-3">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="isNonProfit"
-                  checked={formData.isNonProfit}
-                  onCheckedChange={(c) => setFormData({ ...formData, isNonProfit: c === true })}
-                />
-                <Label htmlFor="isNonProfit" className="cursor-pointer">NPO / PBO</Label>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Tick to list this under the NPO / PBO tab (free) instead of Business/Service. Untick to move it back to Business/Service.
-              </p>
-            </div>
-          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -1227,7 +1212,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
 
           {!partnerEdit && serviceData && (
             <ProfileReferenceCodeDisplay
-              entityType="service"
+              entityType={kind}
               entityId={serviceData.id}
               entityStringId={serviceData.serviceId}
               currentCode={serviceData.profileReferenceCode}

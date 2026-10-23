@@ -46,7 +46,7 @@ export default function MultiPdfUpload({
   const uploadFiles = async (fileList: FileList | File[]) => {
     const remaining = maxPdfs - pdfs.length;
     if (remaining <= 0) {
-      toast({ title: "Limit reached", description: `You can only have up to ${maxPdfs} PDFs.`, variant: "destructive" });
+      toast({ title: "Limit reached", description: `You can only have up to ${maxPdfs} files.`, variant: "destructive" });
       return;
     }
     const files = Array.from(fileList).slice(0, remaining);
@@ -103,7 +103,7 @@ export default function MultiPdfUpload({
         {label} ({pdfs.length}/{maxPdfs})
       </Label>
       <p className="text-xs text-muted-foreground">
-        For a restaurant without an online menu — upload the menu as PDF(s). One PDF per page is fine; use the arrows to set page order.
+        For a restaurant without an online menu — upload the menu as PDF(s) or images. One page per file is fine; use the arrows to set page order.
       </p>
 
       {pdfs.length > 0 && (
@@ -144,8 +144,8 @@ export default function MultiPdfUpload({
                 <div className="w-12 h-12 rounded-lg bg-muted/50 flex items-center justify-center">
                   <Upload className="w-6 h-6 text-muted-foreground" />
                 </div>
-                <p className="text-sm font-medium text-foreground">Drag and drop menu PDFs here or click to upload</p>
-                <p className="text-xs text-muted-foreground">PDF only — max {maxSizeMB}MB each, up to {maxPdfs - pdfs.length} more</p>
+                <p className="text-sm font-medium text-foreground">Drag and drop menu PDFs or images here or click to upload</p>
+                <p className="text-xs text-muted-foreground">PDF or image — max {maxSizeMB}MB each, up to {maxPdfs - pdfs.length} more</p>
               </>
             )}
           </div>
