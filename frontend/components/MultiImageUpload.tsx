@@ -235,7 +235,7 @@ export default function MultiImageUpload({
                   Drag and drop images here or click to upload
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Select multiple files at once — JPG, PNG, WebP (max {maxSizeMB}MB each, up to {maxImages - images.length} more)
+                  Select multiple files at once — JPG, PNG, WebP · recommended 1200×800px (width × height) · max {maxSizeMB}MB each, up to {maxImages - images.length} more
                 </p>
               </>
             )}

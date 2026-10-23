@@ -249,7 +249,7 @@ export default function ImageUpload({
                     Drag and drop image here or click to upload
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Supports JPG, PNG, WebP (max {maxSizeMB}MB)
+                    Supports JPG, PNG, WebP · recommended 1200×800px (width × height) · max {maxSizeMB}MB
                   </p>
                 </div>
               </>
