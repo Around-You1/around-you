@@ -23,6 +23,7 @@ type Subscription struct {
 	NextBillDate string `json:"nextBillDate"` // YYYY-MM-DD
 	PartnerName  string `json:"partnerName"`  // resolved from the partner's own table
 	Billable     bool   `json:"billable"`     // active, paid plan, real (non-test) rep, billing anchored
+	Expected     bool   `json:"expected"`     // active, paid plan, real (non-test) rep — counts even if not yet activated for billing
 }
 
 // EnsureSubscription creates (or updates) the billing arrangement for a partner
@@ -103,6 +104,8 @@ func List(ctx context.Context) ([]Subscription, error) {
 		       COALESCE((CASE ps.partner_type
 		         WHEN 'restaurant'    THEN (SELECT official_rep_code FROM restaurants     WHERE id = ps.partner_id)
 		         WHEN 'service'       THEN (SELECT official_rep_code FROM services        WHERE id = ps.partner_id)
+		         WHEN 'retail'        THEN (SELECT official_rep_code FROM retail          WHERE id = ps.partner_id)
+		         WHEN 'nonprofit'     THEN (SELECT official_rep_code FROM nonprofits      WHERE id = ps.partner_id)
 		         WHEN 'attraction'    THEN (SELECT official_rep_code FROM attractions     WHERE id = ps.partner_id)
 		         WHEN 'accommodation' THEN (SELECT official_rep_code FROM accommodations  WHERE id = ps.partner_id)
 		         WHEN 'estate_agency' THEN (SELECT official_rep_code FROM estate_agencies WHERE id = ps.partner_id)
@@ -112,6 +115,8 @@ func List(ctx context.Context) ([]Subscription, error) {
 		       COALESCE((CASE ps.partner_type
 		         WHEN 'restaurant'    THEN (SELECT name FROM restaurants     WHERE id = ps.partner_id)
 		         WHEN 'service'       THEN (SELECT name FROM services        WHERE id = ps.partner_id)
+		         WHEN 'retail'        THEN (SELECT name FROM retail          WHERE id = ps.partner_id)
+		         WHEN 'nonprofit'     THEN (SELECT name FROM nonprofits      WHERE id = ps.partner_id)
 		         WHEN 'attraction'    THEN (SELECT name FROM attractions     WHERE id = ps.partner_id)
 		         WHEN 'accommodation' THEN (SELECT name FROM accommodations  WHERE id = ps.partner_id)
 		         WHEN 'estate_agency' THEN (SELECT name FROM estate_agencies WHERE id = ps.partner_id)
@@ -142,6 +147,16 @@ func List(ctx context.Context) ([]Subscription, error) {
 		s.Billable = s.Status == "Active" &&
 			s.MonthlyCents > 0 &&
 			strings.TrimSpace(s.NextBillDate) != "" &&
+			strings.TrimSpace(s.RepCode) != "" &&
+			!isTestRep(s.RepCode)
+		// Expected = will be billed on the next monthly run: a real (non-test),
+		// active, paid-plan partner — counted even if not yet activated for
+		// billing (next_bill_date still NULL during the pre-launch promo). This
+		// is what the Admin Billing "Expected revenue" projection sums, so an
+		// account that hasn't had its first invoice issued yet (e.g. SPAR) is
+		// still included at its stored monthly fee.
+		s.Expected = s.Status == "Active" &&
+			s.MonthlyCents > 0 &&
 			strings.TrimSpace(s.RepCode) != "" &&
 			!isTestRep(s.RepCode)
 		subs = append(subs, s)

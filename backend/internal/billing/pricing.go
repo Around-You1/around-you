@@ -14,6 +14,7 @@ const (
 	RealEstateCents       = 30000 // R300 — legacy flat real-estate price (kept for reference)
 	RealEstateAgencyCents = 50000 // R500 — estate agency page
 	RealEstateAgentCents  = 30000 // R300 — estate agent page
+	RetailCents           = 50000 // R500 — Retail shops (e.g. SPAR + TOPS)
 
 	// Accommodation Option-A unit bands (6+ units); 1–5 units use tier pricing.
 	AccUnits6to10Cents  = 50000  // R500
@@ -54,6 +55,9 @@ func PriceForUnits(partnerType, accessLevel, guestType string, units int) Plan {
 	// no longer change the price. Kept as-is: accommodation unit bands (6+ units),
 	// the Booking plan's per-booking commissions (added per period at billing),
 	// and estate pages. Everything else is a flat R300/month.
+	if partnerType == "retail" {
+		return Plan{Plan: "tier", Tier: 2, Audience: "Both", MonthlyCents: RetailCents}
+	}
 	if partnerType == "estate_agency" {
 		return Plan{Plan: "realestate", MonthlyCents: RealEstateAgencyCents}
 	}
@@ -114,6 +118,8 @@ func InvoiceItem(partnerType string, tier int, audience string, units int) (code
 		return "Acc1", "Accommodation 1"
 	case "service":
 		return "Bus/Ser1", "Business/Services 1"
+	case "retail":
+		return "Retail1", "Retail 1"
 	case "attraction":
 		return "Att1", "Attractions/Activities 1"
 	default: // restaurant

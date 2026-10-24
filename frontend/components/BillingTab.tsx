@@ -21,6 +21,7 @@ interface Subscription {
   nextBillDate: string;
   partnerName: string;
   billable: boolean;
+  expected: boolean;
 }
 
 interface Invoice {
@@ -530,11 +531,18 @@ export default function BillingTab() {
 
   const mrrCents = billableSubs.reduce((sum, s) => sum + s.monthlyCents, 0);
 
-  // Expected revenue on the next monthly billing run, summed live from the
-  // billable subscriptions (active, paid plan, activated for billing, real
-  // non-test agent). Free NPO/PBO listings carry R0 and never appear here.
+  // Expected revenue on the next monthly billing run. This counts EVERY real,
+  // paid partner — active, on a paid plan, with a real (non-test) agent —
+  // including accounts not yet activated for billing (next_bill_date still
+  // unset during the pre-launch promo). That is why it is based on `expected`
+  // rather than `billable`: e.g. SPAR (R500/month) is a real paid account that
+  // simply hasn't had its first invoice issued yet, so it belongs in the
+  // projection. Each partner is summed at its own stored monthly fee. Free
+  // NPO/PBO listings carry R0 and never appear here.
+  const expectedSubs = subs.filter((s) => s.expected);
+  const expectedCents = expectedSubs.reduce((sum, s) => sum + s.monthlyCents, 0);
   const expectedByType: Record<string, { cents: number; count: number }> = {};
-  for (const s of billableSubs) {
+  for (const s of expectedSubs) {
     const row = expectedByType[s.partnerType] || { cents: 0, count: 0 };
     row.cents += s.monthlyCents;
     row.count += 1;
@@ -545,20 +553,21 @@ export default function BillingTab() {
   return (
     <div className="space-y-6">
       <CollapsibleCard
-        title={`Expected revenue · next billing run ${rand(mrrCents)}`}
+        title={`Expected revenue · next billing run ${rand(expectedCents)}`}
         defaultOpen
         contentClassName="space-y-3"
       >
         <p className="text-sm text-muted-foreground">
           Projected base subscription revenue for the next monthly billing run (first
-          payable run: 1 November 2026), summed live from every billable partner — active,
-          on a paid plan, activated for billing, with a real (non-test) agent. Excludes free
-          NPO/PBO listings, per-booking and pre-order usage fees, commission, and VAT.
+          payable run: 1 November 2026), summed live from every real paid partner — active,
+          on a paid plan, with a real (non-test) agent — including accounts not yet activated
+          for billing. Each partner is counted at its own monthly fee. Excludes free NPO/PBO
+          listings, per-booking and pre-order usage fees, commission, and VAT.
         </p>
         <div className="text-2xl font-semibold">
-          {rand(mrrCents)}
+          {rand(expectedCents)}
           <span className="ml-2 text-sm font-normal text-muted-foreground">
-            / month · {billableSubs.length} partner{billableSubs.length === 1 ? "" : "s"}
+            / month · {expectedSubs.length} partner{expectedSubs.length === 1 ? "" : "s"}
           </span>
         </div>
         {expectedTypeRows.length > 0 && (
@@ -581,8 +590,8 @@ export default function BillingTab() {
                 ))}
                 <tr className="border-t font-semibold">
                   <td className="py-1 pr-3">Total</td>
-                  <td className="py-1 pr-3">{billableSubs.length}</td>
-                  <td className="py-1 pr-3">{rand(mrrCents)}</td>
+                  <td className="py-1 pr-3">{expectedSubs.length}</td>
+                  <td className="py-1 pr-3">{rand(expectedCents)}</td>
                 </tr>
               </tbody>
             </table>
