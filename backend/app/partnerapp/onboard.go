@@ -288,6 +288,8 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 	case "nonprofit":
 		created, err := nonprofit.Create(ctx, &nonprofit.CreateRequest{
 			Name:                   a.BusinessName,
+			NpoNumber:              a.f("NPO Number"),
+			PboNumber:              a.f("PBO Number"),
 			Address:                a.f("Physical address"),
 			Country:                "South Africa",
 			Province:               a.Province,

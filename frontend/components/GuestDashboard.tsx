@@ -1161,18 +1161,6 @@ export default function GuestDashboard() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Select value={String(minRating)} onValueChange={(v) => setMinRating(Number(v))}>
-              <SelectTrigger className="w-auto min-w-[140px] h-9">
-                <Star className="h-4 w-4 mr-1 text-yellow-400 fill-yellow-400" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">Any rating</SelectItem>
-                <SelectItem value="3">3★ &amp; above</SelectItem>
-                <SelectItem value="4">4★ &amp; above</SelectItem>
-                <SelectItem value="4.5">4.5★ &amp; above</SelectItem>
-              </SelectContent>
-            </Select>
             <Button
               type="button"
               variant={discountsOnly ? "default" : "outline"}

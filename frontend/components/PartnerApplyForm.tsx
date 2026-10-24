@@ -19,6 +19,8 @@ const CATEGORIES: { key: string; label: string }[] = [
   { key: "service", label: "Business/Service" },
   { key: "attraction", label: "Attraction/Activity" },
   { key: "estate", label: "Real Estate & Rentals" },
+  { key: "retail", label: "Retail" },
+  { key: "nonprofit", label: "NPO / PBO" },
 ];
 
 // Per-category pricing shown prominently near the top of each application.
@@ -28,6 +30,8 @@ const PRICING: Record<string, string> = {
   service: "R300 per month, plus Bookings @ 10% of the bill and Pre-Orders @ 10% of the bill.",
   attraction: "R300 per month, plus Bookings @ 10% of the bill and Pre-Orders @ 10% of the bill.",
   estate: "Estate Agencies R500 per month and Agents R300 per month each.",
+  retail: "R300 per month.",
+  nonprofit: "Free — no monthly fee for registered NPO / PBO organisations.",
 };
 
 const PROVINCES = ["Eastern Cape", "Free State", "Gauteng", "KwaZulu Natal", "Limpopo", "Mpumalanga", "Northern Cape", "North West", "Western Cape"];
@@ -120,6 +124,14 @@ function specsFor(cat: string): Section[] {
     businessSection("Accommodation name"),
     { title: "Accommodation details", fields: [
       { key: "Number of units / rooms", type: "text", note: "sets your monthly price", priceRows: ["1–5 units — R300", "6–10 units — R500", "11–20 units — R800", "21–40 units — R1,200", "40+ units — Custom quote"] },
+    ] },
+  ];
+  if (cat === "retail") return [businessSection("Retail business name")];
+  if (cat === "nonprofit") return [
+    businessSection("NPO / PBO name"),
+    { title: "Registration numbers", fields: [
+      { key: "NPO Number", type: "text", required: true, note: "required for NPO / PBO organisations" },
+      { key: "PBO Number", type: "text" },
     ] },
   ];
   // estate
