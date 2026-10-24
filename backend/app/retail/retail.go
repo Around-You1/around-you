@@ -103,12 +103,10 @@ func ListNearby(ctx context.Context, req *ListNearbyRequest) (*ListResponse, err
 	}
 	out := make([]appdb.ServiceData, 0, len(all))
 	for _, s := range all {
-		// Non Profit Organizations are the same data as Services but shown in a
-		// separate tab: exclude them from the normal Business/Services results,
-		// and return only them when nonProfit=true is requested.
-		if s.IsNonProfit != req.NonProfit {
-			continue
-		}
+		// This endpoint serves the dedicated Retail table, so every row belongs
+		// here — there is no is_nonprofit split to apply (that filter only makes
+		// sense on the shared services table). Filtering by it here wrongly
+		// dropped migrated rows whose is_nonprofit flag was still set.
 		// Every partner is matched by real distance. A fixed partner uses its own
 		// coordinates; a mobile or un-geocoded partner is placed at the centre of
 		// its postal code. Exact postal code is kept as a safety net for codes not
