@@ -385,6 +385,8 @@ export default function BillingTab() {
   const [bookingLedger, setBookingLedger] = useState<BookingLedger | null>(null);
   const [emailLog, setEmailLog] = useState<any[]>([]);
   const [resendingId, setResendingId] = useState<number | null>(null);
+  const [copyEmail, setCopyEmail] = useState("");
+  const [copyingId, setCopyingId] = useState<number | null>(null);
   const [accStatus, setAccStatus] = useState<AccCodeStatus | null>(null);
   const [newAccCode, setNewAccCode] = useState("");
   const [savingAcc, setSavingAcc] = useState(false);
@@ -480,6 +482,28 @@ export default function BillingTab() {
       toast({ title: "Resend failed", description: e?.message || "Please try again.", variant: "destructive" });
     } finally {
       setResendingId(null);
+    }
+  };
+
+  // Email a copy of an invoice to the address typed above the table — the
+  // partner is NOT contacted (no resend, no CC to them).
+  const handleCopyToMe = async (invoiceId: number) => {
+    const to = copyEmail.trim();
+    if (!to) {
+      toast({ title: "Enter an email", description: "Type the address to send your copy to, then try again.", variant: "destructive" });
+      return;
+    }
+    setCopyingId(invoiceId);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.billing.sendInvoiceCopy({ invoiceId, to });
+      toast({ title: "Copy sent", description: `A copy was emailed to ${to}. The partner was not contacted.` });
+      const el: any = await backend.billing.emailLog().catch(() => ({ entries: [] }));
+      setEmailLog(el.entries || []);
+    } catch (e: any) {
+      toast({ title: "Couldn't send copy", description: e?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setCopyingId(null);
     }
   };
 
@@ -803,6 +827,20 @@ export default function BillingTab() {
                 )
               }
             />
+            <div className="flex flex-col sm:flex-row sm:items-end gap-2 mb-3 rounded-md border border-border bg-muted/30 p-3">
+              <div className="flex-1 space-y-1">
+                <Label className="text-xs">Send me a copy — email a copy of an invoice to this address (the partner is NOT contacted)</Label>
+                <Input
+                  type="email"
+                  value={copyEmail}
+                  onChange={(e) => setCopyEmail(e.target.value)}
+                  placeholder="e.g. you@aroundyou.co.za"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground sm:pb-2">
+                Then click <span className="font-medium">Copy to me</span> on any invoice row below.
+              </p>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -828,10 +866,16 @@ export default function BillingTab() {
                       <td className="py-2 pr-3">{v.status}</td>
                       <td className="py-2 pr-3">{v.issuedAt}</td>
                       <td className="py-2 pr-3">
-                        <Button variant="outline" size="sm" disabled={resendingId === v.id}
-                          onClick={() => handleResend(v.id)}>
-                          {resendingId === v.id ? "Sending…" : "Resend"}
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                          <Button variant="outline" size="sm" disabled={copyingId === v.id}
+                            onClick={() => handleCopyToMe(v.id)}>
+                            {copyingId === v.id ? "Sending…" : "Copy to me"}
+                          </Button>
+                          <Button variant="outline" size="sm" disabled={resendingId === v.id}
+                            onClick={() => handleResend(v.id)}>
+                            {resendingId === v.id ? "Sending…" : "Resend"}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}

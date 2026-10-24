@@ -5,6 +5,7 @@ package billing
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"backend_encore/app/auth"
@@ -310,6 +311,37 @@ func ResendInvoice(ctx context.Context, req *ResendInvoiceRequest) (*ResendInvoi
 		return nil, &errs.Error{Code: errs.Internal, Message: err.Error()}
 	}
 	return &ResendInvoiceResponse{OK: true}, nil
+}
+
+type SendInvoiceCopyRequest struct {
+	InvoiceID int64  `json:"invoiceId"`
+	To        string `json:"to"`
+}
+type SendInvoiceCopyResponse struct {
+	OK bool   `json:"ok"`
+	To string `json:"to"`
+}
+
+// SendInvoiceCopy emails a copy of an existing invoice to the given address
+// ONLY — the partner is not contacted. Backs the "Send me a copy" button on the
+// Invoices tab. SuperAdmin-only.
+//
+//encore:api auth method=POST path=/billing/invoice/copy
+func SendInvoiceCopy(ctx context.Context, req *SendInvoiceCopyRequest) (*SendInvoiceCopyResponse, error) {
+	if !isSuperAdmin(ctx) {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can send an invoice copy"}
+	}
+	if req.InvoiceID == 0 {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "invoiceId is required"}
+	}
+	to := strings.TrimSpace(req.To)
+	if to == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "an email address is required"}
+	}
+	if err := billingcore.SendInvoiceCopyTo(ctx, req.InvoiceID, to); err != nil {
+		return nil, &errs.Error{Code: errs.Internal, Message: err.Error()}
+	}
+	return &SendInvoiceCopyResponse{OK: true, To: to}, nil
 }
 
 type SendTestInvoiceRequest struct {

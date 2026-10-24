@@ -360,7 +360,7 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 // rebuilt from the stored invoice data. withCodes appends the partner's Access
 // Code / Edit Code / QR Code block (as on the first invoice). Returns the
 // mailer error so the caller can report whether it actually sent.
-func ResendInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) error {
+func buildInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) (string, string, []mailer.Attachment, string, *InvoiceSettings, error) {
 	var number, partnerType, billName, billHolding, billReg, billVat, email string
 	var partnerID int64
 	var start, due time.Time
@@ -372,7 +372,7 @@ func ResendInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) er
 		       COALESCE(bill_email,''), period_start, due_at, total_cents
 		FROM invoice WHERE id = $1`, invoiceID,
 	).Scan(&number, &partnerType, &partnerID, &billName, &billHolding, &billReg, &billVat, &email, &start, &due, &totalCents); err != nil {
-		return err
+		return "", "", nil, "", nil, err
 	}
 
 	// Load every line item so multi-line (Booking) invoices resend in full.
@@ -406,7 +406,7 @@ func ResendInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) er
 		email = strings.TrimSpace(partnerEmail)
 	}
 	if strings.TrimSpace(email) == "" {
-		return fmt.Errorf("this invoice has no billing email on file — set the partner's Official Use → Email, then try again")
+		return "", "", nil, "", nil, fmt.Errorf("this invoice has no billing email on file — set the partner's Official Use → Email, then try again")
 	}
 
 	settings, _ := LoadInvoiceSettings(ctx)
@@ -430,7 +430,34 @@ func ResendInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) er
 		atts = append(atts, mailer.Attachment{Filename: "profile-qr-code.pdf", Content: qr})
 		html = qrDecalNoteHTML() + html
 	}
-	return mailer.SendFull(email, "Your "+bizName+" invoice "+number, html, "", []string{"accounts@aroundyou.co.za"}, copyBcc(settings), atts)
+	return "Your " + bizName + " invoice " + number, html, atts, email, settings, nil
+}
+
+// ResendInvoiceEmail re-sends an existing invoice to the partner (CC accounts@,
+// BCC the admin copy address). withCodes appends the Access/Edit/QR block.
+func ResendInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) error {
+	subject, html, atts, email, settings, err := buildInvoiceEmail(ctx, invoiceID, withCodes)
+	if err != nil {
+		return err
+	}
+	return mailer.SendFull(email, subject, html, "", []string{"accounts@aroundyou.co.za"}, copyBcc(settings), atts)
+}
+
+// SendInvoiceCopyTo emails a copy of an existing invoice to `to` ONLY — the
+// partner is NOT contacted and there is no CC or BCC. Backs the "Send me a copy"
+// button on the Invoices tab, so the admin can get their own copy of an invoice
+// already sent, without re-emailing the partner. Always includes the codes block
+// so the copy matches what the partner received.
+func SendInvoiceCopyTo(ctx context.Context, invoiceID int64, to string) error {
+	to = strings.TrimSpace(to)
+	if to == "" {
+		return fmt.Errorf("an email address is required")
+	}
+	subject, html, atts, _, _, err := buildInvoiceEmail(ctx, invoiceID, true)
+	if err != nil {
+		return err
+	}
+	return mailer.SendWithAttachments(to, subject+" (copy)", html, "", nil, atts)
 }
 
 // SendTestInvoiceWithCodes emails a SAMPLE invoice — including a sample Access

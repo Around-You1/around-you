@@ -278,6 +278,7 @@ func main() {
 	r.auth("GET /billing/invoice-preview", httpx.Empty(billing.InvoicePreview))
 	r.auth("GET /billing/email-log", httpx.Empty(billing.EmailLog))
 	r.auth("POST /billing/invoice/resend", httpx.Body(billing.ResendInvoice))
+	r.auth("POST /billing/invoice/copy", httpx.Body(billing.SendInvoiceCopy))
 	r.auth("POST /billing/invoice/test-send", httpx.Body(billing.SendTestInvoice))
 
 	// ---- Accountant portal (Accountant or SuperAdmin) ----------------------
