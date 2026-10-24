@@ -5,12 +5,13 @@
 // email_log table so failures are visible in the Admin Billing tab and Fly logs.
 //
 // Config (Fly secrets / env):
-//   RESEND_API_KEY  required — the Resend API key. If unset, Send is a no-op
-//                   and the attempt is logged as "skipped".
-//   RESEND_FROM     optional — the From address. Defaults to Resend's shared
-//                   test sender, which can ONLY deliver to the Resend account's
-//                   own address until you verify a domain. For production set
-//                   e.g. "Around You <noreply@aroundyou.co.za>".
+//
+//	RESEND_API_KEY  required — the Resend API key. If unset, Send is a no-op
+//	                and the attempt is logged as "skipped".
+//	RESEND_FROM     optional — the From address. Defaults to Resend's shared
+//	                test sender, which can ONLY deliver to the Resend account's
+//	                own address until you verify a domain. For production set
+//	                e.g. "Around You <noreply@aroundyou.co.za>".
 package mailer
 
 import (
@@ -49,6 +50,13 @@ func SendOpts(to, subject, html, replyTo string, cc []string) error {
 
 // SendWithAttachments is SendOpts plus file attachments (e.g. a PDF invoice).
 func SendWithAttachments(to, subject, html, replyTo string, cc []string, atts []Attachment) error {
+	return SendFull(to, subject, html, replyTo, cc, nil, atts)
+}
+
+// SendFull is SendWithAttachments plus an optional BCC list. BCC recipients get
+// a copy without appearing in the email headers the other recipients see — used
+// to silently copy the Around You admin on every partner invoice / welcome mail.
+func SendFull(to, subject, html, replyTo string, cc, bcc []string, atts []Attachment) error {
 	apiKey := os.Getenv("RESEND_API_KEY")
 	if to == "" {
 		logAttempt(to, subject, "skipped", "no recipient address")
@@ -73,6 +81,9 @@ func SendWithAttachments(to, subject, html, replyTo string, cc []string, atts []
 	}
 	if len(cc) > 0 {
 		body["cc"] = cc
+	}
+	if len(bcc) > 0 {
+		body["bcc"] = bcc
 	}
 	if len(atts) > 0 {
 		arr := make([]map[string]string, 0, len(atts))

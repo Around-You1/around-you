@@ -350,6 +350,13 @@ function InvoiceSettingsCard() {
             {field("paymentReference", "Payment reference (blank = invoice number)")}
             {field("paymentTerms", "Payment terms")}
           </div>
+          <p className="text-xs font-medium text-muted-foreground pt-2">Copy me</p>
+          <div className="grid grid-cols-1 gap-1">
+            {field("copyEmail", "Send me a copy (BCC) at", "e.g. you@aroundyou.co.za — blank = no copy")}
+            <p className="text-xs text-muted-foreground">
+              Every partner invoice and welcome email is silently copied (BCC) to this address, so you always get your own copy. Leave blank to turn copies off. (Partner emails are also CC&apos;d to accounts@aroundyou.co.za.)
+            </p>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button onClick={save} disabled={saving} className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black">
               {saving ? "Saving…" : "Save invoice settings"}

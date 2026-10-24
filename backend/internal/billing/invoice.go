@@ -22,6 +22,19 @@ import (
 // TEST_REP_CODES env var (comma-separated, case-insensitive).
 func isTestRep(code string) bool { return appdb.IsTestRep(code) }
 
+// copyBcc returns the admin copy address (if configured in Invoice Settings) as
+// a BCC list, so every partner invoice / welcome email silently copies the
+// admin. Empty when no copy address is set.
+func copyBcc(s *InvoiceSettings) []string {
+	if s == nil {
+		return nil
+	}
+	if e := strings.TrimSpace(s.CopyEmail); e != "" {
+		return []string{e}
+	}
+	return nil
+}
+
 // isNoCommissionRep delegates to appdb.IsNoCommissionRep — reps whose partners
 // bill normally but who earn no commission (e.g. the internal "Around You"
 // account, Rep00000005).
@@ -338,7 +351,7 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 			atts = append(atts, mailer.Attachment{Filename: "profile-qr-code.pdf", Content: qr})
 			html = qrDecalNoteHTML() + html
 		}
-		_ = mailer.SendWithAttachments(email, "Your "+bizName+" invoice "+number, html, "", []string{"accounts@aroundyou.co.za"}, atts)
+		_ = mailer.SendFull(email, "Your "+bizName+" invoice "+number, html, "", []string{"accounts@aroundyou.co.za"}, copyBcc(settings), atts)
 	}
 	return nil
 }
@@ -417,7 +430,7 @@ func ResendInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) er
 		atts = append(atts, mailer.Attachment{Filename: "profile-qr-code.pdf", Content: qr})
 		html = qrDecalNoteHTML() + html
 	}
-	return mailer.SendWithAttachments(email, "Your "+bizName+" invoice "+number, html, "", []string{"accounts@aroundyou.co.za"}, atts)
+	return mailer.SendFull(email, "Your "+bizName+" invoice "+number, html, "", []string{"accounts@aroundyou.co.za"}, copyBcc(settings), atts)
 }
 
 // SendTestInvoiceWithCodes emails a SAMPLE invoice — including a sample Access
@@ -520,7 +533,7 @@ func SendComplimentaryOnboardingEmail(ctx context.Context, partnerType string, p
 		atts = append(atts, mailer.Attachment{Filename: "profile-qr-code.pdf", Content: qr})
 		body = qrDecalNoteHTML() + body
 	}
-	return mailer.SendWithAttachments(email, "Welcome to "+bizName+" — "+name, body, "", []string{"accounts@aroundyou.co.za"}, atts)
+	return mailer.SendFull(email, "Welcome to "+bizName+" — "+name, body, "", []string{"accounts@aroundyou.co.za"}, copyBcc(settings), atts)
 }
 
 // ResendPartnerWelcome re-sends a partner's welcome email — their Access Code,
@@ -558,7 +571,7 @@ func ResendPartnerWelcome(ctx context.Context, partnerType string, partnerID int
 		atts = append(atts, mailer.Attachment{Filename: "profile-qr-code.pdf", Content: qr})
 		body = qrDecalNoteHTML() + body
 	}
-	if err := mailer.SendWithAttachments(email, bizName+" — your sign-in details ("+name+")", body, "", []string{"accounts@aroundyou.co.za"}, atts); err != nil {
+	if err := mailer.SendFull(email, bizName+" — your sign-in details ("+name+")", body, "", []string{"accounts@aroundyou.co.za"}, copyBcc(settings), atts); err != nil {
 		return false, err
 	}
 	return true, nil

@@ -22,6 +22,9 @@ type InvoiceSettings struct {
 	PaymentReference string `json:"paymentReference"`
 	PaymentTerms     string `json:"paymentTerms"`
 	LogoURL          string `json:"logoUrl"`
+	// CopyEmail is an optional address that receives a BCC copy of every partner
+	// invoice / welcome email, so the admin always gets their own copy.
+	CopyEmail string `json:"copyEmail"`
 }
 
 // LoadInvoiceSettings returns the current settings row (defaults if unset).
@@ -29,10 +32,12 @@ func LoadInvoiceSettings(ctx context.Context) (*InvoiceSettings, error) {
 	s := &InvoiceSettings{}
 	err := appdb.SQLDB.QueryRowContext(ctx, `
 		SELECT business_name, address, contact_email, contact_phone, reg_number, vat_number,
-		       bank_name, account_name, account_number, branch_code, payment_reference, payment_terms, logo_url
+		       bank_name, account_name, account_number, branch_code, payment_reference, payment_terms, logo_url,
+		       COALESCE(copy_email, '')
 		FROM invoice_settings WHERE id = 1`).Scan(
 		&s.BusinessName, &s.Address, &s.ContactEmail, &s.ContactPhone, &s.RegNumber, &s.VatNumber,
 		&s.BankName, &s.AccountName, &s.AccountNumber, &s.BranchCode, &s.PaymentReference, &s.PaymentTerms, &s.LogoURL,
+		&s.CopyEmail,
 	)
 	if err != nil {
 		return nil, err
@@ -47,10 +52,11 @@ func SaveInvoiceSettings(ctx context.Context, s *InvoiceSettings) error {
 		  business_name = $1, address = $2, contact_email = $3, contact_phone = $4,
 		  reg_number = $5, vat_number = $6, bank_name = $7, account_name = $8,
 		  account_number = $9, branch_code = $10, payment_reference = $11,
-		  payment_terms = $12, logo_url = $13, updated_at = now()
+		  payment_terms = $12, logo_url = $13, copy_email = $14, updated_at = now()
 		WHERE id = 1`,
 		s.BusinessName, s.Address, s.ContactEmail, s.ContactPhone, s.RegNumber, s.VatNumber,
 		s.BankName, s.AccountName, s.AccountNumber, s.BranchCode, s.PaymentReference, s.PaymentTerms, s.LogoURL,
+		s.CopyEmail,
 	)
 	return err
 }
