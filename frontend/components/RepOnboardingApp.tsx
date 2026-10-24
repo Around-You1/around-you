@@ -681,6 +681,10 @@ export default function RepOnboardingApp() {
       alert("Company Name is required.");
       return;
     }
+    if (isNpo && !data.npoNumber) {
+      alert("NPO Number is required.");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -885,6 +889,7 @@ export default function RepOnboardingApp() {
           officialRepName: repSession.repName,
           companyRegNumber: data.companyRegNumber || "",
           companyVatNumber: data.companyVatNumber || "",
+          ...(isNpo ? { npoNumber: data.npoNumber || "", pboNumber: data.pboNumber || "" } : {}),
           guestType: resolveGuestType(),
           bookingItems: booking
             ? bookingItems
@@ -1165,6 +1170,12 @@ export default function RepOnboardingApp() {
             <TextField label="Person Responsible Number" value={data.personResponsibleNumber} onChange={set("personResponsibleNumber")} />
             <TextField label="Company Registration Number" value={data.companyRegNumber} onChange={set("companyRegNumber")} />
             <TextField label="Company VAT Number" value={data.companyVatNumber} onChange={set("companyVatNumber")} />
+            {isNpo && (
+              <>
+                <TextField label="NPO Number (required)" value={data.npoNumber} onChange={set("npoNumber")} />
+                <TextField label="PBO Number" value={data.pboNumber} onChange={set("pboNumber")} />
+              </>
+            )}
             <TextField label="Rep Name (auto-filled)" value={repSession.repName} onChange={() => {}} />
             <TextField label="Rep Code (auto-filled)" value={repSession.repCode} onChange={() => {}} />
             <CharityPicker value={charity} onChange={setCharity} />

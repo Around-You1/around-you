@@ -102,32 +102,52 @@ func LocalLoginTotals(ctx context.Context, req *LocalLoginTotalsRequest) (*Local
 		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can view analytics"}
 	}
 
-	// trunc/format are chosen from this fixed switch, never taken directly
+	// trunc/format/step are chosen from this fixed switch, never taken directly
 	// from the request, so building the query string with them is safe.
 	trunc := "day"
 	format := "YYYY-MM-DD"
+	step := "1 day"
 	switch strings.ToLower(strings.TrimSpace(req.Period)) {
 	case "weekly":
-		trunc, format = "week", "YYYY-MM-DD"
+		trunc, format, step = "week", "YYYY-MM-DD", "1 week"
 	case "monthly":
-		trunc, format = "month", "YYYY-MM"
+		trunc, format, step = "month", "YYYY-MM", "1 month"
 	case "yearly":
-		trunc, format = "year", "YYYY"
+		trunc, format, step = "year", "YYYY", "1 year"
 	default:
-		trunc, format = "day", "YYYY-MM-DD"
+		trunc, format, step = "day", "YYYY-MM-DD", "1 day"
 	}
 
-	query := `
-		SELECT to_char(date_trunc('` + trunc + `', s.created_at AT TIME ZONE 'Africa/Johannesburg'), '` + format + `') AS period, count(*)
-		FROM sessions s
-		JOIN users u ON u.id = s.user_id
-		WHERE u.role = 'LocalGuest' AND s.created_at >= $1::timestamptz`
+	// A continuous series of buckets from localsSince through *today* (SA
+	// time) is generated and LEFT JOINed to the sign-in counts, so the chart
+	// always runs up to the current day/week/month/year even when the most
+	// recent buckets have no sign-ins yet (previously it stopped at the last
+	// day that had data, e.g. yesterday).
+	userFilter := ""
 	args := []interface{}{localsSince}
 	if req.UserID > 0 {
-		query += ` AND u.id = $2`
+		userFilter = " AND u.id = $2"
 		args = append(args, req.UserID)
 	}
-	query += ` GROUP BY period ORDER BY period ASC`
+	query := `
+		WITH buckets AS (
+			SELECT generate_series(
+				date_trunc('` + trunc + `', $1::timestamptz AT TIME ZONE 'Africa/Johannesburg'),
+				date_trunc('` + trunc + `', now() AT TIME ZONE 'Africa/Johannesburg'),
+				'` + step + `'::interval
+			) AS b
+		),
+		counts AS (
+			SELECT date_trunc('` + trunc + `', s.created_at AT TIME ZONE 'Africa/Johannesburg') AS b, count(*) AS c
+			FROM sessions s
+			JOIN users u ON u.id = s.user_id
+			WHERE u.role = 'LocalGuest' AND s.created_at >= $1::timestamptz` + userFilter + `
+			GROUP BY 1
+		)
+		SELECT to_char(buckets.b, '` + format + `') AS period, COALESCE(counts.c, 0) AS count
+		FROM buckets
+		LEFT JOIN counts ON counts.b = buckets.b
+		ORDER BY buckets.b ASC`
 
 	rows, err := appdb.SQLDB.QueryContext(ctx, query, args...)
 	if err != nil {

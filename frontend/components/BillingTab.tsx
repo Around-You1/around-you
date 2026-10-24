@@ -530,8 +530,66 @@ export default function BillingTab() {
 
   const mrrCents = billableSubs.reduce((sum, s) => sum + s.monthlyCents, 0);
 
+  // Expected revenue on the next monthly billing run, summed live from the
+  // billable subscriptions (active, paid plan, activated for billing, real
+  // non-test agent). Free NPO/PBO listings carry R0 and never appear here.
+  const expectedByType: Record<string, { cents: number; count: number }> = {};
+  for (const s of billableSubs) {
+    const row = expectedByType[s.partnerType] || { cents: 0, count: 0 };
+    row.cents += s.monthlyCents;
+    row.count += 1;
+    expectedByType[s.partnerType] = row;
+  }
+  const expectedTypeRows = Object.entries(expectedByType).sort((a, b) => b[1].cents - a[1].cents);
+
   return (
     <div className="space-y-6">
+      <CollapsibleCard
+        title={`Expected revenue · next billing run ${rand(mrrCents)}`}
+        defaultOpen
+        contentClassName="space-y-3"
+      >
+        <p className="text-sm text-muted-foreground">
+          Projected base subscription revenue for the next monthly billing run (first
+          payable run: 1 November 2026), summed live from every billable partner — active,
+          on a paid plan, activated for billing, with a real (non-test) agent. Excludes free
+          NPO/PBO listings, per-booking and pre-order usage fees, commission, and VAT.
+        </p>
+        <div className="text-2xl font-semibold">
+          {rand(mrrCents)}
+          <span className="ml-2 text-sm font-normal text-muted-foreground">
+            / month · {billableSubs.length} partner{billableSubs.length === 1 ? "" : "s"}
+          </span>
+        </div>
+        {expectedTypeRows.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-muted-foreground">
+                  <th className="py-1 pr-3">Category</th>
+                  <th className="py-1 pr-3">Partners</th>
+                  <th className="py-1 pr-3">Expected / month</th>
+                </tr>
+              </thead>
+              <tbody>
+                {expectedTypeRows.map(([k, v]) => (
+                  <tr key={k} className="border-t">
+                    <td className="py-1 pr-3 capitalize">{k.replace(/_/g, " ")}</td>
+                    <td className="py-1 pr-3">{v.count}</td>
+                    <td className="py-1 pr-3">{rand(v.cents)}</td>
+                  </tr>
+                ))}
+                <tr className="border-t font-semibold">
+                  <td className="py-1 pr-3">Total</td>
+                  <td className="py-1 pr-3">{billableSubs.length}</td>
+                  <td className="py-1 pr-3">{rand(mrrCents)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CollapsibleCard>
+
       <RevenueSummary invoices={billableInvoices} />
 
       <CollapsibleCard title="Accountant Access Code" contentClassName="space-y-3">

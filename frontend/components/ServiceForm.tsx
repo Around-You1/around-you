@@ -384,6 +384,10 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
       toast({ title: "Validation Error", description: "Area is required", variant: "destructive" });
       return;
     }
+    if (showNpoPbo && !formData.npoNumber.trim()) {
+      toast({ title: "Validation Error", description: "NPO Number is required", variant: "destructive" });
+      return;
+    }
 
     setLoading(true);
 
@@ -624,9 +628,10 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           {showNpoPbo && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="npoNumber">NPO Number</Label>
+                <Label htmlFor="npoNumber">NPO Number *</Label>
                 <Input
                   id="npoNumber"
+                  required
                   value={formData.npoNumber}
                   onChange={(e) => setFormData({ ...formData, npoNumber: e.target.value })}
                   placeholder="e.g. 123-456 NPO"

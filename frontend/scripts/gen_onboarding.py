@@ -174,7 +174,7 @@ build("retail-onboarding.pdf", "Around You \u2014 Retail Application", retail,
 # ===== NPO / PBO =====
 npo = repcode() + business("NPO / PBO name") + [
     *section("Registration numbers"),
-    fill("NPO Number"),
+    fill("NPO Number *", "required for registered NPO / PBO organisations"),
     fill("PBO Number"),
 ]
 build("npo-onboarding.pdf", "Around You \u2014 NPO / PBO Application", npo,
