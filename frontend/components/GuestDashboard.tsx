@@ -71,7 +71,7 @@ export default function GuestDashboard() {
   const [filteredNpo, setFilteredNpo] = useState<ServiceData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [minRating, setMinRating] = useState(0); // 0 = Any; else 3 / 4 / 4.5
-  const [discountsOnly, setDiscountsOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<"alphabetical" | "discounts" | "stampcards">("alphabetical");
   const [radiusKm, setRadiusKm] = useState([10]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>("restaurants");
@@ -205,6 +205,16 @@ export default function GuestDashboard() {
 
   const hasDiscount = (e: any): boolean => !!discOffered(e).trim();
 
+  // For the "Sort by" dropdown: whether a partner has a discount or a stamp card
+  // visible to THIS audience (Guest page: guest+both; Local page: local+both).
+  // Discounts come from the classic discount fields (non-retail) or a retail
+  // "discount" special; stamp cards come from a retail "stampcard" special.
+  const audienceVisible = (a: string) => a === "both" || (isLocalMode ? a === "local" : a === "guest");
+  const retailHasType = (e: any, kind: "discount" | "stampcard"): boolean =>
+    ((((e as any).specials) || []) as any[]).some((sp) => sp && sp.enabled && sp.line1 && sp.type === kind && audienceVisible(sp.audience));
+  const entityHasDiscount = (e: any): boolean => hasDiscount(e) || retailHasType(e, "discount");
+  const entityHasStampCard = (e: any): boolean => retailHasType(e, "stampcard");
+
   // Rating gate for the "3★ & above" filter. Unrated partners (no votes yet)
   // are kept — per the chosen behaviour they show BELOW rated ones rather than
   // being hidden. Only partners rated *below* the threshold are removed.
@@ -214,17 +224,6 @@ export default function GuestDashboard() {
     const count = summary?.ratingCount || 0;
     if (count === 0) return true; // unrated — kept, sorted to the bottom
     return (summary?.averageRating || 0) >= minRating;
-  };
-
-  // When a rating filter is active, order rated partners (highest first) above
-  // unrated ones. With "Any" selected we leave the original order untouched.
-  const sortByRating = <T extends { id: number | string }>(entityType: string, list: T[]): T[] => {
-    if (minRating <= 0) return list;
-    const score = (e: T) => {
-      const s = ratings[ratingKey(entityType, e.id)];
-      return (s?.ratingCount || 0) > 0 ? (s?.averageRating || 0) : -1;
-    };
-    return [...list].sort((a, b) => score(b) - score(a));
   };
 
   useEffect(() => {
@@ -238,18 +237,22 @@ export default function GuestDashboard() {
         const searchOk =
           !trimmed ||
           matchesSearch(trimmed, [e.name, e.description, ...categories(e), e.area, e.province, ...optionKeywords(e)]);
-        const discountOk = !discountsOnly || hasDiscount(e);
         const ratingOk = passesRating(entityType, e.id);
-        return searchOk && discountOk && ratingOk;
+        return searchOk && ratingOk;
       });
-      return sortByRating(entityType, filtered);
+      const byName = (a: T, b: T) => (a.name || "").localeCompare(b.name || "");
+      const rank = (e: T) =>
+        sortBy === "discounts" ? (entityHasDiscount(e) ? 0 : 1)
+        : sortBy === "stampcards" ? (entityHasStampCard(e) ? 0 : 1)
+        : 0;
+      return [...filtered].sort((a, b) => rank(a) - rank(b) || byName(a, b));
     };
     setFilteredRestaurants(applyAll("restaurant", restaurants, (r) => [...(r.cuisineTypes || []), ...(r.restaurantType || [])]));
     setFilteredServices(applyAll("service", services, (s) => s.serviceCategories || []));
     setFilteredAttractions(applyAll("attraction", attractions, (a) => a.attractionType || []));
     setFilteredRetail(applyAll("retail", retail, (s) => s.serviceCategories || []));
     setFilteredNpo(applyAll("nonprofit", nonprofits, (s) => s.serviceCategories || []));
-  }, [searchQuery, restaurants, services, attractions, retail, nonprofits, ratings, minRating, discountsOnly]);
+  }, [searchQuery, restaurants, services, attractions, retail, nonprofits, ratings, minRating, sortBy, isLocalMode]);
 
   // Best-effort search analytics: fire a (debounced) search event when the user
   // searches, distinguishing zero-result searches. Query text is not sent.
@@ -1208,25 +1211,26 @@ export default function GuestDashboard() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant={discountsOnly ? "default" : "outline"}
-              size="sm"
-              className={discountsOnly ? "h-9 bg-[#39FF14] hover:bg-[#39FF14]/90 text-black" : "h-9"}
-              onClick={() => setDiscountsOnly((v) => !v)}
+            <label htmlFor="sortBy" className="text-sm text-muted-foreground">Sort by</label>
+            <select
+              id="sortBy"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as "alphabetical" | "discounts" | "stampcards")}
+              className="h-9 rounded-md border bg-background px-2 text-sm"
             >
-              <Tag className="h-4 w-4 mr-1" />
-              Discounts only
-            </Button>
-            {(minRating > 0 || discountsOnly || searchQuery.trim()) && (
+              <option value="alphabetical">Alphabetical</option>
+              <option value="discounts">Discounts</option>
+              <option value="stampcards">My Stamp Cards</option>
+            </select>
+            {(sortBy !== "alphabetical" || searchQuery.trim()) && (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 className="h-9"
-                onClick={() => { setMinRating(0); setDiscountsOnly(false); setSearchQuery(""); }}
+                onClick={() => { setMinRating(0); setSortBy("alphabetical"); setSearchQuery(""); }}
               >
-                Clear filters
+                Clear
               </Button>
             )}
           </div>
