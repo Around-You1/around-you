@@ -71,7 +71,7 @@ CLOSING_NOTE = ("Once submitted and you receive your Access and Edit codes, you 
 
 def repcode():
     return [*section("Agent Code"),
-        fill("Agent Code", "Leave as Rep00000005 unless an agent gave you their own code, then change accordingly")]
+        fill("Agent Code", "Leave as AROUNDYOU unless an agent gave you their own code, then change accordingly")]
 
 def business(nameLabel):
     return [*section("Your business"),

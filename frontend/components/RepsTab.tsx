@@ -246,7 +246,7 @@ export default function RepsTab() {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            An agent code (e.g. Rep00000001) is generated automatically — give the agent both their full name and this code so they can sign in.
+            An agent code (e.g. Rep00000002) is generated automatically — give the agent both their full name and this code so they can sign in.
           </p>
         </CardContent>
       </Card>

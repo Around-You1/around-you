@@ -161,7 +161,7 @@ export default function PartnerApplyForm() {
     if (CATEGORIES.some((c) => c.key === t)) setCat(t);
     // Default to the internal/test rep so a self-onboarding partner always has a
     // rep code; they (or a real rep) can change it in the field below.
-    setRep(q.get("rep") || "Rep00000005");
+    setRep(q.get("rep") || "AROUNDYOU");
     // Reps / admins (signed in) get an extra tool: upload a completed onboarding
     // PDF and Claude pre-fills the form. Public visitors never see it.
     try {
@@ -370,8 +370,8 @@ export default function PartnerApplyForm() {
 
       <div style={{ marginTop: 12 }}>
         <label style={labelSt}>Agent Code</label>
-        <input style={input} value={rep} onChange={(e) => setRep(e.target.value)} placeholder="Rep00000005" />
-        <p style={{ color: "#7f857f", fontSize: 11, marginTop: 4 }}>Leave this as Rep00000005 unless an agent gave you their own code, then please change accordingly.</p>
+        <input style={input} value={rep} onChange={(e) => setRep(e.target.value)} placeholder="AROUNDYOU" />
+        <p style={{ color: "#7f857f", fontSize: 11, marginTop: 4 }}>Leave this as AROUNDYOU unless an agent gave you their own code, then please change accordingly.</p>
       </div>
 
       {isStaff && cat === "restaurant" && (

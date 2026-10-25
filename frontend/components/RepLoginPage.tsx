@@ -215,7 +215,7 @@ export default function RepLoginPage() {
               </div>
               <div className="space-y-1.5">
                 <label htmlFor="rep-code" className={labelCls} style={labelStyle}>Rep Code</label>
-                <input id="rep-code" type="text" value={repCode} onChange={(e) => setRepCode(e.target.value)} placeholder="e.g. Rep00000001" autoComplete="off" style={inputStyle} className="transition-all focus:border-[#39FF14] placeholder-gray-600" />
+                <input id="rep-code" type="text" value={repCode} onChange={(e) => setRepCode(e.target.value)} placeholder="e.g. Rep00000002" autoComplete="off" style={inputStyle} className="transition-all focus:border-[#39FF14] placeholder-gray-600" />
               </div>
               <div className="space-y-1.5">
                 <label htmlFor="rep-access-code" className={labelCls} style={labelStyle}>Access Code</label>
@@ -311,7 +311,7 @@ export default function RepLoginPage() {
               {app.isTeamLeader && (
                 <Field label="Your Team Leader code (e.g. Care) *" value={app.teamLeaderCode} onChange={setA("teamLeaderCode")} placeholder="e.g. Care" />
               )}
-              <Field label="The Rep Code of the rep (Team Leader) who recruited you (optional)" value={app.uplineRepCode} onChange={setA("uplineRepCode")} placeholder="e.g. Rep00000001 or Care" />
+              <Field label="The Rep Code of the rep (Team Leader) who recruited you (optional)" value={app.uplineRepCode} onChange={setA("uplineRepCode")} placeholder="e.g. AROUNDYOU or Care" />
               {uplineIsTL && !app.isTeamLeader && (
                 <p style={{ fontSize: 12, color: LUMO, marginTop: 4 }}>
                   You&apos;re joining {uplineOrgName || "a Team Leader organization"}. Commissions are paid to the organization&apos;s bank account, so no banking details are needed below.

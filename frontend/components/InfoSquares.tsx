@@ -156,7 +156,7 @@ export default function InfoSquares() {
             , where we will assist you in selecting a plan, completing a questionnaire for onboarding purposes, and starting to promote right away.
           </p>
           <p>Ready to get started? Onboard your business online — choose your category and complete the short application.</p>
-          <a href="/apply?rep=Rep00000001" style={ctaStyle}>Onboard your business →</a>
+          <a href="/apply?rep=ZERO" style={ctaStyle}>Onboard your business →</a>
         </>
       ),
     },
