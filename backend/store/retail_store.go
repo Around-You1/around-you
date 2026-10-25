@@ -80,7 +80,8 @@ const retailColumns = `
 	COALESCE(is_nonprofit, false) as is_nonprofit,
 	COALESCE(npo_number, '') as npo_number,
 	COALESCE(pbo_number, '') as pbo_number,
-	COALESCE(brand_color, '') as brand_color
+	COALESCE(brand_color, '') as brand_color,
+	COALESCE(specials, '[]'::jsonb) as specials
 `
 
 type retailScanner interface {
@@ -124,6 +125,7 @@ func scanRetail(row retailScanner) (*appdb.ServiceData, error) {
 		&s.NpoNumber,
 		&s.PboNumber,
 		&s.BrandColor,
+		&s.Specials,
 	)
 	if err != nil {
 		return nil, err
@@ -220,11 +222,13 @@ func (s *RetailStore) Create(ctx context.Context, in *appdb.ServiceData) (*appdb
 			is_nonprofit,
 			pre_order_items,
 			npo_number, pbo_number, brand_color,
-			payment_ikhokha, payment_gpay, payment_samsungpay, payment_sassa, payment_applepay
+			payment_ikhokha, payment_gpay, payment_samsungpay, payment_sassa, payment_applepay,
+			specials
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,
 			$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,
-			$51,$52,$53,$54,$55,$56,$57,$58,$59,$60,$61,$62,$63,$64,$65,$66,$67,$68,$69,$70
+			$51,$52,$53,$54,$55,$56,$57,$58,$59,$60,$61,$62,$63,$64,$65,$66,$67,$68,$69,$70,
+			$71
 		)
 		RETURNING `+retailColumns,
 		in.Name, in.Address, in.Latitude, in.Longitude, in.Country, in.Province, in.Area, in.PostalCode,
@@ -251,6 +255,7 @@ func (s *RetailStore) Create(ctx context.Context, in *appdb.ServiceData) (*appdb
 		in.PreOrderItems,
 		in.NpoNumber, in.PboNumber, in.BrandColor,
 		in.PaymentIkhokha, in.PaymentGpay, in.PaymentSamsungpay, in.PaymentSassa, in.PaymentApplepay,
+		in.Specials,
 	)
 	return scanRetail(row)
 }
@@ -332,6 +337,7 @@ type RetailPatch struct {
 	AccessLevel            *string
 	BookingItems           appdb.BookingItems
 	PreOrderItems          appdb.PreOrderItems
+	Specials               appdb.RetailSpecials
 }
 
 func (s *RetailStore) Update(ctx context.Context, id int64, patch RetailPatch) (*appdb.ServiceData, error) {
@@ -542,6 +548,9 @@ func (s *RetailStore) Update(ctx context.Context, id int64, patch RetailPatch) (
 	}
 	if patch.PreOrderItems != nil {
 		sets = append(sets, "pre_order_items = "+arg(patch.PreOrderItems))
+	}
+	if patch.Specials != nil {
+		sets = append(sets, "specials = "+arg(patch.Specials))
 	}
 
 	if len(sets) == 0 {

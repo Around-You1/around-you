@@ -30,7 +30,7 @@ const PRICING: Record<string, string> = {
   service: "R300 per month, plus Bookings @ 10% of the bill and Pre-Orders @ 10% of the bill.",
   attraction: "R300 per month, plus Bookings @ 10% of the bill and Pre-Orders @ 10% of the bill.",
   estate: "Estate Agencies R500 per month and Agents R300 per month each.",
-  retail: "R300 per month.",
+  retail: "R500 per month.",
   nonprofit: "Free — no monthly fee for registered NPO / PBO organisations.",
 };
 
@@ -116,6 +116,12 @@ const charitySection: Section = { title: "Please give us the details of the char
   { key: "Charity contact number", type: "text" },
 ] };
 
+const retailSpecialsSection: Section = { title: "Discounts / Specials (Discount or My Stamp Card)", fields: [
+  { key: "Discounts / Specials", type: "textarea", note: "List any discounts or specials. For each, say who it's for — Guests, Locals or Both. e.g. '10% off fresh produce on Mondays (Both)'." },
+  { key: "My Stamp Card — how a stamp is earned", type: "textarea", note: "e.g. For every 1 litre of milk bought you get 1 stamp." },
+  { key: "My Stamp Card — the reward", type: "textarea", note: "e.g. After 10 stamps, redeem a free coffee." },
+] };
+
 function specsFor(cat: string): Section[] {
   if (cat === "restaurant") return [businessSection("Restaurant/Takeaway name")];
   if (cat === "service") return [businessSection("Business/Service name")];
@@ -126,7 +132,7 @@ function specsFor(cat: string): Section[] {
       { key: "Number of units / rooms", type: "text", note: "sets your monthly price", priceRows: ["1–5 units — R300", "6–10 units — R500", "11–20 units — R800", "21–40 units — R1,200", "40+ units — Custom quote"] },
     ] },
   ];
-  if (cat === "retail") return [businessSection("Retail business name")];
+  if (cat === "retail") return [businessSection("Retail business name"), retailSpecialsSection];
   if (cat === "nonprofit") return [
     businessSection("NPO / PBO name"),
     { title: "Registration numbers", fields: [

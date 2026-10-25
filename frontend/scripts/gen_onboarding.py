@@ -167,9 +167,18 @@ build("real-estate-onboarding.pdf", "Around You — Real Estate & Rentals Applic
       price_txt="Estate Agencies R500 per month and Agents R300 per month each.")
 
 # ===== Retail =====
-retail = repcode() + business("Retail business name")
+retail = repcode() + business("Retail business name") + [
+    *section("Discounts / Specials"),
+    para("List any Discounts or My Stamp Card specials. For each, say who it is for: Guests, Locals or Both."),
+    para("Discount example: \u201c10% off all fresh produce on Mondays.\u201d"),
+    fill("Discount / Special 1 (Guest / Local / Both)"),
+    fill("Discount / Special 2 (Guest / Local / Both)"),
+    para("My Stamp Card example \u2014 the earn rule, then the reward:"),
+    fill("My Stamp Card \u2014 how a stamp is earned (e.g. 1 stamp per 1L of milk)"),
+    fill("My Stamp Card \u2014 the reward (e.g. after 10 stamps, a free coffee)"),
+]
 build("retail-onboarding.pdf", "Around You \u2014 Retail Application", retail,
-      price_txt="R300 per month.")
+      price_txt="R500 per month.")
 
 # ===== NPO / PBO =====
 npo = repcode() + business("NPO / PBO name") + [

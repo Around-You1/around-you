@@ -179,6 +179,57 @@ func (p *PreOrderItems) Scan(src interface{}) error {
 	}
 }
 
+// RetailSpecial is one Retail "Discount / Special" entry. Type is "discount" or
+// "stampcard"; Audience is "guest", "local" or "both" (controls which of the
+// Guest/Local pages it shows on); Enabled is the publish checkbox. Line1 is the
+// offer / earn rule; Line2 is the stamp-card reward (blank for a plain
+// discount). Stored as a single jsonb column on the retail table.
+type RetailSpecial struct {
+	Type     string `json:"type"`
+	Audience string `json:"audience"`
+	Enabled  bool   `json:"enabled"`
+	Line1    string `json:"line1"`
+	Line2    string `json:"line2,omitempty"`
+}
+
+// RetailSpecials is a list of RetailSpecial stored as a single jsonb column
+// (same Valuer/Scanner pattern as BookingItems).
+type RetailSpecials []RetailSpecial
+
+func (r RetailSpecials) Value() (driver.Value, error) {
+	if r == nil {
+		return "[]", nil
+	}
+	data, err := json.Marshal([]RetailSpecial(r))
+	if err != nil {
+		return nil, err
+	}
+	return string(data), nil
+}
+
+func (r *RetailSpecials) Scan(src interface{}) error {
+	if src == nil {
+		*r = RetailSpecials{}
+		return nil
+	}
+	switch v := src.(type) {
+	case []byte:
+		if len(v) == 0 {
+			*r = RetailSpecials{}
+			return nil
+		}
+		return json.Unmarshal(v, r)
+	case string:
+		if v == "" {
+			*r = RetailSpecials{}
+			return nil
+		}
+		return json.Unmarshal([]byte(v), r)
+	default:
+		return fmt.Errorf("appdb: cannot scan %T into RetailSpecials", src)
+	}
+}
+
 // EmergencyEntry is one doctor / vet entry: an optional name, a phone number,
 // and an optional address (so guests can get directions).
 type EmergencyEntry struct {
@@ -422,11 +473,14 @@ type ServiceData struct {
 	IsDuplicate          bool   `json:"isDuplicate,omitempty"`
 	DuplicateReason      string `json:"duplicateReason,omitempty"`
 
-	ServiceCategories      []string      `json:"serviceCategories"`
-	OffersBookings         bool          `json:"offersBookings"`
-	BookingItems           BookingItems  `json:"bookingItems,omitempty"`
-	PreOrderItems          PreOrderItems `json:"preOrderItems,omitempty"`
-	LittleExplorerApproved bool          `json:"littleExplorerApproved"`
+	ServiceCategories []string      `json:"serviceCategories"`
+	OffersBookings    bool          `json:"offersBookings"`
+	BookingItems      BookingItems  `json:"bookingItems,omitempty"`
+	PreOrderItems     PreOrderItems `json:"preOrderItems,omitempty"`
+	// Specials is the Retail "Discount / Special" list (Discount + My Stamp Card
+	// entries). Only populated for retail partners; empty for other entities.
+	Specials               RetailSpecials `json:"specials,omitempty"`
+	LittleExplorerApproved bool           `json:"littleExplorerApproved"`
 
 	PaymentMethods
 

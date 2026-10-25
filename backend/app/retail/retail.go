@@ -210,6 +210,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.ServiceData, error)
 		IsActive:      req.IsActive,
 		BookingItems:  req.BookingItems,
 		PreOrderItems: req.PreOrderItems,
+		Specials:      req.Specials,
 		OfficialUse: appdb.OfficialUse{
 			OfficialHoldingCompany: req.OfficialHoldingCompany,
 			OfficialContactName:    req.OfficialContactName,
@@ -336,6 +337,7 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.ServiceData, error)
 		AccessLevel:            req.AccessLevel,
 		BookingItems:           req.BookingItems,
 		PreOrderItems:          req.PreOrderItems,
+		Specials:               req.Specials,
 	}
 	item, err := repo.Update(ctx, id, patch)
 	if err != nil {

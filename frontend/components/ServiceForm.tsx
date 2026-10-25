@@ -176,6 +176,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
   const showCategories = kind === "service";
   const showExperience = false;
   const showDiscounts = kind !== "retail";
+  const showSpecials = kind === "retail";
   const showBookings = kind === "service";
   const showPreOrders = kind === "service";
   const [loading, setLoading] = useState(false);
@@ -221,6 +222,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
     localDiscountCode: "",
     discountEnabled: false,
     localDiscountEnabled: false,
+    specials: [] as Array<{ type: string; audience: string; enabled: boolean; line1: string; line2: string }>,
     description: "",
     tradingHours: "",
     publicHolidays: "",
@@ -324,6 +326,10 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
         localDiscountCode: data.localDiscountCode || "",
         discountEnabled: data.discountEnabled ?? Boolean(data.discountOffered),
         localDiscountEnabled: data.localDiscountEnabled ?? Boolean(data.localDiscountOffered),
+        specials: Array.isArray((data as any).specials) ? (data as any).specials.map((x: any) => ({
+          type: x.type || "discount", audience: x.audience || "both", enabled: x.enabled !== false,
+          line1: x.line1 || "", line2: x.line2 || "",
+        })) : [],
         description: data.description || "",
         tradingHours: data.tradingHours || "",
         publicHolidays: data.publicHolidays || "",
@@ -374,6 +380,26 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
     setFormData({ ...formData, province: value });
   };
 
+  // --- Retail "Discount / Specials" list helpers -----------------------------
+  type Special = { type: string; audience: string; enabled: boolean; line1: string; line2: string };
+  const addSpecial = (type: string) =>
+    setFormData((fd) => ({ ...fd, specials: [...fd.specials, { type, audience: "both", enabled: true, line1: "", line2: "" }] }));
+  const updateSpecial = (i: number, patch: Partial<Special>) =>
+    setFormData((fd) => ({ ...fd, specials: fd.specials.map((sp, idx) => (idx === i ? { ...sp, ...patch } : sp)) }));
+  const removeSpecial = (i: number) =>
+    setFormData((fd) => ({ ...fd, specials: fd.specials.filter((_, idx) => idx !== i) }));
+  // Drop blank rows (no first line) and blank the reward line for plain discounts.
+  const cleanSpecials = (list: Special[]) =>
+    list
+      .filter((sp) => sp.line1.trim())
+      .map((sp) => ({
+        type: sp.type === "stampcard" ? "stampcard" : "discount",
+        audience: ["guest", "local", "both"].includes(sp.audience) ? sp.audience : "both",
+        enabled: sp.enabled !== false,
+        line1: sp.line1.trim(),
+        line2: sp.type === "stampcard" ? sp.line2.trim() : "",
+      }));
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.province) {
@@ -420,6 +446,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           localDiscountCode: formData.localDiscountCode || undefined,
           discountEnabled: formData.discountEnabled,
           localDiscountEnabled: formData.localDiscountEnabled,
+          ...(kind === "retail" ? { specials: cleanSpecials(formData.specials) } : {}),
           description: formData.description || undefined,
           tradingHours: formData.tradingHours || undefined,
           publicHolidays: formData.publicHolidays || undefined,
@@ -493,6 +520,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
           localDiscountCode: formData.localDiscountCode || undefined,
           discountEnabled: formData.discountEnabled,
           localDiscountEnabled: formData.localDiscountEnabled,
+          ...(kind === "retail" ? { specials: cleanSpecials(formData.specials) } : {}),
           description: formData.description || undefined,
           tradingHours: formData.tradingHours || undefined,
           publicHolidays: formData.publicHolidays || undefined,
@@ -882,6 +910,78 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
                 </div>
               </div>
             )}
+          </div>
+          )}
+
+          {showSpecials && (
+          <div className="space-y-3" style={{ display: tierNum >= 2 ? undefined : "none" }}>
+            <div>
+              <h4 className="font-semibold text-sm">Discount / Specials</h4>
+              <p className="text-xs text-muted-foreground">
+                Add one or more Discounts or My Stamp Card specials. Tick &ldquo;Show on Guest/Local pages&rdquo; to
+                publish one, and choose who sees it. A My Stamp Card special shows shoppers a &ldquo;Get Stamps&rdquo; button.
+              </p>
+            </div>
+            {formData.specials.map((sp, i) => (
+              <div key={i} className="space-y-2 rounded-lg border p-4">
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Type</Label>
+                    <select
+                      className="h-9 rounded-md border bg-background px-2 text-sm"
+                      value={sp.type}
+                      onChange={(e) => updateSpecial(i, { type: e.target.value })}
+                    >
+                      <option value="discount">Discount</option>
+                      <option value="stampcard">My Stamp Card</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Shown to</Label>
+                    <select
+                      className="h-9 rounded-md border bg-background px-2 text-sm"
+                      value={sp.audience}
+                      onChange={(e) => updateSpecial(i, { audience: e.target.value })}
+                    >
+                      <option value="both">Guests &amp; Locals</option>
+                      <option value="guest">Guests only</option>
+                      <option value="local">Locals only</option>
+                    </select>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm pb-2">
+                    <Checkbox checked={sp.enabled} onCheckedChange={(v) => updateSpecial(i, { enabled: v === true })} />
+                    Show on Guest/Local pages
+                  </label>
+                  <Button type="button" variant="ghost" size="sm" className="ml-auto text-destructive" onClick={() => removeSpecial(i)}>
+                    <X className="h-4 w-4" /> Remove
+                  </Button>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">{sp.type === "stampcard" ? "How a stamp is earned" : "The discount / special"}</Label>
+                  <Input
+                    value={sp.line1}
+                    onChange={(e) => updateSpecial(i, { line1: e.target.value })}
+                    placeholder={sp.type === "stampcard"
+                      ? "e.g. For every 1 litre of milk bought you get 1 stamp on your My Stamp Card."
+                      : "e.g. 10% off all fresh produce on Mondays."}
+                  />
+                </div>
+                {sp.type === "stampcard" && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">The reward</Label>
+                    <Input
+                      value={sp.line2}
+                      onChange={(e) => updateSpecial(i, { line2: e.target.value })}
+                      placeholder="e.g. After 10 stamps, you can redeem a FREE coffee at Vida e Caffè."
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => addSpecial("discount")}>+ Add Discount</Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => addSpecial("stampcard")}>+ Add My Stamp Card</Button>
+            </div>
           </div>
           )}
 

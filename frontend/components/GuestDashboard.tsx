@@ -505,6 +505,11 @@ export default function GuestDashboard() {
   const renderServiceCard = (service: ServiceData, entityType: "service" | "retail" | "nonprofit" = "service") => {
     const isNpo = entityType === "nonprofit";
     const isRetail = entityType === "retail";
+    // Retail "Discount / My Stamp Card" specials visible to THIS audience
+    // (Guest page: guest+both; Local page: local+both), enabled, with text.
+    const audienceOk = (a: string) => a === "both" || (isLocalMode ? a === "local" : a === "guest");
+    const retailSpecials: Array<{ type: string; audience: string; enabled: boolean; line1: string; line2: string }> =
+      isRetail ? ((((service as any).specials) || []) as any[]).filter((sp) => sp && sp.enabled && sp.line1 && audienceOk(sp.audience)) : [];
     return (
     <Card key={service.id} className="hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
                       <CardContent className="p-4">
@@ -570,6 +575,7 @@ export default function GuestDashboard() {
                               />
                             )}
 
+                            {!isRetail && (
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
@@ -598,6 +604,47 @@ export default function GuestDashboard() {
                                 )}
                               </CollapsibleContent>
                             </Collapsible>
+                            )}
+
+                            {isRetail && (
+                            <Collapsible>
+                              <CollapsibleTrigger className={triggerClass}>
+                                <ChevronDown className="h-4 w-4" />
+                                Discount / My Stamp Card
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className={`${contentClass} text-sm`}>
+                                {retailSpecials.length > 0 ? (
+                                  <div className="space-y-2">
+                                    {retailSpecials.map((sp, i) => (
+                                      <div key={i} className="px-3 py-2 bg-[#39FF14]/10 border border-[#39FF14] rounded-lg">
+                                        <div className="flex items-center gap-1.5 text-black">
+                                          <Tag className="h-4 w-4 shrink-0" />
+                                          <span className="text-xs font-semibold uppercase tracking-wide">
+                                            {sp.type === "stampcard" ? "My Stamp Card" : "Discount"}
+                                          </span>
+                                        </div>
+                                        <p className="text-sm text-black mt-1">{sp.line1}</p>
+                                        {sp.type === "stampcard" && sp.line2 && (
+                                          <p className="text-sm text-black/80 mt-1">{sp.line2}</p>
+                                        )}
+                                        {sp.type === "stampcard" && (
+                                          <Button
+                                            size="sm"
+                                            className="mt-2 bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold"
+                                            onClick={() => setShowMyStamps(true)}
+                                          >
+                                            Get Stamps
+                                          </Button>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  fallbackSpan
+                                )}
+                              </CollapsibleContent>
+                            </Collapsible>
+                            )}
 
                             <Collapsible>
                               <CollapsibleTrigger className={triggerClass}>

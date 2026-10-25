@@ -564,6 +564,7 @@ export default function RepOnboardingApp() {
   const [booking, setBooking] = useState(false);
   const [bookingItems, setBookingItems] = useState<Array<{ name: string; price: string; duration: string }>>([]);
   const [preOrderItems, setPreOrderItems] = useState<Array<{ name: string; description: string; price: string; leadTimeMinutes: string }>>([]);
+  const [specials, setSpecials] = useState<Array<{ type: string; audience: string; enabled: boolean; line1: string; line2: string }>>([]);
   // Restaurant service options — which fulfilment the restaurant actually offers.
   // Pre-Orders are only offered when Takeaway and/or Delivery is ticked, so a
   // guest can never pick a fulfilment the restaurant doesn't do.
@@ -652,7 +653,7 @@ export default function RepOnboardingApp() {
     : "Attraction/Activity Name";
 
   const reset = () => {
-    setPartnerType(null); setTier(2); setVisibility([]); setBooking(false); setBookingItems([]); setPreOrderItems([]); setServiceOptions(["Dine-in"]); setCountry([]); setProvince([]);
+    setPartnerType(null); setTier(2); setVisibility([]); setBooking(false); setBookingItems([]); setPreOrderItems([]); setSpecials([]); setServiceOptions(["Dine-in"]); setCountry([]); setProvince([]);
     setData({}); setEmergency({}); setDoctorsList([]); setVetsList([]); setImages([]); setCharity([]); setSubmitted(null);
   };
 
@@ -890,6 +891,15 @@ export default function RepOnboardingApp() {
           companyRegNumber: data.companyRegNumber || "",
           companyVatNumber: data.companyVatNumber || "",
           ...(isNpo ? { npoNumber: data.npoNumber || "", pboNumber: data.pboNumber || "" } : {}),
+          ...(isRetail ? { specials: specials
+            .filter((sp) => sp.line1.trim())
+            .map((sp) => ({
+              type: sp.type === "stampcard" ? "stampcard" : "discount",
+              audience: ["guest", "local", "both"].includes(sp.audience) ? sp.audience : "both",
+              enabled: sp.enabled !== false,
+              line1: sp.line1.trim(),
+              line2: sp.type === "stampcard" ? sp.line2.trim() : "",
+            })) } : {}),
           guestType: resolveGuestType(),
           bookingItems: booking
             ? bookingItems
@@ -1520,7 +1530,7 @@ export default function RepOnboardingApp() {
                     <TextField label="Wifi Password" value={data.wifiPassword} onChange={set("wifiPassword")} />
                   </>
                 )}
-                {(resolveGuestType() === "Guest Only" || resolveGuestType() === "Both") && (
+                {!isRetail && (resolveGuestType() === "Guest Only" || resolveGuestType() === "Both") && (
                   <>
                     <SectionTitle>Discount – Guest</SectionTitle>
                     <ToggleField label="Offer a discount to Guests" checked={data.discountEnabled} onChange={set("discountEnabled")} />
@@ -1532,7 +1542,7 @@ export default function RepOnboardingApp() {
                     )}
                   </>
                 )}
-                {(resolveGuestType() === "Local" || resolveGuestType() === "Both") && (
+                {!isRetail && (resolveGuestType() === "Local" || resolveGuestType() === "Both") && (
                   <>
                     <SectionTitle>Discount – Local</SectionTitle>
                     <ToggleField label="Offer a discount to Locals" checked={data.localDiscountEnabled} onChange={set("localDiscountEnabled")} />
@@ -1542,6 +1552,55 @@ export default function RepOnboardingApp() {
                         <TextField label="Discount Code" value={data.localDiscountCode} onChange={set("localDiscountCode")} />
                       </>
                     )}
+                  </>
+                )}
+                {isRetail && (
+                  <>
+                    <SectionTitle>Discount / Specials</SectionTitle>
+                    <p style={{ fontSize: 12, color: colors.textSecondary, marginTop: -6, marginBottom: 10 }}>
+                      Add Discounts or My Stamp Card specials. Tick &ldquo;Show on Guest/Local pages&rdquo; to publish one and
+                      choose who sees it. A My Stamp Card special shows shoppers a &ldquo;Get Stamps&rdquo; button.
+                    </p>
+                    {specials.map((sp, i) => (
+                      <div key={i} style={{ border: `1px solid ${colors.border}`, borderRadius: 10, padding: 12, marginBottom: 10 }}>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end" }}>
+                          <div>
+                            <label style={labelStyle}>Type</label>
+                            <select style={{ ...inputStyle, width: "auto" }} value={sp.type}
+                              onChange={(e) => setSpecials((rows) => rows.map((r, idx) => (idx === i ? { ...r, type: e.target.value } : r)))}>
+                              <option value="discount">Discount</option>
+                              <option value="stampcard">My Stamp Card</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label style={labelStyle}>Shown to</label>
+                            <select style={{ ...inputStyle, width: "auto" }} value={sp.audience}
+                              onChange={(e) => setSpecials((rows) => rows.map((r, idx) => (idx === i ? { ...r, audience: e.target.value } : r)))}>
+                              <option value="both">Guests & Locals</option>
+                              <option value="guest">Guests only</option>
+                              <option value="local">Locals only</option>
+                            </select>
+                          </div>
+                        </div>
+                        <ToggleField label="Show on Guest/Local pages" checked={sp.enabled}
+                          onChange={(v) => setSpecials((rows) => rows.map((r, idx) => (idx === i ? { ...r, enabled: v } : r)))} />
+                        <TextField label={sp.type === "stampcard" ? "How a stamp is earned" : "The discount / special"}
+                          value={sp.line1}
+                          onChange={(v) => setSpecials((rows) => rows.map((r, idx) => (idx === i ? { ...r, line1: v } : r)))} />
+                        {sp.type === "stampcard" && (
+                          <TextField label="The reward" value={sp.line2}
+                            onChange={(v) => setSpecials((rows) => rows.map((r, idx) => (idx === i ? { ...r, line2: v } : r)))} />
+                        )}
+                        <button type="button" style={{ background: "none", border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.accent, cursor: "pointer", fontSize: 12, padding: "4px 10px", marginTop: 6 }}
+                          onClick={() => setSpecials((rows) => rows.filter((_, idx) => idx !== i))}>Remove</button>
+                      </div>
+                    ))}
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      <button type="button" style={{ background: colors.surface2, border: `1px solid ${colors.primary}`, color: colors.primary, borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+                        onClick={() => setSpecials((rows) => [...rows, { type: "discount", audience: "both", enabled: true, line1: "", line2: "" }])}>+ Add Discount</button>
+                      <button type="button" style={{ background: colors.surface2, border: `1px solid ${colors.primary}`, color: colors.primary, borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+                        onClick={() => setSpecials((rows) => [...rows, { type: "stampcard", audience: "both", enabled: true, line1: "", line2: "" }])}>+ Add My Stamp Card</button>
+                    </div>
                   </>
                 )}
                 <SocialLinksField value={data.socialLinks || {}} onChange={set("socialLinks")} />
