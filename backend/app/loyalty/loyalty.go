@@ -60,21 +60,23 @@ type Program struct {
 // CardView is one customer's card at a partner, plus the partner's rule — the
 // single shape returned to both the partner screen and the customer view.
 type CardView struct {
-	PartnerType   string `json:"partnerType"`
-	PartnerID     int64  `json:"partnerId"`
-	PartnerName   string `json:"partnerName"`
-	BrandColor    string `json:"brandColor"`
-	Area          string `json:"area"`
-	Enabled       bool   `json:"enabled"`
-	Threshold     int    `json:"threshold"`
-	RewardText    string `json:"rewardText"`
-	SpecialID     string `json:"specialId"`
-	Label         string `json:"label"`
-	ImageUrl      string `json:"imageUrl"`
-	CustomerPhone string `json:"customerPhone"`
-	Stamps        int    `json:"stamps"`        // current progress toward threshold
-	RewardReady   bool   `json:"rewardReady"`   // stamps >= threshold, awaiting redeem
-	RewardsEarned int    `json:"rewardsEarned"` // lifetime rewards claimed on this card
+	PartnerType   string  `json:"partnerType"`
+	PartnerID     int64   `json:"partnerId"`
+	PartnerName   string  `json:"partnerName"`
+	BrandColor    string  `json:"brandColor"`
+	Area          string  `json:"area"`
+	Latitude      float64 `json:"latitude"`
+	Longitude     float64 `json:"longitude"`
+	Enabled       bool    `json:"enabled"`
+	Threshold     int     `json:"threshold"`
+	RewardText    string  `json:"rewardText"`
+	SpecialID     string  `json:"specialId"`
+	Label         string  `json:"label"`
+	ImageUrl      string  `json:"imageUrl"`
+	CustomerPhone string  `json:"customerPhone"`
+	Stamps        int     `json:"stamps"`        // current progress toward threshold
+	RewardReady   bool    `json:"rewardReady"`   // stamps >= threshold, awaiting redeem
+	RewardsEarned int     `json:"rewardsEarned"` // lifetime rewards claimed on this card
 }
 
 type GetProgramRequest struct {
@@ -181,6 +183,19 @@ func partnerBrandColor(ctx context.Context, partnerType string, partnerID int64)
 	_ = appdb.SQLDB.QueryRowContext(ctx,
 		"SELECT COALESCE(brand_color,'') FROM "+tbl+" WHERE id = $1", partnerID).Scan(&c)
 	return c
+}
+
+// partnerLatLong returns a partner's map coordinates (0,0 if unknown) so the
+// customer's "My Stamp Cards" can sort by distance.
+func partnerLatLong(ctx context.Context, partnerType string, partnerID int64) (float64, float64) {
+	tbl, ok := partnerTables[partnerType]
+	if !ok {
+		return 0, 0
+	}
+	var lat, lng float64
+	_ = appdb.SQLDB.QueryRowContext(ctx,
+		"SELECT COALESCE(latitude,0), COALESCE(longitude,0) FROM "+tbl+" WHERE id = $1", partnerID).Scan(&lat, &lng)
+	return lat, lng
 }
 
 // loadProgram returns the partner's config, or a disabled default if none saved.
@@ -549,7 +564,9 @@ func MyCards(ctx context.Context, req *MyCardsRequest) (*MyCardsResponse, error)
 		}
 		prog := Program{PartnerType: pt, PartnerID: pid, SpecialID: specialID, Enabled: true, Threshold: threshold, RewardText: reward, Label: label, ImageUrl: imageURL}
 		pn, pa := partnerNameArea(ctx, pt, pid)
-		out = append(out, cardView(prog, pn, pa, partnerBrandColor(ctx, pt, pid), phone, stamps, rewards))
+		cv := cardView(prog, pn, pa, partnerBrandColor(ctx, pt, pid), phone, stamps, rewards)
+		cv.Latitude, cv.Longitude = partnerLatLong(ctx, pt, pid)
+		out = append(out, cv)
 	}
 	return &MyCardsResponse{Cards: out}, rows.Err()
 }

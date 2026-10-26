@@ -238,14 +238,16 @@ export default function GuestDashboard() {
           !trimmed ||
           matchesSearch(trimmed, [e.name, e.description, ...categories(e), e.area, e.province, ...optionKeywords(e)]);
         const ratingOk = passesRating(entityType, e.id);
-        return searchOk && ratingOk;
+        // "Discounts" / "My Stamp Cards" now FILTER the list: only partners who
+        // offer that (for this audience) are shown; everyone else is excluded.
+        const categoryOk =
+          sortBy === "discounts" ? entityHasDiscount(e)
+          : sortBy === "stampcards" ? entityHasStampCard(e)
+          : true;
+        return searchOk && ratingOk && categoryOk;
       });
       const byName = (a: T, b: T) => (a.name || "").localeCompare(b.name || "");
-      const rank = (e: T) =>
-        sortBy === "discounts" ? (entityHasDiscount(e) ? 0 : 1)
-        : sortBy === "stampcards" ? (entityHasStampCard(e) ? 0 : 1)
-        : 0;
-      return [...filtered].sort((a, b) => rank(a) - rank(b) || byName(a, b));
+      return [...filtered].sort(byName);
     };
     setFilteredRestaurants(applyAll("restaurant", restaurants, (r) => [...(r.cuisineTypes || []), ...(r.restaurantType || [])]));
     setFilteredServices(applyAll("service", services, (s) => s.serviceCategories || []));
@@ -2470,9 +2472,48 @@ function MyStampCardsModal({ onClose }: { onClose: () => void }) {
   });
   const [cards, setCards] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
-  const [active, setActive] = useState(0);
-  const touchX = useRef<number | null>(null);
+  const [sortMode, setSortMode] = useState<"alphabetical" | "closest">("alphabetical");
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem("aystampFavorites") || "[]"); } catch { return []; }
+  });
   const { toast } = useToast();
+  const cardKey = (c: any) => `${c.partnerType}:${c.partnerId}:${c.specialId || ""}`;
+  const isFav = (c: any) => favorites.includes(cardKey(c));
+  const toggleFav = (c: any) => {
+    const k = cardKey(c);
+    setFavorites((prev) => {
+      let next: string[];
+      if (prev.includes(k)) next = prev.filter((x) => x !== k);
+      else {
+        if (prev.length >= 3) { toast({ title: "You can favourite up to 3 cards", description: "Unstar one first." }); return prev; }
+        next = [...prev, k];
+      }
+      try { localStorage.setItem("aystampFavorites", JSON.stringify(next)); } catch { /* best-effort */ }
+      return next;
+    });
+  };
+  const distKm = (c: any): number => {
+    if (!userCoords || !c.latitude || !c.longitude) return Infinity;
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const dLat = toRad(c.latitude - userCoords.lat);
+    const dLng = toRad(c.longitude - userCoords.lng);
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(userCoords.lat)) * Math.cos(toRad(c.latitude)) * Math.sin(dLng / 2) ** 2;
+    return 2 * 6371 * Math.asin(Math.sqrt(a));
+  };
+  const useClosest = async () => {
+    setSortMode("closest");
+    if (userCoords) return;
+    setLocating(true);
+    try {
+      const pos = await getCurrentPosition();
+      setUserCoords({ lat: pos.latitude, lng: pos.longitude });
+    } catch {
+      toast({ title: "Couldn't get your location", description: "Allow location access to sort by closest, or use Alphabetical.", variant: "destructive" });
+      setSortMode("alphabetical");
+    } finally { setLocating(false); }
+  };
   const digits = phone.replace(/[^0-9]/g, "");
   const load = async (silent: boolean) => {
     if (!phone.trim()) { if (!silent) toast({ title: "Enter your mobile number", variant: "destructive" }); return; }
@@ -2500,15 +2541,11 @@ function MyStampCardsModal({ onClose }: { onClose: () => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, digits]);
 
-  // Keep the swipe index valid as the number of cards changes.
-  useEffect(() => {
-    if (cards && active > cards.length - 1) setActive(Math.max(0, cards.length - 1));
-  }, [cards, active]);
-
-  const go = (dir: number) => {
-    if (!cards || cards.length === 0) return;
-    setActive((a) => (a + dir + cards.length) % cards.length);
-  };
+  const byName = (a: any, b: any) => (a.partnerName || "").localeCompare(b.partnerName || "") || ((a.label || "").localeCompare(b.label || ""));
+  const sortRest = (list: any[]) => sortMode === "closest"
+    ? [...list].sort((a, b) => distKm(a) - distKm(b) || byName(a, b))
+    : [...list].sort(byName);
+  const sortedCards = cards ? [...sortRest(cards.filter(isFav)), ...sortRest(cards.filter((c) => !isFav(c)))] : [];
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-background rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
@@ -2533,87 +2570,64 @@ function MyStampCardsModal({ onClose }: { onClose: () => void }) {
             <p className="text-[11px] text-muted-foreground text-center">No code reader? Just give the shop your mobile number.</p>
           </div>
         )}
-        {cards !== null && (cards.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No cards available to view yet.</p>
-        ) : (
-          <div>
-            <div
-              className="relative"
-              onTouchStart={(e) => { touchX.current = e.touches[0].clientX; }}
-              onTouchEnd={(e) => {
-                if (touchX.current === null) return;
-                const dx = e.changedTouches[0].clientX - touchX.current;
-                if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
-                touchX.current = null;
-              }}
-            >
-              {(() => {
-                const c = cards[Math.min(active, cards.length - 1)];
-                return (
-                  <div className="border rounded-md p-3 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-semibold text-sm truncate" style={{ color: (c as any).brandColor || undefined }}>{c.partnerName || "Partner"}</span>
-                        {(c as any).label && <span className="text-[11px] text-muted-foreground line-clamp-2">{(c as any).label}</span>}
-                        {c.area && <span className="text-[11px] text-muted-foreground">{c.area}</span>}
-                      </div>
-                      {c.rewardReady && <span className="text-xs px-2 py-0.5 rounded bg-[#39FF14] text-black font-semibold flex-shrink-0">Reward ready!</span>}
-                    </div>
-                    {(c as any).imageUrl && (
-                      <img src={(c as any).imageUrl} alt={(c as any).label || "Product"}
-                        className="w-full max-w-[200px] rounded-md border object-cover" />
-                    )}
-                    {c.rewardText && (
-                      <div className="text-xs font-medium rounded px-2 py-1 border border-[#39FF14]/40 bg-[#39FF14]/10 text-[#39FF14]">
-                        🎁 Reward: {c.rewardText}
-                      </div>
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                      {Array.from({ length: c.threshold }).map((_, i) => (
-                        <span key={i}
-                          className={`h-7 w-7 rounded-full border flex items-center justify-center text-xs font-bold ${
-                            i < c.stamps ? "bg-[#39FF14] border-[#39FF14] text-black" : "border-border text-muted-foreground"
-                          }`}>
-                          {i < c.stamps ? "✓" : i + 1}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {c.stamps} of {c.threshold} stamps
-                    </div>
-                    {c.rewardReady && <p className="text-xs">Show this to {c.partnerName || "the partner"} to claim your reward.</p>}
-                  </div>
-                );
-              })()}
-
-              {cards.length > 1 && (
-                <>
-                  <button type="button" aria-label="Previous card" onClick={() => go(-1)}
-                    className="absolute left-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/90 border flex items-center justify-center shadow-sm">
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  <button type="button" aria-label="Next card" onClick={() => go(1)}
-                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/90 border flex items-center justify-center shadow-sm">
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </>
-              )}
-            </div>
-
+        {cards !== null && (
+          <div className="space-y-2">
             {cards.length > 1 && (
-              <div className="flex items-center justify-center gap-1.5 pt-2">
-                {cards.map((_, i) => (
-                  <button key={i} type="button" aria-label={`Card ${i + 1}`} onClick={() => setActive(i)}
-                    className={`h-2 rounded-full transition-all ${i === active ? "w-5 bg-[#39FF14]" : "w-2 bg-border"}`} />
-                ))}
-                <span className="ml-2 text-[11px] text-muted-foreground">{Math.min(active, cards.length - 1) + 1} / {cards.length}</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm text-muted-foreground">Sort</span>
+                <select
+                  value={sortMode}
+                  onChange={(e) => (e.target.value === "closest" ? useClosest() : setSortMode("alphabetical"))}
+                  className="h-9 rounded-md border bg-background px-2 text-sm"
+                >
+                  <option value="alphabetical">Alphabetical</option>
+                  <option value="closest">Closest to me</option>
+                </select>
+                {locating && <span className="text-[11px] text-muted-foreground">Locating…</span>}
+                <span className="ml-auto text-[11px] text-muted-foreground">★ favourite up to 3</span>
               </div>
             )}
-            {cards.length > 1 && (
-              <p className="text-[11px] text-muted-foreground text-center pt-1">Swipe to see your other cards.</p>
+            {cards.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No cards available to view yet.</p>
+            ) : (
+              sortedCards.map((c, idx) => (
+                <div key={cardKey(c) + ":" + idx} className="border rounded-md p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-semibold text-sm truncate" style={{ color: (c as any).brandColor || undefined }}>{c.partnerName || "Partner"}</span>
+                      {(c as any).label && <span className="text-[11px] text-muted-foreground line-clamp-2">{(c as any).label}</span>}
+                      {c.area && <span className="text-[11px] text-muted-foreground">{c.area}</span>}
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {c.rewardReady && <span className="text-xs px-2 py-0.5 rounded bg-[#39FF14] text-black font-semibold">Reward ready!</span>}
+                      <button type="button" aria-label={isFav(c) ? "Unfavourite" : "Favourite"} onClick={() => toggleFav(c)}
+                        className={`text-lg leading-none ${isFav(c) ? "text-[#f5b301]" : "text-muted-foreground"}`}>
+                        {isFav(c) ? "★" : "☆"}
+                      </button>
+                    </div>
+                  </div>
+                  {(c as any).imageUrl && (
+                    <img src={(c as any).imageUrl} alt={(c as any).label || "Product"} className="w-full max-w-[200px] rounded-md border object-cover" />
+                  )}
+                  {c.rewardText && (
+                    <div className="text-xs font-medium rounded px-2 py-1 border border-[#39FF14]/40 bg-[#39FF14]/10 text-[#39FF14]">
+                      🎁 Reward: {c.rewardText}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {Array.from({ length: c.threshold }).map((_, i) => (
+                      <span key={i} className={`h-7 w-7 rounded-full border flex items-center justify-center text-xs font-bold ${i < c.stamps ? "bg-[#39FF14] border-[#39FF14] text-black" : "border-border text-muted-foreground"}`}>
+                        {i < c.stamps ? "✓" : i + 1}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="text-xs text-muted-foreground">{c.stamps} of {c.threshold} stamps</div>
+                  {c.rewardReady && <p className="text-xs">Show this to {c.partnerName || "the partner"} to claim your reward.</p>}
+                </div>
+              ))
             )}
           </div>
-        ))}
+        )}
         <div className="flex justify-end pt-1"><Button variant="outline" onClick={onClose}>Close</Button></div>
       </div>
     </div>
