@@ -185,12 +185,14 @@ func (p *PreOrderItems) Scan(src interface{}) error {
 // offer / earn rule; Line2 is the stamp-card reward (blank for a plain
 // discount). Stored as a single jsonb column on the retail table.
 type RetailSpecial struct {
-	Type     string `json:"type"`
-	Audience string `json:"audience"`
-	Enabled  bool   `json:"enabled"`
-	Line1    string `json:"line1"`
-	Line2    string `json:"line2,omitempty"`
-	ImageUrl string `json:"imageUrl,omitempty"`
+	ID        string `json:"id,omitempty"`
+	Type      string `json:"type"`
+	Audience  string `json:"audience"`
+	Enabled   bool   `json:"enabled"`
+	Line1     string `json:"line1"`
+	Line2     string `json:"line2,omitempty"`
+	ImageUrl  string `json:"imageUrl,omitempty"`
+	Threshold int    `json:"threshold,omitempty"` // stamps needed for the reward (My Stamp Card)
 }
 
 // RetailSpecials is a list of RetailSpecial stored as a single jsonb column

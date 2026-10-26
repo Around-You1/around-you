@@ -564,7 +564,11 @@ export default function RepOnboardingApp() {
   const [booking, setBooking] = useState(false);
   const [bookingItems, setBookingItems] = useState<Array<{ name: string; price: string; duration: string }>>([]);
   const [preOrderItems, setPreOrderItems] = useState<Array<{ name: string; description: string; price: string; leadTimeMinutes: string }>>([]);
-  const [specials, setSpecials] = useState<Array<{ type: string; audience: string; enabled: boolean; line1: string; line2: string }>>([]);
+  const newSpecialId = () => {
+    try { if (typeof crypto !== "undefined" && (crypto as any).randomUUID) return (crypto as any).randomUUID(); } catch { /* ignore */ }
+    return "sp_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+  };
+  const [specials, setSpecials] = useState<Array<{ id: string; type: string; audience: string; enabled: boolean; line1: string; line2: string; threshold: number }>>([]);
   // Restaurant service options — which fulfilment the restaurant actually offers.
   // Pre-Orders are only offered when Takeaway and/or Delivery is ticked, so a
   // guest can never pick a fulfilment the restaurant doesn't do.
@@ -894,11 +898,13 @@ export default function RepOnboardingApp() {
           ...(isRetail ? { specials: specials
             .filter((sp) => sp.line1.trim())
             .map((sp) => ({
+              id: sp.id || newSpecialId(),
               type: sp.type === "stampcard" ? "stampcard" : "discount",
               audience: ["guest", "local", "both"].includes(sp.audience) ? sp.audience : "both",
               enabled: sp.enabled !== false,
               line1: sp.line1.trim(),
               line2: sp.type === "stampcard" ? sp.line2.trim() : "",
+              threshold: sp.type === "stampcard" ? (Number(sp.threshold) > 0 ? Number(sp.threshold) : 10) : 0,
             })) } : {}),
           guestType: resolveGuestType(),
           bookingItems: booking
@@ -1588,8 +1594,12 @@ export default function RepOnboardingApp() {
                           value={sp.line1}
                           onChange={(v) => setSpecials((rows) => rows.map((r, idx) => (idx === i ? { ...r, line1: v } : r)))} />
                         {sp.type === "stampcard" && (
-                          <TextField label="The reward" value={sp.line2}
-                            onChange={(v) => setSpecials((rows) => rows.map((r, idx) => (idx === i ? { ...r, line2: v } : r)))} />
+                          <>
+                            <TextField label="The reward" value={sp.line2}
+                              onChange={(v) => setSpecials((rows) => rows.map((r, idx) => (idx === i ? { ...r, line2: v } : r)))} />
+                            <TextField label="Stamps needed for the reward" value={String(sp.threshold)}
+                              onChange={(v) => setSpecials((rows) => rows.map((r, idx) => (idx === i ? { ...r, threshold: parseInt(v || "0", 10) || 0 } : r)))} />
+                          </>
                         )}
                         <button type="button" style={{ background: "none", border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.accent, cursor: "pointer", fontSize: 12, padding: "4px 10px", marginTop: 6 }}
                           onClick={() => setSpecials((rows) => rows.filter((_, idx) => idx !== i))}>Remove</button>
@@ -1597,9 +1607,9 @@ export default function RepOnboardingApp() {
                     ))}
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                       <button type="button" style={{ background: colors.surface2, border: `1px solid ${colors.primary}`, color: colors.primary, borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
-                        onClick={() => setSpecials((rows) => [...rows, { type: "discount", audience: "both", enabled: true, line1: "", line2: "" }])}>+ Add Discount</button>
+                        onClick={() => setSpecials((rows) => [...rows, { id: newSpecialId(), type: "discount", audience: "both", enabled: true, line1: "", line2: "", threshold: 10 }])}>+ Add Discount</button>
                       <button type="button" style={{ background: colors.surface2, border: `1px solid ${colors.primary}`, color: colors.primary, borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
-                        onClick={() => setSpecials((rows) => [...rows, { type: "stampcard", audience: "both", enabled: true, line1: "", line2: "" }])}>+ Add My Stamp Card</button>
+                        onClick={() => setSpecials((rows) => [...rows, { id: newSpecialId(), type: "stampcard", audience: "both", enabled: true, line1: "", line2: "", threshold: 10 }])}>+ Add My Stamp Card</button>
                     </div>
                   </>
                 )}

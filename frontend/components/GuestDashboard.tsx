@@ -2554,6 +2554,7 @@ function MyStampCardsModal({ onClose }: { onClose: () => void }) {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex flex-col min-w-0">
                         <span className="font-semibold text-sm truncate" style={{ color: (c as any).brandColor || undefined }}>{c.partnerName || "Partner"}</span>
+                        {(c as any).label && <span className="text-[11px] text-muted-foreground line-clamp-2">{(c as any).label}</span>}
                         {c.area && <span className="text-[11px] text-muted-foreground">{c.area}</span>}
                       </div>
                       {c.rewardReady && <span className="text-xs px-2 py-0.5 rounded bg-[#39FF14] text-black font-semibold flex-shrink-0">Reward ready!</span>}

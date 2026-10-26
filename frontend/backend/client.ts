@@ -221,7 +221,7 @@ export const backend = {
   },
 
   loyalty: {
-    getProgram: (req: { partnerType: string; partnerId: number }) =>
+    getProgram: (req: { partnerType: string; partnerId: number; specialId?: string }) =>
       request("POST", "/loyalty/program/get", { body: req }),
     setProgram: (req: {
       partnerType: string;
@@ -232,11 +232,11 @@ export const backend = {
     }) => request("POST", "/loyalty/program/set", { body: req }),
     setBrandColor: (req: { partnerType: string; partnerId: number; brandColor: string }) =>
       request("POST", "/loyalty/brand-color/set", { body: req }),
-    lookup: (req: { partnerType: string; partnerId: number; phone: string }) =>
+    lookup: (req: { partnerType: string; partnerId: number; phone: string; specialId?: string }) =>
       request("POST", "/loyalty/lookup", { body: req }),
-    stamp: (req: { partnerType: string; partnerId: number; phone: string; count?: number }) =>
+    stamp: (req: { partnerType: string; partnerId: number; phone: string; count?: number; specialId?: string }) =>
       request("POST", "/loyalty/stamp", { body: req }),
-    redeem: (req: { partnerType: string; partnerId: number; phone: string }) =>
+    redeem: (req: { partnerType: string; partnerId: number; phone: string; specialId?: string }) =>
       request("POST", "/loyalty/redeem", { body: req }),
     myCards: (req: { phone: string }) =>
       request("POST", "/loyalty/my-cards", { body: req }),

@@ -233,6 +233,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.ServiceData, error)
 	if subErr := billing.OnPartnerOnboarded(ctx, "retail", created.ID, created.AccessLevel, created.GuestType, created.OfficialRepCode); subErr != nil {
 		log.Printf("service %d created but subscription upsert failed: %v", created.ID, subErr)
 	}
+	syncSpecialLoyalty(ctx, created.ID, created.Specials)
 	moderation.ScanAndFlag(ctx, "partner_profile", "retail", created.ID, created.Name, auth.ActorLabel(ctx),
 		moderation.NamedField{Name: "name", Value: created.Name},
 		moderation.NamedField{Name: "description", Value: created.Description},
@@ -241,6 +242,38 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.ServiceData, error)
 	dedupe.CheckOnCreate(ctx, "retail", "contact_number", "retail", created.ID,
 		created.Name, created.ContactNumber, created.Address, created.OfficialRepCode, auth.ActorLabel(ctx))
 	return created, nil
+}
+
+// syncSpecialLoyalty keeps one loyalty program per "My Stamp Card" promotion so
+// each promotion is its own stamp card, auto-enabled straight from the promotion
+// (no separate toggle). It first disables every promotion-based program for this
+// partner, then re-upserts the ones still present and active — so a promotion
+// that was removed or switched to a plain Discount drops out of customers' cards.
+// Best-effort: a failure here never blocks the profile save.
+func syncSpecialLoyalty(ctx context.Context, partnerID int64, specials appdb.RetailSpecials) {
+	if _, err := appdb.SQLDB.ExecContext(ctx,
+		`UPDATE loyalty_programs SET enabled = false, updated_at = now()
+		 WHERE partner_type = 'retail' AND partner_id = $1 AND special_id <> ''`, partnerID); err != nil {
+		log.Printf("retail %d: loyalty disable sweep failed: %v", partnerID, err)
+	}
+	for _, sp := range specials {
+		if sp.ID == "" || sp.Type != "stampcard" {
+			continue
+		}
+		th := sp.Threshold
+		if th < 1 {
+			th = 10
+		}
+		if _, err := appdb.SQLDB.ExecContext(ctx, `
+			INSERT INTO loyalty_programs (partner_type, partner_id, special_id, enabled, threshold, reward_text, label)
+			VALUES ('retail', $1, $2, $3, $4, $5, $6)
+			ON CONFLICT (partner_type, partner_id, special_id) DO UPDATE SET
+			  enabled = EXCLUDED.enabled, threshold = EXCLUDED.threshold,
+			  reward_text = EXCLUDED.reward_text, label = EXCLUDED.label, updated_at = now()`,
+			partnerID, sp.ID, sp.Enabled, th, sp.Line2, sp.Line1); err != nil {
+			log.Printf("retail %d: loyalty sync special %s failed: %v", partnerID, sp.ID, err)
+		}
+	}
 }
 
 //encore:api auth method=PUT path=/service
@@ -359,6 +392,7 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.ServiceData, error)
 	if subErr := billing.EnsureSubscription(ctx, "retail", item.ID, item.AccessLevel, item.GuestType, item.OfficialRepCode); subErr != nil {
 		log.Printf("service %d updated but subscription sync failed: %v", item.ID, subErr)
 	}
+	syncSpecialLoyalty(ctx, item.ID, item.Specials)
 	return item, nil
 }
 

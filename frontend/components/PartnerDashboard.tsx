@@ -206,7 +206,93 @@ function RedeemScanner() {
 // needed + reward), then add a stamp for a customer by mobile number and redeem
 // the reward when the card is full. The partner adds every stamp — customers
 // cannot stamp themselves.
-function LoyaltyManager({ entityType, entityId, initialBrandColor }: { entityType: string; entityId: number; initialBrandColor?: string }) {
+// SpecialStampCard is one "My Stamp Card" promotion's card on the partner's
+// till screen: it looks the customer up for THIS promotion (by special id) and
+// lets the partner add stamps / redeem the reward for it independently of the
+// shop's other promotions.
+function SpecialStampCard({ partnerType, partnerId, phone, special }: { partnerType: string; partnerId: number; phone: string; special: any }) {
+  const { toast } = useToast();
+  const [card, setCard] = useState<any | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [qty, setQty] = useState(1);
+  const GREEN = "bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold";
+  const load = async () => {
+    if (!phone) return;
+    setBusy(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const c: any = await backend.loyalty.lookup({ partnerType, partnerId, specialId: special.id, phone });
+      setCard(c);
+    } catch (e: any) {
+      toast({ title: "Couldn't load card", description: e?.message || "", variant: "destructive" });
+    } finally { setBusy(false); }
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [phone, special.id]);
+  const addStamp = async () => {
+    setBusy(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const c: any = await backend.loyalty.stamp({ partnerType, partnerId, specialId: special.id, phone: card?.customerPhone || phone, count: qty });
+      setCard(c); setQty(1);
+      toast({ title: qty === 1 ? "Stamp added" : `${qty} stamps added`, description: `${c.stamps} of ${c.threshold}` });
+    } catch (e: any) {
+      toast({ title: "Couldn't add stamp", description: e?.message || "", variant: "destructive" });
+    } finally { setBusy(false); }
+  };
+  const redeem = async () => {
+    setBusy(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const c: any = await backend.loyalty.redeem({ partnerType, partnerId, specialId: special.id, phone: card?.customerPhone || phone });
+      setCard(c);
+      toast({ title: "Reward redeemed 🎉" });
+    } catch (e: any) {
+      toast({ title: "Couldn't redeem", description: e?.message || "", variant: "destructive" });
+    } finally { setBusy(false); }
+  };
+  const threshold = card?.threshold || special.threshold || 10;
+  const stamps = card?.stamps || 0;
+  return (
+    <div className="rounded-lg border border-border/60 p-3 space-y-2">
+      <p className="text-sm font-semibold">{special.line1 || "My Stamp Card"}</p>
+      {special.line2 && <p className="text-xs text-muted-foreground">Reward: {special.line2}</p>}
+      {!phone ? (
+        <p className="text-xs text-muted-foreground">Scan or enter the customer's number above to add a stamp.</p>
+      ) : (
+        <>
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: threshold }).map((_, i) => (
+              <span key={i}
+                className={`h-8 w-8 rounded-full border flex items-center justify-center text-xs font-bold ${
+                  i < stamps ? "bg-[#39FF14] border-[#39FF14] text-black" : "border-border text-muted-foreground"
+                }`}>
+                {i < stamps ? "✓" : i + 1}
+              </span>
+            ))}
+          </div>
+          <div className="text-xs text-muted-foreground">{stamps} of {threshold} stamps</div>
+          {card?.rewardReady ? (
+            <Button onClick={redeem} disabled={busy} className={GREEN}>Redeem reward 🎉</Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <select value={qty} onChange={(e) => setQty(parseInt(e.target.value, 10))}
+                className="h-9 rounded-md border border-border bg-background px-2 text-sm" aria-label="Number of stamps">
+                {Array.from({ length: Math.max(1, Math.min(10, threshold - stamps)) }).map((_, i) => (
+                  <option key={i + 1} value={i + 1}>{i + 1}</option>
+                ))}
+              </select>
+              <Button onClick={addStamp} disabled={busy} className={GREEN}>Add {qty} {qty === 1 ? "stamp" : "stamps"}</Button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function LoyaltyManager({ entityType, entityId, initialBrandColor, specials }: { entityType: string; entityId: number; initialBrandColor?: string; specials?: any[] }) {
+  const stampSpecials = (specials || []).filter((sp: any) => sp && sp.type === "stampcard" && sp.enabled && sp.id);
+  const retailMode = entityType === "retail";
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [enabled, setEnabled] = useState(false);
@@ -280,7 +366,7 @@ function LoyaltyManager({ entityType, entityId, initialBrandColor }: { entityTyp
       const backend = getAuthenticatedBackend();
       await backend.loyalty.setProgram({ partnerType: entityType, partnerId: entityId, enabled, threshold, rewardText });
       setSavedEnabled(enabled);
-      toast({ title: "Loyalty card saved" });
+      toast({ title: "My Stamp Card saved" });
     } catch (e: any) {
       toast({ title: "Couldn't save", description: e?.message || "Please try again", variant: "destructive" });
     } finally {
@@ -390,7 +476,7 @@ function LoyaltyManager({ entityType, entityId, initialBrandColor }: { entityTyp
     <Card>
       <CardHeader className="cursor-pointer select-none" onClick={() => setOpen((o) => !o)}>
         <CardTitle className="flex items-center justify-between">
-          <span>Loyalty Stamp Card</span>
+          <span>My Stamp Card</span>
           <span className="text-muted-foreground text-base font-normal">{open ? "▾" : "▸"}</span>
         </CardTitle>
       </CardHeader>
@@ -418,11 +504,20 @@ function LoyaltyManager({ entityType, entityId, initialBrandColor }: { entityTyp
           </div>
         )}
 
+        {retailMode ? (
+        <div className="space-y-1 rounded-lg border border-border/60 p-3">
+          <p className="text-sm font-semibold">Your My Stamp Card promotions</p>
+          <p className="text-xs text-muted-foreground">
+            Each My Stamp Card promotion you add under <span className="font-medium">Discount / Specials</span> in your
+            profile is its own stamp card, switched on automatically. Scan a customer below to add stamps to the right one.
+          </p>
+        </div>
+        ) : (
         <div className="space-y-3 rounded-lg border border-border/60 p-3">
           <p className="text-sm font-semibold">Card setup</p>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-            Turn the loyalty card on for my customers
+            Turn My Stamp Card on for my customers
           </label>
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1">
@@ -440,8 +535,9 @@ function LoyaltyManager({ entityType, entityId, initialBrandColor }: { entityTyp
             {savingCfg ? "Saving…" : "Save card settings"}
           </Button>
         </div>
+        )}
 
-        {savedEnabled ? (
+        {(retailMode || savedEnabled) ? (
         <div className="space-y-3 rounded-lg border border-border/60 p-3">
           <p className="text-sm font-semibold">Add a stamp</p>
           <p className="text-xs text-muted-foreground">
@@ -458,10 +554,26 @@ function LoyaltyManager({ entityType, entityId, initialBrandColor }: { entityTyp
           <div className="flex gap-2">
             <Input value={phone} onChange={(e) => setPhone(e.target.value)}
               placeholder="or enter mobile number" inputMode="tel" />
-            <Button variant="outline" onClick={() => lookup()} disabled={busy || !phone.trim()}>Look up</Button>
+            {!retailMode && (
+              <Button variant="outline" onClick={() => lookup()} disabled={busy || !phone.trim()}>Look up</Button>
+            )}
           </div>
 
-          {card && (
+          {retailMode && (
+            stampSpecials.length > 0 ? (
+              <div className="space-y-3">
+                {stampSpecials.map((sp: any) => (
+                  <SpecialStampCard key={sp.id} partnerType={entityType} partnerId={entityId} phone={phone.replace(/[^0-9]/g, "")} special={sp} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                No active My Stamp Card promotions yet. Add one under Discount / Specials in your profile, then it appears here.
+              </p>
+            )
+          )}
+
+          {!retailMode && card && (
             <div className="space-y-3">
               <div className="text-sm">
                 <span className="font-semibold font-mono">{card.customerPhone}</span>
@@ -506,7 +618,7 @@ function LoyaltyManager({ entityType, entityId, initialBrandColor }: { entityTyp
         ) : (
           <div className="space-y-2 rounded-lg border border-dashed border-border/60 p-3">
             <p className="text-sm font-semibold">Add a stamp</p>
-            <p className="text-xs text-muted-foreground">Turn the loyalty card on above and tap &ldquo;Save card settings&rdquo; to start adding stamps for customers.</p>
+            <p className="text-xs text-muted-foreground">Turn My Stamp Card on above and tap &ldquo;Save card settings&rdquo; to start adding stamps for customers.</p>
           </div>
         )}
       </CardContent>
@@ -838,7 +950,7 @@ export default function PartnerDashboard() {
 
         <RedeemScanner />
 
-        <LoyaltyManager entityType={entityType} entityId={(entity as { id: number }).id} initialBrandColor={(entity as any).brandColor} />
+        <LoyaltyManager entityType={entityType} entityId={(entity as { id: number }).id} initialBrandColor={(entity as any).brandColor} specials={(entity as any).specials} />
 
         {views && (
           <Card>

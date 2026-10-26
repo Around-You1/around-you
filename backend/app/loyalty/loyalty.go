@@ -49,9 +49,11 @@ const (
 type Program struct {
 	PartnerType string `json:"partnerType"`
 	PartnerID   int64  `json:"partnerId"`
+	SpecialID   string `json:"specialId"` // "" = the partner's single legacy card; else a My Stamp Card promotion
 	Enabled     bool   `json:"enabled"`
 	Threshold   int    `json:"threshold"`  // stamps needed for one reward
 	RewardText  string `json:"rewardText"` // what the customer gets, e.g. "1 free 10L water refill"
+	Label       string `json:"label"`      // what earns a stamp (the promotion's first line) — for display
 }
 
 // CardView is one customer's card at a partner, plus the partner's rule — the
@@ -65,6 +67,8 @@ type CardView struct {
 	Enabled       bool   `json:"enabled"`
 	Threshold     int    `json:"threshold"`
 	RewardText    string `json:"rewardText"`
+	SpecialID     string `json:"specialId"`
+	Label         string `json:"label"`
 	CustomerPhone string `json:"customerPhone"`
 	Stamps        int    `json:"stamps"`        // current progress toward threshold
 	RewardReady   bool   `json:"rewardReady"`   // stamps >= threshold, awaiting redeem
@@ -74,11 +78,13 @@ type CardView struct {
 type GetProgramRequest struct {
 	PartnerType string `json:"partnerType"`
 	PartnerID   int64  `json:"partnerId"`
+	SpecialID   string `json:"specialId"`
 }
 
 type SetProgramRequest struct {
 	PartnerType string `json:"partnerType"`
 	PartnerID   int64  `json:"partnerId"`
+	SpecialID   string `json:"specialId"`
 	Enabled     bool   `json:"enabled"`
 	Threshold   int    `json:"threshold"`
 	RewardText  string `json:"rewardText"`
@@ -87,6 +93,7 @@ type SetProgramRequest struct {
 type CardRequest struct {
 	PartnerType string `json:"partnerType"`
 	PartnerID   int64  `json:"partnerId"`
+	SpecialID   string `json:"specialId"` // "" = legacy single card; else a My Stamp Card promotion
 	Phone       string `json:"phone"`
 	Count       int    `json:"count"` // stamps to add at once (AddStamp); 0/absent = 1
 }
@@ -111,7 +118,7 @@ func ownerOrStaff(ctx context.Context, partnerType string, partnerID int64) erro
 	d := auth.FromContext(ctx)
 	if d == nil || d.User == nil || d.User.Role != "Partner" ||
 		d.User.EntityType != partnerType || d.User.EntityID != partnerID {
-		return &errs.Error{Code: errs.PermissionDenied, Message: "only this partner (or staff) can manage its loyalty card"}
+		return &errs.Error{Code: errs.PermissionDenied, Message: "only this partner (or staff) can manage its stamp card"}
 	}
 	return nil
 }
@@ -175,13 +182,13 @@ func partnerBrandColor(ctx context.Context, partnerType string, partnerID int64)
 }
 
 // loadProgram returns the partner's config, or a disabled default if none saved.
-func loadProgram(ctx context.Context, partnerType string, partnerID int64) (Program, error) {
-	p := Program{PartnerType: partnerType, PartnerID: partnerID, Threshold: 10}
+func loadProgram(ctx context.Context, partnerType string, partnerID int64, specialID string) (Program, error) {
+	p := Program{PartnerType: partnerType, PartnerID: partnerID, SpecialID: specialID, Threshold: 10}
 	err := appdb.SQLDB.QueryRowContext(ctx, `
-		SELECT enabled, threshold, COALESCE(reward_text,'')
-		FROM loyalty_programs WHERE partner_type = $1 AND partner_id = $2`,
-		partnerType, partnerID,
-	).Scan(&p.Enabled, &p.Threshold, &p.RewardText)
+		SELECT enabled, threshold, COALESCE(reward_text,''), COALESCE(label,'')
+		FROM loyalty_programs WHERE partner_type = $1 AND partner_id = $2 AND special_id = $3`,
+		partnerType, partnerID, specialID,
+	).Scan(&p.Enabled, &p.Threshold, &p.RewardText, &p.Label)
 	if err == sql.ErrNoRows {
 		return p, nil
 	}
@@ -197,6 +204,8 @@ func cardView(prog Program, name, area, brandColor, phone string, stamps, reward
 	return CardView{
 		PartnerType:   prog.PartnerType,
 		PartnerID:     prog.PartnerID,
+		SpecialID:     prog.SpecialID,
+		Label:         prog.Label,
 		PartnerName:   name,
 		BrandColor:    brandColor,
 		Area:          area,
@@ -222,7 +231,7 @@ func GetProgram(ctx context.Context, req *GetProgramRequest) (*Program, error) {
 	if err := ownerOrStaff(ctx, req.PartnerType, req.PartnerID); err != nil {
 		return nil, err
 	}
-	p, err := loadProgram(ctx, req.PartnerType, req.PartnerID)
+	p, err := loadProgram(ctx, req.PartnerType, req.PartnerID, req.SpecialID)
 	if err != nil {
 		return nil, err
 	}
@@ -247,20 +256,20 @@ func SetProgram(ctx context.Context, req *SetProgramRequest) (*Program, error) {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "describe the reward before turning the card on"}
 	}
 	_, err := appdb.SQLDB.ExecContext(ctx, `
-		INSERT INTO loyalty_programs (partner_type, partner_id, enabled, threshold, reward_text)
-		VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT (partner_type, partner_id) DO UPDATE SET
+		INSERT INTO loyalty_programs (partner_type, partner_id, special_id, enabled, threshold, reward_text)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (partner_type, partner_id, special_id) DO UPDATE SET
 		  enabled     = EXCLUDED.enabled,
 		  threshold   = EXCLUDED.threshold,
 		  reward_text = EXCLUDED.reward_text,
 		  updated_at  = now()`,
-		req.PartnerType, req.PartnerID, req.Enabled, req.Threshold, reward,
+		req.PartnerType, req.PartnerID, req.SpecialID, req.Enabled, req.Threshold, reward,
 	)
 	if err != nil {
 		return nil, err
 	}
 	return &Program{
-		PartnerType: req.PartnerType, PartnerID: req.PartnerID,
+		PartnerType: req.PartnerType, PartnerID: req.PartnerID, SpecialID: req.SpecialID,
 		Enabled: req.Enabled, Threshold: req.Threshold, RewardText: reward,
 	}, nil
 }
@@ -329,11 +338,11 @@ func SetBrandColor(ctx context.Context, req *SetBrandColorRequest) (*BrandColorR
 
 // loadCard fetches the current stamp count + lifetime rewards for a card, or
 // zeroes if the customer has none yet.
-func loadCard(ctx context.Context, partnerType string, partnerID int64, phone string) (stamps, rewards int, err error) {
+func loadCard(ctx context.Context, partnerType string, partnerID int64, specialID, phone string) (stamps, rewards int, err error) {
 	err = appdb.SQLDB.QueryRowContext(ctx, `
 		SELECT stamps, rewards_earned FROM loyalty_cards
-		WHERE partner_type = $1 AND partner_id = $2 AND customer_phone = $3`,
-		partnerType, partnerID, phone,
+		WHERE partner_type = $1 AND partner_id = $2 AND special_id = $3 AND customer_phone = $4`,
+		partnerType, partnerID, specialID, phone,
 	).Scan(&stamps, &rewards)
 	if err == sql.ErrNoRows {
 		return 0, 0, nil
@@ -355,11 +364,11 @@ func LookupCard(ctx context.Context, req *CardRequest) (*CardView, error) {
 	if len(phone) < 7 {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "enter the customer's mobile number"}
 	}
-	prog, err := loadProgram(ctx, req.PartnerType, req.PartnerID)
+	prog, err := loadProgram(ctx, req.PartnerType, req.PartnerID, req.SpecialID)
 	if err != nil {
 		return nil, err
 	}
-	stamps, rewards, err := loadCard(ctx, req.PartnerType, req.PartnerID, phone)
+	stamps, rewards, err := loadCard(ctx, req.PartnerType, req.PartnerID, req.SpecialID, phone)
 	if err != nil {
 		return nil, err
 	}
@@ -384,12 +393,12 @@ func AddStamp(ctx context.Context, req *CardRequest) (*CardView, error) {
 	if len(phone) < 7 {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "enter the customer's mobile number"}
 	}
-	prog, err := loadProgram(ctx, req.PartnerType, req.PartnerID)
+	prog, err := loadProgram(ctx, req.PartnerType, req.PartnerID, req.SpecialID)
 	if err != nil {
 		return nil, err
 	}
 	if !prog.Enabled {
-		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "this partner's loyalty card is switched off"}
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "this My Stamp Card is switched off"}
 	}
 
 	// Read the existing card (with its last stamp time) to apply the guards.
@@ -397,8 +406,8 @@ func AddStamp(ctx context.Context, req *CardRequest) (*CardView, error) {
 	var lastStamp sql.NullTime
 	err = appdb.SQLDB.QueryRowContext(ctx, `
 		SELECT stamps, rewards_earned, last_stamp_at FROM loyalty_cards
-		WHERE partner_type = $1 AND partner_id = $2 AND customer_phone = $3`,
-		req.PartnerType, req.PartnerID, phone,
+		WHERE partner_type = $1 AND partner_id = $2 AND special_id = $3 AND customer_phone = $4`,
+		req.PartnerType, req.PartnerID, req.SpecialID, phone,
 	).Scan(&stamps, &rewards, &lastStamp)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
@@ -424,19 +433,19 @@ func AddStamp(ctx context.Context, req *CardRequest) (*CardView, error) {
 	}
 
 	if _, err := appdb.SQLDB.ExecContext(ctx, `
-		INSERT INTO loyalty_cards (partner_type, partner_id, customer_phone, stamps, total_stamps, last_stamp_at)
-		VALUES ($1, $2, $3, $4, $4, now())
-		ON CONFLICT (partner_type, partner_id, customer_phone) DO UPDATE SET
-		  stamps        = loyalty_cards.stamps + $4,
-		  total_stamps  = loyalty_cards.total_stamps + $4,
+		INSERT INTO loyalty_cards (partner_type, partner_id, special_id, customer_phone, stamps, total_stamps, last_stamp_at)
+		VALUES ($1, $2, $3, $4, $5, $5, now())
+		ON CONFLICT (partner_type, partner_id, special_id, customer_phone) DO UPDATE SET
+		  stamps        = loyalty_cards.stamps + $5,
+		  total_stamps  = loyalty_cards.total_stamps + $5,
 		  last_stamp_at = now(),
 		  updated_at    = now()`,
-		req.PartnerType, req.PartnerID, phone, n,
+		req.PartnerType, req.PartnerID, req.SpecialID, phone, n,
 	); err != nil {
 		return nil, err
 	}
 
-	stamps, rewards, err = loadCard(ctx, req.PartnerType, req.PartnerID, phone)
+	stamps, rewards, err = loadCard(ctx, req.PartnerType, req.PartnerID, req.SpecialID, phone)
 	if err != nil {
 		return nil, err
 	}
@@ -460,7 +469,7 @@ func RedeemReward(ctx context.Context, req *CardRequest) (*CardView, error) {
 	if len(phone) < 7 {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "enter the customer's mobile number"}
 	}
-	prog, err := loadProgram(ctx, req.PartnerType, req.PartnerID)
+	prog, err := loadProgram(ctx, req.PartnerType, req.PartnerID, req.SpecialID)
 	if err != nil {
 		return nil, err
 	}
@@ -469,8 +478,8 @@ func RedeemReward(ctx context.Context, req *CardRequest) (*CardView, error) {
 	var stamps int
 	err = appdb.SQLDB.QueryRowContext(ctx, `
 		SELECT id, stamps FROM loyalty_cards
-		WHERE partner_type = $1 AND partner_id = $2 AND customer_phone = $3`,
-		req.PartnerType, req.PartnerID, phone,
+		WHERE partner_type = $1 AND partner_id = $2 AND special_id = $3 AND customer_phone = $4`,
+		req.PartnerType, req.PartnerID, req.SpecialID, phone,
 	).Scan(&cardID, &stamps)
 	if err == sql.ErrNoRows || stamps < prog.Threshold {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "this card is not full yet"}
@@ -488,14 +497,14 @@ func RedeemReward(ctx context.Context, req *CardRequest) (*CardView, error) {
 	}
 	if _, err := appdb.SQLDB.ExecContext(ctx, `
 		INSERT INTO loyalty_redemptions
-		  (partner_type, partner_id, customer_phone, card_id, threshold, reward_text, redeemed_by)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-		req.PartnerType, req.PartnerID, phone, cardID, prog.Threshold, prog.RewardText, auth.ActorLabel(ctx),
+		  (partner_type, partner_id, special_id, customer_phone, card_id, threshold, reward_text, redeemed_by)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		req.PartnerType, req.PartnerID, req.SpecialID, phone, cardID, prog.Threshold, prog.RewardText, auth.ActorLabel(ctx),
 	); err != nil {
 		return nil, err
 	}
 
-	stampsNow, rewards, err := loadCard(ctx, req.PartnerType, req.PartnerID, phone)
+	stampsNow, rewards, err := loadCard(ctx, req.PartnerType, req.PartnerID, req.SpecialID, phone)
 	if err != nil {
 		return nil, err
 	}
@@ -514,11 +523,11 @@ func MyCards(ctx context.Context, req *MyCardsRequest) (*MyCardsResponse, error)
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "enter your mobile number"}
 	}
 	rows, err := appdb.SQLDB.QueryContext(ctx, `
-		SELECT c.partner_type, c.partner_id, c.stamps, c.rewards_earned,
-		       p.threshold, COALESCE(p.reward_text,'')
+		SELECT c.partner_type, c.partner_id, c.special_id, c.stamps, c.rewards_earned,
+		       p.threshold, COALESCE(p.reward_text,''), COALESCE(p.label,'')
 		FROM loyalty_cards c
 		JOIN loyalty_programs p
-		  ON p.partner_type = c.partner_type AND p.partner_id = c.partner_id
+		  ON p.partner_type = c.partner_type AND p.partner_id = c.partner_id AND p.special_id = c.special_id
 		WHERE c.customer_phone = $1 AND p.enabled = true
 		ORDER BY c.updated_at DESC`, phone)
 	if err != nil {
@@ -528,14 +537,14 @@ func MyCards(ctx context.Context, req *MyCardsRequest) (*MyCardsResponse, error)
 
 	out := []CardView{}
 	for rows.Next() {
-		var pt string
+		var pt, specialID string
 		var pid int64
 		var stamps, rewards, threshold int
-		var reward string
-		if err := rows.Scan(&pt, &pid, &stamps, &rewards, &threshold, &reward); err != nil {
+		var reward, label string
+		if err := rows.Scan(&pt, &pid, &specialID, &stamps, &rewards, &threshold, &reward, &label); err != nil {
 			return nil, err
 		}
-		prog := Program{PartnerType: pt, PartnerID: pid, Enabled: true, Threshold: threshold, RewardText: reward}
+		prog := Program{PartnerType: pt, PartnerID: pid, SpecialID: specialID, Enabled: true, Threshold: threshold, RewardText: reward, Label: label}
 		pn, pa := partnerNameArea(ctx, pt, pid)
 		out = append(out, cardView(prog, pn, pa, partnerBrandColor(ctx, pt, pid), phone, stamps, rewards))
 	}

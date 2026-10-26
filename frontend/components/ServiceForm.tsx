@@ -223,7 +223,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
     localDiscountCode: "",
     discountEnabled: false,
     localDiscountEnabled: false,
-    specials: [] as Array<{ type: string; audience: string; enabled: boolean; line1: string; line2: string; imageUrl: string }>,
+    specials: [] as Array<{ id: string; type: string; audience: string; enabled: boolean; line1: string; line2: string; imageUrl: string; threshold: number }>,
     description: "",
     tradingHours: "",
     publicHolidays: "",
@@ -328,8 +328,9 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
         discountEnabled: data.discountEnabled ?? Boolean(data.discountOffered),
         localDiscountEnabled: data.localDiscountEnabled ?? Boolean(data.localDiscountOffered),
         specials: Array.isArray((data as any).specials) ? (data as any).specials.map((x: any) => ({
-          type: x.type || "discount", audience: x.audience || "both", enabled: x.enabled !== false,
+          id: x.id || newSpecialId(), type: x.type || "discount", audience: x.audience || "both", enabled: x.enabled !== false,
           line1: x.line1 || "", line2: x.line2 || "", imageUrl: x.imageUrl || "",
+          threshold: Number(x.threshold) > 0 ? Number(x.threshold) : 10,
         })) : [],
         description: data.description || "",
         tradingHours: data.tradingHours || "",
@@ -382,9 +383,13 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
   };
 
   // --- Retail "Discount / Specials" list helpers -----------------------------
-  type Special = { type: string; audience: string; enabled: boolean; line1: string; line2: string; imageUrl: string };
+  type Special = { id: string; type: string; audience: string; enabled: boolean; line1: string; line2: string; imageUrl: string; threshold: number };
+  const newSpecialId = () => {
+    try { if (typeof crypto !== "undefined" && (crypto as any).randomUUID) return (crypto as any).randomUUID(); } catch { /* ignore */ }
+    return "sp_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+  };
   const addSpecial = (type: string) =>
-    setFormData((fd) => ({ ...fd, specials: [...fd.specials, { type, audience: "both", enabled: true, line1: "", line2: "", imageUrl: "" }] }));
+    setFormData((fd) => ({ ...fd, specials: [...fd.specials, { id: newSpecialId(), type, audience: "both", enabled: true, line1: "", line2: "", imageUrl: "", threshold: 10 }] }));
   const updateSpecial = (i: number, patch: Partial<Special>) =>
     setFormData((fd) => ({ ...fd, specials: fd.specials.map((sp, idx) => (idx === i ? { ...sp, ...patch } : sp)) }));
   const removeSpecial = (i: number) =>
@@ -394,12 +399,14 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
     list
       .filter((sp) => sp.line1.trim())
       .map((sp) => ({
+        id: sp.id || newSpecialId(),
         type: sp.type === "stampcard" ? "stampcard" : "discount",
         audience: ["guest", "local", "both"].includes(sp.audience) ? sp.audience : "both",
         enabled: sp.enabled !== false,
         line1: sp.line1.trim(),
         line2: sp.type === "stampcard" ? sp.line2.trim() : "",
         imageUrl: sp.imageUrl || "",
+        threshold: sp.type === "stampcard" ? (Number(sp.threshold) > 0 ? Number(sp.threshold) : 10) : 0,
       }));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -978,14 +985,27 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
                   />
                 </div>
                 {sp.type === "stampcard" && (
-                  <div className="space-y-1">
-                    <Label className="text-xs">The reward</Label>
-                    <Input
-                      value={sp.line2}
-                      onChange={(e) => updateSpecial(i, { line2: e.target.value })}
-                      placeholder="e.g. After 10 stamps, you can redeem a FREE coffee at Vida e Caffè."
-                    />
-                  </div>
+                  <>
+                    <div className="space-y-1">
+                      <Label className="text-xs">The reward</Label>
+                      <Input
+                        value={sp.line2}
+                        onChange={(e) => updateSpecial(i, { line2: e.target.value })}
+                        placeholder="e.g. After 10 stamps, you can redeem a FREE coffee at Vida e Caffè."
+                      />
+                    </div>
+                    <div className="space-y-1 max-w-[220px]">
+                      <Label className="text-xs">Stamps needed for the reward</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={50}
+                        value={sp.threshold}
+                        onChange={(e) => updateSpecial(i, { threshold: parseInt(e.target.value || "0", 10) })}
+                      />
+                      <p className="text-xs text-muted-foreground">How many stamps the shopper collects before they get this reward.</p>
+                    </div>
+                  </>
                 )}
               </div>
             ))}
