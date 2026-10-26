@@ -7,7 +7,6 @@
 -- Matching is case-insensitive on the old code; the new value is stored exactly.
 -- The special-rep BEHAVIOUR for these codes is preserved in code
 -- (appdb.reppolicy.go defaults updated to zero/aroundyou/half).
-begin;
 
 -- Reusable mapping applied to each column.
 -- users: the rep's own code and its upline (team-leader) pointer
@@ -64,4 +63,3 @@ update nonprofits     set official_rep_code = case lower(official_rep_code)
   when 'rep00000001' then 'ZERO' when 'rep00000005' then 'AROUNDYOU' when 'rep00000012' then 'HALF' else official_rep_code end
   where lower(official_rep_code) in ('rep00000001','rep00000005','rep00000012');
 
-commit;
