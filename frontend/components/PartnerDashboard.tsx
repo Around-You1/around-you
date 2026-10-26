@@ -522,7 +522,7 @@ export default function PartnerDashboard() {
     if (tutorial) tutorial.play("VO8");
   }, [tutorial]);
   const [entity, setEntity] = useState<EntityData | null>(null);
-  const [entityType, setEntityType] = useState<"restaurant" | "service" | "attraction" | "accommodation" | null>(null);
+  const [entityType, setEntityType] = useState<"restaurant" | "service" | "retail" | "nonprofit" | "attraction" | "accommodation" | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState<any[]>([]);
   const [views, setViews] = useState<{ thisMonth: number; allTime: number } | null>(null);
@@ -565,6 +565,12 @@ export default function PartnerDashboard() {
       } else if (user.entityType === "service") {
         const services = await backend.service.list({});
         data = services.services.find((s: ServiceData) => s.id === user.entityId)!;
+      } else if (user.entityType === "retail") {
+        const retail = await backend.retail.list({});
+        data = (retail as any).services.find((s: ServiceData) => s.id === user.entityId)!;
+      } else if (user.entityType === "nonprofit") {
+        const nonprofits = await backend.nonprofit.list({});
+        data = (nonprofits as any).services.find((s: ServiceData) => s.id === user.entityId)!;
       } else if (user.entityType === "attraction") {
         const attractions = await backend.attraction.list({});
         data = attractions.attractions.find((a: AttractionData) => a.id === user.entityId)!;
@@ -638,13 +644,15 @@ export default function PartnerDashboard() {
 
   const getEntityIcon = () => {
     if (entityType === "restaurant") return <Store className="h-12 w-12 text-black" />;
-    if (entityType === "service") return <Building2 className="h-12 w-12 text-black" />;
+    if (entityType === "service" || entityType === "retail" || entityType === "nonprofit") return <Building2 className="h-12 w-12 text-black" />;
     return <Compass className="h-12 w-12 text-black" />;
   };
 
   const getEntityTypeName = () => {
     if (entityType === "restaurant") return "Restaurant";
     if (entityType === "service") return "Service";
+    if (entityType === "retail") return "Retail";
+    if (entityType === "nonprofit") return "NPO / PBO";
     return "Attraction";
   };
 
@@ -681,8 +689,8 @@ export default function PartnerDashboard() {
           {entityType === "restaurant" && (
             <RestaurantForm restaurantId={(entity as Restaurant).id} onClose={closeAndReload} partnerEdit editCode={verifiedEditCode} />
           )}
-          {entityType === "service" && (
-            <ServiceForm serviceId={(entity as ServiceData).serviceId} onClose={closeAndReload} partnerEdit editCode={verifiedEditCode} />
+          {(entityType === "service" || entityType === "retail" || entityType === "nonprofit") && (
+            <ServiceForm serviceId={(entity as ServiceData).serviceId} onClose={closeAndReload} partnerEdit editCode={verifiedEditCode} entityKind={entityType} />
           )}
           {entityType === "attraction" && (
             <AttractionForm attractionId={(entity as AttractionData).attractionId} onClose={closeAndReload} partnerEdit editCode={verifiedEditCode} />
