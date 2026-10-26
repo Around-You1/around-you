@@ -655,15 +655,38 @@ export default function PartnerDashboard() {
     loadEntityDetails();
   }, []);
 
-  const loadEntityDetails = async () => {
+  // Keep the till screen alive through quiet periods: the partner session never
+  // expires, so when the tab is re-focused (after the device sleeps or the
+  // browser backgrounds the tab) we silently re-sync the profile so it is always
+  // ready to stamp — without ever showing a login prompt or an error.
+  useEffect(() => {
+    const resync = () => {
+      try {
+        if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+        if (!localStorage.getItem("token")) return;
+      } catch { return; }
+      loadEntityDetails({ silent: true });
+    };
+    window.addEventListener("focus", resync);
+    document.addEventListener("visibilitychange", resync);
+    return () => {
+      window.removeEventListener("focus", resync);
+      document.removeEventListener("visibilitychange", resync);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadEntityDetails = async (opts?: { silent?: boolean }) => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       if (!user.entityType || !user.entityId) {
-        toast({
-          title: "Error",
-          description: "No partner entity assigned",
-          variant: "destructive",
-        });
+        if (!opts?.silent) {
+          toast({
+            title: "Error",
+            description: "No partner entity assigned",
+            variant: "destructive",
+          });
+        }
         return;
       }
 
@@ -691,7 +714,7 @@ export default function PartnerDashboard() {
         data = await backend.accommodation.get({ id: user.entityId });
       }
 
-      setEntity(data);
+      if (data || !opts?.silent) setEntity(data);
       try {
         const bk = await backend.booking.forPartner({ entityType: user.entityType, entityId: user.entityId });
         setBookings((bk as { bookings?: any[] }).bookings || []);
@@ -706,6 +729,10 @@ export default function PartnerDashboard() {
       }
     } catch (error) {
       console.error("Failed to load entity details:", error);
+      // A transient failure (e.g. the device just woke from sleep) must never
+      // bounce the partner — their session does not expire. Stay on the screen
+      // with whatever was already loaded; a background re-sync will recover it.
+      if (opts?.silent) return;
       toast({
         title: "Error",
         description: "Failed to load partner details",
