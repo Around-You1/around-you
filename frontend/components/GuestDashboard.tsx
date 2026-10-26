@@ -626,6 +626,13 @@ export default function GuestDashboard() {
                                             {sp.type === "stampcard" ? "My Stamp Card" : "Discount"}
                                           </span>
                                         </div>
+                                        {(sp as any).imageUrl && (
+                                          <img
+                                            src={(sp as any).imageUrl}
+                                            alt={sp.line1 || "Product"}
+                                            className="mt-2 w-full max-w-[220px] rounded-md border border-[#39FF14]/40 object-cover"
+                                          />
+                                        )}
                                         <p className="text-sm text-black mt-1">{sp.line1}</p>
                                         {sp.type === "stampcard" && sp.line2 && (
                                           <p className="text-sm text-black/80 mt-1">{sp.line2}</p>

@@ -190,6 +190,7 @@ type RetailSpecial struct {
 	Enabled  bool   `json:"enabled"`
 	Line1    string `json:"line1"`
 	Line2    string `json:"line2,omitempty"`
+	ImageUrl string `json:"imageUrl,omitempty"`
 }
 
 // RetailSpecials is a list of RetailSpecial stored as a single jsonb column

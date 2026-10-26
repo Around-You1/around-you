@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import ProfileReferenceCodeDisplay from "./ProfileReferenceCodeDisplay";
 import MultiImageUpload from "./MultiImageUpload";
+import ImageUpload from "./ImageUpload";
 import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
 import { loadCharity, saveCharity } from "../lib/charity";
 import { getAuthenticatedBackend } from "../lib/backend";
@@ -222,7 +223,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
     localDiscountCode: "",
     discountEnabled: false,
     localDiscountEnabled: false,
-    specials: [] as Array<{ type: string; audience: string; enabled: boolean; line1: string; line2: string }>,
+    specials: [] as Array<{ type: string; audience: string; enabled: boolean; line1: string; line2: string; imageUrl: string }>,
     description: "",
     tradingHours: "",
     publicHolidays: "",
@@ -328,7 +329,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
         localDiscountEnabled: data.localDiscountEnabled ?? Boolean(data.localDiscountOffered),
         specials: Array.isArray((data as any).specials) ? (data as any).specials.map((x: any) => ({
           type: x.type || "discount", audience: x.audience || "both", enabled: x.enabled !== false,
-          line1: x.line1 || "", line2: x.line2 || "",
+          line1: x.line1 || "", line2: x.line2 || "", imageUrl: x.imageUrl || "",
         })) : [],
         description: data.description || "",
         tradingHours: data.tradingHours || "",
@@ -381,9 +382,9 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
   };
 
   // --- Retail "Discount / Specials" list helpers -----------------------------
-  type Special = { type: string; audience: string; enabled: boolean; line1: string; line2: string };
+  type Special = { type: string; audience: string; enabled: boolean; line1: string; line2: string; imageUrl: string };
   const addSpecial = (type: string) =>
-    setFormData((fd) => ({ ...fd, specials: [...fd.specials, { type, audience: "both", enabled: true, line1: "", line2: "" }] }));
+    setFormData((fd) => ({ ...fd, specials: [...fd.specials, { type, audience: "both", enabled: true, line1: "", line2: "", imageUrl: "" }] }));
   const updateSpecial = (i: number, patch: Partial<Special>) =>
     setFormData((fd) => ({ ...fd, specials: fd.specials.map((sp, idx) => (idx === i ? { ...sp, ...patch } : sp)) }));
   const removeSpecial = (i: number) =>
@@ -398,6 +399,7 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
         enabled: sp.enabled !== false,
         line1: sp.line1.trim(),
         line2: sp.type === "stampcard" ? sp.line2.trim() : "",
+        imageUrl: sp.imageUrl || "",
       }));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -955,6 +957,15 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
                   <Button type="button" variant="ghost" size="sm" className="ml-auto text-destructive" onClick={() => removeSpecial(i)}>
                     <X className="h-4 w-4" /> Remove
                   </Button>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Product image (optional) — shown to shoppers so they pick the right product</Label>
+                  <ImageUpload
+                    label=""
+                    imageUrl={sp.imageUrl || ""}
+                    onImageUploaded={(url) => updateSpecial(i, { imageUrl: url })}
+                    maxSizeMB={5}
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">{sp.type === "stampcard" ? "How a stamp is earned" : "The discount / special"}</Label>
