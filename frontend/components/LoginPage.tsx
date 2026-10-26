@@ -11,6 +11,7 @@ import InfoSquares from "../components/InfoSquares";
 import { signInWithOtp } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import { useTutorial } from "../components/tutorial/TutorialProvider";
+import { dashboardPathForRole } from "../lib/dashboard";
 
 const VALID_CODE_RE = /^[A-Za-z0-9]*$/;
 const STRIP_RE = /[^A-Za-z0-9]/g;
@@ -488,7 +489,7 @@ export default function LoginPage() {
   // dashboard guard that rejects its role (e.g. an accommodation / guesthouse
   // code entered on the Business/Service Partner panel).
   function dashboardPathFor(user: { role?: string }): string {
-    return user?.role === "Partner" ? "/partner-dashboard" : "/guest-dashboard";
+    return dashboardPathForRole(user?.role);
   }
 
   function storeAndNavigate(token: string, user: object, path: string, welcomeName: string, roleLabel?: string) {
@@ -591,7 +592,7 @@ export default function LoginPage() {
         const res = await backend.auth.localGuestLogin({ email, province: localProvince, postalCode: localPostalCode.trim() });
         localStorage.setItem("localGuestInfo", JSON.stringify({ province: localProvince, postalCode: localPostalCode.trim(), cell }));
         rememberLogin({ local: { email, province: localProvince, postalCode: localPostalCode.trim(), cell } });
-        storeAndNavigate(res.token, res.user, "/guest-dashboard", email.split("@")[0], "a Local");
+        storeAndNavigate(res.token, res.user, "/local-dashboard", email.split("@")[0], "a Local");
         return;
       }
 
@@ -642,7 +643,7 @@ export default function LoginPage() {
         const res = await backend.auth.localGuestLogin({ email, province, postalCode });
         localStorage.setItem("localGuestInfo", JSON.stringify({ province, postalCode }));
         rememberLogin({ local: { email, province, postalCode } });
-        storeAndNavigate(res.token, res.user, "/guest-dashboard", email.split("@")[0], "a Local");
+        storeAndNavigate(res.token, res.user, "/local-dashboard", email.split("@")[0], "a Local");
       } catch (err: any) {
         toast({ title: "Login Failed", description: err?.message || "Unable to sign in. Please try again.", variant: "destructive" });
       } finally { setLoading(false); }

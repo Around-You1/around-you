@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { currentDashboardPath } from "../lib/dashboard";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, MapPin, Phone, Globe, Wifi, Navigation } from "lucide-react";
 import { getAuthenticatedBackend } from "../lib/backend";
@@ -29,7 +30,7 @@ export default function PublicProfileView() {
   const [type, setType] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [back, setBack] = useState("/guest-dashboard");
+  const [back, setBack] = useState("/guest-dashboard"); // replaced at mount by the role-correct default
   const [backName, setBackName] = useState("");
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export default function PublicProfileView() {
     const t = (q.get("type") || "").toLowerCase();
     const id = Number(q.get("id") || "0");
     setType(t);
-    setBack(q.get("back") || "/guest-dashboard");
+    setBack(q.get("back") || currentDashboardPath());
     setBackName(q.get("backName") || "");
     (async () => {
       try {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { dashboardPathForRole, currentDashboardPath } from "../lib/dashboard";
 import { useRouter } from "next/navigation";
 import { Sparkles, ChevronRight } from "lucide-react";
 import { getAuthenticatedBackend } from "../lib/backend";
@@ -49,10 +50,10 @@ export default function SuggestionsBanner({
   if (!items.length) return null;
 
   const open = (it: SItem) => {
-    let dash = "/guest-dashboard";
+    let dash = currentDashboardPath();
     try {
       const u = JSON.parse(localStorage.getItem("user") || "{}");
-      dash = u?.role === "Partner" ? "/partner-dashboard" : "/guest-dashboard";
+      dash = dashboardPathForRole(u?.role);
     } catch {
       /* default guest */
     }
