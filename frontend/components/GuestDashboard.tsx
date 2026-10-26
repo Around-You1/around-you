@@ -2559,6 +2559,10 @@ function MyStampCardsModal({ onClose }: { onClose: () => void }) {
                       </div>
                       {c.rewardReady && <span className="text-xs px-2 py-0.5 rounded bg-[#39FF14] text-black font-semibold flex-shrink-0">Reward ready!</span>}
                     </div>
+                    {(c as any).imageUrl && (
+                      <img src={(c as any).imageUrl} alt={(c as any).label || "Product"}
+                        className="w-full max-w-[200px] rounded-md border object-cover" />
+                    )}
                     {c.rewardText && (
                       <div className="text-xs font-medium rounded px-2 py-1 border border-[#39FF14]/40 bg-[#39FF14]/10 text-[#39FF14]">
                         🎁 Reward: {c.rewardText}

@@ -54,6 +54,7 @@ type Program struct {
 	Threshold   int    `json:"threshold"`  // stamps needed for one reward
 	RewardText  string `json:"rewardText"` // what the customer gets, e.g. "1 free 10L water refill"
 	Label       string `json:"label"`      // what earns a stamp (the promotion's first line) — for display
+	ImageUrl    string `json:"imageUrl"`   // the promotion's product image — for display
 }
 
 // CardView is one customer's card at a partner, plus the partner's rule — the
@@ -69,6 +70,7 @@ type CardView struct {
 	RewardText    string `json:"rewardText"`
 	SpecialID     string `json:"specialId"`
 	Label         string `json:"label"`
+	ImageUrl      string `json:"imageUrl"`
 	CustomerPhone string `json:"customerPhone"`
 	Stamps        int    `json:"stamps"`        // current progress toward threshold
 	RewardReady   bool   `json:"rewardReady"`   // stamps >= threshold, awaiting redeem
@@ -185,10 +187,10 @@ func partnerBrandColor(ctx context.Context, partnerType string, partnerID int64)
 func loadProgram(ctx context.Context, partnerType string, partnerID int64, specialID string) (Program, error) {
 	p := Program{PartnerType: partnerType, PartnerID: partnerID, SpecialID: specialID, Threshold: 10}
 	err := appdb.SQLDB.QueryRowContext(ctx, `
-		SELECT enabled, threshold, COALESCE(reward_text,''), COALESCE(label,'')
+		SELECT enabled, threshold, COALESCE(reward_text,''), COALESCE(label,''), COALESCE(image_url,'')
 		FROM loyalty_programs WHERE partner_type = $1 AND partner_id = $2 AND special_id = $3`,
 		partnerType, partnerID, specialID,
-	).Scan(&p.Enabled, &p.Threshold, &p.RewardText, &p.Label)
+	).Scan(&p.Enabled, &p.Threshold, &p.RewardText, &p.Label, &p.ImageUrl)
 	if err == sql.ErrNoRows {
 		return p, nil
 	}
@@ -206,6 +208,7 @@ func cardView(prog Program, name, area, brandColor, phone string, stamps, reward
 		PartnerID:     prog.PartnerID,
 		SpecialID:     prog.SpecialID,
 		Label:         prog.Label,
+		ImageUrl:      prog.ImageUrl,
 		PartnerName:   name,
 		BrandColor:    brandColor,
 		Area:          area,
@@ -524,7 +527,7 @@ func MyCards(ctx context.Context, req *MyCardsRequest) (*MyCardsResponse, error)
 	}
 	rows, err := appdb.SQLDB.QueryContext(ctx, `
 		SELECT c.partner_type, c.partner_id, c.special_id, c.stamps, c.rewards_earned,
-		       p.threshold, COALESCE(p.reward_text,''), COALESCE(p.label,'')
+		       p.threshold, COALESCE(p.reward_text,''), COALESCE(p.label,''), COALESCE(p.image_url,'')
 		FROM loyalty_cards c
 		JOIN loyalty_programs p
 		  ON p.partner_type = c.partner_type AND p.partner_id = c.partner_id AND p.special_id = c.special_id
@@ -540,11 +543,11 @@ func MyCards(ctx context.Context, req *MyCardsRequest) (*MyCardsResponse, error)
 		var pt, specialID string
 		var pid int64
 		var stamps, rewards, threshold int
-		var reward, label string
-		if err := rows.Scan(&pt, &pid, &specialID, &stamps, &rewards, &threshold, &reward, &label); err != nil {
+		var reward, label, imageURL string
+		if err := rows.Scan(&pt, &pid, &specialID, &stamps, &rewards, &threshold, &reward, &label, &imageURL); err != nil {
 			return nil, err
 		}
-		prog := Program{PartnerType: pt, PartnerID: pid, SpecialID: specialID, Enabled: true, Threshold: threshold, RewardText: reward, Label: label}
+		prog := Program{PartnerType: pt, PartnerID: pid, SpecialID: specialID, Enabled: true, Threshold: threshold, RewardText: reward, Label: label, ImageUrl: imageURL}
 		pn, pa := partnerNameArea(ctx, pt, pid)
 		out = append(out, cardView(prog, pn, pa, partnerBrandColor(ctx, pt, pid), phone, stamps, rewards))
 	}

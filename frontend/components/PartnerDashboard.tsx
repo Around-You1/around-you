@@ -256,6 +256,10 @@ function SpecialStampCard({ partnerType, partnerId, phone, special }: { partnerT
     <div className="rounded-lg border border-border/60 p-3 space-y-2">
       <p className="text-sm font-semibold">{special.line1 || "My Stamp Card"}</p>
       {special.line2 && <p className="text-xs text-muted-foreground">Reward: {special.line2}</p>}
+      {special.imageUrl && (
+        <img src={special.imageUrl} alt={special.line1 || "Product"}
+          className="w-full max-w-[200px] rounded-md border border-border/60 object-cover" />
+      )}
       {!phone ? (
         <p className="text-xs text-muted-foreground">Scan or enter the customer's number above to add a stamp.</p>
       ) : (

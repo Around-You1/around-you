@@ -265,12 +265,13 @@ func syncSpecialLoyalty(ctx context.Context, partnerID int64, specials appdb.Ret
 			th = 10
 		}
 		if _, err := appdb.SQLDB.ExecContext(ctx, `
-			INSERT INTO loyalty_programs (partner_type, partner_id, special_id, enabled, threshold, reward_text, label)
-			VALUES ('retail', $1, $2, $3, $4, $5, $6)
+			INSERT INTO loyalty_programs (partner_type, partner_id, special_id, enabled, threshold, reward_text, label, image_url)
+			VALUES ('retail', $1, $2, $3, $4, $5, $6, $7)
 			ON CONFLICT (partner_type, partner_id, special_id) DO UPDATE SET
 			  enabled = EXCLUDED.enabled, threshold = EXCLUDED.threshold,
-			  reward_text = EXCLUDED.reward_text, label = EXCLUDED.label, updated_at = now()`,
-			partnerID, sp.ID, sp.Enabled, th, sp.Line2, sp.Line1); err != nil {
+			  reward_text = EXCLUDED.reward_text, label = EXCLUDED.label,
+			  image_url = EXCLUDED.image_url, updated_at = now()`,
+			partnerID, sp.ID, sp.Enabled, th, sp.Line2, sp.Line1, sp.ImageUrl); err != nil {
 			log.Printf("retail %d: loyalty sync special %s failed: %v", partnerID, sp.ID, err)
 		}
 	}
