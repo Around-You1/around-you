@@ -582,7 +582,7 @@ export default function GuestDashboard() {
 
                             {!isRetail && (
                             <Collapsible>
-                              <CollapsibleTrigger className={triggerClass}>
+                              <CollapsibleTrigger className={(discOffered(service) || discCode(service)) ? `${triggerClass} bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold rounded-lg px-3 py-2` : triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Discount and Discount Code
                               </CollapsibleTrigger>
@@ -1332,7 +1332,7 @@ export default function GuestDashboard() {
                             )}
 
                             <Collapsible>
-                              <CollapsibleTrigger className={triggerClass}>
+                              <CollapsibleTrigger className={(discOffered(restaurant) || discCode(restaurant)) ? `${triggerClass} bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold rounded-lg px-3 py-2` : triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Discount and Discount Code
                               </CollapsibleTrigger>
@@ -1829,7 +1829,7 @@ export default function GuestDashboard() {
                             )}
 
                             <Collapsible>
-                              <CollapsibleTrigger className={triggerClass}>
+                              <CollapsibleTrigger className={(discOffered(attraction) || discCode(attraction)) ? `${triggerClass} bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold rounded-lg px-3 py-2` : triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Discount and Discount Code
                               </CollapsibleTrigger>
