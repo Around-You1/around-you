@@ -190,7 +190,7 @@ export default function MultiImageUpload({
                 <button
                   type="button"
                   onClick={() => handleMakePrimary(index)}
-                  className="absolute top-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-1 left-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded"
                 >
                   Make main
                 </button>
