@@ -23,6 +23,8 @@ type Response struct {
 	RestaurantStats    appdb.CategoryStats `json:"restaurantStats"`
 	ServiceStats       appdb.CategoryStats `json:"serviceStats"`
 	AttractionStats    appdb.CategoryStats `json:"attractionStats"`
+	RetailStats        appdb.CategoryStats `json:"retailStats"`
+	NonprofitStats     appdb.CategoryStats `json:"nonprofitStats"`
 }
 
 func countTable(ctx context.Context, table string) (total, active int, err error) {
@@ -64,13 +66,25 @@ func Get(ctx context.Context) (*Response, error) {
 	resp.TotalAttractions = attTotal
 	resp.AttractionStats = appdb.CategoryStats{TotalCount: attTotal, ActiveCount: attActive, InactiveCount: attTotal - attActive}
 
+	retTotal, retActive, err := countTable(ctx, "retail")
+	if err != nil {
+		return nil, err
+	}
+	resp.RetailStats = appdb.CategoryStats{TotalCount: retTotal, ActiveCount: retActive, InactiveCount: retTotal - retActive}
+
+	npTotal, npActive, err := countTable(ctx, "nonprofits")
+	if err != nil {
+		return nil, err
+	}
+	resp.NonprofitStats = appdb.CategoryStats{TotalCount: npTotal, ActiveCount: npActive, InactiveCount: npTotal - npActive}
+
 	// "Partners" = restaurants + services + attractions. Accommodations are
 	// guest lodging (role "Guest" at login), not partner listings, so
 	// they're excluded here — matching the Restaurant/Service/Attraction-only
 	// "Partner" role used throughout auth.go.
-	resp.TotalPartners = resp.TotalRestaurants + resp.TotalServices + resp.TotalAttractions
-	resp.ActivePartners = resp.RestaurantStats.ActiveCount + resp.ServiceStats.ActiveCount + resp.AttractionStats.ActiveCount
-	resp.InactivePartners = resp.RestaurantStats.InactiveCount + resp.ServiceStats.InactiveCount + resp.AttractionStats.InactiveCount
+	resp.TotalPartners = resp.TotalRestaurants + resp.TotalServices + resp.TotalAttractions + resp.RetailStats.TotalCount + resp.NonprofitStats.TotalCount
+	resp.ActivePartners = resp.RestaurantStats.ActiveCount + resp.ServiceStats.ActiveCount + resp.AttractionStats.ActiveCount + resp.RetailStats.ActiveCount + resp.NonprofitStats.ActiveCount
+	resp.InactivePartners = resp.RestaurantStats.InactiveCount + resp.ServiceStats.InactiveCount + resp.AttractionStats.InactiveCount + resp.RetailStats.InactiveCount + resp.NonprofitStats.InactiveCount
 
 	return resp, nil
 }

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Home, UtensilsCrossed, Scissors, Camera, BarChart3, Building2, UserRound, ChevronDown } from "lucide-react";
+import { Home, UtensilsCrossed, Scissors, Camera, BarChart3, Building2, UserRound, ChevronDown, ShoppingBag, HandHeart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { useToast } from "@/components/ui/use-toast";
@@ -34,6 +34,8 @@ export default function AdminDashboard() {
     restaurantStats: { totalCount: 0, activeCount: 0, inactiveCount: 0 },
     serviceStats: { totalCount: 0, activeCount: 0, inactiveCount: 0 },
     attractionStats: { totalCount: 0, activeCount: 0, inactiveCount: 0 },
+    retailStats: { totalCount: 0, activeCount: 0, inactiveCount: 0 },
+    nonprofitStats: { totalCount: 0, activeCount: 0, inactiveCount: 0 },
   });
 
   const zero = { totalCount: 0, activeCount: 0, inactiveCount: 0 };
@@ -129,6 +131,7 @@ export default function AdminDashboard() {
   // Aggregate totals across all six partner categories for the collapsed summary.
   const metricsAgg = [
     stats.accommodationStats, stats.restaurantStats, stats.serviceStats, stats.attractionStats,
+    stats.retailStats, stats.nonprofitStats,
     estateStats.agencies, estateStats.agents,
   ].reduce(
     (a, s) => ({
@@ -227,6 +230,18 @@ export default function AdminDashboard() {
               icon={UserRound}
               color="#00C7BE"
               stats={estateStats.agents}
+            />
+            <PartnerCategoryMetrics
+              title="Retail"
+              icon={ShoppingBag}
+              color="#FF9500"
+              stats={stats.retailStats}
+            />
+            <PartnerCategoryMetrics
+              title="NPO / PBO"
+              icon={HandHeart}
+              color="#5856D6"
+              stats={stats.nonprofitStats}
             />
           </div>
         </div>
