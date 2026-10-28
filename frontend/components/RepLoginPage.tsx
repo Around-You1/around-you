@@ -108,7 +108,7 @@ export default function RepLoginPage() {
     // All fields required except SARS tax number, VAT number and upline rep code.
     const bankingNeeded = app.isTeamLeader || !uplineIsTL;
     if (app.isTeamLeader && !String(app.teamLeaderCode).trim()) {
-      toast({ title: "Team Leader code required", description: "Please enter your organization's Team Leader code (e.g. Care).", variant: "destructive" });
+      toast({ title: "NPO / PBO code required", description: "Please enter your NPO / PBO Rep Code.", variant: "destructive" });
       return;
     }
     const required: [string, string][] = [
@@ -306,15 +306,15 @@ export default function RepLoginPage() {
               {/* Team Leader (organization) + recruiting Team Leader code — above banking */}
               <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12, color: "#bcd", cursor: "pointer", marginTop: 6 }}>
                 <input type="checkbox" checked={app.isTeamLeader} onChange={(e) => setA("isTeamLeader")(e.target.checked)} style={{ accentColor: LUMO, marginTop: 2 }} />
-                We are an organization applying as a Team Leader (our staff will sign up under us, and all commissions are paid to our bank account).
+                We are a registered NPO / PBO. (Our reps sign up under us and commissions are paid to our account.) Only an NPO / PBO can choose a personalised Rep Code — individuals receive an automatic Rep code.
               </label>
               {app.isTeamLeader && (
-                <Field label="Your Team Leader code (e.g. Care) *" value={app.teamLeaderCode} onChange={setA("teamLeaderCode")} placeholder="e.g. Care" />
+                <Field label="Your NPO / PBO Rep Code (e.g. your initials) *" value={app.teamLeaderCode} onChange={setA("teamLeaderCode")} placeholder="e.g. your initials" />
               )}
-              <Field label="The Rep Code of the rep (Team Leader) who recruited you (optional)" value={app.uplineRepCode} onChange={setA("uplineRepCode")} placeholder="e.g. AROUNDYOU or Care" />
+              <Field label="The Rep Code of the NPO / PBO (or Team Leader) who recruited you (optional)" value={app.uplineRepCode} onChange={setA("uplineRepCode")} placeholder="e.g. AROUNDYOU" />
               {uplineIsTL && !app.isTeamLeader && (
                 <p style={{ fontSize: 12, color: LUMO, marginTop: 4 }}>
-                  You&apos;re joining {uplineOrgName || "a Team Leader organization"}. Commissions are paid to the organization&apos;s bank account, so no banking details are needed below.
+                  You&apos;re joining {uplineOrgName || "an NPO / PBO"}. Commissions are paid to the organisation&apos;s bank account, so no banking details are needed below.
                 </p>
               )}
               {(app.isTeamLeader || !uplineIsTL) && (
