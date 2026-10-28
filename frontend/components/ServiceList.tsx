@@ -182,7 +182,7 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortSt
       onUpdate?.();
     } catch (error) {
       console.error("Delete failed:", error);
-      toast({ title: "Error", description: "Failed to delete service", variant: "destructive" });
+      toast({ title: "Error", description: error?.message || "Failed to delete service", variant: "destructive" });
     }
   };
 

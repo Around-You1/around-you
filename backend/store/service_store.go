@@ -562,18 +562,7 @@ func (s *ServiceStore) Update(ctx context.Context, id int64, patch ServicePatch)
 }
 
 func (s *ServiceStore) Delete(ctx context.Context, id int64) error {
-	res, err := appdb.SQLDB.ExecContext(ctx, "DELETE FROM services WHERE id = $1", id)
-	if err != nil {
-		return err
-	}
-	n, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if n == 0 {
-		return ErrServiceNotFound
-	}
-	return nil
+	return deletePartnerWithRelated(ctx, "service", "services", id, ErrServiceNotFound)
 }
 
 // GetEditCode/RegenerateEditCode manage the partner "edit code" (see the

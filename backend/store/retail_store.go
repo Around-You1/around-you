@@ -571,18 +571,7 @@ func (s *RetailStore) Update(ctx context.Context, id int64, patch RetailPatch) (
 }
 
 func (s *RetailStore) Delete(ctx context.Context, id int64) error {
-	res, err := appdb.SQLDB.ExecContext(ctx, "DELETE FROM retail WHERE id = $1", id)
-	if err != nil {
-		return err
-	}
-	n, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if n == 0 {
-		return ErrRetailNotFound
-	}
-	return nil
+	return deletePartnerWithRelated(ctx, "retail", "retail", id, ErrRetailNotFound)
 }
 
 // GetEditCode/RegenerateEditCode manage the partner "edit code" (see the
