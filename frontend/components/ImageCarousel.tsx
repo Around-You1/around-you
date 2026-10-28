@@ -6,6 +6,7 @@ interface ImageCarouselProps {
   className?: string;
   placeholderClassName?: string;
   intervalMs?: number;
+  firstIntervalMs?: number;
 }
 
 export default function ImageCarousel({
@@ -14,6 +15,7 @@ export default function ImageCarousel({
   className = "w-full h-48 md:h-64 object-cover rounded-lg",
   placeholderClassName = "w-full h-48 md:h-64 rounded-lg",
   intervalMs = 3000,
+  firstIntervalMs,
 }: ImageCarouselProps) {
   const validImages = images.filter(Boolean);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -30,11 +32,13 @@ export default function ImageCarousel({
 
   useEffect(() => {
     if (validImages.length <= 1) return;
-    timerRef.current = setTimeout(advance, intervalMs);
+    // The first image (the main/cover image) lingers longer when firstIntervalMs is set.
+    const delay = currentIndex === 0 ? (firstIntervalMs ?? intervalMs) : intervalMs;
+    timerRef.current = setTimeout(advance, delay);
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [currentIndex, validImages.length, intervalMs]);
+  }, [currentIndex, validImages.length, intervalMs, firstIntervalMs]);
 
   if (validImages.length === 0) {
     return (

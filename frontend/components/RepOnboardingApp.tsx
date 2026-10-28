@@ -502,6 +502,9 @@ function ImageUpload({ images, setImages }) {
   return (
     <div style={{ marginBottom: 14 }}>
       <label style={labelStyle}>Images ({images.length}/10)</label>
+      <p style={{ color: colors.textSecondary, fontSize: 12, margin: "0 0 8px" }}>
+        Your first image is your main image — it shows first on your profile, so add it first.
+      </p>
       <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
         <button
           type="button"
@@ -525,7 +528,10 @@ function ImageUpload({ images, setImages }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {images.map((img, i) => (
             <div key={i} style={{ position: "relative", width: 60, height: 60 }}>
-              <img src={img.url} alt={img.name} style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 8, border: `1px solid ${colors.border}` }} />
+              <img src={img.url} alt={img.name} style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 8, border: i === 0 ? `2px solid ${colors.primary}` : `1px solid ${colors.border}` }} />
+              {i === 0 && (
+                <span style={{ position: "absolute", bottom: -6, left: "50%", transform: "translateX(-50%)", background: colors.primary, color: "#000", fontSize: 9, fontWeight: 800, padding: "1px 5px", borderRadius: 6, whiteSpace: "nowrap" }}>Main</span>
+              )}
               <button
                 type="button"
                 onClick={() => setImages((prev) => prev.filter((_, idx) => idx !== i))}

@@ -502,7 +502,7 @@ export default function PartnerApplyForm() {
         {submitting ? "Submitting…" : "Submit application"}
       </button>
       <p style={{ color: "#7f857f", fontSize: 11, textAlign: "center", marginTop: 10 }}>
-        Your logo and photos will be arranged with your Around You agent.
+        Your logo and photos will be arranged with your Around You agent. The first photo you provide will be your main image (shown first), so send that one first.
       </p>
     </div></div>
   );

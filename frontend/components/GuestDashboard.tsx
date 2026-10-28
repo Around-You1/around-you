@@ -525,6 +525,7 @@ export default function GuestDashboard() {
                             className="w-full sm:w-20 h-32 sm:h-20 object-cover rounded flex-shrink-0"
                             placeholderClassName="w-full sm:w-20 h-32 sm:h-20 rounded flex-shrink-0"
                             intervalMs={3000}
+                            firstIntervalMs={isRetail ? 6000 : undefined}
                           />
                           <div className="flex-1 min-w-0 space-y-2">
                             <div className="flex items-center gap-2 flex-wrap">

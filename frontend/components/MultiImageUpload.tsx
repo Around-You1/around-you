@@ -173,6 +173,9 @@ export default function MultiImageUpload({
       <Label>
         {label} ({images.length}/{maxImages})
       </Label>
+      <p className="text-xs text-muted-foreground">
+        The first image is your main image — it is shown first on your listing (and stays on screen a little longer). Use &ldquo;Make main&rdquo; on any image to move it to first place.
+      </p>
 
       {images.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -181,7 +184,7 @@ export default function MultiImageUpload({
               <img src={url} alt={`Image ${index + 1}`} className="w-full h-full object-cover" />
               {index === 0 ? (
                 <div className="absolute top-1 left-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1">
-                  <Star className="w-3 h-3 fill-current" /> Primary
+                  <Star className="w-3 h-3 fill-current" /> Main image
                 </div>
               ) : (
                 <button
@@ -189,7 +192,7 @@ export default function MultiImageUpload({
                   onClick={() => handleMakePrimary(index)}
                   className="absolute top-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  Make primary
+                  Make main
                 </button>
               )}
               <button

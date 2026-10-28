@@ -88,7 +88,9 @@ def business(nameLabel):
         fill("Postal code"),
         fill("Holding company (if any)"),
         fill("Company registration number"),
-        fill("VAT number (if registered)")]
+        fill("VAT number (if registered)"),
+        *section("Photos"),
+        para("Provide up to 10 photos. Your first photo is your main image — it is shown first on your listing, so please mark clearly which photo should be placed first.")]
 
 def closing_block():
     inner = [HRFlowable(width="100%", thickness=0.5, color=LINEGREY, spaceAfter=6),
