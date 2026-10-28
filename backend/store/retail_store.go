@@ -171,7 +171,7 @@ func (s *RetailStore) ListByMunicipality(ctx context.Context, area string) ([]ap
 
 func (s *RetailStore) ListNearby(ctx context.Context) ([]appdb.ServiceData, error) {
 	rows, err := appdb.SQLDB.QueryContext(ctx,
-		"SELECT "+retailColumns+" FROM retail WHERE is_active = true AND (works_from_client_address = true OR (latitude IS NOT NULL AND longitude IS NOT NULL))")
+		"SELECT "+retailColumns+" FROM retail WHERE is_active = true AND (works_from_client_address = true OR (latitude IS NOT NULL AND longitude IS NOT NULL) OR COALESCE(postal_code, '') <> '')")
 	if err != nil {
 		return nil, err
 	}

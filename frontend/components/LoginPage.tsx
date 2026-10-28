@@ -109,6 +109,12 @@ function ThemedInput(props: React.InputHTMLAttributes<HTMLInputElement> & { clas
   );
 }
 
+const canonProvince = (v: string): string => {
+  if (!v) return "";
+  const n = (s: string) => s.toLowerCase().replace(/[\s-]+/g, "");
+  return SA_PROVINCES.find((p) => n(p) === n(v)) || v;
+};
+
 function ThemedSelect({
   value,
   onValueChange,
@@ -369,7 +375,7 @@ export default function LoginPage() {
 
     if (saved.local) {
       if (saved.local.email) setLocalEmail(saved.local.email);
-      if (saved.local.province) setLocalProvince(saved.local.province);
+      if (saved.local.province) setLocalProvince(canonProvince(saved.local.province));
       if (saved.local.postalCode) setLocalPostalCode(saved.local.postalCode);
       if (saved.local.cell) setLocalCell(saved.local.cell);
     }
@@ -377,7 +383,7 @@ export default function LoginPage() {
     // Local's Province (and postal code) are remembered and never need re-picking.
     try {
       const gi = JSON.parse(localStorage.getItem("localGuestInfo") || "{}");
-      if (gi.province) setLocalProvince((p) => p || gi.province);
+      if (gi.province) setLocalProvince((p) => p || canonProvince(gi.province));
       if (gi.postalCode) setLocalPostalCode((p) => p || gi.postalCode);
     } catch { /* best-effort */ }
     if (saved.holiday && !hasQrCode) {
@@ -385,7 +391,7 @@ export default function LoginPage() {
       if (saved.holiday.code) setHolidayCode(saved.holiday.code);
       if (saved.holiday.name) setHolidayName(saved.holiday.name);
       if (saved.holiday.address) setHolidayAddress(saved.holiday.address);
-      if (saved.holiday.province) setHolidayProvince(saved.holiday.province);
+      if (saved.holiday.province) setHolidayProvince(canonProvince(saved.holiday.province));
       if (saved.holiday.area) setHolidayArea(saved.holiday.area);
     }
     if (saved.partner && !hasQrCode) {
@@ -393,7 +399,7 @@ export default function LoginPage() {
       if (saved.partner.code) setPartnerCode(saved.partner.code);
       if (saved.partner.name) setPartnerName(saved.partner.name);
       if (saved.partner.address) setPartnerAddress(saved.partner.address);
-      if (saved.partner.province) setPartnerProvince(saved.partner.province);
+      if (saved.partner.province) setPartnerProvince(canonProvince(saved.partner.province));
       if (saved.partner.area) setPartnerArea(saved.partner.area);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
