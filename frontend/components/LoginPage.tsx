@@ -373,6 +373,13 @@ export default function LoginPage() {
       if (saved.local.postalCode) setLocalPostalCode(saved.local.postalCode);
       if (saved.local.cell) setLocalCell(saved.local.cell);
     }
+    // Fallback for older sign-ins that only stored localGuestInfo — so a returning
+    // Local's Province (and postal code) are remembered and never need re-picking.
+    try {
+      const gi = JSON.parse(localStorage.getItem("localGuestInfo") || "{}");
+      if (gi.province) setLocalProvince((p) => p || gi.province);
+      if (gi.postalCode) setLocalPostalCode((p) => p || gi.postalCode);
+    } catch { /* best-effort */ }
     if (saved.holiday && !hasQrCode) {
       if (saved.holiday.method) setHolidayMethod(saved.holiday.method);
       if (saved.holiday.code) setHolidayCode(saved.holiday.code);

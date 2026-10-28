@@ -878,7 +878,7 @@ export default function PartnerDashboard() {
             className="w-full border-[#0FB89B] text-[#0FB89B] hover:bg-[#0FB89B]/10 font-semibold"
             onClick={() => { setGateMode("suggest"); setShowGate(true); }}
           >
-            My Suggestions
+            My Recommendations
           </Button>
 
           {suggestUnlocked && (
@@ -967,7 +967,7 @@ export default function PartnerDashboard() {
           className="w-full border-[#0FB89B] text-[#0FB89B] hover:bg-[#0FB89B]/10 font-semibold"
           onClick={() => { setGateMode("suggest"); setShowGate(true); }}
         >
-          My Suggestions
+          My Recommendations
         </Button>
 
         {suggestUnlocked && (

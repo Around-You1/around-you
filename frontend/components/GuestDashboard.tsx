@@ -571,6 +571,7 @@ export default function GuestDashboard() {
                             </Button>
                             {expandedCards.has(entityType + ":" + service.id) && (
                               <>
+                            <SuggestionsBanner ownerType={entityType} ownerId={Number(service.id)} backName={service.name} />
 
                             {tierOf(service.accessLevel) >= 2 && (
                               <DirectionsDropdown
@@ -1321,6 +1322,7 @@ export default function GuestDashboard() {
                             </Button>
                             {expandedCards.has("restaurant:" + restaurant.id) && (
                               <>
+                            <SuggestionsBanner ownerType="restaurant" ownerId={Number(restaurant.id)} backName={restaurant.name} />
 
                             {tierOf(restaurant.accessLevel) >= 2 && (
                               <DirectionsDropdown
@@ -1817,6 +1819,7 @@ export default function GuestDashboard() {
                             </Button>
                             {expandedCards.has("attraction:" + attraction.id) && (
                               <>
+                            <SuggestionsBanner ownerType="attraction" ownerId={Number(attraction.id)} backName={attraction.name} />
 
                             {tierOf(attraction.accessLevel) >= 2 && (
                               <DirectionsDropdown

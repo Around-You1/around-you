@@ -28,6 +28,8 @@ var tableFor = map[string]string{
 	"service":       "services",
 	"attraction":    "attractions",
 	"accommodation": "accommodations",
+	"retail":        "retail",
+	"nonprofit":     "nonprofits",
 }
 
 // Item is one business, as shown in the picker or the banner.
@@ -124,7 +126,7 @@ func Nearby(ctx context.Context, req *NearbyRequest) (*NearbyResponse, error) {
 	}
 
 	var out []Item
-	for _, typ := range []string{"restaurant", "service", "attraction", "accommodation"} {
+	for _, typ := range []string{"restaurant", "service", "attraction", "accommodation", "retail", "nonprofit"} {
 		table := tableFor[typ]
 		rows, err := appdb.SQLDB.QueryContext(ctx,
 			"SELECT id, name, latitude, longitude FROM "+table+" WHERE is_active = true")

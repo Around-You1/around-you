@@ -53,6 +53,12 @@ export default function PublicProfileView() {
         } else if (t === "attraction") {
           const r: any = await backend.attraction.list({});
           data = (r.attractions || []).find((x: any) => Number(x.id) === id);
+        } else if (t === "retail") {
+          const r: any = await backend.retail.list({});
+          data = (r.services || []).find((x: any) => Number(x.id) === id);
+        } else if (t === "nonprofit") {
+          const r: any = await backend.nonprofit.list({});
+          data = (r.services || []).find((x: any) => Number(x.id) === id);
         } else if (t === "accommodation") {
           data = await backend.accommodation.get({ id });
         }

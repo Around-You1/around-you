@@ -11,6 +11,8 @@ const TYPE_LABEL: Record<string, string> = {
   service: "Business / Service",
   attraction: "Attraction / Activity",
   accommodation: "Stay",
+  retail: "Retail",
+  nonprofit: "NPO / PBO",
 };
 
 const GREEN = "#0FB89B";
@@ -130,7 +132,7 @@ export default function SuggestionsManager({
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <Sparkles className="h-4 w-4" style={{ color: GREEN }} />
-          <span style={{ fontWeight: 800, fontSize: 15, color: GREEN }}>My Suggestions</span>
+          <span style={{ fontWeight: 800, fontSize: 15, color: GREEN }}>My Recommendations</span>
         </div>
         {onClose ? (
           <button type="button" onClick={onClose} style={{ background: "transparent", border: "none", color: "#8a8f96", cursor: "pointer" }}>

@@ -13,6 +13,8 @@ const TYPE_LABEL: Record<string, string> = {
   service: "Business / Service",
   attraction: "Attraction / Activity",
   accommodation: "Stay",
+  retail: "Retail",
+  nonprofit: "NPO / PBO",
 };
 
 // SuggestionsBanner shows the "My Suggestions" strip at the top of a profile.
@@ -78,7 +80,7 @@ export default function SuggestionsBanner({
     >
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
         <Sparkles className="h-4 w-4" style={{ color: "#0FB89B" }} />
-        <span style={{ fontWeight: 800, fontSize: 14, color: "#0FB89B" }}>My Suggestions</span>
+        <span style={{ fontWeight: 800, fontSize: 14, color: "#0FB89B" }}>My Recommendations</span>
         <span style={{ fontSize: 11, color: "#8a8f96" }}>— places we recommend nearby</span>
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
