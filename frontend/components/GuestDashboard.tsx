@@ -560,8 +560,7 @@ export default function GuestDashboard() {
                             {discOffered(service) && (
                               <Button
                                 size="sm"
-                                variant="outline"
-                                className="w-full sm:w-auto border-[#39FF14] text-black"
+                                className="w-full sm:w-auto bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold"
                                 onClick={() => setRedeemFor({ entityType: entityType, entityId: Number(service.id), entityName: service.name, discount: discOffered(service), discountCode: discCode(service) })}
                               >
                                 Redeem discount
@@ -1311,8 +1310,7 @@ export default function GuestDashboard() {
                             {discOffered(restaurant) && (
                               <Button
                                 size="sm"
-                                variant="outline"
-                                className="w-full sm:w-auto border-[#39FF14] text-black"
+                                className="w-full sm:w-auto bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold"
                                 onClick={() => setRedeemFor({ entityType: "restaurant", entityId: Number(restaurant.id), entityName: restaurant.name, discount: discOffered(restaurant), discountCode: discCode(restaurant) })}
                               >
                                 Redeem discount
@@ -1808,8 +1806,7 @@ export default function GuestDashboard() {
                             {discOffered(attraction) && (
                               <Button
                                 size="sm"
-                                variant="outline"
-                                className="w-full sm:w-auto border-[#39FF14] text-black"
+                                className="w-full sm:w-auto bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold"
                                 onClick={() => setRedeemFor({ entityType: "attraction", entityId: Number(attraction.id), entityName: attraction.name, discount: discOffered(attraction), discountCode: discCode(attraction) })}
                               >
                                 Redeem discount

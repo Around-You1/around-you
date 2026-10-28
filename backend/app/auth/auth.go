@@ -1549,6 +1549,11 @@ type Rep struct {
 	Phone              string `json:"phone"`
 	ResidentialAddress string `json:"residentialAddress"`
 	PostalCode         string `json:"postalCode"`
+	BankAccountName    string `json:"bankAccountName"`
+	BankName           string `json:"bankName"`
+	BankAccountNumber  string `json:"bankAccountNumber"`
+	BankBranchCode     string `json:"bankBranchCode"`
+	BankAccountType    string `json:"bankAccountType"`
 
 	// Set only by UpdateRep when an activation welcome email was attempted, so the
 	// admin UI can surface a failed send instead of it failing silently.
@@ -1575,7 +1580,8 @@ func ListReps(ctx context.Context) (*ListRepsResponse, error) {
 		       COALESCE(upline_rep_code, ''), is_team_leader,
 		       COALESCE(region, ''), COALESCE(province, ''), rep_status,
 		       COALESCE(rep_email, ''), COALESCE(login_code, ''),
-		       COALESCE(id_number, ''), COALESCE(phone, ''), COALESCE(residential_address, ''), COALESCE(postal_code, '')
+		       COALESCE(id_number, ''), COALESCE(phone, ''), COALESCE(residential_address, ''), COALESCE(postal_code, ''),
+		       COALESCE(bank_account_name, ''), COALESCE(bank_name, ''), COALESCE(bank_account_number, ''), COALESCE(bank_branch_code, ''), COALESCE(bank_account_type, '')
 		FROM users WHERE role = 'Rep' ORDER BY rep_code ASC`)
 	if err != nil {
 		return nil, err
@@ -1587,7 +1593,8 @@ func ListReps(ctx context.Context) (*ListRepsResponse, error) {
 		var r Rep
 		if err := rows.Scan(&r.ID, &r.FullName, &r.RepCode,
 			&r.UplineRepCode, &r.IsTeamLeader, &r.Region, &r.Province, &r.Status, &r.Email, &r.AccessCode,
-			&r.IDNumber, &r.Phone, &r.ResidentialAddress, &r.PostalCode); err != nil {
+			&r.IDNumber, &r.Phone, &r.ResidentialAddress, &r.PostalCode,
+			&r.BankAccountName, &r.BankName, &r.BankAccountNumber, &r.BankBranchCode, &r.BankAccountType); err != nil {
 			return nil, err
 		}
 		reps = append(reps, r)
@@ -1606,6 +1613,11 @@ type UpdateRepRequest struct {
 	Region             string `json:"region"`
 	Province           string `json:"province"`
 	Status             string `json:"status"` // "Active" | "Inactive"
+	BankAccountName    string `json:"bankAccountName"`
+	BankName           string `json:"bankName"`
+	BankAccountNumber  string `json:"bankAccountNumber"`
+	BankBranchCode     string `json:"bankBranchCode"`
+	BankAccountType    string `json:"bankAccountType"`
 	Email              string `json:"email"`
 	IDNumber           string `json:"idNumber"`
 	Phone              string `json:"phone"`
@@ -1685,12 +1697,18 @@ func UpdateRep(ctx context.Context, req *UpdateRepRequest) (*Rep, error) {
 		    id_number       = $9,
 		    phone           = $10,
 		    residential_address = $11,
-		    postal_code     = $12
+		    postal_code     = $12,
+		    bank_account_name   = $13,
+		    bank_name           = $14,
+		    bank_account_number = $15,
+		    bank_branch_code    = $16,
+		    bank_account_type   = $17
 		WHERE role = 'Rep' AND lower(rep_code) = lower($1)`,
 		repCode, upline, req.IsTeamLeader,
 		strings.TrimSpace(req.Region), strings.TrimSpace(req.Province), status,
 		strings.TrimSpace(req.Email), loginCode,
 		strings.TrimSpace(req.IDNumber), strings.TrimSpace(req.Phone), strings.TrimSpace(req.ResidentialAddress), strings.TrimSpace(req.PostalCode),
+		strings.TrimSpace(req.BankAccountName), strings.TrimSpace(req.BankName), strings.TrimSpace(req.BankAccountNumber), strings.TrimSpace(req.BankBranchCode), strings.TrimSpace(req.BankAccountType),
 	)
 	if err != nil {
 		return nil, err
@@ -1735,11 +1753,13 @@ func UpdateRep(ctx context.Context, req *UpdateRepRequest) (*Rep, error) {
 		       COALESCE(upline_rep_code, ''), is_team_leader,
 		       COALESCE(region, ''), COALESCE(province, ''), rep_status,
 		       COALESCE(rep_email, ''), COALESCE(login_code, ''),
-		       COALESCE(id_number, ''), COALESCE(phone, ''), COALESCE(residential_address, ''), COALESCE(postal_code, '')
+		       COALESCE(id_number, ''), COALESCE(phone, ''), COALESCE(residential_address, ''), COALESCE(postal_code, ''),
+		       COALESCE(bank_account_name, ''), COALESCE(bank_name, ''), COALESCE(bank_account_number, ''), COALESCE(bank_branch_code, ''), COALESCE(bank_account_type, '')
 		FROM users WHERE role = 'Rep' AND lower(rep_code) = lower($1)`, repCode,
 	).Scan(&r.ID, &r.FullName, &r.RepCode, &r.UplineRepCode, &r.IsTeamLeader,
 		&r.Region, &r.Province, &r.Status, &r.Email, &r.AccessCode,
-		&r.IDNumber, &r.Phone, &r.ResidentialAddress, &r.PostalCode)
+		&r.IDNumber, &r.Phone, &r.ResidentialAddress, &r.PostalCode,
+		&r.BankAccountName, &r.BankName, &r.BankAccountNumber, &r.BankBranchCode, &r.BankAccountType)
 	if err != nil {
 		return nil, err
 	}
@@ -1862,11 +1882,13 @@ func SetRepCode(ctx context.Context, req *SetRepCodeRequest) (*Rep, error) {
 		       COALESCE(upline_rep_code, ''), is_team_leader,
 		       COALESCE(region, ''), COALESCE(province, ''), rep_status,
 		       COALESCE(rep_email, ''), COALESCE(login_code, ''),
-		       COALESCE(id_number, ''), COALESCE(phone, ''), COALESCE(residential_address, ''), COALESCE(postal_code, '')
+		       COALESCE(id_number, ''), COALESCE(phone, ''), COALESCE(residential_address, ''), COALESCE(postal_code, ''),
+		       COALESCE(bank_account_name, ''), COALESCE(bank_name, ''), COALESCE(bank_account_number, ''), COALESCE(bank_branch_code, ''), COALESCE(bank_account_type, '')
 		FROM users WHERE role = 'Rep' AND lower(rep_code) = lower($1)`, newCode,
 	).Scan(&r.ID, &r.FullName, &r.RepCode, &r.UplineRepCode, &r.IsTeamLeader,
 		&r.Region, &r.Province, &r.Status, &r.Email, &r.AccessCode,
-		&r.IDNumber, &r.Phone, &r.ResidentialAddress, &r.PostalCode)
+		&r.IDNumber, &r.Phone, &r.ResidentialAddress, &r.PostalCode,
+		&r.BankAccountName, &r.BankName, &r.BankAccountNumber, &r.BankBranchCode, &r.BankAccountType)
 	if err != nil {
 		return nil, err
 	}

@@ -177,6 +177,11 @@ export const backend = {
       phone?: string;
       residentialAddress?: string;
       postalCode?: string;
+      bankAccountName?: string;
+      bankName?: string;
+      bankAccountNumber?: string;
+      bankBranchCode?: string;
+      bankAccountType?: string;
     }) => request("POST", "/auth/rep/update", { body: req }),
     setRepCode: (req: { repCode: string; newRepCode: string }) =>
       request("POST", "/auth/rep/set-code", { body: req }),

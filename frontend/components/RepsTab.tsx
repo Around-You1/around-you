@@ -23,6 +23,11 @@ interface Rep {
   phone?: string;
   residentialAddress?: string;
   postalCode?: string;
+  bankAccountName?: string;
+  bankName?: string;
+  bankAccountNumber?: string;
+  bankBranchCode?: string;
+  bankAccountType?: string;
 }
 
 const PROVINCES = [
@@ -116,6 +121,11 @@ export default function RepsTab() {
         phone: rep.phone || "",
         residentialAddress: rep.residentialAddress || "",
         postalCode: rep.postalCode || "",
+        bankAccountName: rep.bankAccountName || "",
+        bankName: rep.bankName || "",
+        bankAccountNumber: rep.bankAccountNumber || "",
+        bankBranchCode: rep.bankBranchCode || "",
+        bankAccountType: rep.bankAccountType || "",
       });
       toast({ title: "Agent updated", description: `${rep.fullName} saved` });
       // Surface the activation welcome-email outcome instead of it being silent.
@@ -443,6 +453,57 @@ export default function RepsTab() {
                       </div>
                     </div>
                   )}
+
+                  <div className="rounded-md border border-border p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-medium">Banking (for commission payouts)</Label>
+                      <span className="text-xs text-muted-foreground">Captured on application — editable</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Account holder</Label>
+                        <Input
+                          value={rep.bankAccountName || ""}
+                          onChange={(e) => setRepField(rep.id, { bankAccountName: e.target.value })}
+                          placeholder="Account holder name"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Bank</Label>
+                        <Input
+                          value={rep.bankName || ""}
+                          onChange={(e) => setRepField(rep.id, { bankName: e.target.value })}
+                          placeholder="e.g. FNB"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Account type</Label>
+                        <Input
+                          value={rep.bankAccountType || ""}
+                          onChange={(e) => setRepField(rep.id, { bankAccountType: e.target.value })}
+                          placeholder="e.g. Cheque / Savings"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Account number</Label>
+                        <Input
+                          value={rep.bankAccountNumber || ""}
+                          onChange={(e) => setRepField(rep.id, { bankAccountNumber: e.target.value })}
+                          placeholder="Account number"
+                          className="font-mono"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Branch code</Label>
+                        <Input
+                          value={rep.bankBranchCode || ""}
+                          onChange={(e) => setRepField(rep.id, { bankBranchCode: e.target.value })}
+                          placeholder="Branch code"
+                          className="font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <div className="space-y-1">
