@@ -178,6 +178,8 @@ export const backend = {
       residentialAddress?: string;
       postalCode?: string;
     }) => request("POST", "/auth/rep/update", { body: req }),
+    setRepCode: (req: { repCode: string; newRepCode: string }) =>
+      request("POST", "/auth/rep/set-code", { body: req }),
     deleteRep: (req: { repCode: string }) =>
       request("POST", "/auth/rep/delete", { body: req }),
     resendRepWelcome: (req: { repCode: string }) =>

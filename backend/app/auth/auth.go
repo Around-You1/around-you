@@ -1751,6 +1751,128 @@ func UpdateRep(ctx context.Context, req *UpdateRepRequest) (*Rep, error) {
 	return &r, nil
 }
 
+// SetRepCodeRequest / Response power the "Set Rep Code" button on the Admin
+// Reps tab: it lets a SuperAdmin replace an auto-generated Rep<digits> code
+// with a personalised code (e.g. an NPO/PBO's own code) BEFORE the rep is
+// activated.
+type SetRepCodeRequest struct {
+	RepCode    string `json:"repCode"`    // the rep's current code
+	NewRepCode string `json:"newRepCode"` // the personalised code to assign
+}
+
+// repCodeColumns lists every (table, column) that stores a rep code, so a
+// rename stays consistent across partners, billing, commissions, the rep
+// hierarchy and applications. Kept in sync with migration 000090.
+var repCodeColumns = [][2]string{
+	{"users", "rep_code"},
+	{"users", "upline_rep_code"},
+	{"partner_subscription", "rep_code"},
+	{"invoice", "bill_rep_code"},
+	{"commission", "rep_code"},
+	{"commission", "source_rep_code"},
+	{"rep_invoice", "rep_code"},
+	{"partner_applications", "rep_code"},
+	{"restaurants", "official_rep_code"},
+	{"services", "official_rep_code"},
+	{"attractions", "official_rep_code"},
+	{"accommodations", "official_rep_code"},
+	{"estate_agencies", "official_rep_code"},
+	{"estate_agents", "official_rep_code"},
+	{"retail", "official_rep_code"},
+	{"nonprofits", "official_rep_code"},
+}
+
+// SetRepCode is SuperAdmin-only. It renames a rep's code across every column
+// that references it, in one transaction, so all links stay intact. It is only
+// allowed while the rep is still Inactive (before activation), so an active
+// rep's identity — which may be printed on QR codes or known to partners —
+// never changes under them. The new code uses the same rules as a Team Leader
+// code (2-24 letters/digits, not the reserved Rep<number> namespace) and must
+// not already be taken by another rep.
+//
+//encore:api auth method=POST path=/auth/rep/set-code
+func SetRepCode(ctx context.Context, req *SetRepCodeRequest) (*Rep, error) {
+	data := FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can set a rep code"}
+	}
+
+	oldCode := strings.TrimSpace(req.RepCode)
+	newCode := strings.TrimSpace(req.NewRepCode)
+	if oldCode == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "repCode is required"}
+	}
+	if newCode == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "newRepCode is required"}
+	}
+	if !validTeamLeaderCode(newCode) {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "the new code must be 2-24 letters or digits, and cannot use the reserved Rep<number> format"}
+	}
+
+	// The rep must exist and still be Inactive.
+	var curStatus string
+	err := appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT COALESCE(rep_status,'Active') FROM users
+		WHERE role = 'Rep' AND lower(rep_code) = lower($1)`, oldCode,
+	).Scan(&curStatus)
+	if isNoRows(err) {
+		return nil, &errs.Error{Code: errs.NotFound, Message: "rep not found"}
+	}
+	if err != nil {
+		return nil, err
+	}
+	if strings.EqualFold(curStatus, "Active") {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "a rep code can only be changed while the agent is Inactive (before activation)"}
+	}
+
+	// Unless only the capitalisation is changing, the new code must be free.
+	if !strings.EqualFold(oldCode, newCode) {
+		var taken int
+		if err := appdb.SQLDB.QueryRowContext(ctx, `
+			SELECT count(*) FROM users WHERE role = 'Rep' AND lower(rep_code) = lower($1)`, newCode,
+		).Scan(&taken); err != nil {
+			return nil, err
+		}
+		if taken > 0 {
+			return nil, &errs.Error{Code: errs.AlreadyExists, Message: "that code is already in use by another agent"}
+		}
+	}
+
+	// Rename across every rep-code column in one transaction. Each UPDATE only
+	// touches rows whose value matches the old code (case-insensitive).
+	tx, err := appdb.SQLDB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	for _, col := range repCodeColumns {
+		q := fmt.Sprintf(`UPDATE %s SET %s = $1 WHERE lower(%s) = lower($2)`, col[0], col[1], col[1])
+		if _, err := tx.ExecContext(ctx, q, newCode, oldCode); err != nil {
+			_ = tx.Rollback()
+			return nil, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	// Return the renamed rep.
+	var r Rep
+	err = appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT id, COALESCE(full_name, ''), COALESCE(rep_code, ''),
+		       COALESCE(upline_rep_code, ''), is_team_leader,
+		       COALESCE(region, ''), COALESCE(province, ''), rep_status,
+		       COALESCE(rep_email, ''), COALESCE(login_code, ''),
+		       COALESCE(id_number, ''), COALESCE(phone, ''), COALESCE(residential_address, ''), COALESCE(postal_code, '')
+		FROM users WHERE role = 'Rep' AND lower(rep_code) = lower($1)`, newCode,
+	).Scan(&r.ID, &r.FullName, &r.RepCode, &r.UplineRepCode, &r.IsTeamLeader,
+		&r.Region, &r.Province, &r.Status, &r.Email, &r.AccessCode,
+		&r.IDNumber, &r.Phone, &r.ResidentialAddress, &r.PostalCode)
+	if err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
 // ResendRepWelcomeRequest / Response power the "Resend welcome" button on the
 // Admin Reps tab.
 type ResendRepWelcomeRequest struct {

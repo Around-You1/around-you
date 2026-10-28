@@ -48,6 +48,8 @@ export default function RepsTab() {
   const [savingId, setSavingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [resendingId, setResendingId] = useState<number | null>(null);
+  const [settingCodeId, setSettingCodeId] = useState<number | null>(null);
+  const [newCodes, setNewCodes] = useState<Record<number, string>>({});
   const [openIds, setOpenIds] = useState<Set<number>>(new Set());
   const { toast } = useToast();
 
@@ -172,6 +174,40 @@ export default function RepsTab() {
       toast({ title: "Error", description: error?.message || "Failed to resend welcome email", variant: "destructive" });
     } finally {
       setResendingId(null);
+    }
+  };
+
+  // Personalise an auto-generated Rep<digits> code before activation (NPO/PBO
+  // agents register their own code). Only offered while the agent is Inactive.
+  const handleSetRepCode = async (rep: Rep) => {
+    const next = (newCodes[rep.id] || "").trim();
+    if (!next) {
+      toast({ title: "Enter a code", description: "Type the personalised Rep Code first.", variant: "destructive" });
+      return;
+    }
+    if (next === rep.repCode) {
+      toast({ title: "No change", description: "That is already this agent's code." });
+      return;
+    }
+    if (!window.confirm(`Change ${rep.fullName || rep.repCode}'s Rep Code from ${rep.repCode} to ${next}? This updates it everywhere it is linked and can't be undone from here.`)) {
+      return;
+    }
+    setSettingCodeId(rep.id);
+    try {
+      const backend = getAuthenticatedBackend();
+      const updated: any = await backend.auth.setRepCode({ repCode: rep.repCode, newRepCode: next });
+      toast({ title: "Rep Code set", description: `${rep.fullName || "Agent"} is now ${updated?.repCode || next}` });
+      setNewCodes((prev) => {
+        const n = { ...prev };
+        delete n[rep.id];
+        return n;
+      });
+      loadReps();
+    } catch (error: any) {
+      console.error("Failed to set rep code:", error);
+      toast({ title: "Couldn't set code", description: error?.message || "Failed to set the Rep Code", variant: "destructive" });
+    } finally {
+      setSettingCodeId(null);
     }
   };
 
@@ -380,6 +416,33 @@ export default function RepsTab() {
                       </div>
                     </div>
                   </div>
+
+                  {rep.status === "Inactive" && (
+                    <div className="rounded-md border border-[#AEECE4] bg-[#AEECE4]/10 p-3 space-y-2">
+                      <Label className="text-xs font-medium">Personalise Rep Code (before activation)</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Replace the auto code{" "}
+                        <span className="font-mono">{rep.repCode}</span> with this agent's own NPO/PBO code. 2–24 letters or digits. Only available while the agent is Pending / Inactive.
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                        <Input
+                          value={newCodes[rep.id] ?? ""}
+                          onChange={(e) => setNewCodes((prev) => ({ ...prev, [rep.id]: e.target.value }))}
+                          placeholder="e.g. CARE"
+                          className="font-mono"
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleSetRepCode(rep)}
+                          disabled={settingCodeId === rep.id}
+                          className="whitespace-nowrap"
+                        >
+                          {settingCodeId === rep.id ? "Setting…" : "Set Rep Code"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <div className="space-y-1">
