@@ -8,7 +8,6 @@ import backend from "~backend/client";
 import { SA_PROVINCES } from "../lib/saRegions";
 import AppLogo from "../components/AppLogo";
 import InfoSquares from "../components/InfoSquares";
-import { signInWithOtp } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import { useTutorial } from "../components/tutorial/TutorialProvider";
 import { dashboardPathForRole } from "../lib/dashboard";
@@ -579,43 +578,24 @@ export default function LoginPage() {
     try { savedCell = JSON.parse(localStorage.getItem("aroundYouLogin") || "{}")?.local?.cell || ""; } catch { savedCell = ""; }
     const cellChanged = normalizeCellForCompare(cell) !== normalizeCellForCompare(savedCell);
     if (cellChanged && !window.confirm(`Please confirm your mobile number:\n\n${cell}\n\nIs this correct?`)) return;
+    // Confirm the email too. No verification email is sent, so this popup is the
+    // only guard against a typo in the address they'll sign in with. Mirrors the
+    // mobile confirm: only prompts when it's new or changed on this device.
+    let savedEmail = "";
+    try { savedEmail = JSON.parse(localStorage.getItem("aroundYouLogin") || "{}")?.local?.email || ""; } catch { savedEmail = ""; }
+    const emailChanged = localEmail.trim().toLowerCase() !== savedEmail.trim().toLowerCase();
+    if (emailChanged && !window.confirm(`Please confirm your email address:\n\n${localEmail.trim()}\n\nIs this correct?`)) return;
     setLoading(true);
     try {
       const email = localEmail.trim().toLowerCase();
 
-      // Returning guest: if this browser already has a verified Supabase
-      // session for this exact email, skip the code step entirely.
-      const { data: { session } } = await supabase.auth.getSession();
-      const alreadyVerified = !!session && session.user?.email?.toLowerCase() === email;
-
-      if (alreadyVerified) {
-        const res = await backend.auth.localGuestLogin({ email, province: localProvince, postalCode: localPostalCode.trim() });
-        localStorage.setItem("localGuestInfo", JSON.stringify({ province: localProvince, postalCode: localPostalCode.trim(), cell }));
-        rememberLogin({ local: { email, province: localProvince, postalCode: localPostalCode.trim(), cell } });
-        storeAndNavigate(res.token, res.user, "/local-dashboard", email.split("@")[0], "a Local");
-        return;
-      }
-
-      // First time (or an expired/different session): send a one-time code
-      // and finish signing in once they've verified it. The province/postal
-      // code they already typed are carried through inside the `next` URL's
-      // own query string — /verify does `router.replace(next)` literally, it
-      // does not merge in any other query params, so they have to travel
-      // as part of next's value itself or they'd be lost after redirecting.
-      await signInWithOtp(email);
+      // Email OTP removed: register / sign in directly with the details entered.
+      // No verification email is sent (free-tier email limits); the email is
+      // validated for format and confirmed above to catch typos.
+      const res = await backend.auth.localGuestLogin({ email, province: localProvince, postalCode: localPostalCode.trim() });
       localStorage.setItem("localGuestInfo", JSON.stringify({ province: localProvince, postalCode: localPostalCode.trim(), cell }));
       rememberLogin({ local: { email, province: localProvince, postalCode: localPostalCode.trim(), cell } });
-      toast({ title: "Check your email", description: `We sent a code to ${email}` });
-      const nextParams = new URLSearchParams({
-        pendingRole: "local",
-        pendingProvince: localProvince,
-        pendingPostalCode: localPostalCode.trim(),
-      });
-      const params = new URLSearchParams({
-        email,
-        next: `/portal?${nextParams.toString()}`,
-      });
-      router.push(`/verify?${params.toString()}`);
+      storeAndNavigate(res.token, res.user, "/local-dashboard", email.split("@")[0], "a Local");
     } catch (err: any) {
       console.error(err);
       toast({ title: "Login Failed", description: err?.message || "Unable to sign in. Please try again.", variant: "destructive" });
@@ -779,6 +759,7 @@ export default function LoginPage() {
                   autoComplete="email"
                   enterKeyHint="next"
                 />
+                <p className="text-xs" style={{ color: "#555" }}>You'll use this to sign in — please check it's spelt correctly.</p>
               </div>
               <div className="space-y-1.5">
                 <ThemedLabel>Mobile Number</ThemedLabel>
