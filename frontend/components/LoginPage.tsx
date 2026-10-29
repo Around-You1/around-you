@@ -789,15 +789,25 @@ export default function LoginPage() {
               </div>
               <div className="space-y-1.5">
                 <ThemedLabel>Province</ThemedLabel>
-                <ThemedSelect
+                <select
                   value={localProvince}
-                  onValueChange={(v) => { setLocalProvince(v); }}
-                  placeholder="Select province"
+                  onChange={(e) => setLocalProvince(e.target.value)}
+                  className="transition-all focus:border-[#39FF14]"
+                  style={{
+                    width: "100%",
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(57,255,20,0.2)",
+                    color: localProvince ? "#fff" : "#666",
+                    borderRadius: 8,
+                    height: 42,
+                    padding: "0 10px",
+                  }}
                 >
+                  <option value="" disabled style={{ color: "#666", background: "#1a1a1a" }}>Select province</option>
                   {SA_PROVINCES.map((p) => (
-                    <SelectItem key={p} value={p} style={{ color: "#fff" }}>{p}</SelectItem>
+                    <option key={p} value={p} style={{ color: "#fff", background: "#1a1a1a" }}>{p}</option>
                   ))}
-                </ThemedSelect>
+                </select>
               </div>
               <div className="space-y-1.5">
                 <ThemedLabel>Postal Code</ThemedLabel>
