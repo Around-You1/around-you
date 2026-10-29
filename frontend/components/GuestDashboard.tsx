@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Children, isValidElement } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
@@ -35,6 +35,33 @@ import EmergencyButton from "../components/EmergencyButton";
 import SuggestionsManager from "../components/SuggestionsManager";
 
 const FALLBACK = "The company has opted not to make this information visible.";
+
+// SHOW_OPTED_OUT is a standby switch. When false (default), a section the partner
+// left empty is HIDDEN entirely on the Guest/Local pages (no dropdown). Flip it to
+// true to bring back the "opted not to make this information visible" message on
+// those empty sections instead of hiding them.
+const SHOW_OPTED_OUT = false;
+
+function OptedOut() {
+  return <span className="text-sm text-muted-foreground italic">{FALLBACK}</span>;
+}
+
+// Wraps one collapsible section. If its content is only the OptedOut placeholder
+// (the partner provided nothing), the whole dropdown is hidden — unless
+// SHOW_OPTED_OUT is on.
+function HideWhenOptedOut({ children }: { children: any }) {
+  if (SHOW_OPTED_OUT) return children;
+  try {
+    const arr = Children.toArray(children);
+    const col: any = arr.find((k: any) => k && k.type === Collapsible) || arr[0];
+    const content: any = Children.toArray(col.props.children).find((k: any) => k && k.type === CollapsibleContent);
+    const body = content && content.props ? content.props.children : undefined;
+    if (isValidElement(body) && (body as any).type === OptedOut) return null;
+  } catch {
+    /* on anything unexpected, render the section normally */
+  }
+  return children;
+}
 
 // Visibility is fully open: every profile is treated as the old "Both" audience
 // + "Premium" tier, so all content (Address, Directions, etc.) shows to both
@@ -500,7 +527,7 @@ export default function GuestDashboard() {
 
   const triggerClass = "flex items-center gap-2 text-sm font-medium hover:text-black transition-colors w-full text-left";
   const contentClass = "pl-6 pt-2";
-  const fallbackSpan = <span className="text-sm text-muted-foreground italic">{FALLBACK}</span>;
+  const fallbackSpan = <OptedOut />;
 
   // NPO / PBO businesses are services flagged is_nonprofit; split them out of
   // Business/Services into their own tab, sharing one card renderer.
@@ -582,7 +609,7 @@ export default function GuestDashboard() {
                             )}
 
                             {!isRetail && (
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={(discOffered(service) || discCode(service)) ? `${triggerClass} bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold rounded-lg px-3 py-2` : triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Discount and Discount Code
@@ -609,11 +636,11 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
                             )}
 
                             {isRetail && (
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Discount / My Stamp Card
@@ -656,10 +683,10 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
                             )}
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Description
@@ -667,9 +694,9 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {service.description || fallbackSpan}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Trading Hours
@@ -677,9 +704,9 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground whitespace-pre-line`}>
                                 {service.tradingHours || fallbackSpan}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Public Holidays
@@ -687,10 +714,10 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground whitespace-pre-line`}>
                                 {service.publicHolidays || fallbackSpan}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
                             {!isNpo && !isRetail && (
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Business/Service Categories
@@ -708,7 +735,7 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
                             )}
 
@@ -718,7 +745,7 @@ export default function GuestDashboard() {
                               </div>
                             )}
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Payment Options
@@ -740,9 +767,9 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Accessibility
@@ -757,9 +784,9 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Child Friendly
@@ -771,9 +798,9 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Contact
@@ -794,7 +821,7 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
 
                             {tierOf(service.accessLevel) >= 2 && (
@@ -878,7 +905,7 @@ export default function GuestDashboard() {
                     country={accommodation!.country}
                   />
 
-                  <Collapsible>
+                  <HideWhenOptedOut><Collapsible>
                     <CollapsibleTrigger className={triggerClass}>
                       <ChevronDown className="h-4 w-4" />
                       Contact
@@ -914,9 +941,9 @@ export default function GuestDashboard() {
                         fallbackSpan
                       )}
                     </CollapsibleContent>
-                  </Collapsible>
+                  </Collapsible></HideWhenOptedOut>
 
-                  <Collapsible>
+                  <HideWhenOptedOut><Collapsible>
                     <CollapsibleTrigger className={triggerClass}>
                       <ChevronDown className="h-4 w-4" />
                       WiFi Credentials
@@ -928,9 +955,9 @@ export default function GuestDashboard() {
                         fallbackSpan
                       )}
                     </CollapsibleContent>
-                  </Collapsible>
+                  </Collapsible></HideWhenOptedOut>
 
-                  <Collapsible>
+                  <HideWhenOptedOut><Collapsible>
                     <CollapsibleTrigger className={triggerClass}>
                       <ChevronDown className="h-4 w-4" />
                       Check-in Instructions
@@ -938,9 +965,9 @@ export default function GuestDashboard() {
                     <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                       {accommodation!.checkInInstructions || fallbackSpan}
                     </CollapsibleContent>
-                  </Collapsible>
+                  </Collapsible></HideWhenOptedOut>
 
-                  <Collapsible>
+                  <HideWhenOptedOut><Collapsible>
                     <CollapsibleTrigger className={triggerClass}>
                       <ChevronDown className="h-4 w-4" />
                       Amenities
@@ -948,9 +975,9 @@ export default function GuestDashboard() {
                     <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                       {accommodation!.amenities || fallbackSpan}
                     </CollapsibleContent>
-                  </Collapsible>
+                  </Collapsible></HideWhenOptedOut>
 
-                  <Collapsible>
+                  <HideWhenOptedOut><Collapsible>
                     <CollapsibleTrigger className={triggerClass}>
                       <ChevronDown className="h-4 w-4" />
                       Guidelines
@@ -958,9 +985,9 @@ export default function GuestDashboard() {
                     <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                       {accommodation!.guidelines || fallbackSpan}
                     </CollapsibleContent>
-                  </Collapsible>
+                  </Collapsible></HideWhenOptedOut>
 
-                  <Collapsible>
+                  <HideWhenOptedOut><Collapsible>
                     <CollapsibleTrigger className={triggerClass}>
                       <ChevronDown className="h-4 w-4" />
                       Check-out Instructions
@@ -968,9 +995,9 @@ export default function GuestDashboard() {
                     <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                       {accommodation!.checkOutInstructions || fallbackSpan}
                     </CollapsibleContent>
-                  </Collapsible>
+                  </Collapsible></HideWhenOptedOut>
 
-                  <Collapsible>
+                  <HideWhenOptedOut><Collapsible>
                     <CollapsibleTrigger className={triggerClass}>
                       <ChevronDown className="h-4 w-4" />
                       Weather
@@ -986,9 +1013,9 @@ export default function GuestDashboard() {
                         Visit WeatherSA
                       </a>
                     </CollapsibleContent>
-                  </Collapsible>
+                  </Collapsible></HideWhenOptedOut>
 
-                  <Collapsible>
+                  <HideWhenOptedOut><Collapsible>
                     <CollapsibleTrigger className={triggerClass}>
                       <ChevronDown className="h-4 w-4" />
                       Tides
@@ -1004,9 +1031,9 @@ export default function GuestDashboard() {
                         Visit Tides4Fishing
                       </a>
                     </CollapsibleContent>
-                  </Collapsible>
+                  </Collapsible></HideWhenOptedOut>
 
-                  <Collapsible>
+                  <HideWhenOptedOut><Collapsible>
                     <CollapsibleTrigger className={triggerClass}>
                       <ChevronDown className="h-4 w-4" />
                       Facilities
@@ -1024,9 +1051,9 @@ export default function GuestDashboard() {
                         fallbackSpan
                       )}
                     </CollapsibleContent>
-                  </Collapsible>
+                  </Collapsible></HideWhenOptedOut>
 
-                  <Collapsible>
+                  <HideWhenOptedOut><Collapsible>
                     <CollapsibleTrigger className={triggerClass}>
                       <ChevronDown className="h-4 w-4" />
                       Emergency Numbers
@@ -1169,7 +1196,7 @@ export default function GuestDashboard() {
                         fallbackSpan
                       )}
                     </CollapsibleContent>
-                  </Collapsible>
+                  </Collapsible></HideWhenOptedOut>
 
                 </div>
                 )}
@@ -1332,7 +1359,7 @@ export default function GuestDashboard() {
                               />
                             )}
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={(discOffered(restaurant) || discCode(restaurant)) ? `${triggerClass} bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold rounded-lg px-3 py-2` : triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Discount and Discount Code
@@ -1359,9 +1386,9 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Description
@@ -1369,9 +1396,9 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {restaurant.description || fallbackSpan}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Trading Hours
@@ -1379,9 +1406,9 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground whitespace-pre-line`}>
                                 {restaurant.tradingHours || fallbackSpan}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Public Holidays
@@ -1389,9 +1416,9 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground whitespace-pre-line`}>
                                 {restaurant.publicHolidays || fallbackSpan}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Cuisine Types
@@ -1409,10 +1436,10 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
                             {restaurant.atmosphere && restaurant.atmosphere.length > 0 && (
-                              <Collapsible>
+                              <HideWhenOptedOut><Collapsible>
                                 <CollapsibleTrigger className={triggerClass}>
                                   <ChevronDown className="h-4 w-4" />
                                   Atmosphere / Vibe
@@ -1424,11 +1451,11 @@ export default function GuestDashboard() {
                                     ))}
                                   </div>
                                 </CollapsibleContent>
-                              </Collapsible>
+                              </Collapsible></HideWhenOptedOut>
                             )}
 
                             {restaurant.features && restaurant.features.length > 0 && (
-                              <Collapsible>
+                              <HideWhenOptedOut><Collapsible>
                                 <CollapsibleTrigger className={triggerClass}>
                                   <ChevronDown className="h-4 w-4" />
                                   Features
@@ -1440,11 +1467,11 @@ export default function GuestDashboard() {
                                     ))}
                                   </div>
                                 </CollapsibleContent>
-                              </Collapsible>
+                              </Collapsible></HideWhenOptedOut>
                             )}
 
                             {restaurant.dietaryOptions && restaurant.dietaryOptions.length > 0 && (
-                              <Collapsible>
+                              <HideWhenOptedOut><Collapsible>
                                 <CollapsibleTrigger className={triggerClass}>
                                   <ChevronDown className="h-4 w-4" />
                                   Dietary Options
@@ -1456,11 +1483,11 @@ export default function GuestDashboard() {
                                     ))}
                                   </div>
                                 </CollapsibleContent>
-                              </Collapsible>
+                              </Collapsible></HideWhenOptedOut>
                             )}
 
                             {restaurant.chefRecommendation && (
-                              <Collapsible>
+                              <HideWhenOptedOut><Collapsible>
                                 <CollapsibleTrigger className={triggerClass}>
                                   <ChevronDown className="h-4 w-4" />
                                   Chef&apos;s Recommendation
@@ -1468,7 +1495,7 @@ export default function GuestDashboard() {
                                 <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground whitespace-pre-line`}>
                                   {restaurant.chefRecommendation}
                                 </CollapsibleContent>
-                              </Collapsible>
+                              </Collapsible></HideWhenOptedOut>
                             )}
 
                             {restaurant.offersBookings && (
@@ -1477,7 +1504,7 @@ export default function GuestDashboard() {
                               </div>
                             )}
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Restaurant/Takeaway Type
@@ -1495,9 +1522,9 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Menu Link
@@ -1517,9 +1544,9 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Menu (PDF)
@@ -1544,9 +1571,9 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Payment Options
@@ -1568,9 +1595,9 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Service Options
@@ -1586,9 +1613,9 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Accessibility
@@ -1603,9 +1630,9 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Child Friendly
@@ -1617,9 +1644,9 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 WiFi Credentials
@@ -1631,9 +1658,9 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Contact
@@ -1654,7 +1681,7 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
 
                             {tierOf(restaurant.accessLevel) >= 2 && (
@@ -1668,7 +1695,7 @@ export default function GuestDashboard() {
                             )}
 
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Social Media
@@ -1721,7 +1748,7 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
                               </>
                             )}
                           </div>
@@ -1829,7 +1856,7 @@ export default function GuestDashboard() {
                               />
                             )}
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={(discOffered(attraction) || discCode(attraction)) ? `${triggerClass} bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold rounded-lg px-3 py-2` : triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Discount and Discount Code
@@ -1856,9 +1883,9 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Description
@@ -1866,9 +1893,9 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {attraction.description || fallbackSpan}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Trading Hours
@@ -1876,9 +1903,9 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground whitespace-pre-line`}>
                                 {attraction.tradingHours || fallbackSpan}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Public Holidays
@@ -1886,9 +1913,9 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground whitespace-pre-line`}>
                                 {attraction.publicHolidays || fallbackSpan}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Attraction Categories
@@ -1906,7 +1933,7 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
                             {attraction.offersBookings && (
                               <div className="mt-1">
@@ -1914,7 +1941,7 @@ export default function GuestDashboard() {
                               </div>
                             )}
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Payment Options
@@ -1936,9 +1963,9 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Accessibility
@@ -1953,9 +1980,9 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Child Friendly
@@ -1967,9 +1994,9 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
-                            <Collapsible>
+                            <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Contact
@@ -1990,7 +2017,7 @@ export default function GuestDashboard() {
                                   fallbackSpan
                                 )}
                               </CollapsibleContent>
-                            </Collapsible>
+                            </Collapsible></HideWhenOptedOut>
 
 
                             {tierOf(attraction.accessLevel) >= 2 && (

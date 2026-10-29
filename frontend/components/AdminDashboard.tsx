@@ -261,8 +261,8 @@ export default function AdminDashboard() {
         {pendingTotal > 0 && (
           <button
             onClick={() => {
-              const first = ["accommodation", "restaurant", "service", "attraction", "estate"].find((c) => (pendingByCat[c] || 0) > 0);
-              const map: Record<string, string> = { accommodation: "accommodations", restaurant: "restaurants", service: "services", attraction: "attractions", estate: "realestate" };
+              const first = ["accommodation", "restaurant", "service", "attraction", "estate", "retail", "nonprofit"].find((c) => (pendingByCat[c] || 0) > 0);
+              const map: Record<string, string> = { accommodation: "accommodations", restaurant: "restaurants", service: "services", attraction: "attractions", estate: "realestate", retail: "retail", nonprofit: "nonprofit" };
               if (first) setTab(map[first]);
             }}
             className="w-full flex items-center gap-3 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-left hover:bg-red-500/15 transition-colors"
@@ -306,7 +306,7 @@ export default function AdminDashboard() {
                 <TabsList className="grid w-full h-auto! grid-cols-3 gap-1">
                   <TabsTrigger value="realestate" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Real Estate{catBadge("estate")}</TabsTrigger>
                   <TabsTrigger value="retail" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">Retail{catBadge("retail")}</TabsTrigger>
-                  <TabsTrigger value="nonprofit" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">NPO / PBO</TabsTrigger>
+                  <TabsTrigger value="nonprofit" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation">NPO / PBO{catBadge("nonprofit")}</TabsTrigger>
                 </TabsList>
 
                 {/* Row 2: admin sections */}
