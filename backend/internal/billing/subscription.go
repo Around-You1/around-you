@@ -121,7 +121,11 @@ func List(ctx context.Context) ([]Subscription, error) {
 		         WHEN 'accommodation' THEN (SELECT name FROM accommodations  WHERE id = ps.partner_id)
 		         WHEN 'estate_agency' THEN (SELECT name FROM estate_agencies WHERE id = ps.partner_id)
 		         WHEN 'estate_agent'  THEN (SELECT name FROM estate_agents   WHERE id = ps.partner_id)
-		       END), '')
+		       END), ''),
+		       COALESCE((CASE ps.partner_type
+		         WHEN 'service' THEN (SELECT is_nonprofit FROM services WHERE id = ps.partner_id)
+		         ELSE false
+		       END), false)
 		FROM partner_subscription ps
 		ORDER BY ps.created_at DESC`)
 	if err != nil {
@@ -132,9 +136,10 @@ func List(ctx context.Context) ([]Subscription, error) {
 	subs := []Subscription{}
 	for rows.Next() {
 		var s Subscription
+		var svcNonProfit bool
 		if err := rows.Scan(&s.ID, &s.PartnerType, &s.PartnerID, &s.Plan,
 			&s.Tier, &s.Audience, &s.MonthlyCents, &s.RepCode, &s.Status,
-			&s.AutoRenew, &s.NextBillDate, &s.PartnerName); err != nil {
+			&s.AutoRenew, &s.NextBillDate, &s.PartnerName, &svcNonProfit); err != nil {
 			return nil, err
 		}
 		// Billable = money actually changes hands: active, paid plan, billing
@@ -144,11 +149,16 @@ func List(ctx context.Context) ([]Subscription, error) {
 		// it immediately, without waiting for the subscription mirror to catch up.
 		// Test-rep and complimentary (R0) listings, and partners not yet activated
 		// for recurring billing, are excluded.
+		// Free listings never bill (matching the invoice run's exemptions): every
+		// NPO/PBO, and any Service flagged as a non-profit/charity. They are kept
+		// out of both the billable list and the Expected revenue forecast.
+		freeListing := s.PartnerType == "nonprofit" || (s.PartnerType == "service" && svcNonProfit)
 		s.Billable = s.Status == "Active" &&
 			s.MonthlyCents > 0 &&
 			strings.TrimSpace(s.NextBillDate) != "" &&
 			strings.TrimSpace(s.RepCode) != "" &&
-			!isTestRep(s.RepCode)
+			!isTestRep(s.RepCode) &&
+			!freeListing
 		// Expected = will be billed on the next monthly run: a real (non-test),
 		// active, paid-plan partner — counted even if not yet activated for
 		// billing (next_bill_date still NULL during the pre-launch promo). This
@@ -158,7 +168,8 @@ func List(ctx context.Context) ([]Subscription, error) {
 		s.Expected = s.Status == "Active" &&
 			s.MonthlyCents > 0 &&
 			strings.TrimSpace(s.RepCode) != "" &&
-			!isTestRep(s.RepCode)
+			!isTestRep(s.RepCode) &&
+			!freeListing
 		subs = append(subs, s)
 	}
 	return subs, rows.Err()
