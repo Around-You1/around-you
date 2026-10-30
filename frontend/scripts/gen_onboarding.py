@@ -140,7 +140,11 @@ def build(fname, title, story_mid, extra_intro="", price_txt=""):
     print("wrote", fname)
 
 # ===== Restaurant / Takeaway =====
-rest = repcode() + business("Restaurant/Takeaway name")
+rest = repcode() + business("Restaurant/Takeaway name") + [
+    *section("Service options"),
+    *ticks("Which does the restaurant offer?", ["Dine-in", "Takeaway", "Delivery"], cols=3),
+    fill("Delivery price (only if Delivery is ticked)", "e.g. R35, Free over R150, or R10/km — shown to Guests & Locals"),
+]
 build("restaurant-onboarding.pdf", "Around You — Restaurant/Takeaway Application", rest,
       price_txt="R300 per month, plus Bookings @ R10 per cover and Pre-Orders @ 5% of the bill.")
 

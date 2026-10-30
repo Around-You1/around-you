@@ -176,6 +176,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Restaurant, error) 
 		ServiceDineIn:          req.ServiceDineIn,
 		ServiceTakeaway:        req.ServiceTakeaway,
 		ServiceDelivery:        req.ServiceDelivery,
+		DeliveryPrice:          req.DeliveryPrice,
 		LittleExplorerApproved: req.LittleExplorerApproved,
 		PaymentMethods: appdb.PaymentMethods{
 			PaymentCard:       req.PaymentCard,
@@ -318,6 +319,7 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.Restaurant, error) 
 		ServiceDineIn:          req.ServiceDineIn,
 		ServiceTakeaway:        req.ServiceTakeaway,
 		ServiceDelivery:        req.ServiceDelivery,
+		DeliveryPrice:          req.DeliveryPrice,
 		LittleExplorerApproved: req.LittleExplorerApproved,
 		PaymentCard:            req.PaymentCard,
 		PaymentCash:            req.PaymentCash,

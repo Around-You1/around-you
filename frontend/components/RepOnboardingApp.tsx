@@ -798,6 +798,7 @@ export default function RepOnboardingApp() {
           serviceDineIn: serviceOptions.includes("Dine-in"),
           serviceTakeaway: serviceOptions.includes("Takeaway"),
           serviceDelivery: serviceOptions.includes("Delivery"),
+          deliveryPrice: serviceOptions.includes("Delivery") ? (data.deliveryPrice || "") : "",
           littleExplorerApproved: (data.childFriendly || []).includes("Child Friendly"),
           paymentCard: (data.paymentOptions || []).includes("Card"),
           paymentCash: (data.paymentOptions || []).includes("Cash"),
@@ -1326,6 +1327,15 @@ export default function RepOnboardingApp() {
                     />
                     <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: -4, marginBottom: 4 }}>
                       Tick only what the restaurant offers. Pre-Orders below open only if Takeaway and/or Delivery is ticked.
+                    </p>
+                  </div>
+                )}
+
+                {isRestaurant && serviceOptions.includes("Delivery") && (
+                  <div style={{ marginBottom: 12 }}>
+                    <TextField label="Delivery Price" value={data.deliveryPrice} onChange={set("deliveryPrice")} />
+                    <p style={{ fontSize: 11, color: colors.textSecondary, marginTop: -4, marginBottom: 4 }}>
+                      Optional. Shown to Guests and Locals under Service Options — e.g. "R35", "Free over R150" or "R10/km".
                     </p>
                   </div>
                 )}

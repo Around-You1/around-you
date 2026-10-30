@@ -54,6 +54,7 @@ type CreateRequest struct {
 	ServiceDineIn          bool     `json:"serviceDineIn"`
 	ServiceTakeaway        bool     `json:"serviceTakeaway"`
 	ServiceDelivery        bool     `json:"serviceDelivery"`
+	DeliveryPrice          string   `json:"deliveryPrice,omitempty"`
 	LittleExplorerApproved bool     `json:"littleExplorerApproved"`
 
 	PaymentCard       bool `json:"paymentCard"`
@@ -142,6 +143,7 @@ type UpdateRequest struct {
 	ServiceDineIn          *bool    `json:"serviceDineIn,omitempty"`
 	ServiceTakeaway        *bool    `json:"serviceTakeaway,omitempty"`
 	ServiceDelivery        *bool    `json:"serviceDelivery,omitempty"`
+	DeliveryPrice          *string  `json:"deliveryPrice,omitempty"`
 	LittleExplorerApproved *bool    `json:"littleExplorerApproved,omitempty"`
 
 	PaymentCard       *bool `json:"paymentCard,omitempty"`

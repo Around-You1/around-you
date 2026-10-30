@@ -1607,7 +1607,7 @@ export default function GuestDashboard() {
                                   <div className="flex flex-wrap gap-2">
                                     {restaurant.serviceDineIn && <span className="px-2 py-0.5 text-black rounded text-xs">Dine-in</span>}
                                     {restaurant.serviceTakeaway && <span className="px-2 py-0.5 text-black rounded text-xs">Takeaway</span>}
-                                    {restaurant.serviceDelivery && <span className="px-2 py-0.5 text-black rounded text-xs">Delivery</span>}
+                                    {restaurant.serviceDelivery && <span className="px-2 py-0.5 text-black rounded text-xs">Delivery{(restaurant as any).deliveryPrice ? ` · ${(restaurant as any).deliveryPrice}` : ""}</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan

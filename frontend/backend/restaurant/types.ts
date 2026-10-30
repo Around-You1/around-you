@@ -47,6 +47,7 @@ export interface Restaurant {
   serviceDineIn: boolean;
   serviceTakeaway: boolean;
   serviceDelivery: boolean;
+  deliveryPrice?: string;
   littleExplorerApproved: boolean;
 
   paymentCard: boolean;

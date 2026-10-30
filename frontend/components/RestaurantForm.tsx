@@ -142,6 +142,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
     serviceDineIn: false,
     serviceTakeaway: false,
     serviceDelivery: false,
+    deliveryPrice: "",
     wifiNetwork: "",
     wifiPassword: "",
     bookingsEmail: "",
@@ -265,6 +266,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
         serviceDineIn: data.serviceDineIn || false,
         serviceTakeaway: data.serviceTakeaway || false,
         serviceDelivery: data.serviceDelivery || false,
+        deliveryPrice: (data as any).deliveryPrice || "",
         wifiNetwork: data.wifiNetwork || "",
         wifiPassword: data.wifiPassword || "",
         bookingsEmail: data.bookingsEmail || "",
@@ -847,23 +849,43 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
                 <Label htmlFor="paymentEft">EFT</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <Checkbox id="paymentIkhokha" checked={formData.paymentIkhokha} onCheckedChange={(checked) => setFormData({ ...formData, paymentIkhokha: checked === true })} />
+                <Switch
+                  id="paymentIkhokha"
+                  checked={formData.paymentIkhokha}
+                  onCheckedChange={(checked) => setFormData({ ...formData, paymentIkhokha: checked })}
+                />
                 <Label htmlFor="paymentIkhokha">iKhokha</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <Checkbox id="paymentGpay" checked={formData.paymentGpay} onCheckedChange={(checked) => setFormData({ ...formData, paymentGpay: checked === true })} />
+                <Switch
+                  id="paymentGpay"
+                  checked={formData.paymentGpay}
+                  onCheckedChange={(checked) => setFormData({ ...formData, paymentGpay: checked })}
+                />
                 <Label htmlFor="paymentGpay">G Pay</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <Checkbox id="paymentSamsungpay" checked={formData.paymentSamsungpay} onCheckedChange={(checked) => setFormData({ ...formData, paymentSamsungpay: checked === true })} />
+                <Switch
+                  id="paymentSamsungpay"
+                  checked={formData.paymentSamsungpay}
+                  onCheckedChange={(checked) => setFormData({ ...formData, paymentSamsungpay: checked })}
+                />
                 <Label htmlFor="paymentSamsungpay">Samsung Pay</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <Checkbox id="paymentSassa" checked={formData.paymentSassa} onCheckedChange={(checked) => setFormData({ ...formData, paymentSassa: checked === true })} />
+                <Switch
+                  id="paymentSassa"
+                  checked={formData.paymentSassa}
+                  onCheckedChange={(checked) => setFormData({ ...formData, paymentSassa: checked })}
+                />
                 <Label htmlFor="paymentSassa">SASSA</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <Checkbox id="paymentApplepay" checked={formData.paymentApplepay} onCheckedChange={(checked) => setFormData({ ...formData, paymentApplepay: checked === true })} />
+                <Switch
+                  id="paymentApplepay"
+                  checked={formData.paymentApplepay}
+                  onCheckedChange={(checked) => setFormData({ ...formData, paymentApplepay: checked })}
+                />
                 <Label htmlFor="paymentApplepay">Apple Pay</Label>
               </div>
             </div>
@@ -897,6 +919,18 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
                 <Label htmlFor="serviceDelivery">Delivery</Label>
               </div>
             </div>
+            {formData.serviceDelivery && (
+              <div className="space-y-2">
+                <Label htmlFor="deliveryPrice">Delivery Price</Label>
+                <Input
+                  id="deliveryPrice"
+                  value={formData.deliveryPrice}
+                  onChange={(e) => setFormData({ ...formData, deliveryPrice: e.target.value })}
+                  placeholder='e.g. "R35", "Free over R150" or "R10/km"'
+                />
+                <p className="text-sm text-muted-foreground">Shown to Guests and Locals under Service Options when Delivery is on.</p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-4" style={{ display: tierNum >= 1 ? undefined : "none" }}>

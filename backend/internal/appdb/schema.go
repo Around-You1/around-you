@@ -392,6 +392,7 @@ type Restaurant struct {
 	ServiceDineIn          bool          `json:"serviceDineIn"`
 	ServiceTakeaway        bool          `json:"serviceTakeaway"`
 	ServiceDelivery        bool          `json:"serviceDelivery"`
+	DeliveryPrice          string        `json:"deliveryPrice,omitempty"`
 	LittleExplorerApproved bool          `json:"littleExplorerApproved"`
 
 	PaymentMethods
