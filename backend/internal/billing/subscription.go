@@ -159,17 +159,13 @@ func List(ctx context.Context) ([]Subscription, error) {
 			strings.TrimSpace(s.RepCode) != "" &&
 			!isTestRep(s.RepCode) &&
 			!freeListing
-		// Expected = will be billed on the next monthly run: a real (non-test),
-		// active, paid-plan partner — counted even if not yet activated for
-		// billing (next_bill_date still NULL during the pre-launch promo). This
-		// is what the Admin Billing "Expected revenue" projection sums, so an
-		// account that hasn't had its first invoice issued yet (e.g. SPAR) is
-		// still included at its stored monthly fee.
-		s.Expected = s.Status == "Active" &&
-			s.MonthlyCents > 0 &&
-			strings.TrimSpace(s.RepCode) != "" &&
-			!isTestRep(s.RepCode) &&
-			!freeListing
+		// Expected revenue mirrors Billable exactly, so the Admin Billing
+		// "Expected revenue" forecast equals what the next monthly run will
+		// actually invoice: active, paid, activated-for-billing partners on a
+		// real (non-test) agent, excluding free listings. Partners on a paid plan
+		// that have NOT yet been activated for billing (next_bill_date still NULL)
+		// are not invoiced, so they are not counted here either.
+		s.Expected = s.Billable
 		subs = append(subs, s)
 	}
 	return subs, rows.Err()

@@ -562,14 +562,11 @@ export default function BillingTab() {
 
   const mrrCents = billableSubs.reduce((sum, s) => sum + s.monthlyCents, 0);
 
-  // Expected revenue on the next monthly billing run. This counts EVERY real,
-  // paid partner — active, on a paid plan, with a real (non-test) agent —
-  // including accounts not yet activated for billing (next_bill_date still
-  // unset during the pre-launch promo). That is why it is based on `expected`
-  // rather than `billable`: e.g. SPAR (R500/month) is a real paid account that
-  // simply hasn't had its first invoice issued yet, so it belongs in the
-  // projection. Each partner is summed at its own stored monthly fee. Free
-  // NPO/PBO listings carry R0 and never appear here.
+  // Expected revenue on the next monthly billing run — exactly what will be
+  // invoiced: active, paid, activated-for-billing partners on a real (non-test)
+  // agent. Partners on a paid plan that haven't been activated for billing yet
+  // (no billing date set), and free NPO/PBO/charity listings, are not invoiced,
+  // so they are not counted here. Each partner is summed at its own monthly fee.
   const expectedSubs = subs.filter((s) => s.expected);
   const expectedCents = expectedSubs.reduce((sum, s) => sum + s.monthlyCents, 0);
   const expectedByType: Record<string, { cents: number; count: number }> = {};
@@ -589,11 +586,11 @@ export default function BillingTab() {
         contentClassName="space-y-3"
       >
         <p className="text-sm text-muted-foreground">
-          Projected base subscription revenue for the next monthly billing run (first
-          payable run: 1 November 2026), summed live from every real paid partner — active,
-          on a paid plan, with a real (non-test) agent — including accounts not yet activated
-          for billing. Each partner is counted at its own monthly fee. Excludes free NPO/PBO
-          listings, per-booking and pre-order usage fees, commission, and VAT.
+          Base subscription revenue that the next monthly billing run will invoice (first
+          payable run: 1 November 2026), summed live from every partner that is active, on a
+          paid plan, activated for billing, and onboarded by a real (non-test) agent. Each
+          partner is counted at its own monthly fee. Excludes free NPO/PBO listings, partners
+          not yet activated for billing, per-booking and pre-order usage fees, commission, and VAT.
         </p>
         <div className="text-2xl font-semibold">
           {rand(expectedCents)}
