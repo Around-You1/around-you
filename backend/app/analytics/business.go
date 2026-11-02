@@ -168,7 +168,7 @@ func BusinessMetrics(ctx context.Context) (*BusinessMetricsResponse, error) {
 	}
 	invRows, err := appdb.SQLDB.QueryContext(ctx,
 		`SELECT to_char(issued_at, 'YYYY-MM'), COALESCE(SUM(total_cents),0), COUNT(*) FROM invoice
-		 WHERE `+appdb.NotTestRepSQL("lower(coalesce(bill_rep_code,''))")+` GROUP BY 1`)
+		 WHERE status <> 'Void' AND `+appdb.NotTestRepSQL("lower(coalesce(bill_rep_code,''))")+` GROUP BY 1`)
 	if err != nil {
 		return nil, err
 	}

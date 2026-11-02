@@ -22,10 +22,10 @@ const LoginPage = dynamic(() => import("@/components/LoginPage"), {
 export default function Page() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
-  // True while we bounce an already-signed-in visitor straight to their
-  // dashboard (see the effect below), so we show a plain loader for that
-  // instant instead of flashing the intro.
-  const [redirecting, setRedirecting] = useState(false);
+  // An already-signed-in visitor who opens the app at the bare address still
+  // plays the full intro, then hands off to their dashboard instead of the
+  // sign-in screen. returnPath holds that destination (null = show sign-in).
+  const [returnPath, setReturnPath] = useState<string | null>(null);
   // Warmed independently of next/dynamic so we know the real moment the
   // landing page's code has actually finished downloading.
   const [chunkLoaded, setChunkLoaded] = useState(false);
@@ -81,26 +81,32 @@ export default function Page() {
     if (ac && ac.length === 12) router.replace(`/${ac}`);
   }, [router]);
 
-  // A returning, already-signed-in visitor who opens the app at the bare
-  // address (e.g. tapping the home-screen icon, whose start_url is "/") should
-  // land straight in their dashboard rather than the landing/intro — this is
-  // what keeps someone signed in when they reopen the app. We only do this for
-  // a plain "/" visit (no query string, no auth hash, no access code), so
-  // marketing visits and QR / magic-link entries are untouched.
+  // A returning, already-signed-in visitor who opens the app at the bare address
+  // (e.g. tapping the home-screen icon, whose start_url is "/") still sees the
+  // full intro + loading screen, then lands in their dashboard instead of the
+  // sign-in screen. Here we only RECORD where they belong; the hand-off below
+  // runs once the intro has finished. Only for a plain "/" visit (no query
+  // string, no auth hash, no access code), so QR / magic-link entries are
+  // untouched.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (window.location.search || window.location.hash) return;
     try {
       const token = localStorage.getItem("token");
       const u = JSON.parse(localStorage.getItem("user") || "null");
-      if (token && u?.role) {
-        setRedirecting(true);
-        router.replace(dashboardPathForRole(u.role));
-      }
+      if (token && u?.role) setReturnPath(dashboardPathForRole(u.role));
     } catch {
       /* no usable session — fall through to the normal landing */
     }
-  }, [router]);
+  }, []);
+
+  // Once the intro and loading screen have finished, send a recognised visitor
+  // to their dashboard (instead of showing the sign-in screen).
+  useEffect(() => {
+    if (introDone && !showLoader && returnPath) {
+      router.replace(returnPath);
+    }
+  }, [introDone, showLoader, returnPath, router]);
 
   useEffect(() => {
     let active = true;
@@ -163,20 +169,22 @@ export default function Page() {
   // finished loading, AND the minimum display time has passed — never before.
   const ready = !checking && chunkLoaded && minTimeElapsed;
 
-  if (redirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-        Loading…
-      </div>
-    );
-  }
-
   if (!introDone) {
     return <TutorialIntro onDone={() => setIntroDone(true)} />;
   }
 
   if (showLoader) {
     return <LoadingScreen ready={ready} onFinished={() => setShowLoader(false)} />;
+  }
+
+  // Recognised returning visitor: the hand-off effect above is navigating to
+  // their dashboard — show a loader instead of a flash of the sign-in screen.
+  if (returnPath) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+        Loading…
+      </div>
+    );
   }
 
   return <LoginPage />;

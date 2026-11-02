@@ -15,63 +15,53 @@ import (
 // subscription by at most one period (a monthly schedule keeps it in step).
 // Returns the number of invoices issued this run.
 func RunMonthlyBilling(ctx context.Context) (int, error) {
-	type due struct {
-		subID, partnerID   int64
-		partnerType, plan  string
-		tier, monthlyCents int
-		nextBill           time.Time
-	}
-
-	rows, err := appdb.SQLDB.QueryContext(ctx, `
-		SELECT id, partner_type, partner_id, plan, COALESCE(tier, 0), monthly_cents, next_bill_date
-		FROM partner_subscription
-		WHERE status = 'Active' AND next_bill_date <= (now() at time zone 'utc')::date`)
+	// Bill only what the billing engine itself counts as billable — the same set
+	// behind MRR and the Admin Billing "Expected revenue" forecast: active, paid,
+	// a real (non-test) rep, not a free NPO/charity listing, and activated for
+	// billing. This stops rep-less public listings (e.g. landmark attractions with
+	// no rep) from ever being invoiced, which previously overstated the run.
+	subs, err := List(ctx)
 	if err != nil {
 		return 0, err
 	}
-	var list []due
-	for rows.Next() {
-		var d due
-		if err := rows.Scan(&d.subID, &d.partnerType, &d.partnerID, &d.plan, &d.tier, &d.monthlyCents, &d.nextBill); err != nil {
-			rows.Close()
-			return 0, err
-		}
-		list = append(list, d)
-	}
-	rows.Close()
-	if err := rows.Err(); err != nil {
-		return 0, err
-	}
+	today := time.Now().UTC().Format("2006-01-02")
 
 	issued := 0
-	for _, d := range list {
-		start := d.nextBill
+	for _, s := range subs {
+		if !s.Billable || s.NextBillDate == "" || s.NextBillDate > today {
+			continue
+		}
+		start, perr := time.Parse("2006-01-02", s.NextBillDate)
+		if perr != nil {
+			log.Printf("billing run: bad next_bill_date %q for sub %d: %v", s.NextBillDate, s.ID, perr)
+			continue
+		}
 		end := start.AddDate(0, 1, 0)
 		dueDate := start.AddDate(0, 0, 3)
 
-		base := d.monthlyCents
+		base := s.MonthlyCents
 		covers := 0
-		if d.plan == "booking" {
+		if s.Plan == "booking" {
 			// The per-booking charge for the month just ended, billed in arrears
 			// as its own invoice line on top of the R300 base: restaurants = R10
 			// per cover (party_size × R10), services/attractions = 10% of item
 			// value. Both are stored on each booking's `commission` field.
-			bc, err := bookingCommissionCents(ctx, d.partnerType, d.partnerID, start.AddDate(0, -1, 0), start)
-			if err != nil {
-				log.Printf("billing run: booking total for sub %d failed: %v", d.subID, err)
+			bc, berr := bookingCommissionCents(ctx, s.PartnerType, s.PartnerID, start.AddDate(0, -1, 0), start)
+			if berr != nil {
+				log.Printf("billing run: booking total for sub %d failed: %v", s.ID, berr)
 			}
 			covers = bc
 		}
 
-		if err := GenerateInvoice(ctx, d.subID, d.partnerType, d.partnerID, d.plan, d.tier, base, covers, start, end, dueDate, false); err != nil {
-			log.Printf("billing run: invoice for sub %d failed: %v", d.subID, err)
+		if err := GenerateInvoice(ctx, s.ID, s.PartnerType, s.PartnerID, s.Plan, s.Tier, base, covers, start, end, dueDate, false); err != nil {
+			log.Printf("billing run: invoice for sub %d failed: %v", s.ID, err)
 			continue
 		}
 		if _, err := appdb.SQLDB.ExecContext(ctx,
 			`UPDATE partner_subscription SET next_bill_date = next_bill_date + interval '1 month', updated_at = now() WHERE id = $1`,
-			d.subID,
+			s.ID,
 		); err != nil {
-			log.Printf("billing run: advancing next_bill_date for sub %d failed: %v", d.subID, err)
+			log.Printf("billing run: advancing next_bill_date for sub %d failed: %v", s.ID, err)
 			continue
 		}
 		issued++
