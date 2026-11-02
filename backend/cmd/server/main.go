@@ -24,23 +24,28 @@ import (
 	"backend_encore/app/auth"
 	"backend_encore/app/billing"
 	"backend_encore/app/booking"
-	"backend_encore/app/preorder"
-	"backend_encore/app/editcode"
 	"backend_encore/app/charity"
+	"backend_encore/app/editcode"
+	"backend_encore/app/emergency"
 	"backend_encore/app/estate"
 	"backend_encore/app/events"
 	"backend_encore/app/health"
 	"backend_encore/app/loyalty"
 	"backend_encore/app/moderation"
+	"backend_encore/app/nonprofit"
+	"backend_encore/app/onboardingextract"
 	"backend_encore/app/partnerapp"
+	"backend_encore/app/preorder"
 	"backend_encore/app/rating"
 	"backend_encore/app/redemption"
 	"backend_encore/app/repinvoice"
 	"backend_encore/app/repnearby"
 	"backend_encore/app/restaurant"
+	"backend_encore/app/retail"
 	"backend_encore/app/service"
 	"backend_encore/app/stats"
 	"backend_encore/app/storage"
+	"backend_encore/app/suggestions"
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/errs"
 	"backend_encore/internal/httpx"
@@ -83,6 +88,7 @@ func main() {
 	r.login("POST /auth/login", httpx.Body(auth.Login))
 	r.login("POST /auth/rep-login", httpx.Body(auth.RepLogin))
 	r.login("POST /auth/rep-application", httpx.Body(auth.SubmitRepApplication))
+	r.login("GET /auth/rep-code-info", httpx.Query(auth.RepCodeInfo))
 	r.auth("GET /auth/rep/id-document", httpx.Query(auth.RepIDDocument))
 	r.auth("POST /auth/rep/id-document", httpx.Body(auth.SetRepIDDocument))
 	// Public self-service partner application (per-IP rate limited like other public posts)
@@ -93,6 +99,7 @@ func main() {
 	r.auth("POST /auth/create-rep", httpx.Body(auth.CreateRep))
 	r.auth("GET /auth/reps", httpx.Empty(auth.ListReps))
 	r.auth("POST /auth/rep/update", httpx.Body(auth.UpdateRep))
+	r.auth("POST /auth/rep/set-code", httpx.Body(auth.SetRepCode))
 	r.auth("POST /auth/rep/delete", httpx.Body(auth.DeleteRep))
 	r.auth("POST /auth/rep/resend-welcome", httpx.Body(auth.ResendRepWelcome))
 	r.auth("GET /rep/partners-near", httpx.Query(repnearby.PartnersNear))
@@ -142,23 +149,41 @@ func main() {
 	r.auth("GET /estate/property/template", httpx.Empty(estate.PropertyTemplate))
 	r.auth("GET /estate/property/export", httpx.Empty(estate.ExportProperties))
 	r.auth("POST /estate/property/import", httpx.Body(estate.ImportProperties))
-	r.auth("GET /estate/public/agencies", httpx.Empty(estate.PublicAgencies))
-	r.auth("GET /estate/public/agents", httpx.Empty(estate.PublicAgents))
-	r.auth("GET /estate/public/properties", httpx.Empty(estate.PublicProperties))
-	r.auth("GET /estate/public/agency", httpx.Query(estate.PublicAgency))
-	r.auth("GET /estate/public/agent", httpx.Query(estate.PublicAgent))
-	r.auth("GET /estate/public/property", httpx.Query(estate.PublicProperty))
+	r.public("GET /estate/public/agencies", httpx.Empty(estate.PublicAgencies))
+	r.public("GET /estate/public/agents", httpx.Empty(estate.PublicAgents))
+	r.public("GET /estate/public/properties", httpx.Empty(estate.PublicProperties))
+	r.public("GET /estate/public/agency", httpx.Query(estate.PublicAgency))
+	r.public("GET /estate/public/agent", httpx.Query(estate.PublicAgent))
+	r.public("GET /estate/public/property", httpx.Query(estate.PublicProperty))
 	r.auth("GET /analytics/rep-activity", httpx.Empty(analytics.RepActivityReport))
 	r.auth("GET /analytics/reps", httpx.Empty(analytics.RepsAnalytics))
 	r.auth("GET /analytics/business", httpx.Empty(analytics.BusinessMetrics))
 	r.auth("GET /analytics/events", httpx.Empty(analytics.EventsSummary))
 	r.auth("GET /analytics/listing-views", httpx.Query(analytics.ListingViews))
+	r.auth("GET /analytics/locals", httpx.Empty(analytics.LocalsList))
+	r.auth("GET /analytics/locals/logins", httpx.Query(analytics.LocalLoginTotals))
+	r.auth("GET /analytics/locals/signins", httpx.Query(analytics.LocalSignins))
+	r.auth("GET /analytics/holiday-guests", httpx.Empty(analytics.HolidayGuestsList))
+	r.auth("GET /analytics/holiday-guests/logins", httpx.Query(analytics.HolidayGuestLoginTotals))
+	r.auth("GET /analytics/holiday-guests/signins", httpx.Query(analytics.HolidayGuestSignins))
+	r.auth("GET /analytics/partners", httpx.Empty(analytics.PartnersList))
+	r.auth("GET /analytics/partners/logins", httpx.Query(analytics.PartnerLoginTotals))
+	r.auth("GET /analytics/partners/signins", httpx.Query(analytics.PartnerSignins))
+	r.auth("GET /analytics/overall", httpx.Empty(analytics.OverallSummary))
+	r.auth("GET /analytics/overall/logins", httpx.Query(analytics.OverallLoginTotals))
+	r.auth("GET /analytics/overall/signins", httpx.Query(analytics.OverallSignins))
 
 	// ---- Accommodation (auth) ----------------------------------------------
 	r.auth("GET /accommodation", httpx.Query(accommodation.List))
 	r.auth("GET /accommodation/get", httpx.Query(accommodation.Get))
 	r.auth("POST /accommodation", httpx.Body(accommodation.Create))
 	r.auth("PUT /accommodation", httpx.Body(accommodation.Update))
+	r.auth("POST /accommodation/access-code/regenerate", httpx.Body(accommodation.RegenerateAccessCode))
+	r.auth("POST /onboarding/extract", httpx.Body(onboardingextract.Extract))
+	r.auth("GET /suggestions/nearby", httpx.Query(suggestions.Nearby))
+	r.auth("GET /suggestions", httpx.Query(suggestions.Get))
+	r.auth("POST /suggestions/save", httpx.Body(suggestions.Save))
+	r.auth("GET /emergency/contacts", httpx.Query(emergency.Contacts))
 	r.auth("DELETE /accommodation", httpx.Body(accommodation.DeleteAccommodation))
 	r.auth("GET /accommodation/template", httpx.Empty(accommodation.Template))
 	r.auth("GET /accommodation/export", httpx.Empty(accommodation.ExportAccommodations))
@@ -194,6 +219,36 @@ func main() {
 	r.auth("GET /service/export", httpx.Empty(service.ExportServices))
 	r.staff("POST /service/import", httpx.Body(service.ImportServices))
 
+	// Retail (independent category)
+	r.auth("GET /retail", httpx.Query(retail.List))
+	r.auth("GET /retail/by-municipality", httpx.Query(retail.ListByMunicipality))
+	r.auth("GET /retail/nearby", httpx.Query(retail.ListNearby))
+	r.auth("GET /retail/get", httpx.Query(retail.Get))
+	r.staff("POST /retail", httpx.Body(retail.Create))
+	r.auth("PUT /retail", httpx.Body(retail.Update))
+	r.staff("DELETE /retail", httpx.Body(retail.DeleteService))
+	r.auth("GET /retail/partner-code", httpx.Query(retail.GetPartnerCode))
+	r.staff("POST /retail/partner-code/regenerate", httpx.Body(retail.RegeneratePartnerCode))
+	r.staff("POST /retail/partner-code/toggle", httpx.Body(retail.TogglePartnerCode))
+	r.auth("GET /retail/template", httpx.Empty(retail.Template))
+	r.auth("GET /retail/export", httpx.Empty(retail.ExportServices))
+	r.staff("POST /retail/import", httpx.Body(retail.ImportServices))
+
+	// NPO / PBO (independent category)
+	r.auth("GET /nonprofit", httpx.Query(nonprofit.List))
+	r.auth("GET /nonprofit/by-municipality", httpx.Query(nonprofit.ListByMunicipality))
+	r.auth("GET /nonprofit/nearby", httpx.Query(nonprofit.ListNearby))
+	r.auth("GET /nonprofit/get", httpx.Query(nonprofit.Get))
+	r.staff("POST /nonprofit", httpx.Body(nonprofit.Create))
+	r.auth("PUT /nonprofit", httpx.Body(nonprofit.Update))
+	r.staff("DELETE /nonprofit", httpx.Body(nonprofit.DeleteService))
+	r.auth("GET /nonprofit/partner-code", httpx.Query(nonprofit.GetPartnerCode))
+	r.staff("POST /nonprofit/partner-code/regenerate", httpx.Body(nonprofit.RegeneratePartnerCode))
+	r.staff("POST /nonprofit/partner-code/toggle", httpx.Body(nonprofit.TogglePartnerCode))
+	r.auth("GET /nonprofit/template", httpx.Empty(nonprofit.Template))
+	r.auth("GET /nonprofit/export", httpx.Empty(nonprofit.ExportServices))
+	r.staff("POST /nonprofit/import", httpx.Body(nonprofit.ImportServices))
+
 	// ---- Attraction (auth) -------------------------------------------------
 	r.auth("GET /attraction", httpx.Query(attraction.List))
 	r.auth("GET /attraction/by-municipality", httpx.Query(attraction.ListByMunicipality))
@@ -217,6 +272,7 @@ func main() {
 	r.auth("POST /preorder", httpx.Body(preorder.Submit))
 
 	// ---- Billing / subscriptions (auth; SuperAdmin-gated in-handler) --------
+	r.auth("POST /partner/resend-welcome", httpx.Body(billing.ResendWelcome))
 	r.auth("GET /billing/subscriptions", httpx.Empty(billing.ListSubscriptions))
 	r.auth("GET /billing/invoices", httpx.Empty(billing.ListInvoices))
 	r.auth("GET /billing/commissions", httpx.Empty(billing.ListCommissions))
@@ -229,6 +285,7 @@ func main() {
 	r.auth("GET /billing/invoice-preview", httpx.Empty(billing.InvoicePreview))
 	r.auth("GET /billing/email-log", httpx.Empty(billing.EmailLog))
 	r.auth("POST /billing/invoice/resend", httpx.Body(billing.ResendInvoice))
+	r.auth("POST /billing/invoice/copy", httpx.Body(billing.SendInvoiceCopy))
 	r.auth("POST /billing/invoice/test-send", httpx.Body(billing.SendTestInvoice))
 
 	// ---- Accountant portal (Accountant or SuperAdmin) ----------------------
@@ -274,6 +331,7 @@ func main() {
 	r.auth("POST /loyalty/stamp", httpx.Body(loyalty.AddStamp))
 	r.auth("POST /loyalty/redeem", httpx.Body(loyalty.RedeemReward))
 	r.auth("POST /loyalty/my-cards", httpx.Body(loyalty.MyCards))
+	r.auth("POST /loyalty/brand-color/set", httpx.Body(loyalty.SetBrandColor))
 
 	// ---- Not found -----------------------------------------------------------
 	// Go's default 404 for an unmatched pattern is plain text, not the
