@@ -154,7 +154,86 @@ interface OverallSignin {
 
 const TIER_ORDER = ["Tier 1", "Tier 2", "Tier 3", "Tier 4", "N/A"];
 // Display label for a stored tier key. Data keys stay "Tier 1".."Tier 4".
-const tierLabel = (k: string) => (k === "Tier 1" || k === "Tier 2" ? "Standard" : k);
+const tierLabel = (k: string) => (k === "Tier 1" || k === "Tier 2" ? "Standard" : k === "N/A" ? "No tier" : k);
+
+const shortenPeriod = (period: string) => period.replace(/^20(\d{2})/, "$1");
+
+// Line chart for the Daily/Weekly/Monthly/Yearly sign-in totals (Locals, Holiday
+// Guests, Partners, Overall). Each point shows its total above it and a shortened
+// date below it ("26-11" rather than "2026-11"); clicking a point loads that
+// bucket's individual sign-ins. Horizontally scrollable when there are many points.
+function SigninLineChart({
+  points,
+  selectedKey,
+  onSelect,
+}: {
+  points: { period: string; count: number }[];
+  selectedKey: string | null;
+  onSelect: (period: string) => void;
+}) {
+  const STEP = 64;
+  const PLOT_H = 200;
+  const PAD_TOP = 26;
+  const PAD_BOTTOM = 30;
+  const H = PLOT_H + PAD_TOP + PAD_BOTTOM;
+  const max = Math.max(1, ...points.map((p) => p.count));
+  const width = Math.max(points.length * STEP, STEP);
+  const xAt = (i: number) => i * STEP + STEP / 2;
+  const yAt = (c: number) => PAD_TOP + PLOT_H * (1 - c / max);
+  const linePoints = points.map((p, i) => `${xAt(i)},${yAt(p.count)}`).join(" ");
+
+  return (
+    <div className="overflow-x-auto pb-3 mb-4">
+      <svg width={width} height={H} className="block">
+        {points.length > 1 && (
+          <polyline fill="none" stroke="#AEECE4" strokeWidth={2} points={linePoints} />
+        )}
+        {points.map((p, i) => {
+          const isSel = selectedKey === p.period;
+          const cx = xAt(i);
+          const cy = yAt(p.count);
+          return (
+            <g
+              key={p.period}
+              onClick={() => onSelect(p.period)}
+              className="cursor-pointer print:cursor-default"
+            >
+              <rect x={cx - STEP / 2} y={0} width={STEP} height={H} fill="transparent" />
+              <text
+                x={cx}
+                y={cy - 10}
+                textAnchor="middle"
+                fill="currentColor"
+                className="text-foreground"
+                style={{ fontSize: 13, fontWeight: 700 }}
+              >
+                {p.count}
+              </text>
+              <circle
+                cx={cx}
+                cy={cy}
+                r={isSel ? 6 : 4}
+                fill={isSel ? "#00C7BE" : "#AEECE4"}
+                stroke="#00C7BE"
+                strokeWidth={isSel ? 2 : 0}
+              />
+              <text
+                x={cx}
+                y={H - 10}
+                textAnchor="middle"
+                fill="currentColor"
+                className={isSel ? "text-foreground" : "text-muted-foreground"}
+                style={{ fontSize: 12, fontWeight: isSel ? 600 : 400 }}
+              >
+                {shortenPeriod(p.period)}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
 
 const rand = (cents: number) => `R${(cents / 100).toFixed(2)}`;
 
@@ -579,33 +658,7 @@ export default function AnalyticsDashboard() {
             <p className="text-sm text-muted-foreground">No sign-ins in this period yet.</p>
           ) : (
             <>
-              <div className="flex gap-3 overflow-x-auto pb-3 mb-4">
-                {(() => {
-                  const max = Math.max(1, ...localPoints.map((p) => p.count));
-                  return localPoints.map((p) => {
-                    const isSel = selectedPeriodKey === p.period;
-                    return (
-                    <button
-                      type="button"
-                      key={p.period}
-                      onClick={() => loadSignins(p.period)}
-                      className="flex flex-col items-center shrink-0 group cursor-pointer print:cursor-default"
-                      style={{ width: 88 }}
-                      title={`${p.period}: ${p.count} — click to see who signed in`}
-                    >
-                      <div className="h-64 w-full flex flex-col items-center justify-end">
-                        <span className="text-xl font-bold mb-1">{p.count}</span>
-                        <div
-                          className={`w-full rounded-t transition-colors ${isSel ? "bg-[#00C7BE]" : "bg-[#AEECE4] group-hover:bg-[#8fe0d6]"}`}
-                          style={{ height: `${Math.max(4, (p.count / max) * 80)}%` }}
-                        />
-                      </div>
-                      <span className={`text-sm mt-2 whitespace-nowrap ${isSel ? "text-foreground font-semibold" : "text-muted-foreground"}`}>{p.period}</span>
-                    </button>
-                    );
-                  });
-                })()}
-              </div>
+              <SigninLineChart points={localPoints} selectedKey={selectedPeriodKey} onSelect={loadSignins} />
               <p className="text-base text-muted-foreground">
                 Total for this selection:{" "}
                 <span className="text-3xl font-bold text-foreground">
@@ -613,7 +666,7 @@ export default function AnalyticsDashboard() {
                 </span>{" "}
                 sign-in{localPoints.reduce((sum, p) => sum + p.count, 0) === 1 ? "" : "s"}
               </p>
-              <p className="text-xs text-muted-foreground mt-1 print:hidden">Tip: click a bar to see which locals signed in.</p>
+              <p className="text-xs text-muted-foreground mt-1 print:hidden">Tip: click a point to see which locals signed in.</p>
 
               {selectedPeriodKey && (
                 <div className="mt-4 rounded-lg border border-border p-4">
@@ -710,33 +763,7 @@ export default function AnalyticsDashboard() {
             <p className="text-sm text-muted-foreground">No sign-ins in this period yet.</p>
           ) : (
             <>
-              <div className="flex gap-3 overflow-x-auto pb-3 mb-4">
-                {(() => {
-                  const max = Math.max(1, ...hgPoints.map((p) => p.count));
-                  return hgPoints.map((p) => {
-                    const isSel = hgSelectedPeriodKey === p.period;
-                    return (
-                    <button
-                      type="button"
-                      key={p.period}
-                      onClick={() => loadHgSignins(p.period)}
-                      className="flex flex-col items-center shrink-0 group cursor-pointer print:cursor-default"
-                      style={{ width: 88 }}
-                      title={`${p.period}: ${p.count} — click to see who signed in`}
-                    >
-                      <div className="h-64 w-full flex flex-col items-center justify-end">
-                        <span className="text-xl font-bold mb-1">{p.count}</span>
-                        <div
-                          className={`w-full rounded-t transition-colors ${isSel ? "bg-[#00C7BE]" : "bg-[#AEECE4] group-hover:bg-[#8fe0d6]"}`}
-                          style={{ height: `${Math.max(4, (p.count / max) * 80)}%` }}
-                        />
-                      </div>
-                      <span className={`text-sm mt-2 whitespace-nowrap ${isSel ? "text-foreground font-semibold" : "text-muted-foreground"}`}>{p.period}</span>
-                    </button>
-                    );
-                  });
-                })()}
-              </div>
+              <SigninLineChart points={hgPoints} selectedKey={hgSelectedPeriodKey} onSelect={loadHgSignins} />
               <p className="text-base text-muted-foreground">
                 Total for this selection:{" "}
                 <span className="text-3xl font-bold text-foreground">
@@ -744,7 +771,7 @@ export default function AnalyticsDashboard() {
                 </span>{" "}
                 sign-in{hgPoints.reduce((sum, p) => sum + p.count, 0) === 1 ? "" : "s"}
               </p>
-              <p className="text-xs text-muted-foreground mt-1 print:hidden">Tip: click a bar to see which guests signed in.</p>
+              <p className="text-xs text-muted-foreground mt-1 print:hidden">Tip: click a point to see which guests signed in.</p>
 
               {hgSelectedPeriodKey && (
                 <div className="mt-4 rounded-lg border border-border p-4">
@@ -840,33 +867,7 @@ export default function AnalyticsDashboard() {
             <p className="text-sm text-muted-foreground">No sign-ins in this period yet.</p>
           ) : (
             <>
-              <div className="flex gap-3 overflow-x-auto pb-3 mb-4">
-                {(() => {
-                  const max = Math.max(1, ...partnerPoints.map((p) => p.count));
-                  return partnerPoints.map((p) => {
-                    const isSel = pSelectedPeriodKey === p.period;
-                    return (
-                    <button
-                      type="button"
-                      key={p.period}
-                      onClick={() => loadPSignins(p.period)}
-                      className="flex flex-col items-center shrink-0 group cursor-pointer print:cursor-default"
-                      style={{ width: 88 }}
-                      title={`${p.period}: ${p.count} — click to see who signed in`}
-                    >
-                      <div className="h-64 w-full flex flex-col items-center justify-end">
-                        <span className="text-xl font-bold mb-1">{p.count}</span>
-                        <div
-                          className={`w-full rounded-t transition-colors ${isSel ? "bg-[#00C7BE]" : "bg-[#AEECE4] group-hover:bg-[#8fe0d6]"}`}
-                          style={{ height: `${Math.max(4, (p.count / max) * 80)}%` }}
-                        />
-                      </div>
-                      <span className={`text-sm mt-2 whitespace-nowrap ${isSel ? "text-foreground font-semibold" : "text-muted-foreground"}`}>{p.period}</span>
-                    </button>
-                    );
-                  });
-                })()}
-              </div>
+              <SigninLineChart points={partnerPoints} selectedKey={pSelectedPeriodKey} onSelect={loadPSignins} />
               <p className="text-base text-muted-foreground">
                 Total for this selection:{" "}
                 <span className="text-3xl font-bold text-foreground">
@@ -874,7 +875,7 @@ export default function AnalyticsDashboard() {
                 </span>{" "}
                 sign-in{partnerPoints.reduce((sum, p) => sum + p.count, 0) === 1 ? "" : "s"}
               </p>
-              <p className="text-xs text-muted-foreground mt-1 print:hidden">Tip: click a bar to see which partners signed in.</p>
+              <p className="text-xs text-muted-foreground mt-1 print:hidden">Tip: click a point to see which partners signed in.</p>
 
               {pSelectedPeriodKey && (
                 <div className="mt-4 rounded-lg border border-border p-4">
@@ -983,33 +984,7 @@ export default function AnalyticsDashboard() {
             <p className="text-sm text-muted-foreground">No sign-ins in this period yet.</p>
           ) : (
             <>
-              <div className="flex gap-3 overflow-x-auto pb-3 mb-4">
-                {(() => {
-                  const max = Math.max(1, ...overallPoints.map((p) => p.count));
-                  return overallPoints.map((p) => {
-                    const isSel = oSelectedPeriodKey === p.period;
-                    return (
-                    <button
-                      type="button"
-                      key={p.period}
-                      onClick={() => loadOSignins(p.period)}
-                      className="flex flex-col items-center shrink-0 group cursor-pointer print:cursor-default"
-                      style={{ width: 88 }}
-                      title={`${p.period}: ${p.count} — click to see who signed in`}
-                    >
-                      <div className="h-64 w-full flex flex-col items-center justify-end">
-                        <span className="text-xl font-bold mb-1">{p.count}</span>
-                        <div
-                          className={`w-full rounded-t transition-colors ${isSel ? "bg-[#00C7BE]" : "bg-[#AEECE4] group-hover:bg-[#8fe0d6]"}`}
-                          style={{ height: `${Math.max(4, (p.count / max) * 80)}%` }}
-                        />
-                      </div>
-                      <span className={`text-sm mt-2 whitespace-nowrap ${isSel ? "text-foreground font-semibold" : "text-muted-foreground"}`}>{p.period}</span>
-                    </button>
-                    );
-                  });
-                })()}
-              </div>
+              <SigninLineChart points={overallPoints} selectedKey={oSelectedPeriodKey} onSelect={loadOSignins} />
               <p className="text-base text-muted-foreground">
                 Total for this selection:{" "}
                 <span className="text-3xl font-bold text-foreground">
@@ -1017,7 +992,7 @@ export default function AnalyticsDashboard() {
                 </span>{" "}
                 sign-in{overallPoints.reduce((sum, p) => sum + p.count, 0) === 1 ? "" : "s"}
               </p>
-              <p className="text-xs text-muted-foreground mt-1 print:hidden">Tip: click a bar to see who signed in.</p>
+              <p className="text-xs text-muted-foreground mt-1 print:hidden">Tip: click a point to see who signed in.</p>
 
               {oSelectedPeriodKey && (
                 <div className="mt-4 rounded-lg border border-border p-4">
@@ -1119,8 +1094,6 @@ export default function AnalyticsDashboard() {
               {([
                 ["Monthly Recurring (MRR)", rand(bizStats.mrrCents)],
                 ["Active Partners", String(bizStats.activePartners)],
-                ["ARPU / partner", rand(bizStats.arpuCents)],
-                ["Est. LTV / partner", bizStats.ltvCents ? rand(bizStats.ltvCents) : "—"],
                 ["New this month", String(bizStats.newThisMonth)],
                 ["Churned this month", String(bizStats.churnedThisMonth)],
                 ["Monthly churn", `${bizStats.churnRatePct.toFixed(1)}%`],

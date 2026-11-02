@@ -13,6 +13,7 @@ import DirectionsDropdown from "../components/DirectionsDropdown";
 import AddressDirectionsButton from "../components/AddressDirectionsButton";
 import WhatsAppButton from "../components/WhatsAppButton";
 import { getAuthenticatedBackend } from "../lib/backend";
+import { signOut } from "../lib/auth";
 import { getCurrentPosition } from "../lib/geolocation";
 import { useToast } from "@/components/ui/use-toast";
 import { useSwipe } from "../lib/useSwipe";
@@ -1239,6 +1240,7 @@ export default function GuestDashboard() {
         <div className="space-y-4">
           <Button className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold" onClick={() => setShowMyBookings(true)}>Bookings / Pre-Orders I have made</Button>
           <Button className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold" onClick={() => setShowMyStamps(true)}>My Stamp Cards</Button>
+          <Button variant="outline" className="w-full" onClick={async () => { await signOut(); window.location.href = "/"; }}>Sign out</Button>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
             <TabsList className="flex flex-col w-full gap-1 p-1 bg-muted rounded-md" style={{ height: "auto" }}>

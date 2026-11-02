@@ -55,6 +55,12 @@ func RepActivityReport(ctx context.Context) (*RepActivityResponse, error) {
 		UNION ALL
 		SELECT official_rep_code, COALESCE(access_level, ''), to_char(created_at, 'YYYY-MM-DD')
 		FROM attractions WHERE official_rep_code IS NOT NULL AND official_rep_code != ''
+		UNION ALL
+		SELECT official_rep_code, COALESCE(access_level, ''), to_char(created_at, 'YYYY-MM-DD')
+		FROM retail WHERE official_rep_code IS NOT NULL AND official_rep_code != ''
+		UNION ALL
+		SELECT official_rep_code, COALESCE(access_level, ''), to_char(created_at, 'YYYY-MM-DD')
+		FROM nonprofits WHERE official_rep_code IS NOT NULL AND official_rep_code != ''
 	`)
 	if err != nil {
 		return nil, err

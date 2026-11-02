@@ -6,6 +6,7 @@ import (
 
 	"backend_encore/app/auth"
 	"backend_encore/internal/appdb"
+	"backend_encore/internal/billing"
 	"backend_encore/internal/errs"
 )
 
@@ -51,31 +52,25 @@ func BusinessMetrics(ctx context.Context) (*BusinessMetricsResponse, error) {
 
 	resp := &BusinessMetricsResponse{TierMix: map[string]int{}}
 
-	// 1a) MRR from active, non-test paid subscriptions — the revenue figure.
-	subRows, err := appdb.SQLDB.QueryContext(ctx, `
-		SELECT COALESCE(monthly_cents, 0)
-		FROM partner_subscription WHERE status = 'Active'
-		  AND `+appdb.NotTestRepSQL("lower(coalesce(rep_code,''))"))
+	// 1a) MRR = what the monthly billing run will actually invoice, so it matches
+	// the Admin Billing "Expected revenue" figure. We reuse the billing engine's
+	// own Billable rule (active, paid, activated, real non-test rep, excluding
+	// free NPO/charity listings) instead of summing every active subscription,
+	// which previously overstated MRR.
+	subs, err := billing.List(ctx)
 	if err != nil {
 		return nil, err
 	}
-	for subRows.Next() {
-		var monthly int
-		if err := subRows.Scan(&monthly); err != nil {
-			subRows.Close()
-			return nil, err
+	for _, s := range subs {
+		if s.Billable {
+			resp.MrrCents += s.MonthlyCents
 		}
-		resp.MrrCents += monthly
-	}
-	subRows.Close()
-	if err := subRows.Err(); err != nil {
-		return nil, err
 	}
 
 	// 1b) Active partners = every live partner profile (matches the dashboard
 	// category cards), including complimentary/test-rep ones. Tier mix comes from
 	// the tiered categories; flat-rate estate pages are grouped under "Estate".
-	for _, tbl := range []string{"restaurants", "services", "attractions", "accommodations"} {
+	for _, tbl := range []string{"restaurants", "services", "attractions", "accommodations", "retail", "nonprofits"} {
 		rows, err := appdb.SQLDB.QueryContext(ctx,
 			`SELECT COALESCE(NULLIF(TRIM(access_level), ''), 'Unspecified'), COUNT(*)
 			 FROM `+tbl+` WHERE is_active = true GROUP BY 1`)
