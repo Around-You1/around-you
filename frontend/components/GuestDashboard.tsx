@@ -184,6 +184,37 @@ export default function GuestDashboard() {
     minSwipeDistance: 50,
   });
 
+  // --- Phone / browser Back button --------------------------------------------
+  // The whole guest/local experience is one page, so without this the hardware
+  // Back button jumps straight out to the sign-in screen (on iPhone that meant
+  // having to sign in again). Instead we trap Back: it closes whatever detail or
+  // modal is open and otherwise keeps the user on the category selection — it
+  // never signs them out. A ref lets one stable listener always see the latest
+  // open state without re-subscribing on every render.
+  const closeTopOverlayRef = useRef<() => void>(() => {});
+  closeTopOverlayRef.current = () => {
+    if (editingProfile) { setEditingProfile(false); return; }
+    if (showEditGate) { setShowEditGate(false); return; }
+    if (bookingFor) { setBookingFor(null); return; }
+    if (redeemFor) { setRedeemFor(null); return; }
+    if (showMyBookings) { setShowMyBookings(false); return; }
+    if (showMyStamps) { setShowMyStamps(false); return; }
+    if (showAccInfo) { setShowAccInfo(false); return; }
+    if (expandedCards.size > 0) { setExpandedCards(new Set()); return; }
+    // Nothing open: already at the category selection — stay put.
+  };
+  useEffect(() => {
+    // Arm one history entry so the first Back press has something to pop without
+    // leaving the page, then re-arm after every Back so the user stays inside.
+    try { window.history.pushState({ auGuard: true }, ""); } catch { /* ignore */ }
+    const onPop = () => {
+      try { closeTopOverlayRef.current(); } catch { /* ignore */ }
+      try { window.history.pushState({ auGuard: true }, ""); } catch { /* ignore */ }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
   useEffect(() => {
     if (isLocalMode) loadPartnersByArea();
     else loadAccommodationDetails();

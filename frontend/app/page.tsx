@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
 import { getAuthenticatedBackend } from "@/lib/backend";
+import { dashboardPathForRole } from "@/lib/dashboard";
 import LoadingScreen from "@/components/LoadingScreen";
 import TutorialIntro from "@/components/tutorial/TutorialIntro";
 import { useTutorial } from "@/components/tutorial/TutorialProvider";
@@ -21,6 +22,10 @@ const LoginPage = dynamic(() => import("@/components/LoginPage"), {
 export default function Page() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
+  // True while we bounce an already-signed-in visitor straight to their
+  // dashboard (see the effect below), so we show a plain loader for that
+  // instant instead of flashing the intro.
+  const [redirecting, setRedirecting] = useState(false);
   // Warmed independently of next/dynamic so we know the real moment the
   // landing page's code has actually finished downloading.
   const [chunkLoaded, setChunkLoaded] = useState(false);
@@ -74,6 +79,27 @@ export default function Page() {
     if (typeof window === "undefined") return;
     const ac = new URLSearchParams(window.location.search).get("accessCode");
     if (ac && ac.length === 12) router.replace(`/${ac}`);
+  }, [router]);
+
+  // A returning, already-signed-in visitor who opens the app at the bare
+  // address (e.g. tapping the home-screen icon, whose start_url is "/") should
+  // land straight in their dashboard rather than the landing/intro — this is
+  // what keeps someone signed in when they reopen the app. We only do this for
+  // a plain "/" visit (no query string, no auth hash, no access code), so
+  // marketing visits and QR / magic-link entries are untouched.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.search || window.location.hash) return;
+    try {
+      const token = localStorage.getItem("token");
+      const u = JSON.parse(localStorage.getItem("user") || "null");
+      if (token && u?.role) {
+        setRedirecting(true);
+        router.replace(dashboardPathForRole(u.role));
+      }
+    } catch {
+      /* no usable session — fall through to the normal landing */
+    }
   }, [router]);
 
   useEffect(() => {
@@ -136,6 +162,14 @@ export default function Page() {
   // about to redirect away to /portal), the landing page's code has actually
   // finished loading, AND the minimum display time has passed — never before.
   const ready = !checking && chunkLoaded && minTimeElapsed;
+
+  if (redirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+        Loading…
+      </div>
+    );
+  }
 
   if (!introDone) {
     return <TutorialIntro onDone={() => setIntroDone(true)} />;
