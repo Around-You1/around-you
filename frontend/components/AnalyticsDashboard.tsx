@@ -122,6 +122,36 @@ interface HolidayGuestSignin {
   signedInAt: string;
 }
 
+// "Partners" — the dropdown of partners who have signed into the Partner Portal,
+// keyed by partner entity (entityType + entityId), plus the sign-in totals.
+interface PartnerOption {
+  entityType: string;
+  entityId: number;
+  name: string;
+  category: string;
+  totalLogins: number;
+}
+
+interface PartnerSignin {
+  name: string;
+  category: string;
+  signedInAt: string;
+}
+
+// "Overall sign ins" — combined across Accommodation Guests + Locals + Partners.
+interface OverallSummary {
+  accommodationGuest: number;
+  local: number;
+  partner: number;
+  total: number;
+}
+
+interface OverallSignin {
+  who: string;
+  type: string;
+  signedInAt: string;
+}
+
 const TIER_ORDER = ["Tier 1", "Tier 2", "Tier 3", "Tier 4", "N/A"];
 // Display label for a stored tier key. Data keys stay "Tier 1".."Tier 4".
 const tierLabel = (k: string) => (k === "Tier 1" || k === "Tier 2" ? "Standard" : k);
@@ -213,6 +243,26 @@ export default function AnalyticsDashboard() {
   const [hgSignins, setHgSignins] = useState<HolidayGuestSignin[]>([]);
   const [hgSigninsLoading, setHgSigninsLoading] = useState(false);
 
+  // Partners — dropdown of partners with sign-ins + Daily/Weekly/Monthly/Yearly totals.
+  const [partners, setPartners] = useState<PartnerOption[]>([]);
+  const [selectedPartnerKey, setSelectedPartnerKey] = useState<string>(""); // "" = All Partners, else "entityType:entityId"
+  const [partnersPeriod, setPartnersPeriod] = useState<LocalsPeriod>("daily");
+  const [partnerPoints, setPartnerPoints] = useState<LocalLoginPoint[]>([]);
+  const [partnersPointsLoading, setPartnersPointsLoading] = useState(false);
+  const [pSelectedPeriodKey, setPSelectedPeriodKey] = useState<string | null>(null);
+  const [pSignins, setPSignins] = useState<PartnerSignin[]>([]);
+  const [pSigninsLoading, setPSigninsLoading] = useState(false);
+
+  // Overall sign ins — combined across Accommodation Guests + Locals + Partners.
+  const [overallSummary, setOverallSummary] = useState<OverallSummary | null>(null);
+  const [overallActor, setOverallActor] = useState<string>(""); // "" = all, else "guest" | "local" | "partner"
+  const [overallPeriod, setOverallPeriod] = useState<LocalsPeriod>("daily");
+  const [overallPoints, setOverallPoints] = useState<LocalLoginPoint[]>([]);
+  const [overallPointsLoading, setOverallPointsLoading] = useState(false);
+  const [oSelectedPeriodKey, setOSelectedPeriodKey] = useState<string | null>(null);
+  const [oSignins, setOSignins] = useState<OverallSignin[]>([]);
+  const [oSigninsLoading, setOSigninsLoading] = useState(false);
+
   useEffect(() => {
     load();
   }, []);
@@ -240,6 +290,22 @@ export default function AnalyticsDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccomId, hgPeriod]);
 
+  // Refetch Partner totals whenever the selected partner or period changes.
+  useEffect(() => {
+    loadPartnerPoints();
+    setPSelectedPeriodKey(null);
+    setPSignins([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPartnerKey, partnersPeriod]);
+
+  // Refetch Overall totals whenever the audience filter or period changes.
+  useEffect(() => {
+    loadOverallPoints();
+    setOSelectedPeriodKey(null);
+    setOSignins([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [overallActor, overallPeriod]);
+
   // Force every section open, let it render, then open the browser's
   // print-to-PDF dialog so the full dashboard downloads as a .pdf.
   const runPrint = (only: string | null) => {
@@ -256,7 +322,7 @@ export default function AnalyticsDashboard() {
     setLoading(true);
     try {
       const backend = getAuthenticatedBackend();
-      const [activity, stats, biz, ev, charity, localsList, hgList] = await Promise.all([
+      const [activity, stats, biz, ev, charity, localsList, hgList, partnersList, overallSum] = await Promise.all([
         backend.analytics.repActivity(),
         backend.analytics.reps(),
         backend.analytics.business(),
@@ -264,6 +330,8 @@ export default function AnalyticsDashboard() {
         backend.charity.byProvince().catch(() => ({ provinces: [], month: "" })),
         backend.analytics.locals().catch(() => ({ locals: [] })),
         backend.analytics.holidayGuests().catch(() => ({ accommodations: [] })),
+        backend.analytics.partners().catch(() => ({ partners: [] })),
+        backend.analytics.overallSummary().catch(() => null),
       ]);
       setReps(activity.reps);
       setRepStats(stats);
@@ -273,6 +341,8 @@ export default function AnalyticsDashboard() {
       setCharityMonth((charity as any).month || "");
       setLocals((localsList as any).locals || []);
       setHolidayAccoms((hgList as any).accommodations || []);
+      setPartners((partnersList as any).partners || []);
+      setOverallSummary(overallSum as any);
     } catch (error) {
       console.error("Failed to load analytics:", error);
       toast({ title: "Error", description: "Failed to load analytics", variant: "destructive" });
@@ -350,6 +420,85 @@ export default function AnalyticsDashboard() {
       toast({ title: "Error", description: "Failed to load sign-ins for that period", variant: "destructive" });
     } finally {
       setHgSigninsLoading(false);
+    }
+  };
+
+  // Partner selection is identified by "entityType:entityId"; "" means All Partners.
+  const parsePartnerKey = (k: string): { entityType?: string; entityId?: number } => {
+    if (!k) return {};
+    const [t, id] = k.split(":");
+    return { entityType: t, entityId: Number(id) || undefined };
+  };
+
+  const loadPartnerPoints = async () => {
+    setPartnersPointsLoading(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const res = await backend.analytics.partnerLoginTotals({
+        period: partnersPeriod,
+        ...parsePartnerKey(selectedPartnerKey),
+      });
+      setPartnerPoints((res as any).points || []);
+    } catch (error) {
+      console.error("Failed to load partner login totals:", error);
+      toast({ title: "Error", description: "Failed to load Partners totals", variant: "destructive" });
+    } finally {
+      setPartnersPointsLoading(false);
+    }
+  };
+
+  const loadPSignins = async (periodKey: string) => {
+    setPSelectedPeriodKey(periodKey);
+    setPSigninsLoading(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const res = await backend.analytics.partnerSignins({
+        period: partnersPeriod,
+        periodKey,
+        ...parsePartnerKey(selectedPartnerKey),
+      });
+      setPSignins((res as any).signins || []);
+    } catch (error) {
+      console.error("Failed to load partner sign-ins:", error);
+      toast({ title: "Error", description: "Failed to load sign-ins for that period", variant: "destructive" });
+    } finally {
+      setPSigninsLoading(false);
+    }
+  };
+
+  const loadOverallPoints = async () => {
+    setOverallPointsLoading(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const res = await backend.analytics.overallLoginTotals({
+        period: overallPeriod,
+        actorType: overallActor || undefined,
+      });
+      setOverallPoints((res as any).points || []);
+    } catch (error) {
+      console.error("Failed to load overall totals:", error);
+      toast({ title: "Error", description: "Failed to load Overall sign-ins totals", variant: "destructive" });
+    } finally {
+      setOverallPointsLoading(false);
+    }
+  };
+
+  const loadOSignins = async (periodKey: string) => {
+    setOSelectedPeriodKey(periodKey);
+    setOSigninsLoading(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const res = await backend.analytics.overallSignins({
+        period: overallPeriod,
+        periodKey,
+        actorType: overallActor || undefined,
+      });
+      setOSignins((res as any).signins || []);
+    } catch (error) {
+      console.error("Failed to load overall sign-ins:", error);
+      toast({ title: "Error", description: "Failed to load sign-ins for that period", variant: "destructive" });
+    } finally {
+      setOSigninsLoading(false);
     }
   };
 
@@ -621,6 +770,280 @@ export default function AnalyticsDashboard() {
                       {hgSignins.map((s, i) => (
                         <li key={i} className="text-sm flex flex-wrap items-center gap-x-2">
                           <span className="font-medium">{s.accommodation}</span>
+                          <span className="text-muted-foreground">· {s.signedInAt}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </Section>
+
+        <Section title="Partners">
+          <p className="text-sm text-muted-foreground mb-4">
+            Every partner that has signed into the Partner Portal. Pick a partner to see their sign-in history, or
+            leave "All Partners" selected to see totals across all of them.
+          </p>
+
+          <div className="flex flex-wrap items-end gap-3 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Partner</label>
+              <select
+                value={selectedPartnerKey}
+                onChange={(e) => setSelectedPartnerKey(e.target.value)}
+                className="text-base rounded border border-border bg-background px-3 py-2 min-w-[280px]"
+              >
+                <option value="">All Partners{partners.length > 0 ? ` (${partners.length})` : ""}</option>
+                {partners.map((p) => (
+                  <option key={`${p.entityType}:${p.entityId}`} value={`${p.entityType}:${p.entityId}`}>
+                    {p.name} — {p.category} ({p.totalLogins} sign-in{p.totalLogins === 1 ? "" : "s"})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Totals per</label>
+              <div className="flex gap-1">
+                {([
+                  ["daily", "Daily"],
+                  ["weekly", "Weekly"],
+                  ["monthly", "Monthly"],
+                  ["yearly", "Yearly"],
+                ] as [LocalsPeriod, string][]).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setPartnersPeriod(value)}
+                    className={`text-base px-4 py-2 rounded border ${
+                      partnersPeriod === value
+                        ? "bg-[#AEECE4] border-[#AEECE4] text-black font-semibold"
+                        : "bg-muted/40 border-border text-muted-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {loading ? (
+            <Pending loading={loading} />
+          ) : partners.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No partners have signed in yet.</p>
+          ) : partnersPointsLoading ? (
+            <Pending loading={true} />
+          ) : partnerPoints.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No sign-ins in this period yet.</p>
+          ) : (
+            <>
+              <div className="flex gap-3 overflow-x-auto pb-3 mb-4">
+                {(() => {
+                  const max = Math.max(1, ...partnerPoints.map((p) => p.count));
+                  return partnerPoints.map((p) => {
+                    const isSel = pSelectedPeriodKey === p.period;
+                    return (
+                    <button
+                      type="button"
+                      key={p.period}
+                      onClick={() => loadPSignins(p.period)}
+                      className="flex flex-col items-center shrink-0 group cursor-pointer print:cursor-default"
+                      style={{ width: 88 }}
+                      title={`${p.period}: ${p.count} — click to see who signed in`}
+                    >
+                      <div className="h-64 w-full flex flex-col items-center justify-end">
+                        <span className="text-xl font-bold mb-1">{p.count}</span>
+                        <div
+                          className={`w-full rounded-t transition-colors ${isSel ? "bg-[#00C7BE]" : "bg-[#AEECE4] group-hover:bg-[#8fe0d6]"}`}
+                          style={{ height: `${Math.max(4, (p.count / max) * 80)}%` }}
+                        />
+                      </div>
+                      <span className={`text-sm mt-2 whitespace-nowrap ${isSel ? "text-foreground font-semibold" : "text-muted-foreground"}`}>{p.period}</span>
+                    </button>
+                    );
+                  });
+                })()}
+              </div>
+              <p className="text-base text-muted-foreground">
+                Total for this selection:{" "}
+                <span className="text-3xl font-bold text-foreground">
+                  {partnerPoints.reduce((sum, p) => sum + p.count, 0)}
+                </span>{" "}
+                sign-in{partnerPoints.reduce((sum, p) => sum + p.count, 0) === 1 ? "" : "s"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 print:hidden">Tip: click a bar to see which partners signed in.</p>
+
+              {pSelectedPeriodKey && (
+                <div className="mt-4 rounded-lg border border-border p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold">
+                      Sign-ins on {pSelectedPeriodKey}
+                      {!pSigninsLoading && pSignins.length > 0 ? ` (${pSignins.length})` : ""}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { setPSelectedPeriodKey(null); setPSignins([]); }}
+                      className="text-xs text-muted-foreground hover:text-foreground print:hidden"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  {pSigninsLoading ? (
+                    <Pending loading={true} />
+                  ) : pSignins.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No sign-ins found for this period.</p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {pSignins.map((s, i) => (
+                        <li key={i} className="text-sm flex flex-wrap items-center gap-x-2">
+                          <span className="font-medium">{s.name || "—"}</span>
+                          <span className="text-muted-foreground">— {s.category}</span>
+                          <span className="text-muted-foreground">· {s.signedInAt}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </Section>
+
+        <Section title="Overall sign ins">
+          <p className="text-sm text-muted-foreground mb-4">
+            Every sign-in across the whole platform — Accommodation Guests, Locals and Partners combined. Filter to one
+            audience, or leave "All audiences" selected to see the grand total over time.
+          </p>
+
+          {overallSummary && (
+            <div className="flex flex-wrap gap-3 mb-4">
+              {([
+                ["Accommodation Guests", overallSummary.accommodationGuest],
+                ["Locals", overallSummary.local],
+                ["Partners", overallSummary.partner],
+                ["Total", overallSummary.total],
+              ] as [string, number][]).map(([label, value]) => (
+                <div key={label} className="rounded-lg border border-border px-4 py-3 min-w-[150px]">
+                  <p className="text-xs text-muted-foreground">{label}</p>
+                  <p className="text-2xl font-bold text-foreground">{value}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-end gap-3 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Audience</label>
+              <select
+                value={overallActor}
+                onChange={(e) => setOverallActor(e.target.value)}
+                className="text-base rounded border border-border bg-background px-3 py-2 min-w-[220px]"
+              >
+                <option value="">All audiences</option>
+                <option value="guest">Accommodation Guests</option>
+                <option value="local">Locals</option>
+                <option value="partner">Partners</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Totals per</label>
+              <div className="flex gap-1">
+                {([
+                  ["daily", "Daily"],
+                  ["weekly", "Weekly"],
+                  ["monthly", "Monthly"],
+                  ["yearly", "Yearly"],
+                ] as [LocalsPeriod, string][]).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setOverallPeriod(value)}
+                    className={`text-base px-4 py-2 rounded border ${
+                      overallPeriod === value
+                        ? "bg-[#AEECE4] border-[#AEECE4] text-black font-semibold"
+                        : "bg-muted/40 border-border text-muted-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {loading ? (
+            <Pending loading={loading} />
+          ) : overallPointsLoading ? (
+            <Pending loading={true} />
+          ) : overallPoints.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No sign-ins in this period yet.</p>
+          ) : (
+            <>
+              <div className="flex gap-3 overflow-x-auto pb-3 mb-4">
+                {(() => {
+                  const max = Math.max(1, ...overallPoints.map((p) => p.count));
+                  return overallPoints.map((p) => {
+                    const isSel = oSelectedPeriodKey === p.period;
+                    return (
+                    <button
+                      type="button"
+                      key={p.period}
+                      onClick={() => loadOSignins(p.period)}
+                      className="flex flex-col items-center shrink-0 group cursor-pointer print:cursor-default"
+                      style={{ width: 88 }}
+                      title={`${p.period}: ${p.count} — click to see who signed in`}
+                    >
+                      <div className="h-64 w-full flex flex-col items-center justify-end">
+                        <span className="text-xl font-bold mb-1">{p.count}</span>
+                        <div
+                          className={`w-full rounded-t transition-colors ${isSel ? "bg-[#00C7BE]" : "bg-[#AEECE4] group-hover:bg-[#8fe0d6]"}`}
+                          style={{ height: `${Math.max(4, (p.count / max) * 80)}%` }}
+                        />
+                      </div>
+                      <span className={`text-sm mt-2 whitespace-nowrap ${isSel ? "text-foreground font-semibold" : "text-muted-foreground"}`}>{p.period}</span>
+                    </button>
+                    );
+                  });
+                })()}
+              </div>
+              <p className="text-base text-muted-foreground">
+                Total for this selection:{" "}
+                <span className="text-3xl font-bold text-foreground">
+                  {overallPoints.reduce((sum, p) => sum + p.count, 0)}
+                </span>{" "}
+                sign-in{overallPoints.reduce((sum, p) => sum + p.count, 0) === 1 ? "" : "s"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 print:hidden">Tip: click a bar to see who signed in.</p>
+
+              {oSelectedPeriodKey && (
+                <div className="mt-4 rounded-lg border border-border p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold">
+                      Sign-ins on {oSelectedPeriodKey}
+                      {!oSigninsLoading && oSignins.length > 0 ? ` (${oSignins.length})` : ""}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { setOSelectedPeriodKey(null); setOSignins([]); }}
+                      className="text-xs text-muted-foreground hover:text-foreground print:hidden"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  {oSigninsLoading ? (
+                    <Pending loading={true} />
+                  ) : oSignins.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No sign-ins found for this period.</p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {oSignins.map((s, i) => (
+                        <li key={i} className="text-sm flex flex-wrap items-center gap-x-2">
+                          <span className="font-medium">{s.who || "—"}</span>
+                          <span className="text-muted-foreground">— {s.type}</span>
                           <span className="text-muted-foreground">· {s.signedInAt}</span>
                         </li>
                       ))}

@@ -274,6 +274,21 @@ export const backend = {
       request("GET", "/analytics/holiday-guests/logins", { query: req }),
     holidayGuestSignins: (req: { period: "daily" | "weekly" | "monthly" | "yearly"; periodKey: string; accommodationId?: number }) =>
       request("GET", "/analytics/holiday-guests/signins", { query: req }),
+    // "Partners" — the dropdown of partners that have signed into the Partner
+    // Portal, mirroring the Locals analytics but keyed by partner entity
+    // (entityType + entityId). Omit entityId for totals across all partners.
+    partners: () => request("GET", "/analytics/partners"),
+    partnerLoginTotals: (req: { period: "daily" | "weekly" | "monthly" | "yearly"; entityType?: string; entityId?: number }) =>
+      request("GET", "/analytics/partners/logins", { query: req }),
+    partnerSignins: (req: { period: "daily" | "weekly" | "monthly" | "yearly"; periodKey: string; entityType?: string; entityId?: number }) =>
+      request("GET", "/analytics/partners/signins", { query: req }),
+    // "Overall sign ins" — combined across Accommodation Guests + Locals +
+    // Partners. actorType ("guest" | "local" | "partner") narrows to one.
+    overallSummary: () => request("GET", "/analytics/overall"),
+    overallLoginTotals: (req: { period: "daily" | "weekly" | "monthly" | "yearly"; actorType?: string }) =>
+      request("GET", "/analytics/overall/logins", { query: req }),
+    overallSignins: (req: { period: "daily" | "weekly" | "monthly" | "yearly"; periodKey: string; actorType?: string }) =>
+      request("GET", "/analytics/overall/signins", { query: req }),
   },
   events: {
     record: (req: {
