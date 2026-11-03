@@ -1431,6 +1431,18 @@ export default function GuestDashboard() {
                               </CollapsibleContent>
                             </Collapsible></HideWhenOptedOut>
 
+                            {restaurant.serviceDelivery && (
+                            <HideWhenOptedOut><Collapsible>
+                              <CollapsibleTrigger className={triggerClass}>
+                                <ChevronDown className="h-4 w-4" />
+                                Delivery
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground whitespace-pre-line`}>
+                                {(restaurant as any).deliveryPrice || "Delivery available"}
+                              </CollapsibleContent>
+                            </Collapsible></HideWhenOptedOut>
+                            )}
+
                             <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
@@ -1636,11 +1648,10 @@ export default function GuestDashboard() {
                                 Service Options
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
-                                {restaurant.serviceDineIn || restaurant.serviceTakeaway || restaurant.serviceDelivery ? (
+                                {restaurant.serviceDineIn || restaurant.serviceTakeaway ? (
                                   <div className="flex flex-wrap gap-2">
                                     {restaurant.serviceDineIn && <span className="px-2 py-0.5 text-black rounded text-xs">Dine-in</span>}
                                     {restaurant.serviceTakeaway && <span className="px-2 py-0.5 text-black rounded text-xs">Takeaway</span>}
-                                    {restaurant.serviceDelivery && <span className="px-2 py-0.5 text-black rounded text-xs">Delivery{(restaurant as any).deliveryPrice ? ` · ${(restaurant as any).deliveryPrice}` : ""}</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
