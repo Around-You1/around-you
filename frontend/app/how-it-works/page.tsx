@@ -29,7 +29,7 @@ export default function HowItWorksPage() {
       <div className="max-w-2xl mx-auto space-y-8">
         <div className="text-center space-y-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/around-you-logo.png" alt="Around You" style={{ maxHeight: 72 }} className="mx-auto" />
+          <img src="/logo.png" alt="Around You" style={{ maxHeight: 72 }} className="mx-auto" />
           <h1 className="text-3xl font-bold" style={{ color: LUMO }}>
             How Around You Works
           </h1>
