@@ -689,8 +689,8 @@ export default function LoginPage() {
 
         <div className="mb-4">
           <img
-            src="/breast-cancer-awareness.jpg"
-            alt="Breast Cancer Awareness — Support · Hope · Cure"
+            src="/testicular-cancer-awareness.jpg"
+            alt="Testicular Cancer Awareness — Support · Hope · Cure"
             className="w-full rounded-xl"
             style={{ display: "block", border: "1px solid rgba(57,255,20,0.12)" }}
           />
