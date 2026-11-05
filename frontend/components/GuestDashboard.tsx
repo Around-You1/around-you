@@ -185,6 +185,12 @@ export default function GuestDashboard() {
     minSwipeDistance: 50,
   });
 
+  // Clear the search box whenever the Partner Category changes (tab click or
+  // swipe), so a search typed for one category doesn't carry into the next.
+  useEffect(() => {
+    setSearchQuery("");
+  }, [activeTab]);
+
   // --- Phone / browser Back button --------------------------------------------
   // The whole guest/local experience is one page, so without this the hardware
   // Back button jumps straight out to the sign-in screen (on iPhone that meant
