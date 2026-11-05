@@ -18,13 +18,13 @@ export type VOKey = "VO1" | "VO2" | "VO3" | "VO4" | "VO5" | "VO6" | "VO7" | "VO8
 
 const CAPTIONS: Record<VOKey, string> = {
   VO1: "Welcome to Around You.",
-  VO2: "You’ll see three buttons. Staying here on holiday? Tap Holiday Guest. Live in the area? Tap Local. Own a listed business? Tap Partner.",
-  VO3: "The place you’re staying will have sent you an access code. Find it, copy it, then paste or type it into the box marked Profile Access Code, then tap Sign In.",
-  VO4: "Take a look around. See what your accommodation offers, and explore all of the businesses Around You — look for discounts, bookings and pre-orders wherever you go.",
-  VO5: "Let’s get you registered as a Local. Type in your email address and your mobile number. Choose your province, then type your postal code. Now tap Register. We’ll ask you to confirm your mobile number. Then open your email for a short one-time code, and type it into the box marked OTP.",
-  VO6: "We’ll save your details so that next time you just enter your Province and tap Sign In.",
-  VO7: "To sign in as a Partner, Around You will have sent you an access code. Type it into the box marked Profile Access Code, then tap Sign In.",
-  VO8: "At the top of your profile, tap Edit Profile. Type in your Partner Edit Code, and you can change anything you like — update your details, add or swap out photos, or remove what you don’t need.",
+  VO2: "You'll see three buttons. Staying here on holiday? Tap Holiday Guest. Live in the area? Tap Local. Own a listed business? Tap Partner.",
+  VO3: "The place you're staying will have sent you an access code. Find it, copy it then paste or type it into the box marked Profile Access Code, then tap Sign In. You're in.",
+  VO4: "Take a look around. See what your accommodation offers, and explore all of the businesses Around You — look or search for discounts, bookings and pre-orders wherever you go.",
+  VO5: "Let's get you registered as a Local. Type in your email address and your mobile number. Choose your province, then type your postal code. Now tap Register. We'll ask you to check your mobile number and email address — tap to confirm it's correct and you're in.",
+  VO6: "We will save your details so that next time you just have to enter your Province and tap Sign In.",
+  VO7: "To sign in as a Partner, Around You will have sent you an access code. Type that code into the box marked Profile Access Code, then tap Sign In. You're in.",
+  VO8: "Now, at the top of your profile, tap Edit Profile. Type in your Partner Edit Code, and you can change anything you like — update your details, add or swap out your photos, or remove what you don't need.",
 };
 
 // A clip that auto-plays as soon as another finishes (VO5 → VO6 on the Local page).
