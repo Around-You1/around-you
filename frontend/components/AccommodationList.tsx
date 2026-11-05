@@ -194,7 +194,7 @@ export default function AccommodationList({ accommodations, onEdit, onUpdate }: 
                   <CollapsibleTrigger asChild>
                     <button className="flex items-center gap-2 flex-1 min-w-0 text-left">
                       {isOpen ? <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />}
-                      <h3 className="font-semibold text-sm text-foreground truncate min-w-0">{accommodation.name}</h3>
+                      <h3 className="font-semibold text-sm text-foreground truncate min-w-0 flex-1">{accommodation.name}</h3>
                       {accommodation.isDuplicate && (
                         <Badge variant="destructive" className="text-xs shrink-0" title={accommodation.duplicateReason || "Duplicate Entry"}>
                           Duplicate
