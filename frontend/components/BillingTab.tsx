@@ -399,7 +399,10 @@ function PaymentRemindersCard() {
       const r: any = await backend.billing.reminders();
       const list: ReminderRow[] = r?.reminders || [];
       setRows(list);
-      setChecked(new Set(list.map((x) => x.invoiceId)));
+      // Default: nothing pre-ticked except the single most recent invoice, so a
+      // reminder is never blasted to everyone by accident — tick whoever else you want.
+      const latest = list.length ? list.reduce((a, b) => (b.invoiceId > a.invoiceId ? b : a)) : null;
+      setChecked(new Set(latest ? [latest.invoiceId] : []));
     } catch (error: any) {
       toast({ title: "Couldn\u2019t load reminders", description: error?.message || "Please try again.", variant: "destructive" });
     } finally {

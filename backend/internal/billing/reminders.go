@@ -63,7 +63,7 @@ func reminderEmailHTML(month, dueDate string) string {
 	return fmt.Sprintf(`<div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;color:#111;font-size:14px;line-height:1.55">`+
 		`<p>Hello,</p>`+
 		`<p>Hope you're having a great week!</p>`+
-		`<p>Just a friendly heads-up that payment for your <strong>%s</strong> subscription was due yesterday, <strong>%s</strong>.</p>`+
+		`<p>Just a friendly heads-up that payment for your <strong style="color:#39FF14">%s</strong> subscription was due yesterday, <strong style="color:#39FF14">%s</strong>.</p>`+
 		`<p>To ensure your profile stays active and visible to holiday guests and local customers on aroundyou.co.za without any interruption, please complete the payment as soon as possible.</p>`+
 		`<p>So as to avoid deactivation of your profile, please send us a Proof of Payment.</p>`+
 		`<p>If you've already made the transfer, please disregard this note (and thank you!). If you need the payment details resent or have any questions, just let us know at accounts@aroundyou.co.za.</p>`+
