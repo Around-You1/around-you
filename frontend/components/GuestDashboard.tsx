@@ -656,9 +656,9 @@ export default function GuestDashboard() {
                                 {discOffered(service) || discCode(service) ? (
                                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#39FF14]/10 border border-[#39FF14] rounded-lg">
                                     {discOffered(service) && (
-                                      <div className="flex items-center gap-1.5 text-black">
-                                        <Tag className="h-4 w-4" />
-                                        <span className="font-semibold text-sm whitespace-nowrap">{discOffered(service)}</span>
+                                      <div className="flex items-center gap-1.5 text-black min-w-0">
+                                        <Tag className="h-4 w-4 shrink-0 mt-0.5" />
+                                        <span className="font-semibold text-sm break-words min-w-0">{discOffered(service)}</span>
                                       </div>
                                     )}
                                     {discCode(service) && (
@@ -1407,9 +1407,9 @@ export default function GuestDashboard() {
                                 {discOffered(restaurant) || discCode(restaurant) ? (
                                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#39FF14]/10 border border-[#39FF14] rounded-lg">
                                     {discOffered(restaurant) && (
-                                      <div className="flex items-center gap-1.5 text-black">
-                                        <Tag className="h-4 w-4" />
-                                        <span className="font-semibold text-sm whitespace-nowrap">{discOffered(restaurant)}</span>
+                                      <div className="flex items-center gap-1.5 text-black min-w-0">
+                                        <Tag className="h-4 w-4 shrink-0 mt-0.5" />
+                                        <span className="font-semibold text-sm break-words min-w-0">{discOffered(restaurant)}</span>
                                       </div>
                                     )}
                                     {discCode(restaurant) && (
@@ -1915,9 +1915,9 @@ export default function GuestDashboard() {
                                 {discOffered(attraction) || discCode(attraction) ? (
                                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#39FF14]/10 border border-[#39FF14] rounded-lg">
                                     {discOffered(attraction) && (
-                                      <div className="flex items-center gap-1.5 text-black">
-                                        <Tag className="h-4 w-4" />
-                                        <span className="font-semibold text-sm whitespace-nowrap">{discOffered(attraction)}</span>
+                                      <div className="flex items-center gap-1.5 text-black min-w-0">
+                                        <Tag className="h-4 w-4 shrink-0 mt-0.5" />
+                                        <span className="font-semibold text-sm break-words min-w-0">{discOffered(attraction)}</span>
                                       </div>
                                     )}
                                     {discCode(attraction) && (

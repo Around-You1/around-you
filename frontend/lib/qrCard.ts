@@ -9,6 +9,8 @@
 // A5 = 148 × 210 mm. Landscape → 210 × 148 mm. At 300 DPI that is
 // 2480 × 1748 px.
 
+import qrcode from "./vendor/qrcode-generator";
+
 const DPI = 300;
 export const CARD_W = 2480; // 210 mm @ 300 DPI (A5 landscape width)
 export const CARD_H = 1748; // 148 mm @ 300 DPI (A5 landscape height)
@@ -21,6 +23,8 @@ const BASE_H = 1240;
 
 const LOGO_SRC = "/around-you-logo.png";
 const LUMO = "#39FF14";
+const FELT = "#0a0a0a"; // dark felt interior (centre knock-outs blend in)
+const PIN_SRC = "/around-you-pin.png"; // Around You pin, shown in the QR centre
 
 export interface QrCardOptions {
   title: string;
@@ -136,6 +140,121 @@ function drawCard(
   }
 }
 
+// Build the QR module matrix locally (no external service) at error-correction
+// level H, which tolerates the centre logo. Returns a boolean grid + its size.
+function makeQrMatrix(data: string): { modules: boolean[][]; count: number } {
+  const qr = qrcode(0, "H");
+  qr.addData(data);
+  qr.make();
+  const count = qr.getModuleCount();
+  const modules: boolean[][] = [];
+  for (let r = 0; r < count; r++) {
+    const row: boolean[] = [];
+    for (let c = 0; c < count; c++) row.push(qr.isDark(r, c));
+    modules.push(row);
+  }
+  return { modules, count };
+}
+
+function roundRectPath(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
+// Draw the QR as neon-green rounded dots with rounded finder "eyes" and the
+// Around You pin in the centre (on a white badge). ECC level H keeps it fully
+// scannable despite the centre logo. Drawn directly on the black felt card.
+function drawStyledQr(
+  ctx: CanvasRenderingContext2D,
+  modules: boolean[][],
+  count: number,
+  x: number,
+  y: number,
+  size: number,
+  pinImg: HTMLImageElement
+) {
+  const n = count;
+  const QUIET = 4; // modules of quiet zone (felt) around the code
+  const unit = size / (n + QUIET * 2);
+  const ox = x + QUIET * unit;
+  const oy = y + QUIET * unit;
+
+  const isFinder = (r: number, c: number) =>
+    (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
+
+  // Clear a centred square for the logo badge.
+  let cz = Math.round(n * 0.24);
+  if (cz % 2 !== n % 2) cz += 1;
+  const c0 = (n - cz) / 2;
+  const c1 = c0 + cz;
+  const inCenter = (r: number, c: number) => r >= c0 && r < c1 && c >= c0 && c < c1;
+
+  // Data modules as dots.
+  ctx.fillStyle = LUMO;
+  const dotR = (unit * 0.82) / 2;
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      if (!modules[r][c] || isFinder(r, c) || inCenter(r, c)) continue;
+      ctx.beginPath();
+      ctx.arc(ox + c * unit + unit / 2, oy + r * unit + unit / 2, dotR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Finder patterns as rounded-square "eyes".
+  const eyes: Array<[number, number]> = [
+    [0, 0],
+    [0, n - 7],
+    [n - 7, 0],
+  ];
+  for (const [br, bc] of eyes) {
+    const X = ox + bc * unit;
+    const Y = oy + br * unit;
+    const o = 7 * unit;
+    const er = o * 0.28;
+    ctx.fillStyle = LUMO;
+    roundRectPath(ctx, X, Y, o, o, er);
+    ctx.fill();
+    ctx.fillStyle = FELT;
+    roundRectPath(ctx, X + unit, Y + unit, o - 2 * unit, o - 2 * unit, er * 0.7);
+    ctx.fill();
+    ctx.fillStyle = LUMO;
+    roundRectPath(ctx, X + 2 * unit, Y + 2 * unit, o - 4 * unit, o - 4 * unit, er * 0.5);
+    ctx.fill();
+  }
+
+  // Centre badge + pin logo (aspect preserved).
+  const badge = cz * unit * 1.06;
+  const bx = x + size / 2 - badge / 2;
+  const by = y + size / 2 - badge / 2;
+  ctx.fillStyle = "#ffffff";
+  roundRectPath(ctx, bx, by, badge, badge, badge * 0.22);
+  ctx.fill();
+  const pad = badge * 0.08;
+  const fit = badge - 2 * pad;
+  const ar = pinImg.width / pinImg.height;
+  let pw = fit;
+  let ph = pw / ar;
+  if (ph > fit) {
+    ph = fit;
+    pw = ph * ar;
+  }
+  ctx.drawImage(pinImg, bx + (badge - pw) / 2, by + (badge - ph) / 2, pw, ph);
+}
+
 // New Partner-card layout, matching the mockup: a lumo-green border frame, a
 // dark felt interior, the white instructions across the top-left, the business
 // name in green over a neon-green QR on the left, and a phone-in-hand mockup on
@@ -143,7 +262,9 @@ function drawCard(
 function drawPartnerCard(
   ctx: CanvasRenderingContext2D,
   opts: QrCardOptions,
-  qrImg: HTMLImageElement,
+  qrModules: boolean[][],
+  qrCount: number,
+  pinImg: HTMLImageElement,
   sideImg: HTMLImageElement
 ) {
   const W = CARD_W;
@@ -236,7 +357,7 @@ function drawPartnerCard(
   let qrSize = Math.min(availH, maxTextW, 1050);
   qrSize = Math.max(560, Math.min(qrSize, 1050));
   const qrX = colCenter - qrSize / 2;
-  ctx.drawImage(qrImg, qrX, qrTop, qrSize, qrSize);
+  drawStyledQr(ctx, qrModules, qrCount, qrX, qrTop, qrSize, pinImg);
 
   if (opts.sparkle) {
     ctx.fillStyle = LUMO;
@@ -272,11 +393,12 @@ export async function renderQrCardCanvas(
 
   // Newer Partner layout: phone mockup on the right, green border frame.
   if (opts.sideImageUrl) {
-    const [qrImg, sideImg] = await Promise.all([
-      loadImage(qrImageUrl(opts.data), true),
+    const { modules, count } = makeQrMatrix(opts.data);
+    const [sideImg, pinImg] = await Promise.all([
       loadImage(opts.sideImageUrl),
+      loadImage(PIN_SRC),
     ]);
-    drawPartnerCard(ctx, opts, qrImg, sideImg);
+    drawPartnerCard(ctx, opts, modules, count, pinImg, sideImg);
     return canvas;
   }
 

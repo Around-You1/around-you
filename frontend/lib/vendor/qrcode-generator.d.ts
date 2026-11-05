@@ -1,0 +1,30 @@
+//---------------------------------------------------------------------
+// Type definitions for the vendored qrcode-generator
+// (QR Code Generator for JavaScript, Kazuhiko Arase, MIT license).
+// Vendored locally (frontend/lib/vendor) so no npm install is required.
+//---------------------------------------------------------------------
+
+type TypeNumber =
+  | 0
+  | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
+  | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20
+  | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30
+  | 31 | 32 | 33 | 34 | 35 | 36 | 37 | 38 | 39 | 40;
+
+type ErrorCorrectionLevel = "L" | "M" | "Q" | "H";
+
+type Mode = "Numeric" | "Alphanumeric" | "Byte" | "Kanji";
+
+interface QRCode {
+  addData(data: string, mode?: Mode): void;
+  make(): void;
+  getModuleCount(): number;
+  isDark(row: number, col: number): boolean;
+}
+
+interface QRCodeFactory {
+  (typeNumber: TypeNumber, errorCorrectionLevel: ErrorCorrectionLevel): QRCode;
+}
+
+declare const qrcode: QRCodeFactory;
+export default qrcode;
