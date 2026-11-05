@@ -51,7 +51,7 @@ export default function AppInstallButtons() {
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
-      <p className="text-sm text-muted-foreground text-center sm:text-right max-w-xs">
+      <p className="text-lg font-medium text-foreground text-center sm:text-right max-w-sm">
         To download the Around You app icon, click which one applies to you
       </p>
       <div className="flex gap-2">
