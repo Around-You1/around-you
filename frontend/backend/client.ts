@@ -225,6 +225,8 @@ export const backend = {
     sendInvoiceCopy: (req: { invoiceId: number; to: string }) => request("POST", "/billing/invoice/copy", { body: req }),
     resendWelcome: (req: { partnerType: string; partnerId: number }) => request("POST", "/partner/resend-welcome", { body: req }),
     sendTestInvoice: (req?: { to?: string }) => request("POST", "/billing/invoice/test-send", { body: req || {} }),
+    reminders: () => request("GET", "/billing/reminders"),
+    sendReminders: (req: { invoiceIds: number[] }) => request("POST", "/billing/reminders/send", { body: req }),
   },
 
   loyalty: {

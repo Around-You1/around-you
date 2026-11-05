@@ -345,7 +345,7 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 			BillName: firstNonEmpty(holding, name), BillReg: reg, BillVat: vat,
 			BillContactName: contactName, BillContactNumber: contactNumber, BillEmail: email,
 		}
-		html := renderInvoiceHTML(settings, view)
+		html := invoiceEmailBodyHTML(view)
 		if withCodes {
 			html += onboardingCodesHTML(ctx, partnerType, partnerID)
 		}
@@ -424,7 +424,7 @@ func buildInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) (st
 		BillName: firstNonEmpty(billHolding, billName), BillReg: billReg, BillVat: billVat,
 		BillContactName: contactName, BillContactNumber: contactNumber, BillEmail: email,
 	}
-	html := renderInvoiceHTML(settings, view)
+	html := invoiceEmailBodyHTML(view)
 	if withCodes {
 		html += onboardingCodesHTML(ctx, partnerType, partnerID)
 	}
@@ -490,7 +490,7 @@ func SendTestInvoiceWithCodes(ctx context.Context, to string) error {
 		BillContactNumber: "071 000 0000",
 		BillEmail:         to,
 	}
-	html := renderInvoiceHTML(settings, view) + sampleCodesHTML()
+	html := invoiceEmailBodyHTML(view) + sampleCodesHTML()
 	return mailer.Send(to, "TEST — Your "+bizName+" invoice "+view.Number, html)
 }
 
@@ -753,6 +753,18 @@ func money(cents int) string {
 // carry the profile-QR attachment, so partners know what the QR is for.
 func qrDecalNoteHTML() string {
 	return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:780px;color:#111;font-size:13px;margin:0 0 14px"><p style="margin:0;font-weight:bold">The QR Code attached can be used for front door, window or vehicle decals.</p></div>`
+}
+
+// invoiceEmailBodyHTML is the short message shown in the invoice EMAIL body. The
+// full invoice is the attached PDF, so the body only tells the partner which
+// month it covers and the date it must be paid by (its due date, in lumo green)
+// to keep their listing active.
+func invoiceEmailBodyHTML(v invoiceView) string {
+	month := v.Date.Format("January 2006")
+	due := v.Due.Format("02/Jan/2006")
+	return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:780px;color:#111;font-size:14px;line-height:1.55">` +
+		`<p style="margin:0">Please see the attached invoice for the month of <strong>` + htmlPkg.EscapeString(month) + `</strong>, ` +
+		`which will be payable on <strong style="color:#39FF14">` + htmlPkg.EscapeString(due) + `</strong> so as to avoid deactivation.</p></div>`
 }
 
 // renderInvoiceHTML builds the branded invoice (Invoice-Ninja-style layout):

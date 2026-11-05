@@ -373,6 +373,103 @@ function InvoiceSettingsCard() {
   );
 }
 
+interface ReminderRow {
+  invoiceId: number;
+  billName: string;
+  email: string;
+  totalCents: number;
+  month: string;
+  dueDate: string;
+}
+
+// PaymentRemindersCard: review the partners with an unpaid invoice (paid, free
+// and test partners are excluded automatically), untick anyone to skip, then
+// email them the reminder. Reusable every month.
+function PaymentRemindersCard() {
+  const backend = getAuthenticatedBackend();
+  const { toast } = useToast();
+  const [rows, setRows] = useState<ReminderRow[] | null>(null);
+  const [checked, setChecked] = useState<Set<number>>(new Set());
+  const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const r: any = await backend.billing.reminders();
+      const list: ReminderRow[] = r?.reminders || [];
+      setRows(list);
+      setChecked(new Set(list.map((x) => x.invoiceId)));
+    } catch (error: any) {
+      toast({ title: "Couldn\u2019t load reminders", description: error?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+  const toggle = (id: number) =>
+    setChecked((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  const send = async () => {
+    const invoiceIds = Array.from(checked);
+    if (invoiceIds.length === 0) return;
+    setSending(true);
+    try {
+      const r: any = await backend.billing.sendReminders({ invoiceIds });
+      toast({ title: "Reminders sent", description: `Sent ${r?.sent ?? 0}${r?.failed ? `, ${r.failed} failed` : ""}.` });
+      setRows(null);
+      setChecked(new Set());
+    } catch (error: any) {
+      toast({ title: "Couldn\u2019t send reminders", description: error?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <CollapsibleCard title="Payment Reminders">
+      <p className="text-sm text-muted-foreground mb-3">
+        Email a payment reminder to partners with an unpaid invoice. Partners who are paid, free or test are excluded automatically — untick anyone you don’t want to email. The month and due date fill in automatically, so this works every month.
+      </p>
+      {rows === null ? (
+        <Button variant="outline" onClick={load} disabled={loading}>
+          {loading ? "Loading\u2026" : "Review unpaid partners"}
+        </Button>
+      ) : rows.length === 0 ? (
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">No unpaid partners right now — nothing to remind.</p>
+          <Button variant="outline" onClick={() => setRows(null)}>Close</Button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="max-h-72 overflow-y-auto border border-border rounded-md p-2 space-y-1">
+            {rows.map((v) => (
+              <label key={v.invoiceId} className="flex items-center gap-3 text-sm py-1 cursor-pointer">
+                <input type="checkbox" checked={checked.has(v.invoiceId)} onChange={() => toggle(v.invoiceId)} />
+                <span className="font-medium flex-1 min-w-0 truncate">{v.billName || "(no name)"}</span>
+                <span className="text-muted-foreground truncate">{v.email}</span>
+                <span className="text-muted-foreground whitespace-nowrap">{v.month}</span>
+              </label>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={send}
+              disabled={sending || checked.size === 0}
+              className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black"
+            >
+              {sending ? "Sending\u2026" : `Send reminder to ${checked.size} partner${checked.size === 1 ? "" : "s"}`}
+            </Button>
+            <Button variant="outline" onClick={() => { setRows(null); setChecked(new Set()); }}>Cancel</Button>
+          </div>
+        </div>
+      )}
+    </CollapsibleCard>
+  );
+}
+
 export default function BillingTab() {
   const [subs, setSubs] = useState<Subscription[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -628,6 +725,8 @@ export default function BillingTab() {
       </CollapsibleCard>
 
       <RevenueSummary invoices={billableInvoices} />
+
+      <PaymentRemindersCard />
 
       <CollapsibleCard title="Accountant Access Code" contentClassName="space-y-3">
         <p className="text-sm text-muted-foreground">

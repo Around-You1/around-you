@@ -89,6 +89,16 @@ func buildInvoicePDF(s *InvoiceSettings, v invoiceView) []byte {
 		}
 		fmt.Fprintf(&c, "BT /%s %d Tf %.1f %.1f Td (%s) Tj ET\n", f, size, x, y, pdfEsc(txt))
 	}
+
+	// drawC is draw with a fill colour (r,g,b in 0..1); colour is reset to black
+	// after the text so later draws stay black.
+	drawC := func(x, y float64, size int, bold bool, r, g, bl float64, txt string) {
+		f := "F1"
+		if bold {
+			f = "F2"
+		}
+		fmt.Fprintf(&c, "BT /%s %d Tf %.3f %.3f %.3f rg %.1f %.1f Td (%s) Tj ET 0 0 0 rg\n", f, size, r, g, bl, x, y, pdfEsc(txt))
+	}
 	rule := func(x1, y, x2 float64) {
 		fmt.Fprintf(&c, "%.1f %.1f %.1f %.1f re f\n", x1, y, x2-x1, 0.6)
 	}
@@ -137,7 +147,10 @@ func buildInvoicePDF(s *InvoiceSettings, v invoiceView) []byte {
 	}
 	metaRow("Invoice Number", v.Number)
 	metaRow("Invoice Date", v.Date.Format("02/Jan/2006"))
-	metaRow("Due Date", v.Due.Format("02/Jan/2006"))
+	// Due Date — lumo green (#39FF14), with the date in bold.
+	drawC(L, metaY, 10, false, 0.224, 1.0, 0.078, "Due Date")
+	drawC(L+115, metaY, 10, true, 0.224, 1.0, 0.078, v.Due.Format("02/Jan/2006"))
+	metaY -= 14
 	metaRow("Invoice Total", total)
 	metaRow("Balance Due", total)
 

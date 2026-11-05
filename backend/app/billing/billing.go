@@ -523,3 +523,54 @@ func AccountsBookings(ctx context.Context) (*BookingLedgerResponse, error) {
 	}
 	return &BookingLedgerResponse{Ledger: *l}, nil
 }
+
+// --- Payment reminders -------------------------------------------------------
+
+type PaymentRemindersResponse struct {
+	Reminders []billingcore.ReminderRow `json:"reminders"`
+}
+
+// ListPaymentReminders is SuperAdmin-only — the partners with an unpaid invoice
+// who would receive a payment reminder (for the review list before sending).
+//
+//encore:api auth method=GET path=/billing/reminders
+func ListPaymentReminders(ctx context.Context) (*PaymentRemindersResponse, error) {
+	data := auth.FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can view payment reminders"}
+	}
+	rows, err := billingcore.ListUnpaidReminders(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &PaymentRemindersResponse{Reminders: rows}, nil
+}
+
+type SendRemindersRequest struct {
+	InvoiceIDs []int64 `json:"invoiceIds"`
+}
+
+type SendRemindersResponse struct {
+	Sent   int `json:"sent"`
+	Failed int `json:"failed"`
+}
+
+// SendPaymentReminders is SuperAdmin-only — emails the reminder to the chosen
+// unpaid invoices (the admin reviews and selects recipients first).
+//
+//encore:api auth method=POST path=/billing/reminders/send
+func SendPaymentReminders(ctx context.Context, req *SendRemindersRequest) (*SendRemindersResponse, error) {
+	data := auth.FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can send reminders"}
+	}
+	resp := &SendRemindersResponse{}
+	for _, id := range req.InvoiceIDs {
+		if err := billingcore.SendReminderForInvoice(ctx, id); err != nil {
+			resp.Failed++
+		} else {
+			resp.Sent++
+		}
+	}
+	return resp, nil
+}
