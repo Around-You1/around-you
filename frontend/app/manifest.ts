@@ -1,11 +1,11 @@
 import type { MetadataRoute } from "next";
 
 // Next.js serves this at /manifest.webmanifest automatically.
-// display: "standalone" makes the site installable from the browser menu
-// ("Install app" on Android Chrome) and launch full-screen like a real app.
-// Android shares storage with Chrome, so installed users stay signed in; on
-// iPhone a standalone web app has its OWN storage, so an iOS user may need to
-// sign in once after installing from the home-screen icon.
+// display: "browser" keeps "Add to Home Screen" a plain shortcut: Android does
+// NOT mint a WebAPK, so Google Play Protect never shows the "Unsafe app blocked /
+// built for an older version of Android" warning that standalone triggered. The
+// icon just opens the site in the browser (sharing its cookies/localStorage, so
+// users stay signed in across Safari/Chrome and the icon on both iOS and Android).
 // background_color/theme_color set the brief launch background.
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -13,7 +13,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Around You",
     description: "Around You — guest, partner and admin portal",
     start_url: "/",
-    display: "standalone",
+    display: "browser",
     background_color: "#000000",
     theme_color: "#000000",
     icons: [
