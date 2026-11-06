@@ -138,7 +138,7 @@ func Create(ctx context.Context, req *CreateRequest) (*appdb.Restaurant, error) 
 	}
 	// Enabling table bookings OR pre-orders auto-registers the restaurant as a
 	// Booking partner: Tier 2, shown to Both, R300/month base. The accounting
-	// differs (R10/cover for table bookings, 5% for pre-orders) but the plan is
+	// differs (R10/cover for table bookings, 1% for pre-orders) but the plan is
 	// the same single Booking subscription.
 	if req.OffersBookings {
 		// Table-booking partner: shown to Both, R300 Booking plan.

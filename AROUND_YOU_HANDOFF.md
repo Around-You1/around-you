@@ -112,12 +112,12 @@ Remove-Item -Force D:\1au\.git\HEAD.lock
 | **Premium** | `Tier 2` | Guest only *or* Local only | **R300** | — |
 | **Premium** | `Tier 2` | Both | **R400** | — |
 | **Booking** | `Booking` | Both (auto) | **R300** base | Restaurants R10/cover · Services 10%/service · Attractions 10%/person |
-| **Pre-Orders** (restaurants) | `Booking` under the hood | chosen audience | **R300** base | **5%** of each pre-order |
+| **Pre-Orders** (restaurants) | `Booking` under the hood | chosen audience | **R300** base | **1%** of each pre-order |
 
 Other rules:
 - "Both" audience is always Premium (R400); you can't pick Basic with Both.
 - **Commission:** signing rep earns **25%** of what the partner pays each month; a **Team Leader** (upline) earns an extra **10%** override on each downline rep's sales. (`backend/internal/billing/commission.go`, rate_bps 2500 / 1000.)
-- **Pre-orders** = 5% (confirmed). Stored as `bookings` rows with `party_size = 0` (that's how they're distinguished from table bookings in the ledger), commission = 5% of total; this flows into monthly billing, the accountant ledger, and rep commission automatically.
+- **Pre-orders** = 1% (confirmed). Stored as `bookings` rows with `party_size = 0` (that's how they're distinguished from table bookings in the ledger), commission = 1% of total; this flows into monthly billing, the accountant ledger, and rep commission automatically.
 - **Collection/Delivery:** a restaurant sets Dine-in / Takeaway / Delivery. Pre-orders only appear (and guests can only pick a fulfilment) that the restaurant actually offers. All three surfaces respect this (rep app, admin form, guest page).
 - **Free vs billable rep codes:** rep code **`Rep00000001`** is the internal/test rep → gets a **complimentary onboarding email** (access/edit codes + QR) on activation but is **NOT invoiced / not recurring-billed**. A **blank** rep code is still **billable** (only `Rep00000001` / `TEST_REP_CODES` are treated as free). Never make blank default to free.
 - **Activation fires billing:** flipping a partner's **row Active toggle** in Admin routes through `admin.bulkSetActive` → enables codes + `billing.OnPartnerActivated` (issues first invoice, or complimentary email for the test rep). Editing via the Edit form uses a plain update and does NOT fire billing — use the row toggle to trigger invoices/emails.
@@ -128,7 +128,7 @@ Other rules:
 
 **Pre-Orders feature (restaurants, takeaway/delivery):**
 - Guest form `RestaurantPreOrder.tsx` (gated on Takeaway/Delivery; "Preferred date"/"Preferred time" labels; stacks on mobile).
-- Backend `app/preorder/preorder.go` — validates items, emails the restaurant's Bookings email, **and stores a `bookings` row** (5% commission, `party_size=0`).
+- Backend `app/preorder/preorder.go` — validates items, emails the restaurant's Bookings email, **and stores a `bookings` row** (1% commission, `party_size=0`).
 - Admin + rep-app pre-order editors; the rep-app Pre-Orders editor is a collapsible dropdown; adding a pre-order item auto-selects Premium.
 
 **Billing / pricing:**
@@ -184,7 +184,7 @@ python scripts/gen_onboarding.py       # -> restaurant/service/attraction/accomm
 
 ## 10. Outstanding / not-yet-done (pick up here)
 
-1. **"Neither / one / both" billing rule** (the corrected model): a restaurant may tick **neither, one, or both** of Bookings and Pre-Orders. Ticking neither → normal Basic/Premium display pricing. Ticking either or both → flat **R300/month + usage** (R10/cover for bookings **and/or** 5% for pre-orders, stacking on one R300 base). Current code still routes pre-orders through the single "Booking" plan and has leftover either/or handling — this needs a careful billing pass (and a local `go build`).
+1. **"Neither / one / both" billing rule** (the corrected model): a restaurant may tick **neither, one, or both** of Bookings and Pre-Orders. Ticking neither → normal Basic/Premium display pricing. Ticking either or both → flat **R300/month + usage** (R10/cover for bookings **and/or** 1% for pre-orders, stacking on one R300 base). Current code still routes pre-orders through the single "Booking" plan and has leftover either/or handling — this needs a careful billing pass (and a local `go build`).
 2. **Downloadable pricing table** — an Excel (.xlsx) version of the pricing schedule was requested but not yet produced.
 3. **Local `go build`** of the recent backend changes (commission 25%, `restaurant.go` pre-order logic, `pricing.go` R300 + Basic/Premium invoice wording, `onboard.go` parsing) before the next deploy.
 4. **Historical docs** intentionally left stale: `REP_BILLING_COMMISSIONS_SPEC.md` (still says 30% / R200 / tiers) and `backend/migrations/000048_collapse_to_two_tiers.sql` (SQL values). Update only if you want them current.

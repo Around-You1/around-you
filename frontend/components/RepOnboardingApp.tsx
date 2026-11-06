@@ -1343,7 +1343,7 @@ export default function RepOnboardingApp() {
                 {isRestaurant && (serviceOptions.includes("Takeaway") || serviceOptions.includes("Delivery")) && (
                   <div style={{ marginBottom: 12 }}>
                     <ToggleField
-                      label="Pre-Orders (Takeaway / Delivery) — 5% of the sale"
+                      label="Pre-Orders (Takeaway / Delivery) — 1% of the sale"
                       checked={openPreOrders}
                       onChange={(v) => { setOpenPreOrders(v); if (!v) setPreOrderItems([]); }}
                     />

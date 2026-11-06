@@ -1049,7 +1049,7 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
                   if (!on) setFormData((f) => ({ ...f, preOrderItems: [] }));
                 }}
               />
-              <Label htmlFor="offersPreOrders" className="text-base font-semibold cursor-pointer">Pre-Orders (Takeaway / Delivery) — 5% of the sale</Label>
+              <Label htmlFor="offersPreOrders" className="text-base font-semibold cursor-pointer">Pre-Orders (Takeaway / Delivery) — 1% of the sale</Label>
             </div>
             {offersPreOrders && (
             <>

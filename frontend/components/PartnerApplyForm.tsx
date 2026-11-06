@@ -24,15 +24,29 @@ const CATEGORIES: { key: string; label: string }[] = [
 ];
 
 // Per-category pricing shown prominently near the top of each application.
-const PRICING: Record<string, string> = {
-  accommodation: "R300 per month.",
-  restaurant: "R300 per month, plus Bookings @ R10 per cover and Pre-Orders @ 5% of the bill.",
-  service: "R300 per month, plus Bookings @ 10% of the bill and Pre-Orders @ 10% of the bill.",
-  attraction: "R300 per month, plus Bookings @ 10% of the bill and Pre-Orders @ 10% of the bill.",
-  estate: "Estate Agencies R500 per month and Agents R300 per month each.",
-  retail: "R500 per month.",
-  nonprofit: "Free — no monthly fee for registered NPO / PBO organisations.",
-};
+// Agent codes flagged half-price (e.g. HALF, shared via /apply?rep=HALF) halve
+// the MONTHLY fee only — the per-cover / pre-order usage fees are unchanged.
+// Keep HALF_PRICE_REPS in sync with the backend HalfPriceRepCodesLower
+// (backend/internal/appdb/reppolicy.go).
+const HALF_PRICE_REPS = ["half"];
+function isHalfRep(code: string): boolean {
+  return HALF_PRICE_REPS.includes((code || "").trim().toLowerCase());
+}
+const rand = (n: number) => "R" + n.toLocaleString("en-US");
+const mo = (n: number, half: boolean) => rand(half ? Math.round(n / 2) : n);
+function pricingText(cat: string, half: boolean): string {
+  const m = (n: number) => mo(n, half);
+  switch (cat) {
+    case "accommodation": return `${m(300)} per month.`;
+    case "restaurant": return `${m(300)} per month, plus Bookings @ R10 per cover and Pre-Orders @ 1% of the bill.`;
+    case "service":
+    case "attraction": return `${m(300)} per month, plus Bookings @ 10% of the bill and Pre-Orders @ 10% of the bill.`;
+    case "estate": return `Estate Agencies ${m(500)} per month and Agents ${m(300)} per month each.`;
+    case "retail": return `${m(500)} per month.`;
+    case "nonprofit": return "Free — no monthly fee for registered NPO / PBO organisations.";
+    default: return "";
+  }
+}
 
 const PROVINCES = ["Eastern Cape", "Free State", "Gauteng", "KwaZulu Natal", "Limpopo", "Mpumalanga", "Northern Cape", "North West", "Western Cape"];
 const PAYMENTS = ["Card", "Cash", "Gaap", "Mobile Tap", "Snap Scan", "Yoco", "Zapper", "iKhokha", "G Pay", "Samsung Pay", "SASSA", "Apple Pay"];
@@ -122,14 +136,14 @@ const retailSpecialsSection: Section = { title: "Discounts / Specials (Discount 
   { key: "My Stamp Card — the reward", type: "textarea", note: "e.g. After 10 stamps, redeem a free coffee." },
 ] };
 
-function specsFor(cat: string): Section[] {
+function specsFor(cat: string, half: boolean): Section[] {
   if (cat === "restaurant") return [businessSection("Restaurant/Takeaway name")];
   if (cat === "service") return [businessSection("Business/Service name")];
   if (cat === "attraction") return [businessSection("Attraction/Activity name")];
   if (cat === "accommodation") return [
     businessSection("Accommodation name"),
     { title: "Accommodation details", fields: [
-      { key: "Number of units / rooms", type: "text", note: "sets your monthly price", priceRows: ["1–5 units — R300", "6–10 units — R500", "11–20 units — R800", "21–40 units — R1,200", "40+ units — Custom quote"] },
+      { key: "Number of units / rooms", type: "text", note: "sets your monthly price", priceRows: [`1–5 units — ${mo(300, half)}`, `6–10 units — ${mo(500, half)}`, `11–20 units — ${mo(800, half)}`, `21–40 units — ${mo(1200, half)}`, "40+ units — Custom quote"] },
     ] },
   ];
   if (cat === "retail") return [businessSection("Retail business name"), retailSpecialsSection];
@@ -177,7 +191,8 @@ export default function PartnerApplyForm() {
     } catch { /* not signed in — fine */ }
   }, []);
 
-  const sections = useMemo(() => (cat ? specsFor(cat) : []), [cat]);
+  const half = isHalfRep(rep);
+  const sections = useMemo(() => (cat ? specsFor(cat, half) : []), [cat, half]);
   const set = (k: string, v: any) => setVals((s) => ({ ...s, [k]: v }));
   const toggle = (k: string, opt: string) =>
     setVals((s) => {
@@ -368,9 +383,10 @@ export default function PartnerApplyForm() {
         Please complete the fields below. Fields marked * are required.
       </p>
 
-      {PRICING[cat] && (
+      {pricingText(cat, half) && (
         <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 8, border: `1px solid ${LUMO}`, background: "rgba(57,255,20,0.07)", color: "#eafff0", fontSize: 13, textAlign: "center" }}>
-          <span style={{ color: LUMO, fontWeight: 800 }}>Pricing: </span>{PRICING[cat]}
+          <span style={{ color: LUMO, fontWeight: 800 }}>Pricing: </span>{pricingText(cat, half)}
+          {half && <div style={{ marginTop: 4, fontSize: 11, color: LUMO }}>HALF agent code applied — 50% off your monthly fee.</div>}
         </div>
       )}
 

@@ -23,9 +23,9 @@ var attractions = store.NewAttractionStore()
 var bookings = store.NewBookingStore()
 
 // Pre-order commission: the platform's cut of each pre-order. Restaurants pay
-// 5%; business/services and attractions pay 10%.
+// 1%; business/services and attractions pay 10%.
 const (
-	restaurantPreOrderRate = 0.05
+	restaurantPreOrderRate = 0.01
 	otherPreOrderRate      = 0.10
 )
 
@@ -70,7 +70,7 @@ func Submit(ctx context.Context, req *SubmitRequest) (*SubmitResponse, error) {
 	}
 
 	// Resolve the partner (restaurant, service or attraction), its pre-order
-	// list, contact email, and the platform's cut (restaurants 5%; business/
+	// list, contact email, and the platform's cut (restaurants 1%; business/
 	// services and attractions 10%). Collection/Delivery applies to restaurants.
 	et := strings.ToLower(strings.TrimSpace(req.EntityType))
 	if et == "" {
@@ -172,7 +172,7 @@ func Submit(ctx context.Context, req *SubmitRequest) (*SubmitResponse, error) {
 	// Store the pre-order as a bookings row so it flows into monthly billing
 	// (RunMonthlyBilling sums bookings.commission for booking-plan partners),
 	// the accountant ledger, and rep commission — exactly like a table booking,
-	// but distinguished by party_size = 0 and a 5%-of-total commission.
+	// but distinguished by party_size = 0 and a 1%-of-total commission.
 	commission := total * rate
 	orderItems := appdb.BookingItems{}
 	for _, l := range lines {

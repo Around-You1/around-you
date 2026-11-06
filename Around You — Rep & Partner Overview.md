@@ -38,4 +38,4 @@ Around You lists partners under distinct, independent categories, each with its 
 
 **Payment methods** now include iKhokha, G Pay, Samsung Pay, SASSA and Apple Pay in addition to Card, Cash, Mobile Tap, Gaap, Snap Scan, Yoco, Zapper and EFT.
 
-**Restaurant/Takeaway pre-orders** are charged at **5%** of the bill (service and attraction pre-orders remain 10%).
+**Restaurant/Takeaway pre-orders** are charged at **1%** of the bill (service and attraction pre-orders remain 10%).

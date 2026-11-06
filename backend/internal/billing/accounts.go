@@ -102,7 +102,7 @@ type BookingLedgerRow struct {
 	CommissionCents int    `json:"commissionCents"`
 	Status          string `json:"status"`
 	CreatedAt       string `json:"createdAt"`
-	// Kind separates restaurant pre-orders (party_size = 0, commission = 5% of
+	// Kind separates restaurant pre-orders (party_size = 0, commission = 1% of
 	// the order) from table bookings (party_size > 0, R10/cover) and the item
 	// bookings of services/attractions. Items lists what was ordered.
 	Kind  string `json:"kind"`  // "Pre-Order" | "Table Booking" | "Booking"
