@@ -45,14 +45,16 @@ export default function Page() {
     };
   }, []);
 
-  // Skip the tutorial intro for scanned-QR / access-code / magic-link entries —
-  // those users came in to do something specific, not to watch the walkthrough.
+  // Skip the tutorial intro for scanned-QR / access-code / magic-link entries, and
+  // for the Local registration deep-link (?role=local) — those users came in to do
+  // something specific, not to watch the walkthrough.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const p = new URLSearchParams(window.location.search);
     const hash = window.location.hash || "";
     const authReturn = hash.includes("access_token") || hash.includes("type=");
-    if (p.get("code") || p.get("accessCode") || authReturn) setIntroDone(true);
+    const wantLocal = p.get("role") === "local" || p.get("panel") === "local";
+    if (p.get("code") || p.get("accessCode") || wantLocal || authReturn) setIntroDone(true);
   }, []);
 
   // The minimum loading-screen display time only starts once the intro is done,

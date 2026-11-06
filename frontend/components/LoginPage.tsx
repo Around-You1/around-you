@@ -704,7 +704,7 @@ export default function LoginPage() {
           <>
           <InfoSquares />
           <p className="text-center text-sm font-semibold uppercase tracking-widest" style={{ color: "#666" }}>
-            Sign in as a …
+            Register/Sign in as a …
           </p>
 
           <div className="grid grid-cols-3 gap-1.5">
