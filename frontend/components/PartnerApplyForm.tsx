@@ -81,7 +81,7 @@ const businessSection = (nameLabel: string): Section => ({
     { key: "Contact email", type: "text", top: "contactEmail", required: true },
     { key: "Contact number", type: "text", top: "contactNumber", required: true },
     { key: "Province", type: "select", options: PROVINCES, top: "province", required: true },
-    { key: "Area", type: "text", required: true, note: "your town or suburb — used to list you in the right area" },
+    { key: "Area", type: "text", note: "your town or suburb (optional — we also get this from your postal code)" },
     { key: "Physical address", type: "text", note: "shown to Guests & Locals (hidden if you tick the box below)" },
     { key: "Works from different addresses", type: "multi", options: [
       "Yes — I work from different addresses (hide my address on Guest & Local pages)",
@@ -150,7 +150,7 @@ function specsFor(cat: string, half: boolean): Section[] {
   if (cat === "nonprofit") return [
     businessSection("NPO / PBO name"),
     { title: "Registration numbers", fields: [
-      { key: "NPO Number", type: "text", required: true, note: "required for NPO / PBO organisations" },
+      { key: "NPO Number", type: "text", note: "your NPO / PBO registration number" },
       { key: "PBO Number", type: "text" },
     ] },
   ];
@@ -174,6 +174,10 @@ export default function PartnerApplyForm() {
   const [err, setErr] = useState("");
   const [isStaff, setIsStaff] = useState(false);
   const [autofillStatus, setAutofillStatus] = useState("");
+  const [showDetails, setShowDetails] = useState(false);
+  const [showAgent, setShowAgent] = useState(false);
+  const [geo, setGeo] = useState("");
+  const [restored, setRestored] = useState(false);
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
@@ -189,6 +193,14 @@ export default function PartnerApplyForm() {
       const tok = localStorage.getItem("token") || "";
       if (tok && ["Rep", "SuperAdmin", "Admin"].includes(u?.role)) setIsStaff(true);
     } catch { /* not signed in — fine */ }
+    // Restore an in-progress application autosaved on this device.
+    try {
+      const sv = JSON.parse(localStorage.getItem("aroundYouPartnerApply") || "{}");
+      if (!CATEGORIES.some((c) => c.key === t) && sv.cat) setCat(sv.cat);
+      if (!q.get("rep") && sv.rep) setRep(sv.rep);
+      if (sv.vals && typeof sv.vals === "object") setVals(sv.vals);
+    } catch { /* ignore */ }
+    setRestored(true);
   }, []);
 
   const half = isHalfRep(rep);
@@ -199,6 +211,22 @@ export default function PartnerApplyForm() {
       const arr: string[] = Array.isArray(s[k]) ? s[k] : [];
       return { ...s, [k]: arr.includes(opt) ? arr.filter((x) => x !== opt) : [...arr, opt] };
     });
+
+  // Autosave the in-progress application to this device (restored on return).
+  useEffect(() => {
+    if (!restored) return;
+    try { localStorage.setItem("aroundYouPartnerApply", JSON.stringify({ cat, rep, vals })); } catch { /* ignore */ }
+  }, [cat, rep, vals, restored]);
+
+  const useMyLocation = () => {
+    if (!navigator.geolocation) { setGeo("unavailable"); return; }
+    setGeo("locating");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setGeo(pos.coords.latitude.toFixed(5) + "," + pos.coords.longitude.toFixed(5)),
+      () => setGeo("denied"),
+      { enableHighAccuracy: false, timeout: 10000 }
+    );
+  };
 
   // Staff-only: upload a hand-filled onboarding PDF, or one or more WhatsApp /
   // photo screenshots; Claude reads them all and the form pre-fills for review.
@@ -282,6 +310,8 @@ export default function PartnerApplyForm() {
   };
 
   const catLabel = CATEGORIES.find((c) => c.key === cat)?.label || "";
+  const nameKey = sections[0]?.fields.find((f) => f.top === "businessName")?.key || "Business name";
+  const LEAD_KEYS = new Set([nameKey, "Contact person", "Contact email", "Contact number", "Postal code", "Province"]);
 
   const submit = async () => {
     setErr("");
@@ -290,11 +320,9 @@ export default function PartnerApplyForm() {
     const businessName = (vals[nameSpec?.key || ""] || "").trim();
     const province = (vals["Province"] || "").trim();
     if (!businessName) { setErr("Please enter your business name."); return; }
-    if (!province) { setErr("Please choose your province."); return; }
-    if (!(vals["Contact person"] || "").trim()) { setErr("Please enter a contact person."); return; }
-    if (!(vals["Contact email"] || "").trim()) { setErr("Please enter a contact email."); return; }
+    if (!(vals["Contact email"] || "").trim()) { setErr("Please enter a contact email (for your account and invoices)."); return; }
     if (!(vals["Contact number"] || "").trim()) { setErr("Please enter a contact number."); return; }
-    if (!(vals["Area"] || "").trim()) { setErr("Please enter your Area (town or suburb)."); return; }
+    if (!(vals["Postal code"] || "").trim()) { setErr("Please enter your postal code — this sets your area."); return; }
     const worksFrom = Array.isArray(vals["Works from different addresses"]) && vals["Works from different addresses"].length > 0;
     if (worksFrom && !(vals["Office address (Official Use)"] || "").trim()) {
       setErr("You ticked \"works from different addresses\" — please enter an Office address (Official Use)."); return;
@@ -319,6 +347,7 @@ export default function PartnerApplyForm() {
       if (str) fields[f.key] = str;
     }
 
+    if (geo && geo.includes(",")) fields["GPS location"] = geo;
     setSubmitting(true);
     try {
       await backend.partnerApp.submit({
@@ -333,6 +362,7 @@ export default function PartnerApplyForm() {
         agree,
       });
       setDone(true);
+      try { localStorage.removeItem("aroundYouPartnerApply"); } catch { /* ignore */ }
     } catch (e: any) {
       setErr(e?.message || "Something went wrong — please try again.");
     } finally {
@@ -380,7 +410,7 @@ export default function PartnerApplyForm() {
       </button>
       <h1 style={{ color: LUMO, fontSize: 22, textAlign: "center", margin: "0 0 2px" }}>Around You — {catLabel} Application</h1>
       <p style={{ color: "#a0a0a0", fontSize: 13, textAlign: "center", marginTop: 0 }}>
-        Please complete the fields below. Fields marked * are required.
+        Just a few details to get started — your Around You agent completes the rest with you. Fields marked * are required.
       </p>
 
       {pricingText(cat, half) && (
@@ -390,10 +420,49 @@ export default function PartnerApplyForm() {
         </div>
       )}
 
+      <div style={{ marginTop: 14 }}>
+        <label style={{ ...labelSt, fontSize: 14 }}>{nameKey} *</label>
+        <input style={{ ...input, fontSize: 16 }} value={vals[nameKey] || ""} onChange={(e) => set(nameKey, e.target.value)} />
+      </div>
       <div style={{ marginTop: 12 }}>
-        <label style={labelSt}>Agent Code</label>
-        <input style={input} value={rep} onChange={(e) => setRep(e.target.value)} placeholder="AROUNDYOU" />
-        <p style={{ color: "#7f857f", fontSize: 11, marginTop: 4 }}>Leave this as AROUNDYOU unless an agent gave you their own code, then please change accordingly.</p>
+        <label style={{ ...labelSt, fontSize: 14 }}>Contact email * <span style={{ color: "#8a8f96", fontWeight: 400 }}>(for your account &amp; invoices)</span></label>
+        <input style={{ ...input, fontSize: 16 }} type="email" inputMode="email" autoComplete="email" value={vals["Contact email"] || ""} onChange={(e) => set("Contact email", e.target.value)} />
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <label style={{ ...labelSt, fontSize: 14 }}>Contact number *</label>
+        <input style={{ ...input, fontSize: 16 }} type="tel" inputMode="tel" autoComplete="tel" value={vals["Contact number"] || ""} onChange={(e) => set("Contact number", e.target.value)} />
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <label style={{ ...labelSt, fontSize: 14 }}>Postal code * <span style={{ color: "#8a8f96", fontWeight: 400 }}>(sets your area)</span></label>
+        <input style={{ ...input, fontSize: 16 }} inputMode="numeric" pattern="[0-9]*" maxLength={4} value={vals["Postal code"] || ""} onChange={(e) => set("Postal code", e.target.value.replace(/[^0-9]/g, ""))} />
+        <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <button type="button" onClick={useMyLocation}
+            style={{ background: "transparent", color: LUMO, border: "1px solid rgba(57,255,20,0.4)", borderRadius: 8, padding: "8px 12px", fontSize: 13, cursor: "pointer" }}>
+            Use my location (optional)
+          </button>
+          {geo === "locating" && <span style={{ color: "#9aa39a", fontSize: 12 }}>Finding you…</span>}
+          {geo.includes(",") && <span style={{ color: LUMO, fontSize: 12 }}>✓ Location added</span>}
+          {(geo === "denied" || geo === "unavailable") && <span style={{ color: "#d0a0a0", fontSize: 12 }}>Couldn’t get location — just type your postal code.</span>}
+        </div>
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <label style={{ ...labelSt, fontSize: 14 }}>Contact person <span style={{ color: "#8a8f96", fontWeight: 400 }}>(optional)</span></label>
+        <input style={{ ...input, fontSize: 16 }} value={vals["Contact person"] || ""} onChange={(e) => set("Contact person", e.target.value)} />
+      </div>
+
+      <div style={{ marginTop: 12 }}>
+        {!showAgent ? (
+          <button type="button" onClick={() => setShowAgent(true)}
+            style={{ background: "transparent", border: "none", color: LUMO, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0, textDecoration: "underline" }}>
+            Have an agent code?
+          </button>
+        ) : (
+          <div>
+            <label style={labelSt}>Agent Code</label>
+            <input style={input} value={rep} onChange={(e) => setRep(e.target.value)} placeholder="AROUNDYOU" />
+            <p style={{ color: "#7f857f", fontSize: 11, marginTop: 4 }}>Leave this as AROUNDYOU unless an agent gave you their own code.</p>
+          </div>
+        )}
       </div>
 
       {isStaff && cat === "restaurant" && (
@@ -418,10 +487,17 @@ export default function PartnerApplyForm() {
         </div>
       )}
 
-      {sections.map((sec) => (
+      <div style={{ marginTop: 18, borderTop: "1px solid rgba(57,255,20,0.15)", paddingTop: 12 }}>
+        <button type="button" onClick={() => setShowDetails((v) => !v)}
+          style={{ background: "transparent", border: "none", color: LUMO, fontSize: 14, fontWeight: 700, cursor: "pointer", padding: 0 }}>
+          {showDetails ? "\u25be" : "\u25b8"} Add more details now (optional)
+        </button>
+        <p style={{ color: "#7f857f", fontSize: 11, margin: "4px 0 0" }}>Nice-to-have info for your listing — you can skip all of this and your agent will complete it with you.</p>
+      </div>
+      {showDetails && sections.map((sec) => (
         <div key={sec.title}>
           <div style={secSt}>{sec.title}</div>
-          {sec.fields.map((f) => (
+          {sec.fields.filter((f) => !LEAD_KEYS.has(f.key)).map((f) => (
             <div key={f.key} style={{ marginTop: 10 }}>
               <label style={labelSt}>{f.label ?? f.key}{f.required ? " *" : ""}{f.note ? <span style={{ color: "#8a8f96", fontWeight: 400 }}> ({f.note})</span> : null}</label>
               {f.priceRows && (
