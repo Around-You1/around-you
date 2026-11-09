@@ -2111,7 +2111,7 @@ export default function GuestDashboard() {
           />
         )}
         {showMyBookings && <MyBookingsModal onClose={() => setShowMyBookings(false)} />}
-        {showMyStamps && <MyStampCardsModal onClose={() => setShowMyStamps(false)} />}
+        {showMyStamps && <MyStampCardsModal onClose={() => setShowMyStamps(false)} isLocal={isLocalMode} />}
         <SwipeIndicator show={filteredRestaurants.length > 0 || filteredServices.length > 0 || filteredAttractions.length > 0} />
       </div>
     </div>
@@ -2539,7 +2539,7 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
 
 // MyStampCardsModal lets a customer see their loyalty stamp cards by entering the
 // mobile number the partner stamps against. Read-only — only partners add stamps.
-function MyStampCardsModal({ onClose }: { onClose: () => void }) {
+function MyStampCardsModal({ onClose, isLocal }: { onClose: () => void; isLocal: boolean }) {
   const [phone, setPhone] = useState(() => {
     try {
       const g = JSON.parse(localStorage.getItem("localGuestInfo") || "{}");
@@ -2605,6 +2605,14 @@ function MyStampCardsModal({ onClose }: { onClose: () => void }) {
     } finally { if (!silent) setLoading(false); }
   };
   const find = () => load(false);
+
+  // Local guests sign in with their mobile number, so it is already filled in —
+  // load their stamp cards straight away (no "Find" tap needed). Holiday Guests,
+  // who have no number on file, still type theirs and tap Find.
+  useEffect(() => {
+    if (isLocal && digits.length >= 9) load(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Live refresh: once cards are loaded, re-fetch every 5s (and whenever the tab
   // regains focus) so a stamp the partner just added appears without the guest
