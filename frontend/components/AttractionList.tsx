@@ -214,6 +214,15 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
 
 
   const [accepting, setAccepting] = useState<number | null>(null);
+  const [acceptedIds, setAcceptedIds] = useState<Set<number>>(new Set());
+  useEffect(() => {
+    (async () => {
+      try {
+        const res: any = await getAuthenticatedBackend().admin.invoicedIds({ entityType: "attraction" });
+        setAcceptedIds(new Set<number>(res?.ids || []));
+      } catch { /* ignore — keep Accept buttons as-is */ }
+    })();
+  }, []);
 
   const toggleActive = async (attraction: AttractionData) => {
     setToggling(attraction.attractionId);
@@ -242,6 +251,7 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
     try {
       const backend = getAuthenticatedBackend();
       await backend.admin.acceptPartners({ entityType: "attraction", ids: [attraction.id] });
+      setAcceptedIds((prev) => new Set(prev).add(attraction.id));
       toast({ title: "Accepted", description: "First invoice and sign-in codes emailed. Activate them once payment is received." });
       onUpdate();
     } catch (error) {
@@ -322,11 +332,12 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-7 text-xs border-[#39FF14]/50 text-[#2a9d12] hover:bg-[#39FF14]/10"
+                          className={acceptedIds.has(attraction.id) ? "h-7 text-xs border-muted-foreground/30 text-muted-foreground" : "h-7 text-xs border-[#39FF14]/50 text-[#2a9d12] hover:bg-[#39FF14]/10"}
+                          title={acceptedIds.has(attraction.id) ? "Invoice sent — awaiting payment. Activate once paid." : "Accept: send the first invoice + codes"}
                           disabled={accepting === attraction.id}
                           onClick={() => acceptPartner(attraction)}
                         >
-                          {accepting === attraction.id ? "Sending…" : "Accept"}
+                          {accepting === attraction.id ? "Sending…" : acceptedIds.has(attraction.id) ? "✓ Accepted" : "Accept"}
                         </Button>
                       )}
                       <Switch

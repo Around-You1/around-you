@@ -324,6 +324,8 @@ export const backend = {
       request("POST", "/admin/bulk-set-active", { body: req }),
     acceptPartners: (req: { entityType: string; ids: number[] }) =>
       request("POST", "/admin/accept-partners", { body: req }),
+    invoicedIds: (req: { entityType: string }) =>
+      request("GET", "/admin/invoiced-ids", { query: req }),
     bulkDelete: (req: { entityType: string; ids: number[] }) =>
       request("POST", "/admin/bulk-delete", { body: req }),
     archived: () => request("GET", "/admin/archived"),

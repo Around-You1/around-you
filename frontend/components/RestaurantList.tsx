@@ -178,6 +178,15 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
 
 
   const [accepting, setAccepting] = useState<number | null>(null);
+  const [acceptedIds, setAcceptedIds] = useState<Set<number>>(new Set());
+  useEffect(() => {
+    (async () => {
+      try {
+        const res: any = await getAuthenticatedBackend().admin.invoicedIds({ entityType: "restaurant" });
+        setAcceptedIds(new Set<number>(res?.ids || []));
+      } catch { /* ignore — keep Accept buttons as-is */ }
+    })();
+  }, []);
 
   const toggleActive = async (restaurant: Restaurant) => {
     setToggling(restaurant.id);
@@ -205,6 +214,7 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
     try {
       const backend = getAuthenticatedBackend();
       await backend.admin.acceptPartners({ entityType: "restaurant", ids: [restaurant.id] });
+      setAcceptedIds((prev) => new Set(prev).add(restaurant.id));
       toast({ title: "Accepted", description: "First invoice and sign-in codes emailed. Activate them once payment is received." });
       onUpdate();
     } catch (error) {
@@ -286,11 +296,12 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-7 text-xs border-[#39FF14]/50 text-[#2a9d12] hover:bg-[#39FF14]/10"
+                          className={acceptedIds.has(restaurant.id) ? "h-7 text-xs border-muted-foreground/30 text-muted-foreground" : "h-7 text-xs border-[#39FF14]/50 text-[#2a9d12] hover:bg-[#39FF14]/10"}
+                          title={acceptedIds.has(restaurant.id) ? "Invoice sent — awaiting payment. Activate once paid." : "Accept: send the first invoice + codes"}
                           disabled={accepting === restaurant.id}
                           onClick={() => acceptPartner(restaurant)}
                         >
-                          {accepting === restaurant.id ? "Sending…" : "Accept"}
+                          {accepting === restaurant.id ? "Sending…" : acceptedIds.has(restaurant.id) ? "✓ Accepted" : "Accept"}
                         </Button>
                       )}
                       <Switch

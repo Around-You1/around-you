@@ -151,6 +151,43 @@ func AcceptPartners(ctx context.Context, req *BulkRequest) (*BulkResponse, error
 	return &BulkResponse{Affected: len(req.IDs)}, nil
 }
 
+type InvoicedIDsRequest struct {
+	EntityType string `query:"entityType"`
+}
+
+type InvoicedIDsResponse struct {
+	IDs []int64 `json:"ids"`
+}
+
+// InvoicedPartnerIDs returns the IDs of partners of a type that have at least one
+// invoice — i.e. the ones that have been Accepted (first invoice sent). The admin
+// lists use it to show an "Accepted" state on partners awaiting payment.
+//
+//encore:api auth method=GET path=/admin/invoiced-ids
+func InvoicedPartnerIDs(ctx context.Context, req *InvoicedIDsRequest) (*InvoicedIDsResponse, error) {
+	if err := requireSuperAdmin(ctx); err != nil {
+		return nil, err
+	}
+	if _, ok := tables[req.EntityType]; !ok {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "unknown entity type"}
+	}
+	rows, err := appdb.SQLDB.QueryContext(ctx,
+		`SELECT DISTINCT partner_id FROM invoice WHERE partner_type = $1`, req.EntityType)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ids := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return &InvoicedIDsResponse{IDs: ids}, rows.Err()
+}
+
 // disableCodes turns the Access Code off WITHOUT changing either code value, so
 // a later re-activation restores the SAME codes. Best-effort — errors are
 // non-fatal. Codes only ever change via the explicit Regenerate buttons.

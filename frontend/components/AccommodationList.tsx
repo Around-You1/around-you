@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -139,6 +139,15 @@ export default function AccommodationList({ accommodations, onEdit, onUpdate }: 
   };
 
   const [accepting, setAccepting] = useState<number | null>(null);
+  const [acceptedIds, setAcceptedIds] = useState<Set<number>>(new Set());
+  useEffect(() => {
+    (async () => {
+      try {
+        const res: any = await getAuthenticatedBackend().admin.invoicedIds({ entityType: "accommodation" });
+        setAcceptedIds(new Set<number>(res?.ids || []));
+      } catch { /* ignore — keep Accept buttons as-is */ }
+    })();
+  }, []);
 
   const toggleActive = async (accommodation: Accommodation) => {
     setToggling(accommodation.id);
@@ -166,6 +175,7 @@ export default function AccommodationList({ accommodations, onEdit, onUpdate }: 
     try {
       const backend = getAuthenticatedBackend();
       await backend.admin.acceptPartners({ entityType: "accommodation", ids: [accommodation.id] });
+      setAcceptedIds((prev) => new Set(prev).add(accommodation.id));
       toast({ title: "Accepted", description: "First invoice and sign-in codes emailed. Activate them once payment is received." });
       onUpdate();
     } catch (error) {
@@ -235,11 +245,12 @@ export default function AccommodationList({ accommodations, onEdit, onUpdate }: 
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-7 text-xs border-[#39FF14]/50 text-[#2a9d12] hover:bg-[#39FF14]/10"
+                          className={acceptedIds.has(accommodation.id) ? "h-7 text-xs border-muted-foreground/30 text-muted-foreground" : "h-7 text-xs border-[#39FF14]/50 text-[#2a9d12] hover:bg-[#39FF14]/10"}
+                          title={acceptedIds.has(accommodation.id) ? "Invoice sent — awaiting payment. Activate once paid." : "Accept: send the first invoice + codes"}
                           disabled={accepting === accommodation.id}
                           onClick={() => acceptPartner(accommodation)}
                         >
-                          {accepting === accommodation.id ? "Sending…" : "Accept"}
+                          {accepting === accommodation.id ? "Sending…" : acceptedIds.has(accommodation.id) ? "✓ Accepted" : "Accept"}
                         </Button>
                       )}
                       <Switch
