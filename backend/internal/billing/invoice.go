@@ -761,16 +761,47 @@ func onboardingCodesHTML(ctx context.Context, partnerType string, partnerID int6
 			qrSrc)
 	}
 
+	isAccom := partnerType == "accommodation"
+
+	// Accommodation gets its own wording: a different confidentiality note, a
+	// guest-sharing message they can copy, and a trimmed tips list.
+	confidential := `<p style="font-size:12px;color:#666;margin:8px 0 0">Please keep these confidential. The Access Code logs you in; the Edit Code unlocks editing of your own profile.</p>`
+	if isAccom {
+		confidential = `<p style="font-size:12px;color:#666;margin:8px 0 0">Please keep the Edit code confidential as this allows changes to the profile.</p>`
+	}
+
+	guestBlock := ""
+	if isAccom {
+		guestBlock = `<p style="margin:12px 0 0">The Access Code can be sent to a guest so that they can view your accommodation digitally before they even get to you. You could send something like:</p>` +
+			`<div style="margin:8px 0 0;padding:12px 14px;border-left:3px solid #39FF14;background:#f6fff2;font-style:italic;color:#333">` +
+			`Hi [insert their name here].<br/>` +
+			`[insert your name] here from [insert your accommodation name].<br/>` +
+			`Looking forward to hosting you next week.<br/>` +
+			`To see more about us, go to aroundyou.co.za, click on Holiday Guest and enter the code below into the “Profile Access Code” field.<br/>` +
+			`This takes you to the [insert your accommodation name] profile.<br/>` +
+			`Click more info, open the Directions drop down to see how to get to us.<br/>` +
+			`When here, open the Check-in Instructions to see how to collect the key.<br/>` +
+			`You can also see what else is around us (restaurants, spas, etc.).` +
+			`</div>` +
+			`<p style="margin:8px 0 0">Then send the Access Code in a separate message (for extra security precautions).</p>`
+	}
+
+	bullets := `<ul style="margin:8px 0 0;padding-left:20px"><li style="margin:6px 0">Please complete as much information as possible, such as your Province, Area and Postal Code, and select your Business/Services categories.</li><li style="margin:6px 0">Once you are in, add as many images as possible (bright coloured entertaining images where possible).</li><li style="margin:6px 0">Word your Description so that you include as many items/products that you use or offer, as Guests and Locals can search for you in the search bar using key words (hairdressers sometimes use and sell Kérastase Paris). Sometimes a Guest or Local might search for this product and if the hairdresser has listed it, their business will come up.</li><li style="margin:6px 0">If not already done, when you are at the premises, click the “Use my current location” button so as to populate the Latitude and Longitude co-ordinates.</li><li style="margin:6px 0">Consider offering discounts as this will draw users to you. You can offer discounts to Guests or Locals or both (e.g. something simple like buy a main meal and get a free cup of coffee).</li><li style="margin:6px 0">Also include your Trading Hours.</li></ul>`
+	if isAccom {
+		bullets = `<ul style="margin:8px 0 0;padding-left:20px"><li style="margin:6px 0">Please complete as much information as possible, such as your Province, Area and Postal Code, and select your Business/Services categories.</li><li style="margin:6px 0">Once you are in, add as many images as possible (bright coloured entertaining images where possible).</li><li style="margin:6px 0">If not already done, when you are at the premises, click the “Use my current location” button so as to populate the Latitude and Longitude co-ordinates.</li></ul>`
+	}
+
 	return fmt.Sprintf(
 		`<hr style="margin:24px 0;border:none;border-top:1px solid #e5e7eb"/>`+
 			`<h3 style="margin:0 0 10px">Welcome to Around You — your profile codes</h3>`+
 			`<p style="margin:2px 0"><strong>Profile Access Code:</strong> %s</p>`+
 			`<p style="margin:2px 0"><strong>Partner Edit Code:</strong> %s</p>`+
-			`<p style="font-size:12px;color:#666;margin:8px 0 0">Please keep these confidential. The Access Code logs you in; the Edit Code unlocks editing of your own profile.</p>`+
+			`%s`+
+			`%s`+
 			`<p style="margin:12px 0 0">When using aroundyou.co.za, click <strong>“Sign In”</strong>, then choose the <strong>“Partner”</strong> button. Use the Access Code or QR Code to gain entry to your dedicated partner profile page. Then when you are prompted, enter the Partner Edit Code so as to change any of the information at any time.</p>`+
-			`<ul style="margin:8px 0 0;padding-left:20px"><li style="margin:6px 0">Please complete as much information as possible, such as your Province, Area and Postal Code, and select your Business/Services categories.</li><li style="margin:6px 0">Once you are in, add as many images as possible (bright coloured entertaining images where possible).</li><li style="margin:6px 0">Word your Description so that you include as many items/products that you use or offer, as Guests and Locals can search for you in the search bar using key words (hairdressers sometimes use and sell Kérastase Paris). Sometimes a Guest or Local might search for this product and if the hairdresser has listed it, their business will come up.</li><li style="margin:6px 0">If not already done, when you are at the premises, click the “Use my current location” button so as to populate the Latitude and Longitude co-ordinates.</li><li style="margin:6px 0">Consider offering discounts as this will draw users to you. You can offer discounts to Guests or Locals or both (e.g. something simple like buy a main meal and get a free cup of coffee).</li><li style="margin:6px 0">Also include your Trading Hours.</li></ul>`+
+			`%s`+
 			`%s`,
-		htmlPkg.EscapeString(access), htmlPkg.EscapeString(editCode), qr)
+		htmlPkg.EscapeString(access), htmlPkg.EscapeString(editCode), confidential, guestBlock, bullets, qr)
 }
 
 // profileURL is the link the QR encodes for each partner type.

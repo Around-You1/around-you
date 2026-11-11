@@ -151,6 +151,39 @@ func AcceptPartners(ctx context.Context, req *BulkRequest) (*BulkResponse, error
 	return &BulkResponse{Affected: len(req.IDs)}, nil
 }
 
+type SetMonthlyPriceRequest struct {
+	EntityType string `json:"entityType"`
+	EntityID   int64  `json:"entityId"`
+	// Rands is the custom monthly price in whole Rand. 0 (or negative) clears the
+	// override and reverts the partner to standard computed pricing.
+	Rands int `json:"rands"`
+}
+
+type SetMonthlyPriceResponse struct {
+	// MonthlyCents is the resulting standing monthly price (before any
+	// invoice-time promo discount).
+	MonthlyCents int `json:"monthlyCents"`
+}
+
+// SetMonthlyPrice sets or clears a partner's custom monthly price. The price is
+// the standing monthly fee; invoice-time promos (e.g. the November launch 50%)
+// still apply on top. Durable: it survives the partner editing their profile.
+//
+//encore:api auth method=POST path=/admin/set-monthly-price
+func SetMonthlyPrice(ctx context.Context, req *SetMonthlyPriceRequest) (*SetMonthlyPriceResponse, error) {
+	if err := requireSuperAdmin(ctx); err != nil {
+		return nil, err
+	}
+	if _, ok := tables[req.EntityType]; !ok {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "unknown entity type"}
+	}
+	m, err := billing.SetMonthlyOverride(ctx, req.EntityType, req.EntityID, req.Rands*100)
+	if err != nil {
+		return nil, &errs.Error{Code: errs.Internal, Message: err.Error()}
+	}
+	return &SetMonthlyPriceResponse{MonthlyCents: m}, nil
+}
+
 type InvoicedIDsRequest struct {
 	EntityType string `query:"entityType"`
 }

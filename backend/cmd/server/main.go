@@ -114,6 +114,7 @@ func main() {
 	r.auth("POST /moderation/flag-status", httpx.Body(moderation.SetFlagStatus))
 	r.staff("POST /admin/bulk-set-active", httpx.Body(admin.BulkSetActive))
 	r.staff("POST /admin/accept-partners", httpx.Body(admin.AcceptPartners))
+	r.staff("POST /admin/set-monthly-price", httpx.Body(admin.SetMonthlyPrice))
 	r.auth("GET /admin/invoiced-ids", httpx.Query(admin.InvoicedPartnerIDs))
 	r.staff("POST /admin/bulk-delete", httpx.Body(admin.BulkDelete))
 	r.auth("GET /admin/archived", httpx.Empty(admin.ListArchived))

@@ -2,6 +2,8 @@ package billing
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
 	"strings"
 	"time"
 
@@ -48,6 +50,17 @@ func EnsureSubscription(ctx context.Context, partnerType string, partnerID int64
 		p.MonthlyCents = p.MonthlyCents - p.MonthlyCents/4
 	}
 
+	// A per-partner price override (an admin-set negotiated monthly fee) wins
+	// over the computed plan price and survives profile re-saves. The launch
+	// promo still applies on top at invoice time.
+	var override sql.NullInt64
+	_ = appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT monthly_cents_override FROM partner_subscription WHERE partner_type = $1 AND partner_id = $2`,
+		partnerType, partnerID).Scan(&override)
+	if override.Valid && override.Int64 > 0 {
+		p.MonthlyCents = int(override.Int64)
+	}
+
 	var tierArg interface{}
 	if p.Tier > 0 {
 		tierArg = p.Tier
@@ -79,6 +92,50 @@ func EnsureSubscription(ctx context.Context, partnerType string, partnerID int64
 		partnerType, partnerID, p.Plan, tierArg, audienceArg, p.MonthlyCents, repArg, nextBill,
 	)
 	return err
+}
+
+// SetMonthlyOverride sets (cents > 0) or clears (cents <= 0) a partner's custom
+// monthly price. When set, it is stored on the subscription and used as the
+// standing monthly_cents, winning over the computed plan price and surviving
+// profile re-saves (EnsureSubscription reads it back). When cleared, the price
+// reverts to the computed plan + rep-tier price. Returns the resulting standing
+// monthly price in cents (before any invoice-time promo discount).
+func SetMonthlyOverride(ctx context.Context, partnerType string, partnerID int64, cents int) (int, error) {
+	if cents > 0 {
+		res, err := appdb.SQLDB.ExecContext(ctx, `
+			UPDATE partner_subscription
+			SET monthly_cents_override = $3, monthly_cents = $3, updated_at = now()
+			WHERE partner_type = $1 AND partner_id = $2`, partnerType, partnerID, cents)
+		if err != nil {
+			return 0, err
+		}
+		if n, _ := res.RowsAffected(); n == 0 {
+			return 0, fmt.Errorf("no subscription for %s %d", partnerType, partnerID)
+		}
+		return cents, nil
+	}
+	// Clear the override and recompute the standing price from the plan + rep tier.
+	tbl := partnerTable(partnerType)
+	if tbl == "" {
+		return 0, fmt.Errorf("unknown partner type %q", partnerType)
+	}
+	if _, err := appdb.SQLDB.ExecContext(ctx,
+		`UPDATE partner_subscription SET monthly_cents_override = NULL WHERE partner_type = $1 AND partner_id = $2`,
+		partnerType, partnerID); err != nil {
+		return 0, err
+	}
+	var accessLevel, guestType, repCode string
+	_ = appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT COALESCE(access_level,''), COALESCE(guest_type,''), COALESCE(official_rep_code,'') FROM `+tbl+` WHERE id = $1`,
+		partnerID).Scan(&accessLevel, &guestType, &repCode)
+	if err := EnsureSubscription(ctx, partnerType, partnerID, accessLevel, guestType, repCode); err != nil {
+		return 0, err
+	}
+	var m int
+	_ = appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT monthly_cents FROM partner_subscription WHERE partner_type = $1 AND partner_id = $2`,
+		partnerType, partnerID).Scan(&m)
+	return m, nil
 }
 
 // SetStatusByPartner sets a subscription's lifecycle status by (partner_type,
