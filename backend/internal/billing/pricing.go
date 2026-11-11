@@ -12,8 +12,8 @@ const (
 	BothCents             = 40000 // R400 — audience "Both" (forces Tier 2) at this flat price
 	BookingBase           = 40000 // R400/month base — Booking / Pre-Order partners are Premium (+ per-cover/per-booking usage added per billing period: restaurants R10/cover, services/attractions 10%, restaurant pre-orders 1%)
 	RealEstateCents       = 30000 // R300 — legacy flat real-estate price (kept for reference)
-	RealEstateAgencyCents = 50000 // R500 — estate agency page
-	RealEstateAgentCents  = 30000 // R300 — estate agent page
+	RealEstateAgencyCents = 30000 // R300 — estate agency page (was R500)
+	RealEstateAgentCents  = 20000 // R200 — estate agent page (was R300)
 	RetailCents           = 50000 // R500 — Retail shops (e.g. SPAR + TOPS)
 
 	// Accommodation Option-A unit bands (6+ units); 1–5 units use tier pricing.
