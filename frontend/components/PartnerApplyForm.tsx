@@ -41,7 +41,11 @@ function pricingText(cat: string, half: boolean): string {
     case "restaurant":
     case "service":
     case "attraction":
-      return "R300 per month - 50% discount for November and December 2026 and January 2027. Normal pricing resumes 01 February 2027.";
+      // The 50%-off launch promo is only for sign-ups during November 2026, so
+      // the promo line shows only through 30 Nov; from 1 Dec it's normal pricing.
+      return Date.now() < Date.parse("2026-12-01T00:00:00+02:00")
+        ? "R300 per month - 50% discount for November and December 2026 and January 2027. Normal pricing resumes 01 February 2027."
+        : "R300 per month.";
     case "estate": return `Estate Agencies ${m(500)} per month and Agents ${m(300)} per month each.`;
     case "retail": return `${m(500)} per month.`;
     case "nonprofit": return "Free — no monthly fee for registered NPO / PBO organisations.";

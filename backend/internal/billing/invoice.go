@@ -51,6 +51,29 @@ func isPromoMonth(periodStart time.Time) bool {
 	return periodStart.Month() == time.September || periodStart.Month() == time.October
 }
 
+// novSignupHalfOff reports whether the launch promo applies to this invoice:
+// partners who sign up during November 2026 (SA time) pay 50% of the monthly
+// base for every billing period before 1 February 2027 — i.e. November &
+// December 2026 and January 2027. Anyone who signs up from 1 December 2026
+// onwards pays normal pricing. Booking usage (covers) is never discounted.
+func novSignupHalfOff(ctx context.Context, subID int64, periodStart time.Time) bool {
+	sast := time.FixedZone("SAST", 2*3600)
+	// Only billing periods that start before 1 Feb 2027 are covered.
+	if !periodStart.Before(time.Date(2027, 2, 1, 0, 0, 0, 0, sast)) {
+		return false
+	}
+	var createdAt time.Time
+	if err := appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT created_at FROM partner_subscription WHERE id = $1`, subID,
+	).Scan(&createdAt); err != nil {
+		return false
+	}
+	// Eligible only if the partner signed up during November 2026.
+	novStart := time.Date(2026, 11, 1, 0, 0, 0, 0, sast)
+	decStart := time.Date(2026, 12, 1, 0, 0, 0, 0, sast)
+	return !createdAt.Before(novStart) && createdAt.Before(decStart)
+}
+
 // Invoice mirrors an invoice row for read APIs.
 type Invoice struct {
 	ID            int64  `json:"id"`
@@ -245,6 +268,12 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 	if isPromoMonth(start) {
 		baseCents = 0
 		coversCents = 0
+	}
+
+	// Launch promo: November-2026 sign-ups get 50% off the monthly base for every
+	// period before 1 Feb 2027 (Nov & Dec 2026, Jan 2027). Usage is not discounted.
+	if baseCents > 0 && novSignupHalfOff(ctx, subID, start) {
+		baseCents = baseCents / 2
 	}
 
 	// Snapshot billing identity from the partner row (columns common to all
