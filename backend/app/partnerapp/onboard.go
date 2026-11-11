@@ -80,6 +80,23 @@ func firstDigits(s string) int {
 	return 0
 }
 
+// parseGPS turns the apply form's "GPS location" value ("lat,long", set by the
+// "Use my location" button) into coordinate pointers so the onboarded partner is
+// placed on the map straight away, without waiting for a manual geocode. Returns
+// (nil, nil) when the field is missing or unparseable.
+func parseGPS(s string) (*float64, *float64) {
+	parts := strings.Split(s, ",")
+	if len(parts) != 2 {
+		return nil, nil
+	}
+	lat, err1 := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
+	lng, err2 := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
+	if err1 != nil || err2 != nil {
+		return nil, nil
+	}
+	return &lat, &lng
+}
+
 // createPartnerFromApplication builds an Inactive partner record from a stored
 // application so it appears in the relevant admin list for review + activation.
 // Address geocoding and tier are left to the admin edit that follows.
@@ -102,11 +119,16 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 	// Mobile partner: travels to the client, no fixed address/coordinates.
 	worksFromClient := a.f("Works from client address") != "" || a.f("Works from different addresses") != ""
 
+	// GPS coordinates captured on the public apply form ("Use my location").
+	gLat, gLng := parseGPS(a.f("GPS location"))
+
 	var partnerID int64
 	var charityType string
 	switch a.Category {
 	case "restaurant":
 		created, err := restaurant.Create(ctx, &restaurant.CreateRequest{
+			Latitude:               gLat,
+			Longitude:              gLng,
 			Name:                   a.BusinessName,
 			Address:                a.f("Physical address"),
 			Country:                "South Africa",
@@ -171,6 +193,8 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 
 	case "service":
 		created, err := service.Create(ctx, &service.CreateRequest{
+			Latitude:               gLat,
+			Longitude:              gLng,
 			Name:                   a.BusinessName,
 			Address:                a.f("Physical address"),
 			Country:                "South Africa",
@@ -229,6 +253,8 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 
 	case "retail":
 		created, err := retail.Create(ctx, &retail.CreateRequest{
+			Latitude:               gLat,
+			Longitude:              gLng,
 			Name:                   a.BusinessName,
 			Address:                a.f("Physical address"),
 			Country:                "South Africa",
@@ -287,6 +313,8 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 
 	case "nonprofit":
 		created, err := nonprofit.Create(ctx, &nonprofit.CreateRequest{
+			Latitude:               gLat,
+			Longitude:              gLng,
 			Name:                   a.BusinessName,
 			NpoNumber:              a.f("NPO Number"),
 			PboNumber:              a.f("PBO Number"),
@@ -347,6 +375,8 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 
 	case "attraction":
 		created, err := attraction.Create(ctx, &attraction.CreateRequest{
+			Latitude:               gLat,
+			Longitude:              gLng,
 			Name:                   a.BusinessName,
 			Address:                a.f("Physical address"),
 			Country:                "South Africa",
@@ -414,6 +444,8 @@ func createPartnerFromApplication(ctx context.Context, a *appRow) error {
 			contact = a.ContactNumber
 		}
 		created, err := accommodation.Create(ctx, &accommodation.CreateRequest{
+			Latitude:               gLat,
+			Longitude:              gLng,
 			Name:                   a.BusinessName,
 			Address:                a.f("Physical address"),
 			Area:                   a.f("Area"),

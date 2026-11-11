@@ -1199,7 +1199,7 @@ export default function RepOnboardingApp() {
                 <TextField label="PBO Number" value={data.pboNumber} onChange={set("pboNumber")} />
               </>
             )}
-            <TextField label="Rep Name (auto-filled)" value={repSession.repName} onChange={() => {}} />
+            <TextField label="Agent Name (auto-filled)" value={repSession.repName} onChange={() => {}} />
             <TextField label="Rep Code (auto-filled)" value={repSession.repCode} onChange={() => {}} />
             <CharityPicker value={charity} onChange={setCharity} />
             <CheckboxGroup label="Country" options={COUNTRY_OPTIONS} selected={country} onChange={setCountry} />

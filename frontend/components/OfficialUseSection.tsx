@@ -2,6 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Shield } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getAuthenticatedBackend } from "../lib/backend";
 
 export interface OfficialUseData {
   officialHoldingCompany: string;
@@ -80,6 +82,25 @@ function RadioGroup({
 }
 
 export default function OfficialUseSection({ data, onChange, address, onAddressChange, showTierFields = true }: OfficialUseSectionProps) {
+  // Admin-only: registered agents for the Agent Name dropdown. In the rep
+  // onboarding context (non-SuperAdmin) the fetch is skipped and the Agent Name
+  // stays a plain text input.
+  const [agents, setAgents] = useState<{ fullName: string; repCode: string }[] | null>(null);
+  useEffect(() => {
+    let role = "";
+    try { role = (JSON.parse(localStorage.getItem("user") || "null") || {}).role || ""; } catch { role = ""; }
+    if (role !== "SuperAdmin") return;
+    (async () => {
+      try {
+        const res: any = await getAuthenticatedBackend().auth.listReps();
+        const list = (res?.reps || [])
+          .filter((r: any) => (r.status || "Active") !== "Inactive")
+          .map((r: any) => ({ fullName: r.fullName, repCode: r.repCode }));
+        setAgents(list);
+      } catch { /* not admin / failed — keep the text input */ }
+    })();
+  }, []);
+
   const set = (field: keyof OfficialUseData) => (e: React.ChangeEvent<HTMLInputElement>) =>
     onChange({ ...data, [field]: e.target.value });
 
@@ -170,21 +191,42 @@ export default function OfficialUseSection({ data, onChange, address, onAddressC
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="officialRepCode">Agent Code</Label>
+            <Label htmlFor="officialRepName">Agent Name</Label>
+            {agents && agents.length > 0 ? (
+              <select
+                id="officialRepName"
+                value={data.officialRepName}
+                onChange={(e) => {
+                  const name = e.target.value;
+                  const match = agents.find((a) => a.fullName === name);
+                  onChange({ ...data, officialRepName: name, officialRepCode: match ? match.repCode : data.officialRepCode });
+                }}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <option value="">Select an agent…</option>
+                {data.officialRepName && !agents.some((a) => a.fullName === data.officialRepName) && (
+                  <option value={data.officialRepName}>{data.officialRepName}</option>
+                )}
+                {agents.map((a) => (
+                  <option key={a.repCode + "|" + a.fullName} value={a.fullName}>{a.fullName} ({a.repCode})</option>
+                ))}
+              </select>
+            ) : (
+              <Input
+                id="officialRepName"
+                value={data.officialRepName}
+                onChange={set("officialRepName")}
+                placeholder="Agent's full name"
+              />
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="officialRepCode">Agent Code <span className="text-xs font-normal text-muted-foreground">(auto-filled from Agent Name)</span></Label>
             <Input
               id="officialRepCode"
               value={data.officialRepCode}
               onChange={set("officialRepCode")}
               placeholder="Agent code"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="officialRepName">Rep Name</Label>
-            <Input
-              id="officialRepName"
-              value={data.officialRepName}
-              onChange={set("officialRepName")}
-              placeholder="Agent's full name"
             />
           </div>
         </div>

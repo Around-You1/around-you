@@ -14,7 +14,7 @@ import (
 // analytics packages so the exclusion can never drift between them.
 
 func TestRepCodesLower() []string {
-	out := []string{"zero"} // default internal/test rep (formerly Rep00000001)
+	out := []string{"zero", "freeofcharge"} // internal/test reps (FREEOFCHARGE = "Around You 4"; "zero" formerly Rep00000001)
 	for _, c := range strings.Split(os.Getenv("TEST_REP_CODES"), ",") {
 		if c = strings.ToLower(strings.TrimSpace(c)); c != "" {
 			out = append(out, c)
@@ -45,7 +45,7 @@ func IsTestRep(code string) bool {
 // AROUNDYOU and HALF are the defaults; add more via NO_COMMISSION_REP_CODES (comma-separated,
 // case-insensitive).
 func NoCommissionRepCodesLower() []string {
-	out := []string{"aroundyou", "half"} // internal "Around You" company accounts (formerly Rep00000005, Rep00000012)
+	out := []string{"aroundyou", "half", "discount50", "discount25"} // internal "Around You" agents (AROUNDYOU, DISCOUNT50, DISCOUNT25; "half" formerly Rep00000012)
 	for _, c := range strings.Split(os.Getenv("NO_COMMISSION_REP_CODES"), ",") {
 		if c = strings.ToLower(strings.TrimSpace(c)); c != "" {
 			out = append(out, c)
@@ -75,7 +75,7 @@ func IsNoCommissionRep(code string) bool {
 // HALF ("Around You 12", formerly Rep00000012) is the default; add more via
 // HALF_PRICE_REP_CODES (comma-separated, case-insensitive).
 func HalfPriceRepCodesLower() []string {
-	out := []string{"half"} // formerly Rep00000012
+	out := []string{"half", "discount50"} // DISCOUNT50 = "Around You 3" (50% off); "half" formerly Rep00000012
 	for _, c := range strings.Split(os.Getenv("HALF_PRICE_REP_CODES"), ",") {
 		if c = strings.ToLower(strings.TrimSpace(c)); c != "" {
 			out = append(out, c)
@@ -92,6 +92,34 @@ func IsHalfPriceRep(code string) bool {
 		return false
 	}
 	for _, t := range HalfPriceRepCodesLower() {
+		if code == t {
+			return true
+		}
+	}
+	return false
+}
+
+// Quarter-discount reps: partners onboarded under these codes are billed at 75%
+// of the normal monthly cost (a 25% discount). DISCOUNT25 ("Around You 2") is the
+// default; add more via QUARTER_PRICE_REP_CODES (comma-separated, case-insensitive).
+func QuarterPriceRepCodesLower() []string {
+	out := []string{"discount25"} // DISCOUNT25 = "Around You 2" (25% off)
+	for _, c := range strings.Split(os.Getenv("QUARTER_PRICE_REP_CODES"), ",") {
+		if c = strings.ToLower(strings.TrimSpace(c)); c != "" {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// IsQuarterPriceRep reports whether a rep code's partners are billed at 75% of
+// the normal monthly cost (a 25% discount).
+func IsQuarterPriceRep(code string) bool {
+	code = strings.ToLower(strings.TrimSpace(code))
+	if code == "" {
+		return false
+	}
+	for _, t := range QuarterPriceRepCodesLower() {
 		if code == t {
 			return true
 		}

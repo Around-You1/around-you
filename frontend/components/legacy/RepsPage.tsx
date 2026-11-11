@@ -60,7 +60,7 @@ export default function RepsPage({
 
   const submit = () => {
     if (!form.repName.trim() || !form.email.trim()) {
-      alert("Rep Name and Email are required.");
+      alert("Agent Name and Email are required.");
       return;
     }
     onCreateRep({
@@ -104,7 +104,7 @@ export default function RepsPage({
               <h3 style={{ color: colors.primary, margin: 0, fontSize: 15 }}>New Rep Profile</h3>
               <button onClick={() => setCreating(false)} style={{ background: "transparent", border: `1px solid ${colors.border}`, color: colors.textSecondary, borderRadius: 8, padding: "4px 10px", cursor: "pointer" }}>Cancel</button>
             </div>
-            <TextField label="Rep Name" value={form.repName} onChange={set("repName")} />
+            <TextField label="Agent Name" value={form.repName} onChange={set("repName")} />
             <TextField label="Email Address" type="email" value={form.email} onChange={set("email")} />
             <TextField label="Phone Number" value={form.phone} onChange={set("phone")} />
             <p style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 10 }}>
@@ -141,7 +141,7 @@ export default function RepsPage({
               </div>
               <button
                 onClick={() => {
-                  if (window.confirm(`Remove ${rep.repName}? Their existing profiles keep their Rep Name for commission history, but their Rep Code stops working.`)) {
+                  if (window.confirm(`Remove ${rep.repName}? Their existing profiles keep their Agent Name for commission history, but their Agent Code stops working.`)) {
                     onDeleteRep(rep.id);
                   }
                 }}

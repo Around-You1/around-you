@@ -43,6 +43,9 @@ func EnsureSubscription(ctx context.Context, partnerType string, partnerID int64
 	// pre-order usage fees added at billing time are unchanged.
 	if appdb.IsHalfPriceRep(repCode) {
 		p.MonthlyCents = p.MonthlyCents / 2
+	} else if appdb.IsQuarterPriceRep(repCode) {
+		// 25% discount — bill 75% of the normal monthly cost.
+		p.MonthlyCents = p.MonthlyCents - p.MonthlyCents/4
 	}
 
 	var tierArg interface{}
