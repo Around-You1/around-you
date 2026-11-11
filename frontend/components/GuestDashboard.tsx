@@ -426,6 +426,16 @@ export default function GuestDashboard() {
       } catch {
         coords = null;
       }
+      // Fall back to the location the local saved at registration ("Use my
+      // location") when live GPS is unavailable or was declined this time.
+      if (!coords) {
+        try {
+          const gi = JSON.parse(localStorage.getItem("localGuestInfo") || "{}");
+          if (typeof gi.latitude === "number" && typeof gi.longitude === "number") {
+            coords = { latitude: gi.latitude, longitude: gi.longitude };
+          }
+        } catch { /* best-effort */ }
+      }
       const lat = coords ? coords.latitude : 0;
       const lng = coords ? coords.longitude : 0;
       const [r, s, ret, npo, a] = await Promise.all([

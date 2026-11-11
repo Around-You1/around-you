@@ -403,17 +403,15 @@ type LocalGuestLoginRequest struct {
 	PostalCode string `json:"postalCode"`
 }
 
-// LocalGuestLogin signs in a local (non-touring) guest by email + postal
-// code, used by the "I live here" panel on LoginPage.tsx. Reuses the
-// existing user record if this email has signed in before.
+// LocalGuestLogin signs in a local (non-touring) guest by their mobile number,
+// used by the "I live here" panel on LoginPage.tsx. Province and postal code are
+// optional aids for finding nearby places. Reuses the existing user record if
+// this number (or, for legacy clients, email) has signed in before.
 //
 //encore:api public method=POST path=/auth/local-guest-login
 func LocalGuestLogin(ctx context.Context, req *LocalGuestLoginRequest) (*LoginResponse, error) {
 	cell := normalizePhone(req.Cell)
 	email := strings.ToLower(strings.TrimSpace(req.Email))
-	if req.Province == "" || strings.TrimSpace(req.PostalCode) == "" {
-		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "province and postal code are required"}
-	}
 	if cell == "" && email == "" {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "a mobile number is required"}
 	}
@@ -432,7 +430,9 @@ func LocalGuestLogin(ctx context.Context, req *LocalGuestLoginRequest) (*LoginRe
 		return nil, err
 	}
 	if existing != nil {
-		existing.PostalCode = req.PostalCode
+		if strings.TrimSpace(req.PostalCode) != "" {
+			existing.PostalCode = req.PostalCode
+		}
 		if cell != "" {
 			existing.Phone = cell
 		}
