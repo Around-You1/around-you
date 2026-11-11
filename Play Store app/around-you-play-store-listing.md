@@ -32,7 +32,7 @@ Open the app and instantly see the restaurants, places to stay, things to do, lo
 
 FIND WHAT'S AROUND YOU
 • Restaurants & eateries — from quick bites to special occasions
-• Accommodation — guesthouses, self-catering, hotels and boutique stays
+• Accommodation/Caravan Parks — guesthouses, self-catering, hotels, caravan parks and boutique stays
 • Attractions & experiences — things to see and do near you
 • Services — the everyday help you need, close by
 • Real estate — browse properties for sale and to rent, and connect with estate agents and agencies

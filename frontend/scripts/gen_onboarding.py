@@ -164,7 +164,7 @@ acc = repcode() + business("Accommodation name") + [
     fill("Number of units / rooms", "sets your monthly price"),
     para("Monthly price by units:  1–5 = R300  ·  6–10 = R500  ·  11–20 = R800  ·  21–40 = R1,200  ·  40+ = custom quote", lbl),
 ]
-build("accommodation-onboarding.pdf", "Around You — Accommodation Application", acc,
+build("accommodation-onboarding.pdf", "Around You — Accommodation/Caravan Parks Application", acc,
       price_txt="R300 per month.")
 
 # ===== Real Estate & Rentals =====

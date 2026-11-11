@@ -99,7 +99,7 @@ export default function RepAcademy() {
   };
 
   const GROUPS: { heading: string; key: keyof NearResults }[] = [
-    { heading: "Accommodations", key: "accommodations" },
+    { heading: "Accommodation/Caravan Parks", key: "accommodations" },
     { heading: "Restaurants/Takeaways", key: "restaurants" },
     { heading: "Business/Services", key: "services" },
     { heading: "Attractions/Activities", key: "attractions" },
@@ -135,7 +135,7 @@ export default function RepAcademy() {
           <p style={{ color: colors.textSecondary, fontSize: 12.5, lineHeight: 1.55, margin: "6px 0 14px" }}>
             Open the <b style={{ color: colors.textPrimary }}>Join Around You</b> application and complete a new
             partner&apos;s listing with them on the spot — choose{" "}
-            <b style={{ color: colors.textPrimary }}>Accommodation</b>,{" "}
+            <b style={{ color: colors.textPrimary }}>Accommodation/Caravan Parks</b>,{" "}
             <b style={{ color: colors.textPrimary }}>Restaurant/Takeaway</b>,{" "}
             <b style={{ color: colors.textPrimary }}>Business/Service</b>,{" "}
             <b style={{ color: colors.textPrimary }}>Attraction/Activity</b> or{" "}

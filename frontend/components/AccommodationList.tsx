@@ -187,7 +187,7 @@ export default function AccommodationList({ accommodations, onEdit, onUpdate }: 
   };
 
   if (accommodations.length === 0) {
-    return <div className="text-center py-12 text-muted-foreground">No accommodations found</div>;
+    return <div className="text-center py-12 text-muted-foreground">No accommodation/caravan parks found</div>;
   }
 
   return (

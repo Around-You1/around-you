@@ -32,7 +32,7 @@ Around You is a mobile app that helps people discover great places near them —
 
 Around You lists partners under distinct, independent categories, each with its own tab on the Admin Dashboard and the Guest/Local pages, and its own rep-onboarding path and application PDF:
 
-- **Restaurants/Takeaways**, **Business/Services**, **Attractions/Activities**, **Accommodation**, **Real Estate & Rentals** — as before.
+- **Restaurants/Takeaways**, **Business/Services**, **Attractions/Activities**, **Accommodation/Caravan Parks**, **Real Estate & Rentals** — as before.
 - **Retail** — the same as a Business/Service profile, but without Categories, Discounts (Guest/Local), Bookings or Pre-Orders. Retail keeps the Digital Stamp Card (with a brand-colour company name) and all contact, address, photos, trading hours, payment methods and socials. Billed like a business (R300/month).
 - **NPO / PBO** — a separate, independent category for non-profit and public-benefit organisations. Shows NPO Number and PBO Number, and is **free** (no monthly fee). Reps can onboard NPOs directly, and the commission still flows to the onboarding rep/NPO structure.
 

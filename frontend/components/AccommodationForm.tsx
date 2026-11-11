@@ -322,7 +322,7 @@ export default function AccommodationForm({ accommodation, onClose, partnerEdit 
             <div className="text-lg font-bold text-center break-words">{formData.name || "Your Profile"}</div>
           </div>
         )}
-        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${accommodation ? "Edit" : "Add"} Accommodation`}</CardTitle>
+        <CardTitle>{partnerEdit ? "Edit Your Profile" : `${accommodation ? "Edit" : "Add"} Accommodation/Caravan Parks`}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">

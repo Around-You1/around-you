@@ -14,7 +14,7 @@ const LUMO = "#39FF14";
 // itself stays an internal step.
 
 const CATEGORIES: { key: string; label: string }[] = [
-  { key: "accommodation", label: "Accommodation" },
+  { key: "accommodation", label: "Accommodation/Caravan Parks" },
   { key: "restaurant", label: "Restaurant/Takeaway" },
   { key: "service", label: "Business/Service" },
   { key: "attraction", label: "Attraction/Activity" },

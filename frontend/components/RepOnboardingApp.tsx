@@ -42,7 +42,7 @@ const ONBOARDING_PDF: Record<string, string> = {
 // Display-only category label; the internal partner-type keys stay "Services"
 // and "Restaurants".
 const typeLabel = (t: string) =>
-  t === "Services" ? "Business/Services" : t === "Restaurants" ? "Restaurants/Takeaways" : t === "Attractions" ? "Attractions/Activities" : t;
+  t === "Services" ? "Business/Services" : t === "Restaurants" ? "Restaurants/Takeaways" : t === "Attractions" ? "Attractions/Activities" : t === "Accommodations" ? "Accommodation/Caravan Parks" : t;
 
 const colors = {
   background: "#000000",

@@ -21,7 +21,7 @@ Enter this under **Play Console → App content → App access**. Because most o
 - Steps to review:
   1. Sign in as above.
   2. Allow location when prompted.
-  3. Browse the categories (Restaurants, Accommodation, Attractions, Services, Real Estate).
+  3. Browse the categories (Restaurants, Accommodation/Caravan Parks, Attractions, Services, Real Estate).
   4. Use the search bar and filters (e.g. Real Estate → search by type/bedrooms/province).
   5. Open a listing, tap **Directions**, and view a discount code.
 

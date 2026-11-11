@@ -22,7 +22,7 @@ In Cowork, grant/select the **`D:\1au`** folder when prompted. Once the assistan
 - **Guests** — holiday visitors staying at an accommodation; see partners near that accommodation.
 - **Locals** ("LocalGuest" role) — signed-in residents; see partners in their area (up to ~150 km).
 
-Partner categories: **Accommodations, Restaurants, Services, Attractions, Real Estate & Rentals** (estate agencies + standalone agents + property listings).
+Partner categories: **Accommodation/Caravan Parks, Restaurants, Services, Attractions, Real Estate & Rentals** (estate agencies + standalone agents + property listings).
 
 There is also a **Rep** system: field reps onboard partners and earn commission; **Team Leaders** have downline reps. Plus **Accountant** and **SuperAdmin** roles.
 
