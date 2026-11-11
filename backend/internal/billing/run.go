@@ -24,11 +24,14 @@ func RunMonthlyBilling(ctx context.Context) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	today := time.Now().UTC().Format("2006-01-02")
+	// Recurring invoices are mailed 3 days BEFORE their invoice date, so each
+	// partner receives the invoice ahead of its due date. The invoice still
+	// carries its true invoice date (next_bill_date); only the send is early.
+	cutoff := time.Now().UTC().AddDate(0, 0, 3).Format("2006-01-02")
 
 	issued := 0
 	for _, s := range subs {
-		if !s.Billable || s.NextBillDate == "" || s.NextBillDate > today {
+		if !s.Billable || s.NextBillDate == "" || s.NextBillDate > cutoff {
 			continue
 		}
 		start, perr := time.Parse("2006-01-02", s.NextBillDate)
@@ -37,7 +40,8 @@ func RunMonthlyBilling(ctx context.Context) (int, error) {
 			continue
 		}
 		end := start.AddDate(0, 1, 0)
-		dueDate := start.AddDate(0, 0, 3)
+		// Due date is 2 days after the invoice date (invoice 10th -> due 12th).
+		dueDate := start.AddDate(0, 0, 2)
 
 		base := s.MonthlyCents
 		covers := 0
@@ -53,7 +57,7 @@ func RunMonthlyBilling(ctx context.Context) (int, error) {
 			covers = bc
 		}
 
-		if err := GenerateInvoice(ctx, s.ID, s.PartnerType, s.PartnerID, s.Plan, s.Tier, base, covers, start, end, dueDate, false); err != nil {
+		if err := GenerateInvoice(ctx, s.ID, s.PartnerType, s.PartnerID, s.Plan, s.Tier, base, covers, start, end, dueDate, false, false); err != nil {
 			log.Printf("billing run: invoice for sub %d failed: %v", s.ID, err)
 			continue
 		}

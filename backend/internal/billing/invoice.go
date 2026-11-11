@@ -190,21 +190,30 @@ func OnPartnerActivated(ctx context.Context, partnerType string, partnerID int64
 		return err
 	}
 
-	// Set the recurring anchor to one month out (billed on the activation
-	// day-of-month) if it isn't already set. COALESCE means an already-set
-	// anchor is left untouched.
-	if _, err := appdb.SQLDB.ExecContext(ctx, `
-		UPDATE partner_subscription
-		SET next_bill_date = COALESCE(next_bill_date, ((now() at time zone 'utc')::date + interval '1 month')),
-		    updated_at = now()
-		WHERE id = $1`, subID); err != nil {
-		return err
+	// Issue the first invoice now if Accept hasn't already — so there is always a
+	// first invoice to anchor the recurring cycle to.
+	if !invoiced {
+		if err := IssueFirstInvoice(ctx, partnerType, partnerID); err != nil {
+			return err
+		}
 	}
 
-	if invoiced {
-		return nil // already had its first invoice — just resumed recurring
+	// Start recurring from the END of the first invoice's period, so the monthly
+	// billing date is the ACCEPTANCE anniversary (accepted the 10th -> billed the
+	// 10th each month), not the activation day. COALESCE leaves an already-set
+	// anchor untouched and falls back to one month out if no invoice exists yet.
+	if _, err := appdb.SQLDB.ExecContext(ctx, `
+		UPDATE partner_subscription ps
+		SET next_bill_date = COALESCE(
+		        ps.next_bill_date,
+		        (SELECT MAX(period_end) FROM invoice WHERE subscription_id = ps.id),
+		        ((now() at time zone 'utc')::date + interval '1 month')
+		    ),
+		    updated_at = now()
+		WHERE ps.id = $1`, subID); err != nil {
+		return err
 	}
-	return IssueFirstInvoice(ctx, partnerType, partnerID)
+	return nil
 }
 
 // AcceptPartner is called when a SuperAdmin ACCEPTS an onboarded partner (after
@@ -268,6 +277,22 @@ func PausePartnerBilling(ctx context.Context, partnerType string, partnerID int6
 	return err
 }
 
+// prorateCents returns the pro-rata share of a full monthly fee for the part of
+// the calendar month from `from` (the acceptance day, inclusive) through the end
+// of that month. A partner accepted on the 1st pays the full month; one accepted
+// mid-month pays only for the days remaining. Integer cents, rounded to nearest.
+func prorateCents(monthlyCents int, from time.Time) int {
+	daysInMonth := time.Date(from.Year(), from.Month()+1, 0, 0, 0, 0, 0, from.Location()).Day()
+	remaining := daysInMonth - from.Day() + 1 // include the acceptance day itself
+	if remaining < 1 {
+		remaining = 1
+	}
+	if remaining >= daysInMonth {
+		return monthlyCents
+	}
+	return (monthlyCents*remaining + daysInMonth/2) / daysInMonth
+}
+
 // IssueFirstInvoice bills the current month for a freshly-onboarded partner.
 // Idempotent per period via the invoice unique constraint.
 func IssueFirstInvoice(ctx context.Context, partnerType string, partnerID int64) error {
@@ -284,11 +309,14 @@ func IssueFirstInvoice(ctx context.Context, partnerType string, partnerID int64)
 		return err
 	}
 	start := time.Now()
-	end := start.AddDate(0, 1, 0)
-	due := start.AddDate(0, 0, 3)
-	// Onboarding invoice: base only. Booking usage for this month is billed in
-	// arrears on the next monthly run.
-	return GenerateInvoice(ctx, subID, partnerType, partnerID, plan, tier, int(monthly), 0, start, end, due, true)
+	// The first invoice is pro-rated for the remainder of the current calendar
+	// month; full monthly billing then starts on the 1st of next month (mailed 3
+	// days before). period_end is the 1st of next month so the next invoice's
+	// period follows on contiguously.
+	end := time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, start.Location()).AddDate(0, 1, 0)
+	due := start.AddDate(0, 0, 2)
+	base := prorateCents(int(monthly), start)
+	return GenerateInvoice(ctx, subID, partnerType, partnerID, plan, tier, base, 0, start, end, due, true, true)
 }
 
 // GenerateInvoice creates one invoice (+ its line items) for a subscription's
@@ -301,7 +329,7 @@ func IssueFirstInvoice(ctx context.Context, partnerType string, partnerID int64)
 // one. withCodes is true only for the FIRST (onboarding) invoice — when set, the
 // email also includes the partner's Access Code, Partner Edit Code and Profile
 // QR Code. The monthly billing run passes false so those go out only once.
-func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partnerID int64, plan string, tier, baseCents, coversCents int, start, end, due time.Time, withCodes bool) error {
+func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partnerID int64, plan string, tier, baseCents, coversCents int, start, end, due time.Time, withCodes, proRata bool) error {
 	var exists bool
 	if err := appdb.SQLDB.QueryRowContext(ctx,
 		`SELECT EXISTS(SELECT 1 FROM invoice WHERE subscription_id = $1 AND period_start = $2)`,
@@ -358,14 +386,19 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 	// Build the invoice's line items. Booking partners get a fixed monthly base
 	// line plus a usage line (covers/bookings); everyone else gets one line.
 	var lines []invoiceLine
+	// The first invoice is pro-rated for the remainder of its month; label it so.
+	proRataNote := ""
+	if proRata {
+		proRataNote = " — pro-rata for " + start.Format("January 2006")
+	}
 	if plan == "booking" {
 		mCode, mDesc, uCode, uDesc := BookingItemCodes(partnerType)
-		lines = append(lines, invoiceLine{Code: mCode, Desc: mDesc + " — " + start.Format("January 2006"), Cents: baseCents})
+		lines = append(lines, invoiceLine{Code: mCode, Desc: mDesc + " — " + start.Format("January 2006") + proRataNote, Cents: baseCents})
 		if coversCents > 0 {
 			lines = append(lines, invoiceLine{Code: uCode, Desc: uDesc + " — " + start.Format("January 2006"), Cents: coversCents})
 		}
 	} else {
-		lines = append(lines, invoiceLine{Code: itemCode, Desc: itemDesc, Cents: baseCents})
+		lines = append(lines, invoiceLine{Code: itemCode, Desc: itemDesc + proRataNote, Cents: baseCents})
 	}
 	totalCents := 0
 	for _, l := range lines {
@@ -561,7 +594,7 @@ func SendTestInvoiceWithCodes(ctx context.Context, to string) error {
 	view := invoiceView{
 		Number:            "TEST-0001",
 		Date:              now,
-		Due:               now.AddDate(0, 0, 3),
+		Due:               now.AddDate(0, 0, 2),
 		Lines:             []invoiceLine{{Desc: "Around You partner subscription (SAMPLE)", Cents: 30000}},
 		BillName:          "Sample Partner (Pty) Ltd",
 		BillReg:           "2020/123456/07",
@@ -832,7 +865,7 @@ func money(cents int) string {
 // qrDecalNoteHTML is the one-line note shown at the top of partner emails that
 // carry the profile-QR attachment, so partners know what the QR is for.
 func qrDecalNoteHTML() string {
-	return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:780px;color:#111;font-size:13px;margin:0 0 14px"><p style="margin:0;font-weight:bold">The QR Code attached can be used for front door, window or vehicle decals.</p></div>`
+	return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:780px;color:#111;font-size:13px;margin:0 0 14px"><p style="margin:0;font-weight:bold">The attached QR Code opens your Around You profile when scanned. Print it for your front door, window or vehicle decals (such as car branding), so Guests and Locals can scan straight through to your listing.</p></div>`
 }
 
 // invoiceEmailBodyHTML is the short message shown in the invoice EMAIL body. The
@@ -842,9 +875,15 @@ func qrDecalNoteHTML() string {
 func invoiceEmailBodyHTML(v invoiceView) string {
 	month := v.Date.Format("January 2006")
 	due := v.Due.Format("02/Jan/2006")
+	number := htmlPkg.EscapeString(v.Number)
 	return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:780px;color:#111;font-size:14px;line-height:1.55">` +
 		`<p style="margin:0">Please see the attached invoice for the month of <strong>` + htmlPkg.EscapeString(month) + `</strong>, ` +
-		`which will be payable on <strong style="color:#39FF14">` + htmlPkg.EscapeString(due) + `</strong> so as to avoid deactivation.</p></div>`
+		`which is payable by <strong style="color:#39FF14">` + htmlPkg.EscapeString(due) + `</strong> so as to avoid deactivation.</p>` +
+		`<h3 style="margin:18px 0 6px">How to pay</h3>` +
+		`<p style="margin:0">Payment is by EFT (bank transfer) to the banking details shown on the attached invoice. ` +
+		`Please use your invoice number <strong>` + number + `</strong> as the payment reference, so we can match your payment to your account. ` +
+		`Your listing stays live for as long as each payment reaches us by the due date above.</p>` +
+		`</div>`
 }
 
 // renderInvoiceHTML builds the branded invoice (Invoice-Ninja-style layout):
@@ -852,7 +891,7 @@ func invoiceEmailBodyHTML(v invoiceView) string {
 // bill-to below, an item table, then bank details and totals.
 func renderInvoiceHTML(s *InvoiceSettings, v invoiceView) string {
 	if s == nil {
-		s = &InvoiceSettings{BusinessName: "Around You", PaymentTerms: "Payment due within 3 days of the invoice date."}
+		s = &InvoiceSettings{BusinessName: "Around You", PaymentTerms: "Payment due within 2 days of the invoice date."}
 	}
 	esc := htmlPkg.EscapeString
 	bizName := firstNonEmpty(s.BusinessName, "Around You")
@@ -945,7 +984,7 @@ func renderInvoiceHTML(s *InvoiceSettings, v invoiceView) string {
 	trow("Balance Due", total)
 	b.WriteString(`</table></td></tr></table>`)
 
-	terms := firstNonEmpty(strings.TrimSpace(s.PaymentTerms), "Payment due within 3 days of the invoice date.")
+	terms := firstNonEmpty(strings.TrimSpace(s.PaymentTerms), "Payment due within 2 days of the invoice date.")
 	b.WriteString(`<p style="color:#888;font-size:11px;margin-top:18px">` + esc(bizName) +
 		` is not currently VAT-registered; no VAT has been charged. ` + esc(terms) + `</p></div>`)
 	return b.String()
@@ -959,7 +998,7 @@ func PreviewInvoiceHTML(ctx context.Context) (string, error) {
 	return renderInvoiceHTML(s, invoiceView{
 		Number:            fmt.Sprintf("AY-%d-000123", now.Year()),
 		Date:              now,
-		Due:               now.AddDate(0, 0, 3),
+		Due:               now.AddDate(0, 0, 2),
 		ItemCode:          "ResT2L",
 		ItemDesc:          "Restaurant Premium Local",
 		Cents:             20000,

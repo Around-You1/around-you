@@ -76,7 +76,7 @@ func wrapChars(s string, n int) []string {
 // mirrors the fields of the HTML invoice so the attachment matches the email.
 func buildInvoicePDF(s *InvoiceSettings, v invoiceView) []byte {
 	if s == nil {
-		s = &InvoiceSettings{BusinessName: "Around You", PaymentTerms: "Payment due within 3 days of the invoice date."}
+		s = &InvoiceSettings{BusinessName: "Around You", PaymentTerms: "Payment due within 2 days of the invoice date."}
 	}
 	biz := firstNonEmpty(s.BusinessName, "Around You")
 	total := money(v.total())
@@ -221,7 +221,7 @@ func buildInvoicePDF(s *InvoiceSettings, v invoiceView) []byte {
 		y -= 8
 	}
 
-	terms := firstNonEmpty(strings.TrimSpace(s.PaymentTerms), "Payment due within 3 days of the invoice date.")
+	terms := firstNonEmpty(strings.TrimSpace(s.PaymentTerms), "Payment due within 2 days of the invoice date.")
 	note := biz + " is not currently VAT-registered; no VAT has been charged. " + terms
 	for _, ln := range wrapChars(note, 95) {
 		draw(L, y, 9, false, ln)
