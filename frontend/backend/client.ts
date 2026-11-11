@@ -213,6 +213,8 @@ export const backend = {
       request("GET", "/billing/statement", { query: req }),
     markPeriodPaid: (req: { period: string; repCode?: string }) =>
       request("POST", "/billing/statement/mark-paid", { body: req }),
+    setCommissionPaid: (req: { commissionId: number; paid: boolean }) =>
+      request("POST", "/billing/commission/set-paid", { body: req }),
     emailStatements: (req: { period?: string }) =>
       request("POST", "/billing/statement/email", { body: req }),
     setSubscriptionStatus: (req: { id: number; status: string }) =>

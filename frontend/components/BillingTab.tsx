@@ -618,17 +618,53 @@ export default function BillingTab() {
     }
   };
 
+  // Reload everything that derives from commission status — the Commissions
+  // ledger, the month's statements, and the all-time roll-up — so a payout shows
+  // consistently across all three panels.
+  const reloadCommissionData = async () => {
+    try {
+      const backend = getAuthenticatedBackend();
+      const [c, cr] = await Promise.all([
+        backend.billing.listCommissions(),
+        backend.accounts.commissions(),
+      ]);
+      setCommissions((c as { commissions?: Commission[] }).commissions || []);
+      setCommRollup(((cr as any).rollup || null) as CommissionRollup | null);
+      await loadStatements(period);
+    } catch (error) {
+      console.error("Failed to reload commission data:", error);
+    }
+  };
+
   const handleMarkPaid = async () => {
     setPaying(true);
     try {
       const backend = getAuthenticatedBackend();
       const r = await backend.billing.markPeriodPaid({ period });
       toast({ title: "Payout recorded", description: `${r.updated} entries marked Paid for ${period}` });
-      loadStatements(period);
+      await reloadCommissionData();
     } catch (error: any) {
       toast({ title: "Error", description: error?.message || "Failed to mark paid", variant: "destructive" });
     } finally {
       setPaying(false);
+    }
+  };
+
+  // Per-row payout toggle in the Commissions ledger: flip one commission between
+  // Accrued and Paid. All three commission panels refresh to match.
+  const [togglingCommId, setTogglingCommId] = useState<number | null>(null);
+  const handleToggleCommissionPaid = async (c: Commission) => {
+    const paid = c.status !== "Paid";
+    setTogglingCommId(c.id);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.billing.setCommissionPaid({ commissionId: c.id, paid });
+      toast({ title: paid ? "Marked Paid" : "Marked Accrued", description: `${c.repCode} · ${rand(c.amountCents)}` });
+      await reloadCommissionData();
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Failed to update", variant: "destructive" });
+    } finally {
+      setTogglingCommId(null);
     }
   };
 
@@ -988,7 +1024,7 @@ export default function BillingTab() {
 
       <CollapsibleCard
         title={`Commissions (${commissions.length}) · Accrued ${rand(
-          commissions.reduce((sum, c) => sum + c.amountCents, 0),
+          commissions.filter((c) => c.status !== "Paid").reduce((sum, c) => sum + c.amountCents, 0),
         )}`}
       >
         {commissions.length === 0 ? (
@@ -1036,7 +1072,22 @@ export default function BillingTab() {
                       <td className="py-2 pr-3">{c.partnerType} #{c.partnerId}</td>
                       <td className="py-2 pr-3">{c.periodStart || "—"}</td>
                       <td className="py-2 pr-3">{rand(c.amountCents)}</td>
-                      <td className="py-2 pr-3">{c.status}</td>
+                      <td className="py-2 pr-3">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleCommissionPaid(c)}
+                          disabled={togglingCommId === c.id}
+                          title={c.status === "Paid" ? "Tap to mark Accrued (unpaid)" : "Tap to mark Paid"}
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border transition-colors ${
+                            c.status === "Paid"
+                              ? "bg-[#39FF14]/15 border-[#39FF14]/50 text-[#2a9d12]"
+                              : "bg-muted border-border text-muted-foreground hover:border-[#39FF14]/50"
+                          } ${togglingCommId === c.id ? "opacity-50 cursor-wait" : "cursor-pointer"}`}
+                        >
+                          <span className={`h-1.5 w-1.5 rounded-full ${c.status === "Paid" ? "bg-[#39FF14]" : "bg-muted-foreground/50"}`} />
+                          {togglingCommId === c.id ? "…" : c.status}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -70,6 +70,20 @@ func MarkPeriodPaid(ctx context.Context, period, repCode string) (int, error) {
 	return int(n), nil
 }
 
+// SetCommissionPaid flips a single commission ledger row between Paid and
+// Accrued — the per-row payout toggle in the Admin Billing tab. The monthly
+// statements and the roll-up both derive Accrued/Paid from this status, so they
+// reflect the change on their next load.
+func SetCommissionPaid(ctx context.Context, commissionID int64, paid bool) error {
+	status := "Accrued"
+	if paid {
+		status = "Paid"
+	}
+	_, err := appdb.SQLDB.ExecContext(ctx,
+		`UPDATE commission SET status = $2 WHERE id = $1`, commissionID, status)
+	return err
+}
+
 // EmailStatements emails each rep who has a rep_email their commission
 // statement for the month, and returns how many were sent. Best-effort per rep
 // (a missing email or a mail hiccup just skips that rep). Reps without an email

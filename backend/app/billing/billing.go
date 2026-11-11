@@ -133,6 +133,33 @@ func MarkPeriodPaid(ctx context.Context, req *MarkPaidRequest) (*MarkPaidRespons
 	return &MarkPaidResponse{Updated: n}, nil
 }
 
+type SetCommissionPaidRequest struct {
+	CommissionID int64 `json:"commissionId"`
+	Paid         bool  `json:"paid"`
+}
+
+type SetCommissionPaidResponse struct {
+	OK bool `json:"ok"`
+}
+
+// SetCommissionPaid is SuperAdmin-only — marks a single commission row Paid or
+// Accrued (the per-row payout toggle in the Admin Billing tab).
+//
+//encore:api auth method=POST path=/billing/commission/set-paid
+func SetCommissionPaid(ctx context.Context, req *SetCommissionPaidRequest) (*SetCommissionPaidResponse, error) {
+	data := auth.FromContext(ctx)
+	if data == nil || data.User == nil || data.User.Role != "SuperAdmin" {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can mark commissions paid"}
+	}
+	if req.CommissionID == 0 {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "commissionId is required"}
+	}
+	if err := billingcore.SetCommissionPaid(ctx, req.CommissionID, req.Paid); err != nil {
+		return nil, err
+	}
+	return &SetCommissionPaidResponse{OK: true}, nil
+}
+
 type EmailStatementsRequest struct {
 	Period string `json:"period"`
 }
