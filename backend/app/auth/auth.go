@@ -393,7 +393,11 @@ func findByNameAddressProvince(ctx context.Context, name, address, province stri
 }
 
 type LocalGuestLoginRequest struct {
-	Email      string `json:"email"`
+	// Cell is the local's mobile number and their sign-in identity (the same
+	// key the stamp-card system uses). Email is legacy/optional and only used
+	// as a fallback for older clients or pre-existing email-only locals.
+	Cell       string `json:"cell,omitempty"`
+	Email      string `json:"email,omitempty"`
 	Province   string `json:"province"`
 	Area       string `json:"area,omitempty"`
 	PostalCode string `json:"postalCode"`
@@ -405,21 +409,78 @@ type LocalGuestLoginRequest struct {
 //
 //encore:api public method=POST path=/auth/local-guest-login
 func LocalGuestLogin(ctx context.Context, req *LocalGuestLoginRequest) (*LoginResponse, error) {
+	cell := normalizePhone(req.Cell)
 	email := strings.ToLower(strings.TrimSpace(req.Email))
-	if email == "" || req.Province == "" || strings.TrimSpace(req.PostalCode) == "" {
-		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "email, province, and postal code are required"}
+	if req.Province == "" || strings.TrimSpace(req.PostalCode) == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "province and postal code are required"}
+	}
+	if cell == "" && email == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "a mobile number is required"}
 	}
 
-	existing, err := findLocalGuestByEmail(ctx, email)
+	// Locals are identified by their cell number. The email branch is kept so an
+	// older client that still sends an email — or a pre-existing email-only local
+	// — continues to sign in to the same account.
+	var existing *appdb.User
+	var err error
+	if cell != "" {
+		existing, err = findLocalGuestByPhone(ctx, cell)
+	} else {
+		existing, err = findLocalGuestByEmail(ctx, email)
+	}
 	if err != nil {
 		return nil, err
 	}
 	if existing != nil {
 		existing.PostalCode = req.PostalCode
+		if cell != "" {
+			existing.Phone = cell
+		}
 		return issueSession(ctx, existing)
 	}
 
-	return issueSession(ctx, &appdb.User{Email: email, Role: "LocalGuest", Area: req.Area, PostalCode: req.PostalCode})
+	return issueSession(ctx, &appdb.User{Email: email, Phone: cell, Role: "LocalGuest", Area: req.Area, PostalCode: req.PostalCode})
+}
+
+// normalizePhone reduces a cell number to the canonical 0XXXXXXXXX digit form so
+// the same local matches however the number was typed (+27 and 0-prefixed forms
+// collapse). Mirrors app/loyalty's normalizer so a local's sign-in key lines up
+// with their stamp-card key.
+func normalizePhone(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		if r >= '0' && r <= '9' {
+			b.WriteRune(r)
+		}
+	}
+	d := b.String()
+	if strings.HasPrefix(d, "27") && len(d) == 11 {
+		d = "0" + d[2:]
+	}
+	return d
+}
+
+func findLocalGuestByPhone(ctx context.Context, phone string) (*appdb.User, error) {
+	var u appdb.User
+	err := appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT id, COALESCE(email, '') as email, role,
+		       COALESCE(profile_type, '') as profile_type,
+		       COALESCE(accommodation_id, 0) as accommodation_id,
+		       COALESCE(entity_type, '') as entity_type,
+		       COALESCE(entity_id, 0) as entity_id,
+		       COALESCE(area, '') as area,
+		       COALESCE(municipality, '') as municipality,
+		       COALESCE(postal_code, '') as postal_code,
+		       COALESCE(phone, '') as phone
+		FROM users WHERE role = 'LocalGuest' AND phone = $1`, phone,
+	).Scan(&u.ID, &u.Email, &u.Role, &u.ProfileType, &u.AccommodationID, &u.EntityType, &u.EntityID, &u.Area, &u.Municipality, &u.PostalCode, &u.Phone)
+	if err != nil {
+		if isNoRows(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &u, nil
 }
 
 func findLocalGuestByEmail(ctx context.Context, email string) (*appdb.User, error) {
@@ -432,9 +493,10 @@ func findLocalGuestByEmail(ctx context.Context, email string) (*appdb.User, erro
 		       COALESCE(entity_id, 0) as entity_id,
 		       COALESCE(area, '') as area,
 		       COALESCE(municipality, '') as municipality,
-		       COALESCE(postal_code, '') as postal_code
+		       COALESCE(postal_code, '') as postal_code,
+		       COALESCE(phone, '') as phone
 		FROM users WHERE role = 'LocalGuest' AND lower(email) = lower($1)`, email,
-	).Scan(&u.ID, &u.Email, &u.Role, &u.ProfileType, &u.AccommodationID, &u.EntityType, &u.EntityID, &u.Area, &u.Municipality, &u.PostalCode)
+	).Scan(&u.ID, &u.Email, &u.Role, &u.ProfileType, &u.AccommodationID, &u.EntityType, &u.EntityID, &u.Area, &u.Municipality, &u.PostalCode, &u.Phone)
 	if err != nil {
 		if isNoRows(err) {
 			return nil, nil
@@ -459,10 +521,10 @@ func issueSession(ctx context.Context, u *appdb.User) (*LoginResponse, error) {
 		}
 
 		err := appdb.SQLDB.QueryRowContext(ctx, `
-			INSERT INTO users (email, role, profile_type, accommodation_id, entity_type, entity_id, area, municipality, postal_code)
-			VALUES ($1, $2, NULLIF($3, ''), $4, NULLIF($5, ''), $6, NULLIF($7, ''), NULLIF($8, ''), NULLIF($9, ''))
+			INSERT INTO users (email, role, profile_type, accommodation_id, entity_type, entity_id, area, municipality, postal_code, phone)
+			VALUES ($1, $2, NULLIF($3, ''), $4, NULLIF($5, ''), $6, NULLIF($7, ''), NULLIF($8, ''), NULLIF($9, ''), $10)
 			RETURNING id`,
-			u.Email, u.Role, u.ProfileType, accID, u.EntityType, entID, u.Area, u.Municipality, u.PostalCode,
+			u.Email, u.Role, u.ProfileType, accID, u.EntityType, entID, u.Area, u.Municipality, u.PostalCode, u.Phone,
 		).Scan(&u.ID)
 		if err != nil {
 			return nil, err

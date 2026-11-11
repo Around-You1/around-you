@@ -686,6 +686,7 @@ type User struct {
 	Area            string `json:"area,omitempty"`
 	Municipality    string `json:"municipality,omitempty"`
 	PostalCode      string `json:"postalCode,omitempty"` // LocalGuest sign-in field
+	Phone           string `json:"phone,omitempty"`      // LocalGuest sign-in identity (cell); also Rep contact
 	FullName        string `json:"fullName,omitempty"`   // Rep sign-in field
 	RepCode         string `json:"repCode,omitempty"`    // Rep sign-in field, e.g. "Rep00000001"
 	// PasswordHash is a bcrypt hash, SuperAdmin accounts only. json:"-" means

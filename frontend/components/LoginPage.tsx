@@ -325,7 +325,6 @@ export default function LoginPage() {
   const [holidayProvince, setHolidayProvince] = useState("");
   const [holidayArea, setHolidayArea] = useState("");
 
-  const [localEmail, setLocalEmail] = useState("");
   const [localProvince, setLocalProvince] = useState("");
   const [localPostalCode, setLocalPostalCode] = useState("");
   const [localCell, setLocalCell] = useState("");
@@ -374,7 +373,6 @@ export default function LoginPage() {
     const hasQrCode = !!searchParams.get("code");
 
     if (saved.local) {
-      if (saved.local.email) setLocalEmail(saved.local.email);
       if (saved.local.province) setLocalProvince(canonProvince(saved.local.province));
       if (saved.local.postalCode) setLocalPostalCode(saved.local.postalCode);
       if (saved.local.cell) setLocalCell(saved.local.cell);
@@ -440,7 +438,6 @@ export default function LoginPage() {
       const email = session?.user?.email;
       if (email) {
         setActivePanel("local");
-        setLocalEmail((prev) => prev || email);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -576,8 +573,6 @@ export default function LoginPage() {
 
   async function handleLocalLogin(e: React.FormEvent) {
     e.preventDefault();
-    if (!localEmail.trim()) { toast({ title: "Validation Error", description: "Email address is required", variant: "destructive" }); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(localEmail.trim())) { toast({ title: "Validation Error", description: "Please enter a valid email address", variant: "destructive" }); return; }
     if (!localProvince) { toast({ title: "Validation Error", description: "Province is required", variant: "destructive" }); return; }
     if (!localPostalCode.trim()) { toast({ title: "Validation Error", description: "Postal code is required", variant: "destructive" }); return; }
     const cell = localCell.trim();
@@ -591,24 +586,15 @@ export default function LoginPage() {
     try { savedCell = JSON.parse(localStorage.getItem("aroundYouLogin") || "{}")?.local?.cell || ""; } catch { savedCell = ""; }
     const cellChanged = normalizeCellForCompare(cell) !== normalizeCellForCompare(savedCell);
     if (cellChanged && !window.confirm(`Please confirm your mobile number:\n\n${cell}\n\nIs this correct?`)) return;
-    // Confirm the email too. No verification email is sent, so this popup is the
-    // only guard against a typo in the address they'll sign in with. Mirrors the
-    // mobile confirm: only prompts when it's new or changed on this device.
-    let savedEmail = "";
-    try { savedEmail = JSON.parse(localStorage.getItem("aroundYouLogin") || "{}")?.local?.email || ""; } catch { savedEmail = ""; }
-    const emailChanged = localEmail.trim().toLowerCase() !== savedEmail.trim().toLowerCase();
-    if (emailChanged && !window.confirm(`Please confirm your email address:\n\n${localEmail.trim()}\n\nIs this correct?`)) return;
     setLoading(true);
     try {
-      const email = localEmail.trim().toLowerCase();
-
-      // Email OTP removed: register / sign in directly with the details entered.
-      // No verification email is sent (free-tier email limits); the email is
-      // validated for format and confirmed above to catch typos.
-      const res = await backend.auth.localGuestLogin({ email, province: localProvince, postalCode: localPostalCode.trim() });
+      // Locals sign in with their mobile number (no email). No verification
+      // message is sent; the number is validated for format and confirmed
+      // above to catch typos.
+      const res = await backend.auth.localGuestLogin({ cell, province: localProvince, postalCode: localPostalCode.trim() });
       localStorage.setItem("localGuestInfo", JSON.stringify({ province: localProvince, postalCode: localPostalCode.trim(), cell }));
-      rememberLogin({ local: { email, province: localProvince, postalCode: localPostalCode.trim(), cell } });
-      storeAndNavigate(res.token, res.user, "/local-dashboard", email.split("@")[0], "a Local");
+      rememberLogin({ local: { province: localProvince, postalCode: localPostalCode.trim(), cell } });
+      storeAndNavigate(res.token, res.user, "/local-dashboard", cell, "a Local");
     } catch (err: any) {
       console.error(err);
       toast({ title: "Login Failed", description: err?.message || "Unable to sign in. Please try again.", variant: "destructive" });
@@ -763,18 +749,6 @@ export default function LoginPage() {
             <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: LUMO }}>Local</p>
             <form onSubmit={handleLocalLogin} className="space-y-4">
               <div className="space-y-1.5">
-                <ThemedLabel>Email Address</ThemedLabel>
-                <ThemedInput
-                  type="email"
-                  value={localEmail}
-                  onChange={(e) => setLocalEmail(e.target.value)}
-                  placeholder="Enter your email address"
-                  autoComplete="email"
-                  enterKeyHint="next"
-                />
-                <p className="text-xs" style={{ color: "#555" }}>You'll use this to sign in — please check it's spelt correctly.</p>
-              </div>
-              <div className="space-y-1.5">
                 <ThemedLabel>Mobile Number</ThemedLabel>
                 <ThemedInput
                   type="tel"
@@ -785,7 +759,7 @@ export default function LoginPage() {
                   autoComplete="tel"
                   enterKeyHint="next"
                 />
-                <p className="text-xs" style={{ color: "#555" }}>Used for your stamp cards at local shops.</p>
+                <p className="text-xs" style={{ color: "#555" }}>You'll use this to sign in — please check it's correct. Also used for your stamp cards at local shops.</p>
               </div>
               <div className="space-y-1.5">
                 <ThemedLabel>Province</ThemedLabel>
@@ -821,7 +795,7 @@ export default function LoginPage() {
                   enterKeyHint="next"
                 />
               </div>
-              <p className="text-xs" style={{ color: "#555" }}>You may sign in up to 10 times per month with this email.</p>
+              <p className="text-xs" style={{ color: "#555" }}>You may sign in up to 10 times per month with this number.</p>
               <LumoButton disabled={loading}>{loading ? (localRegistered ? "Signing in…" : "Registering…") : (localRegistered ? "Sign In" : "Register")}</LumoButton>
             </form>
           </PanelWrap>
