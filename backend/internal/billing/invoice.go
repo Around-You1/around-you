@@ -409,7 +409,7 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 	if err := appdb.SQLDB.QueryRowContext(ctx, `SELECT nextval('invoice_number_seq')`).Scan(&seq); err != nil {
 		return err
 	}
-	number := fmt.Sprintf("AY-%d-%06d", start.Year(), seq)
+	number := fmt.Sprintf("AY-%06d", seq)
 
 	var invID int64
 	if err := appdb.SQLDB.QueryRowContext(ctx, `
@@ -1001,7 +1001,7 @@ func PreviewInvoiceHTML(ctx context.Context) (string, error) {
 	s, _ := LoadInvoiceSettings(ctx) // nil is fine — renders with defaults
 	now := time.Now()
 	return renderInvoiceHTML(s, invoiceView{
-		Number:            fmt.Sprintf("AY-%d-000123", now.Year()),
+		Number:            "AY-000123",
 		Date:              now,
 		Due:               now.AddDate(0, 0, 2),
 		ItemCode:          "ResT2L",
