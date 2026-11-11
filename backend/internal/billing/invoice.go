@@ -63,9 +63,16 @@ func novSignupHalfOff(ctx context.Context, subID int64, periodStart time.Time) b
 		return false
 	}
 	var createdAt time.Time
+	var repCode string
 	if err := appdb.SQLDB.QueryRowContext(ctx,
-		`SELECT created_at FROM partner_subscription WHERE id = $1`, subID,
-	).Scan(&createdAt); err != nil {
+		`SELECT created_at, COALESCE(rep_code, '') FROM partner_subscription WHERE id = $1`, subID,
+	).Scan(&createdAt, &repCode); err != nil {
+		return false
+	}
+	// Don't stack the launch promo on an agent code that ALREADY discounts the
+	// monthly fee (half- or quarter-price): their stored monthly is already
+	// reduced, so a second 50% off would double-discount them.
+	if appdb.IsHalfPriceRep(repCode) || appdb.IsQuarterPriceRep(repCode) {
 		return false
 	}
 	// Eligible only if the partner signed up during November 2026.
