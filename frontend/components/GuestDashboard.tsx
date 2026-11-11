@@ -19,6 +19,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useSwipe } from "../lib/useSwipe";
 import ImageCarousel from "../components/ImageCarousel";
 import RestaurantPreOrder from "../components/RestaurantPreOrder";
+import { BOOKINGS_ENABLED } from "../lib/features";
 import { useTutorial } from "../components/tutorial/TutorialProvider";
 import WifiConnect from "../components/WifiConnect";
 import SupportBadge from "../components/SupportBadge";
@@ -623,7 +624,7 @@ export default function GuestDashboard() {
                               readOnly={service.accessLevel === "Booking"}
                             />
                             )}
-                            {!isNpo && !isRetail && (service.offersBookings || service.accessLevel === "Booking") && (service.bookingItems?.length ?? 0) > 0 && (
+                            {BOOKINGS_ENABLED && !isNpo && !isRetail && (service.offersBookings || service.accessLevel === "Booking") && (service.bookingItems?.length ?? 0) > 0 && (
                               <Button
                                 size="sm"
                                 className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black w-full sm:w-auto"
@@ -632,7 +633,7 @@ export default function GuestDashboard() {
                                 Click here to book at this establishment.
                               </Button>
                             )}
-                            {!isNpo && !isRetail && <RestaurantPreOrder entity={service as any} entityType={entityType} />}
+                            {BOOKINGS_ENABLED && !isNpo && !isRetail && <RestaurantPreOrder entity={service as any} entityType={entityType} />}
                             {discOffered(service) && (
                               <Button
                                 size="sm"
@@ -787,7 +788,7 @@ export default function GuestDashboard() {
 
                             )}
 
-                            {!isNpo && !isRetail && service.offersBookings && (
+                            {BOOKINGS_ENABLED && !isNpo && !isRetail && service.offersBookings && (
                               <div className="mt-1">
                                 <span className="inline-block px-2 py-0.5 text-black rounded text-xs font-medium">Takes bookings</span>
                               </div>
@@ -1254,7 +1255,7 @@ export default function GuestDashboard() {
         )}
 
         <div className="space-y-4">
-          <Button className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold" onClick={() => setShowMyBookings(true)}>Bookings / Pre-Orders I have made</Button>
+          {BOOKINGS_ENABLED && <Button className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold" onClick={() => setShowMyBookings(true)}>Bookings / Pre-Orders I have made</Button>}
           <Button className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold" onClick={() => setShowMyStamps(true)}>My Stamp Cards</Button>
           <Button variant="outline" className="w-full" onClick={async () => { await signOut(); window.location.href = "/"; }}>Sign out</Button>
 
@@ -1375,7 +1376,7 @@ export default function GuestDashboard() {
                               readOnly={restaurant.accessLevel === "Booking" && (restaurant.bookingItems?.length ?? 0) > 0}
                             />
                             )}
-                            {(restaurant.offersBookings || restaurant.accessLevel === "Booking") && (restaurant.bookingItems?.length ?? 0) > 0 && (
+                            {BOOKINGS_ENABLED && (restaurant.offersBookings || restaurant.accessLevel === "Booking") && (restaurant.bookingItems?.length ?? 0) > 0 && (
                               <Button
                                 size="sm"
                                 className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black w-full sm:w-auto"
@@ -1384,7 +1385,7 @@ export default function GuestDashboard() {
                                 Click here to book at this establishment.
                               </Button>
                             )}
-                            <RestaurantPreOrder entity={restaurant as any} entityType="restaurant" />
+                            {BOOKINGS_ENABLED && <RestaurantPreOrder entity={restaurant as any} entityType="restaurant" />}
                             {discOffered(restaurant) && (
                               <Button
                                 size="sm"
@@ -1559,7 +1560,7 @@ export default function GuestDashboard() {
                               </Collapsible></HideWhenOptedOut>
                             )}
 
-                            {restaurant.offersBookings && (
+                            {BOOKINGS_ENABLED && restaurant.offersBookings && (
                               <div className="mt-1">
                                 <span className="inline-block px-2 py-0.5 text-black rounded text-xs font-medium">Takes bookings</span>
                               </div>
@@ -1883,7 +1884,7 @@ export default function GuestDashboard() {
                               readOnly={attraction.accessLevel === "Booking"}
                             />
                             )}
-                            {(attraction.offersBookings || attraction.accessLevel === "Booking") && (attraction.bookingItems?.length ?? 0) > 0 && (
+                            {BOOKINGS_ENABLED && (attraction.offersBookings || attraction.accessLevel === "Booking") && (attraction.bookingItems?.length ?? 0) > 0 && (
                               <Button
                                 size="sm"
                                 className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black w-full sm:w-auto"
@@ -1892,7 +1893,7 @@ export default function GuestDashboard() {
                                 Click here to book at this establishment.
                               </Button>
                             )}
-                            <RestaurantPreOrder entity={attraction as any} entityType="attraction" />
+                            {BOOKINGS_ENABLED && <RestaurantPreOrder entity={attraction as any} entityType="attraction" />}
                             {discOffered(attraction) && (
                               <Button
                                 size="sm"
@@ -1995,7 +1996,7 @@ export default function GuestDashboard() {
                               </CollapsibleContent>
                             </Collapsible></HideWhenOptedOut>
 
-                            {attraction.offersBookings && (
+                            {BOOKINGS_ENABLED && attraction.offersBookings && (
                               <div className="mt-1">
                                 <span className="inline-block px-2 py-0.5 text-black rounded text-xs font-medium">Takes bookings</span>
                               </div>

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import ImageUpload from "../components/ImageUpload";
 import AccountantsCard from "../components/AccountantsCard";
 import { getAuthenticatedBackend } from "../lib/backend";
+import { BOOKINGS_ENABLED } from "../lib/features";
 import { useToast } from "@/components/ui/use-toast";
 
 interface Subscription {
@@ -1195,6 +1196,7 @@ export default function BillingTab() {
         )}
       </CollapsibleCard>
 
+      {BOOKINGS_ENABLED && (
       <CollapsibleCard title="Bookings Ledger" contentClassName="space-y-3">
         {!bookingLedger ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
@@ -1275,6 +1277,7 @@ export default function BillingTab() {
           </>
         )}
       </CollapsibleCard>
+      )}
     </div>
   );
 }

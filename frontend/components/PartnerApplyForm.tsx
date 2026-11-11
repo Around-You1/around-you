@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import backend from "~backend/client";
-import { getAuthenticatedBackend } from "../lib/backend";
+import { BOOKINGS_ENABLED } from "../lib/features";
 import AppLogo from "../components/AppLogo";
 
 const LUMO = "#39FF14";
@@ -38,9 +38,10 @@ function pricingText(cat: string, half: boolean): string {
   const m = (n: number) => mo(n, half);
   switch (cat) {
     case "accommodation": return `${m(300)} per month.`;
-    case "restaurant": return `${m(300)} per month, plus Bookings @ R10 per cover and Pre-Orders @ 1% of the bill.`;
+    case "restaurant":
     case "service":
-    case "attraction": return `${m(300)} per month, plus Bookings @ 10% of the bill and Pre-Orders @ 10% of the bill.`;
+    case "attraction":
+      return "R300 per month - 50% discount for November and December 2026 and January 2027. Normal pricing resumes 01 February 2027.";
     case "estate": return `Estate Agencies ${m(500)} per month and Agents ${m(300)} per month each.`;
     case "retail": return `${m(500)} per month.`;
     case "nonprofit": return "Free — no monthly fee for registered NPO / PBO organisations.";
@@ -100,17 +101,18 @@ const BOOKING_NOTE: Record<string, string> = {
   attraction: "R300/month + 10% per person",
 };
 function appearSection(cat: string): Section {
-  return {
-    title: "How you'd like to appear",
-    fields: [
-      { key: "Bookings", label: "Bookable items", type: "multi", options: [
-        `We take bookings — ${BOOKING_NOTE[cat] || "R300/month"}`,
-      ], note: "tick if guests can reserve or book with you" },
-      { key: "Works from different addresses", type: "multi", options: [
-        "Yes — I travel to the client (no fixed address)",
-      ], note: "tick if you have no fixed address; you'll still appear in nearby searches" },
-    ],
-  };
+  const fields: Field[] = [
+    { key: "Works from different addresses", type: "multi", options: [
+      "Yes — I travel to the client (no fixed address)",
+    ], note: "tick if you have no fixed address; you'll still appear in nearby searches" },
+  ];
+  // Bookings are archived for now — hide the "Bookable items" question.
+  if (BOOKINGS_ENABLED) {
+    fields.unshift({ key: "Bookings", label: "Bookable items", type: "multi", options: [
+      `We take bookings — ${BOOKING_NOTE[cat] || "R300/month"}`,
+    ], note: "tick if guests can reserve or book with you" });
+  }
+  return { title: "How you'd like to appear", fields };
 }
 const discountsSection: Section = { title: "Discounts for Around You users", fields: [
   { key: "Guest discount — offer", type: "text" }, { key: "Guest discount code", type: "text" },
@@ -172,8 +174,6 @@ export default function PartnerApplyForm() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [err, setErr] = useState("");
-  const [isStaff, setIsStaff] = useState(false);
-  const [autofillStatus, setAutofillStatus] = useState("");
   const [showDetails, setShowDetails] = useState(false);
   const [showAgent, setShowAgent] = useState(false);
   const [geo, setGeo] = useState("");
@@ -186,13 +186,6 @@ export default function PartnerApplyForm() {
     // Default to the internal/test rep so a self-onboarding partner always has a
     // rep code; they (or a real rep) can change it in the field below.
     setRep(q.get("rep") || "AROUNDYOU");
-    // Reps / admins (signed in) get an extra tool: upload a completed onboarding
-    // PDF and Claude pre-fills the form. Public visitors never see it.
-    try {
-      const u = JSON.parse(localStorage.getItem("user") || "{}");
-      const tok = localStorage.getItem("token") || "";
-      if (tok && ["Rep", "SuperAdmin", "Admin"].includes(u?.role)) setIsStaff(true);
-    } catch { /* not signed in — fine */ }
     // Restore an in-progress application autosaved on this device.
     try {
       const sv = JSON.parse(localStorage.getItem("aroundYouPartnerApply") || "{}");
@@ -228,86 +221,6 @@ export default function PartnerApplyForm() {
     );
   };
 
-  // Staff-only: upload a hand-filled onboarding PDF, or one or more WhatsApp /
-  // photo screenshots; Claude reads them all and the form pre-fills for review.
-  // Restaurant only for now. Never auto-submits.
-  const autofillFromFiles = async (fileList: FileList) => {
-    const files = Array.from(fileList);
-    if (!files.length) return;
-    setAutofillStatus(`Reading ${files.length === 1 ? "the file" : files.length + " files"} with Claude\u2026 this can take ~20 seconds.`);
-    try {
-      const readOne = (file: File) =>
-        new Promise<{ mediaType: string; data: string }>((resolve, reject) => {
-          const fr = new FileReader();
-          fr.onload = () =>
-            resolve({ mediaType: file.type || "application/octet-stream", data: String(fr.result || "") });
-          fr.onerror = () => reject(new Error("Could not read " + file.name));
-          fr.readAsDataURL(file);
-        });
-      const payloadFiles = await Promise.all(files.map(readOne));
-      const res: any = await getAuthenticatedBackend().onboarding.extract({
-        category: "restaurant",
-        files: payloadFiles,
-      });
-      const f = res?.fields || {};
-      const d = f.data || {};
-      const strip = (x: any) => (x == null ? "" : String(x).trim());
-      const norm = (s2: string) => s2.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-      const canon = (opts: string[], arr: any): string[] =>
-        (Array.isArray(arr) ? arr : [])
-          .map((v) => opts.find((o) => norm(o) === norm(String(v))) || String(v))
-          .filter(Boolean);
-      const soc = d.socialLinks || {};
-      const next: Record<string, any> = {
-        "Restaurant/Takeaway name": strip(d.name),
-        "Contact person": strip(d.personResponsible),
-        "Contact email": strip(d.businessEmail),
-        "Contact number": strip(d.contactNumber) || strip(d.personResponsibleNumber),
-        "Province": strip(f.province),
-        "Physical address": strip(d.address),
-        "Postal code": strip(d.postalCode),
-        "Holding company (if any)": strip(d.holdingCompany),
-        "Company registration number": strip(d.companyRegNumber),
-        "VAT number (if registered)": strip(d.companyVatNumber),
-        "Trading hours": strip(d.tradingHours),
-        "Public holidays": strip(d.publicHolidays),
-        "Restaurant type": canon(REST_TYPES, d.restaurantType)[0] || "",
-        "Cuisine type(s)": canon(CUISINE, d.cuisineTypes),
-        "Atmosphere": canon(ATMOSPHERE, d.atmosphere),
-        "Features": canon(REST_FEATURES, d.features),
-        "Dietary options": canon(DIETARY, d.dietary),
-        "Chef recommendation": strip(d.chefRecommendation),
-        "Description": strip(d.description),
-        "Menu link": strip(d.menuLink),
-        "Service options": canon(["Dine-in", "Takeaway", "Delivery"], f.serviceOptions),
-        "Wi-Fi network name": strip(d.wifiName),
-        "Wi-Fi password": strip(d.wifiPassword),
-        "Guest discount \u2014 offer": strip(d.discountOffered),
-        "Guest discount code": strip(d.discountCode),
-        "Local discount \u2014 offer": strip(d.localDiscountOffered),
-        "Local discount code": strip(d.localDiscountCode),
-        "Payment methods": canon(PAYMENTS, d.paymentOptions),
-        "Website": strip(soc.Website),
-        "Facebook": strip(soc.Facebook),
-        "Instagram": strip(soc.Instagram),
-        "TikTok": strip(soc.Tiktok),
-        "X (Twitter)": strip(soc.X),
-        "Accessibility options": canon(ACCESS, d.accessibility),
-        "Child friendly": canon(["Child Friendly"], d.childFriendly),
-      };
-      // Only write non-empty values so a re-upload never blanks a field.
-      setVals((cur) => {
-        const merged = { ...cur };
-        for (const [k, v] of Object.entries(next)) {
-          if (Array.isArray(v) ? v.length : strip(v)) merged[k] = v;
-        }
-        return merged;
-      });
-      setAutofillStatus("\u2713 Form pre-filled \u2014 please review every field, correct anything the reader missed, then submit.");
-    } catch (e: any) {
-      setAutofillStatus("Could not read that: " + (e?.message || "please try again, or enter the details manually."));
-    }
-  };
 
   const catLabel = CATEGORIES.find((c) => c.key === cat)?.label || "";
   const nameKey = sections[0]?.fields.find((f) => f.top === "businessName")?.key || "Business name";
@@ -464,28 +377,6 @@ export default function PartnerApplyForm() {
           </div>
         )}
       </div>
-
-      {isStaff && cat === "restaurant" && (
-        <div style={{ marginTop: 14, padding: 14, borderRadius: 10, border: `1px dashed ${LUMO}`, background: "rgba(57,255,20,0.05)" }}>
-          <div style={{ color: LUMO, fontWeight: 700, fontSize: 14, marginBottom: 4 }}>Agent tool \u2014 auto-fill from a completed form</div>
-          <p style={{ color: "#a0a0a0", fontSize: 12, margin: "0 0 10px" }}>
-            Have a hand-filled onboarding PDF, or WhatsApp screenshots of the owner's details? Upload the PDF <strong>or</strong> the screenshots (select them all at once) and Claude will read them and pre-fill the fields below for you to review before submitting.
-          </p>
-          <label style={{ display: "inline-block", padding: "9px 14px", borderRadius: 8, border: `2px solid ${LUMO}`, background: "#000", color: LUMO, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-            Upload PDF or screenshots to auto-fill
-            <input
-              type="file"
-              accept="application/pdf,image/*"
-              multiple
-              style={{ display: "none" }}
-              onChange={(e) => { const fl = e.target.files; if (fl && fl.length) autofillFromFiles(fl); e.currentTarget.value = ""; }}
-            />
-          </label>
-          {autofillStatus && (
-            <p style={{ color: autofillStatus.startsWith("\u2713") ? LUMO : "#d0a0a0", fontSize: 12, marginTop: 10 }}>{autofillStatus}</p>
-          )}
-        </div>
-      )}
 
       <div style={{ marginTop: 18, borderTop: "1px solid rgba(57,255,20,0.15)", paddingTop: 12 }}>
         <button type="button" onClick={() => setShowDetails((v) => !v)}
