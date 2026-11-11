@@ -152,6 +152,9 @@ export default function GuestDashboard() {
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isLocalMode = user.role === "LocalGuest";
+  // The accommodation owner signs in via the Partner panel (role "Partner");
+  // holiday guests are role "Guest". Only the owner may edit the profile.
+  const isAccPartner = user.role === "Partner";
   // Guided tutorial: Holiday Guests hear VO4 on arrival (not Local guests).
   const tutorial = useTutorial();
   useEffect(() => {
@@ -1260,6 +1263,44 @@ export default function GuestDashboard() {
                   </Collapsible></HideWhenOptedOut>
 
                 </div>
+                )}
+
+                {isAccPartner && !editingProfile && (
+                  <div className="mt-3 border-t pt-3">
+                    {!showEditGate ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => setShowEditGate(true)}
+                      >
+                        Edit my profile
+                      </Button>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label htmlFor="ownerEditCode" className="text-sm font-medium">Enter your Edit Code to edit this profile</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="ownerEditCode"
+                            value={ownerEditCode}
+                            onChange={(e) => setOwnerEditCode(e.target.value)}
+                            placeholder="Edit Code"
+                            autoComplete="off"
+                            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void verifyOwnerAndEdit(); } }}
+                            className="flex-1"
+                          />
+                          <Button
+                            className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold"
+                            onClick={() => void verifyOwnerAndEdit()}
+                            disabled={verifyingOwner}
+                          >
+                            {verifyingOwner ? "Checking…" : "Unlock"}
+                          </Button>
+                        </div>
+                        <Button variant="ghost" size="sm" className="w-full" onClick={() => { setShowEditGate(false); setOwnerEditCode(""); }}>Cancel</Button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </CardContent>
             </Card>
