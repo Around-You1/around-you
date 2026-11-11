@@ -14,13 +14,14 @@ import { usePathname } from "next/navigation";
 // Each clip lives at /public/tutorial/<key>.mp3 and its caption text is shown on
 // screen while it plays (captions never block taps — the banner is
 // pointer-events:none and sits clear of the action buttons).
-export type VOKey = "VO1" | "VO2" | "VO3" | "VO4" | "VO5" | "VO6" | "VO7" | "VO8";
+export type VOKey = "VO1" | "VO2_1" | "VO2" | "VO3" | "VO4" | "VO5" | "VO6" | "VO7" | "VO8";
 
 const CAPTIONS: Record<VOKey, string> = {
   VO1: "Welcome to Around You.",
-  VO2: "You'll see three buttons. Staying here on holiday? Tap Holiday Guest. Live in the area? Tap Local. Own a listed business? Tap Partner.",
+  VO2_1: "If you are interested in onboarding your business, click on the “Promote your Business” button and follow the prompts.",
+  VO2: "Otherwise, you’ll see three buttons. Staying here on holiday? Tap Holiday Guest. Live in the area? Tap Local. Own a listed business? Tap Partner.",
   VO3: "The place you're staying will have sent you an access code. Find it, copy it then paste or type it into the box marked Profile Access Code, then tap Sign In. You're in.",
-  VO4: "Take a look around. See what your accommodation offers, and explore all of the businesses Around You — look or search for discounts, bookings and pre-orders wherever you go.",
+  VO4: "Take a look around. See what your accommodation offers, and explore all of the businesses Around You. Look for places of interest Around You or search for discounts, wherever you go.",
   VO5: "Let’s get you registered as a Local. All you need is your mobile number — that’s how you’ll sign in, and there’s no password to remember. If you’re at your home or business, tap “Use my location” so we can show you what’s nearby — or just type in your postal code. Then tap Register. We’ll ask you to check your mobile number — tap to confirm it’s correct, and you’re in.",
   VO6: "We’ll remember you on this phone, so next time you won’t have to type anything — just tap “Continue” and you’re straight back in. If you’re signing in on a different phone, type in your mobile number and then tap Sign In.",
   VO7: "To sign in as a Partner, Around You will have sent you an access code. Type that code into the box marked Profile Access Code, then tap Sign In. You're in.",
@@ -28,7 +29,7 @@ const CAPTIONS: Record<VOKey, string> = {
 };
 
 // A clip that auto-plays as soon as another finishes (VO5 → VO6 on the Local page).
-const FOLLOW: Partial<Record<VOKey, VOKey>> = { VO5: "VO6" };
+const FOLLOW: Partial<Record<VOKey, VOKey>> = { VO2_1: "VO2", VO5: "VO6" };
 
 // Routes where the tutorial UI (captions + Skip/Replay control) may appear.
 const TUTORIAL_ROUTES = ["/", "/portal", "/guest-dashboard", "/partner-dashboard"];

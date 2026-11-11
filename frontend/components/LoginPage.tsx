@@ -452,7 +452,7 @@ export default function LoginPage() {
   const tutorial = useTutorial();
   useEffect(() => {
     if (!tutorial) return;
-    if (activePanel === null) tutorial.play("VO2");
+    if (activePanel === null) tutorial.play("VO2_1"); // VO2 auto-follows
     else if (activePanel === "holiday") tutorial.play("VO3");
     else if (activePanel === "local") tutorial.play("VO5"); // VO6 auto-follows
     else if (activePanel === "partner") tutorial.play("VO7");
