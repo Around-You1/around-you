@@ -77,6 +77,7 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
 
   return (
     <div
+      className="ay-loading"
       style={{
         position: "fixed",
         inset: 0,
@@ -88,6 +89,12 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
         pointerEvents: fadingOut ? "none" : "auto",
       }}
     >
+      <style>{`
+        .ay-loading { --ay-sky-bottom: ${BASELINE_BOTTOM}; }
+        @media (min-width: 768px) {
+          .ay-loading { --ay-sky-bottom: 52%; }
+        }
+      `}</style>
       <div style={{ position: "relative", width: "100%", height: "100%" }}>
         {/* Combined skyline — Joburg (left) + Table Mountain (right) meeting in
             one continuous neon line, sitting on the shared baseline. */}
@@ -97,7 +104,7 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
           draggable={false}
           style={{
             position: "absolute",
-            bottom: BASELINE_BOTTOM,
+            bottom: "var(--ay-sky-bottom)",
             left: "50%",
             transform: "translateX(-50%)",
             width: "94%",
@@ -115,7 +122,7 @@ export default function LoadingScreen({ ready, onFinished }: Props) {
           draggable={false}
           style={{
             position: "absolute",
-            bottom: BASELINE_BOTTOM,
+            bottom: "var(--ay-sky-bottom)",
             left: "50%",
             transform: "translateX(-50%)",
             height: "clamp(52px, 9vw, 132px)",
