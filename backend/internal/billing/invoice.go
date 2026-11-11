@@ -207,6 +207,57 @@ func OnPartnerActivated(ctx context.Context, partnerType string, partnerID int64
 	return IssueFirstInvoice(ctx, partnerType, partnerID)
 }
 
+// AcceptPartner is called when a SuperAdmin ACCEPTS an onboarded partner (after
+// their tier/pricing has been set): it issues the partner's FIRST invoice with
+// their onboarding codes, but does NOT start the recurring billing cycle and
+// does NOT make the partner live. Recurring billing begins, and the partner goes
+// live, only when they are later Activated (after payment is received). Idempotent:
+// a second Accept never sends a second first-invoice. Free listings (NPO/charity)
+// and test-rep partners get the complimentary onboarding email instead of an
+// invoice, exactly as on activation.
+func AcceptPartner(ctx context.Context, partnerType string, partnerID int64) error {
+	var subID int64
+	var repCode string
+	err := appdb.SQLDB.QueryRowContext(ctx, `
+		SELECT id, COALESCE(rep_code, '') FROM partner_subscription
+		WHERE partner_type = $1 AND partner_id = $2`, partnerType, partnerID,
+	).Scan(&subID, &repCode)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil // no subscription — nothing to invoice
+	}
+	if err != nil {
+		return err
+	}
+	if partnerType == "nonprofit" {
+		return SendComplimentaryOnboardingEmail(ctx, partnerType, partnerID)
+	}
+	if partnerType == "service" {
+		var isNonProfit bool
+		_ = appdb.SQLDB.QueryRowContext(ctx,
+			`SELECT COALESCE(is_nonprofit, false) FROM services WHERE id = $1`, partnerID,
+		).Scan(&isNonProfit)
+		if isNonProfit {
+			return SendComplimentaryOnboardingEmail(ctx, partnerType, partnerID)
+		}
+	}
+	if isTestRep(repCode) {
+		return SendComplimentaryOnboardingEmail(ctx, partnerType, partnerID)
+	}
+
+	var invoiced bool
+	if err := appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM invoice WHERE subscription_id = $1)`, subID,
+	).Scan(&invoiced); err != nil {
+		return err
+	}
+	if invoiced {
+		return nil // already accepted — don't send a second first-invoice
+	}
+	// First invoice (with codes), WITHOUT setting the recurring anchor — the
+	// monthly cycle starts only at Activation, after payment.
+	return IssueFirstInvoice(ctx, partnerType, partnerID)
+}
+
 // PausePartnerBilling stops recurring billing for a partner (used when a
 // SuperAdmin deactivates a profile). Clearing next_bill_date takes it out of
 // the monthly run; re-activating restores the anchor via OnPartnerActivated.

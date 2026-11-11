@@ -124,6 +124,33 @@ func BulkSetActive(ctx context.Context, req *BulkRequest) (*BulkResponse, error)
 	return &BulkResponse{Affected: len(req.IDs)}, nil
 }
 
+// AcceptPartners marks onboarded profiles as Accepted: it enables each partner's
+// Access + Edit codes (so they can sign in to prepare their profile) and issues
+// their first invoice with those codes, but does NOT make them live. The partner
+// goes live, and recurring billing starts, only when they are later Activated
+// (BulkSetActive) after payment is received. Idempotent: re-accepting never
+// double-invoices.
+//
+//encore:api auth method=POST path=/admin/accept-partners
+func AcceptPartners(ctx context.Context, req *BulkRequest) (*BulkResponse, error) {
+	if err := requireSuperAdmin(ctx); err != nil {
+		return nil, err
+	}
+	if _, ok := tables[req.EntityType]; !ok {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "unknown entity type"}
+	}
+	if len(req.IDs) == 0 {
+		return &BulkResponse{}, nil
+	}
+	for _, id := range req.IDs {
+		enableCodes(ctx, req.EntityType, id)
+		if err := billing.AcceptPartner(ctx, req.EntityType, id); err != nil {
+			log.Printf("admin: accept partner failed (%s %d): %v", req.EntityType, id, err)
+		}
+	}
+	return &BulkResponse{Affected: len(req.IDs)}, nil
+}
+
 // disableCodes turns the Access Code off WITHOUT changing either code value, so
 // a later re-activation restores the SAME codes. Best-effort — errors are
 // non-fatal. Codes only ever change via the explicit Regenerate buttons.

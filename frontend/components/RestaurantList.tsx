@@ -177,6 +177,8 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
 
 
 
+  const [accepting, setAccepting] = useState<number | null>(null);
+
   const toggleActive = async (restaurant: Restaurant) => {
     setToggling(restaurant.id);
     try {
@@ -186,8 +188,8 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
       toast({
         title: activating ? "Activated" : "Deactivated",
         description: activating
-          ? "Access & edit codes issued and the first invoice emailed to the partner."
-          : "Access & edit codes disabled and billing paused.",
+          ? "Partner is now live on the site. Recurring billing has started."
+          : "Partner hidden from the site and billing paused.",
       });
       onUpdate();
     } catch (error) {
@@ -195,6 +197,21 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
       toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
     } finally {
       setToggling(null);
+    }
+  };
+
+  const acceptPartner = async (restaurant: Restaurant) => {
+    setAccepting(restaurant.id);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.admin.acceptPartners({ entityType: "restaurant", ids: [restaurant.id] });
+      toast({ title: "Accepted", description: "First invoice and sign-in codes emailed. Activate them once payment is received." });
+      onUpdate();
+    } catch (error) {
+      console.error("Failed to accept partner:", error);
+      toast({ title: "Error", description: "Failed to accept partner", variant: "destructive" });
+    } finally {
+      setAccepting(null);
     }
   };
 
@@ -265,6 +282,17 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
                       </div>
                     )}
                     <div className="flex items-center gap-1">
+                      {!restaurant.isActive && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs border-[#39FF14]/50 text-[#2a9d12] hover:bg-[#39FF14]/10"
+                          disabled={accepting === restaurant.id}
+                          onClick={() => acceptPartner(restaurant)}
+                        >
+                          {accepting === restaurant.id ? "Sending…" : "Accept"}
+                        </Button>
+                      )}
                       <Switch
                         checked={restaurant.isActive}
                         onCheckedChange={() => toggleActive(restaurant)}

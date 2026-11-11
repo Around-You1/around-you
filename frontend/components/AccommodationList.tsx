@@ -138,6 +138,8 @@ export default function AccommodationList({ accommodations, onEdit, onUpdate }: 
     toast({ title: "Copied!", description: `Profile Access Code for ${name} copied to clipboard` });
   };
 
+  const [accepting, setAccepting] = useState<number | null>(null);
+
   const toggleActive = async (accommodation: Accommodation) => {
     setToggling(accommodation.id);
     try {
@@ -147,8 +149,8 @@ export default function AccommodationList({ accommodations, onEdit, onUpdate }: 
       toast({
         title: activating ? "Activated" : "Deactivated",
         description: activating
-          ? "Access & edit codes issued and the first invoice emailed to the partner."
-          : "Access & edit codes disabled and billing paused.",
+          ? "Partner is now live on the site. Recurring billing has started."
+          : "Partner hidden from the site and billing paused.",
       });
       onUpdate();
     } catch (error) {
@@ -156,6 +158,21 @@ export default function AccommodationList({ accommodations, onEdit, onUpdate }: 
       toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
     } finally {
       setToggling(null);
+    }
+  };
+
+  const acceptPartner = async (accommodation: Accommodation) => {
+    setAccepting(accommodation.id);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.admin.acceptPartners({ entityType: "accommodation", ids: [accommodation.id] });
+      toast({ title: "Accepted", description: "First invoice and sign-in codes emailed. Activate them once payment is received." });
+      onUpdate();
+    } catch (error) {
+      console.error("Failed to accept partner:", error);
+      toast({ title: "Error", description: "Failed to accept partner", variant: "destructive" });
+    } finally {
+      setAccepting(null);
     }
   };
 
@@ -214,6 +231,17 @@ export default function AccommodationList({ accommodations, onEdit, onUpdate }: 
                       </div>
                     )}
                     <div className="flex items-center gap-1">
+                      {!accommodation.isActive && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs border-[#39FF14]/50 text-[#2a9d12] hover:bg-[#39FF14]/10"
+                          disabled={accepting === accommodation.id}
+                          onClick={() => acceptPartner(accommodation)}
+                        >
+                          {accepting === accommodation.id ? "Sending…" : "Accept"}
+                        </Button>
+                      )}
                       <Switch
                         checked={accommodation.isActive}
                         onCheckedChange={() => toggleActive(accommodation)}

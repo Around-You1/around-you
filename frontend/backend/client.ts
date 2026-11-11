@@ -322,6 +322,8 @@ export const backend = {
     // SuperAdmin bulk profile operations + archive (recycle bin).
     bulkSetActive: (req: { entityType: string; ids: number[]; active: boolean }) =>
       request("POST", "/admin/bulk-set-active", { body: req }),
+    acceptPartners: (req: { entityType: string; ids: number[] }) =>
+      request("POST", "/admin/accept-partners", { body: req }),
     bulkDelete: (req: { entityType: string; ids: number[] }) =>
       request("POST", "/admin/bulk-delete", { body: req }),
     archived: () => request("GET", "/admin/archived"),

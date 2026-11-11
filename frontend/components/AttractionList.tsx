@@ -213,6 +213,8 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
 
 
 
+  const [accepting, setAccepting] = useState<number | null>(null);
+
   const toggleActive = async (attraction: AttractionData) => {
     setToggling(attraction.attractionId);
     try {
@@ -222,8 +224,8 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
       toast({
         title: activating ? "Activated" : "Deactivated",
         description: activating
-          ? "Access & edit codes issued and the first invoice emailed to the partner."
-          : "Access & edit codes disabled and billing paused.",
+          ? "Partner is now live on the site. Recurring billing has started."
+          : "Partner hidden from the site and billing paused.",
       });
       loadAttractions();
       onUpdate?.();
@@ -232,6 +234,21 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
       toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
     } finally {
       setToggling(null);
+    }
+  };
+
+  const acceptPartner = async (attraction: AttractionData) => {
+    setAccepting(attraction.id);
+    try {
+      const backend = getAuthenticatedBackend();
+      await backend.admin.acceptPartners({ entityType: "attraction", ids: [attraction.id] });
+      toast({ title: "Accepted", description: "First invoice and sign-in codes emailed. Activate them once payment is received." });
+      onUpdate();
+    } catch (error) {
+      console.error("Failed to accept partner:", error);
+      toast({ title: "Error", description: "Failed to accept partner", variant: "destructive" });
+    } finally {
+      setAccepting(null);
     }
   };
 
@@ -301,6 +318,17 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
                       </div>
                     )}
                     <div className="flex items-center gap-1">
+                      {!attraction.isActive && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs border-[#39FF14]/50 text-[#2a9d12] hover:bg-[#39FF14]/10"
+                          disabled={accepting === attraction.id}
+                          onClick={() => acceptPartner(attraction)}
+                        >
+                          {accepting === attraction.id ? "Sending…" : "Accept"}
+                        </Button>
+                      )}
                       <Switch
                         checked={attraction.isActive}
                         onCheckedChange={() => toggleActive(attraction)}
