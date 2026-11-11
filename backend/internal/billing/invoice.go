@@ -458,7 +458,7 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 			BillName: firstNonEmpty(holding, name), BillReg: reg, BillVat: vat,
 			BillContactName: contactName, BillContactNumber: contactNumber, BillEmail: email,
 		}
-		html := invoiceEmailBodyHTML(view)
+		html := invoiceEmailBodyHTML(view, withCodes)
 		if withCodes {
 			html += onboardingCodesHTML(ctx, partnerType, partnerID)
 		}
@@ -537,7 +537,7 @@ func buildInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) (st
 		BillName: firstNonEmpty(billHolding, billName), BillReg: billReg, BillVat: billVat,
 		BillContactName: contactName, BillContactNumber: contactNumber, BillEmail: email,
 	}
-	html := invoiceEmailBodyHTML(view)
+	html := invoiceEmailBodyHTML(view, withCodes)
 	if withCodes {
 		html += onboardingCodesHTML(ctx, partnerType, partnerID)
 	}
@@ -603,7 +603,7 @@ func SendTestInvoiceWithCodes(ctx context.Context, to string) error {
 		BillContactNumber: "071 000 0000",
 		BillEmail:         to,
 	}
-	html := invoiceEmailBodyHTML(view) + sampleCodesHTML()
+	html := invoiceEmailBodyHTML(view, true) + sampleCodesHTML()
 	return mailer.Send(to, "TEST — Your "+bizName+" invoice "+view.Number, html)
 }
 
@@ -624,7 +624,7 @@ func sampleCodesHTML() string {
 			`<p style="margin:2px 0"><strong>Partner Edit Code:</strong> %s</p>`+
 			`<p style="font-size:12px;color:#666;margin:8px 0 0">Please keep these confidential. The Access Code logs you in; the Edit Code unlocks editing of your own profile.</p>`+
 			`<p style="margin:12px 0 0">When using aroundyou.co.za, click <strong>“Sign In”</strong>, then choose the <strong>“Partner”</strong> button. Use the Access Code or QR Code to gain entry to your dedicated partner profile page. Then when you are prompted, enter the Partner Edit Code so as to change any of the information at any time.</p>`+
-			`<ul style="margin:8px 0 0;padding-left:20px"><li style="margin:6px 0">Once you are in, add as many images as possible (bright coloured entertaining images where possible).</li><li style="margin:6px 0">Word your Description so that you include as many items/products that you use or offer, as Guests and Locals can search for you in the search bar using key words (hairdressers sometimes use and sell Kérastase Paris). Sometimes a Guest or Local might search for this product and if the hairdresser has listed it, their business will come up.</li><li style="margin:6px 0">When you are at the premises, click the “Use my current location” button so as to populate the Latitude and Longitude co-ordinates.</li><li style="margin:6px 0">Consider offering discounts as this will draw users to you. You can offer discounts to Guests or Locals or both (e.g. something simple like buy a main meal and get a free cup of coffee).</li><li style="margin:6px 0">Also include your Trading Hours.</li></ul>`+
+			`<ul style="margin:8px 0 0;padding-left:20px"><li style="margin:6px 0">Please complete as much information as possible, such as your Province, Area and Postal Code, and select your Business/Services categories.</li><li style="margin:6px 0">Once you are in, add as many images as possible (bright coloured entertaining images where possible).</li><li style="margin:6px 0">Word your Description so that you include as many items/products that you use or offer, as Guests and Locals can search for you in the search bar using key words (hairdressers sometimes use and sell Kérastase Paris). Sometimes a Guest or Local might search for this product and if the hairdresser has listed it, their business will come up.</li><li style="margin:6px 0">If not already done, when you are at the premises, click the “Use my current location” button so as to populate the Latitude and Longitude co-ordinates.</li><li style="margin:6px 0">Consider offering discounts as this will draw users to you. You can offer discounts to Guests or Locals or both (e.g. something simple like buy a main meal and get a free cup of coffee).</li><li style="margin:6px 0">Also include your Trading Hours.</li></ul>`+
 			`%s`,
 		"SAMPLE-ACCESS-123", "SAMPLE-EDIT-456", qr)
 }
@@ -761,7 +761,7 @@ func onboardingCodesHTML(ctx context.Context, partnerType string, partnerID int6
 			`<p style="margin:2px 0"><strong>Partner Edit Code:</strong> %s</p>`+
 			`<p style="font-size:12px;color:#666;margin:8px 0 0">Please keep these confidential. The Access Code logs you in; the Edit Code unlocks editing of your own profile.</p>`+
 			`<p style="margin:12px 0 0">When using aroundyou.co.za, click <strong>“Sign In”</strong>, then choose the <strong>“Partner”</strong> button. Use the Access Code or QR Code to gain entry to your dedicated partner profile page. Then when you are prompted, enter the Partner Edit Code so as to change any of the information at any time.</p>`+
-			`<ul style="margin:8px 0 0;padding-left:20px"><li style="margin:6px 0">Once you are in, add as many images as possible (bright coloured entertaining images where possible).</li><li style="margin:6px 0">Word your Description so that you include as many items/products that you use or offer, as Guests and Locals can search for you in the search bar using key words (hairdressers sometimes use and sell Kérastase Paris). Sometimes a Guest or Local might search for this product and if the hairdresser has listed it, their business will come up.</li><li style="margin:6px 0">When you are at the premises, click the “Use my current location” button so as to populate the Latitude and Longitude co-ordinates.</li><li style="margin:6px 0">Consider offering discounts as this will draw users to you. You can offer discounts to Guests or Locals or both (e.g. something simple like buy a main meal and get a free cup of coffee).</li><li style="margin:6px 0">Also include your Trading Hours.</li></ul>`+
+			`<ul style="margin:8px 0 0;padding-left:20px"><li style="margin:6px 0">Please complete as much information as possible, such as your Province, Area and Postal Code, and select your Business/Services categories.</li><li style="margin:6px 0">Once you are in, add as many images as possible (bright coloured entertaining images where possible).</li><li style="margin:6px 0">Word your Description so that you include as many items/products that you use or offer, as Guests and Locals can search for you in the search bar using key words (hairdressers sometimes use and sell Kérastase Paris). Sometimes a Guest or Local might search for this product and if the hairdresser has listed it, their business will come up.</li><li style="margin:6px 0">If not already done, when you are at the premises, click the “Use my current location” button so as to populate the Latitude and Longitude co-ordinates.</li><li style="margin:6px 0">Consider offering discounts as this will draw users to you. You can offer discounts to Guests or Locals or both (e.g. something simple like buy a main meal and get a free cup of coffee).</li><li style="margin:6px 0">Also include your Trading Hours.</li></ul>`+
 			`%s`,
 		htmlPkg.EscapeString(access), htmlPkg.EscapeString(editCode), qr)
 }
@@ -872,13 +872,18 @@ func qrDecalNoteHTML() string {
 // full invoice is the attached PDF, so the body only tells the partner which
 // month it covers and the date it must be paid by (its due date, in lumo green)
 // to keep their listing active.
-func invoiceEmailBodyHTML(v invoiceView) string {
+func invoiceEmailBodyHTML(v invoiceView, firstInvoice bool) string {
 	month := v.Date.Format("January 2006")
 	due := v.Due.Format("02/Jan/2006")
 	number := htmlPkg.EscapeString(v.Number)
+	// The first invoice gets the profile activated; later invoices keep it active.
+	outcome := "so as to avoid deactivation"
+	if firstInvoice {
+		outcome = "so as to have the profile activated"
+	}
 	return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:780px;color:#111;font-size:14px;line-height:1.55">` +
 		`<p style="margin:0">Please see the attached invoice for the month of <strong>` + htmlPkg.EscapeString(month) + `</strong>, ` +
-		`which is payable by <strong style="color:#39FF14">` + htmlPkg.EscapeString(due) + `</strong> so as to avoid deactivation.</p>` +
+		`which is payable by <strong style="color:#39FF14">` + htmlPkg.EscapeString(due) + `</strong> ` + outcome + `.</p>` +
 		`<h3 style="margin:18px 0 6px">How to pay</h3>` +
 		`<p style="margin:0">Payment is by EFT (bank transfer) to the banking details shown on the attached invoice. ` +
 		`Please use your invoice number <strong>` + number + `</strong> as the payment reference, so we can match your payment to your account. ` +
