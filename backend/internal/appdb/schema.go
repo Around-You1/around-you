@@ -338,6 +338,7 @@ type Accommodation struct {
 	ImageUrls []string `json:"imageUrls,omitempty"`
 
 	IsActive bool `json:"isActive"`
+	ShowToLocals bool `json:"showToLocals"` // opt-in: also show this accommodation to Locals
 
 	Units int `json:"units,omitempty"` // number of units/rooms — drives Option A banded pricing
 

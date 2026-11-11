@@ -137,6 +137,7 @@ type UpdateRequest struct {
 
 	Facilities []string `json:"facilities,omitempty"`
 	IsActive   *bool    `json:"isActive,omitempty"`
+	ShowToLocals *bool  `json:"showToLocals,omitempty"`
 	Units      *int     `json:"units,omitempty"`
 
 	OfficialHoldingCompany *string `json:"officialHoldingCompany,omitempty"`

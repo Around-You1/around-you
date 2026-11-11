@@ -88,6 +88,8 @@ const ratingKey = (entityType: string, entityId: number | string) =>
 
 export default function GuestDashboard() {
   const [accommodation, setAccommodation] = useState<Accommodation | null>(null);
+  // Accommodations that opted in to being shown to Locals (info-only cards).
+  const [localAccommodations, setLocalAccommodations] = useState<Accommodation[]>([]);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [services, setServices] = useState<ServiceData[]>([]);
   const [attractions, setAttractions] = useState<AttractionData[]>([]);
@@ -168,7 +170,9 @@ export default function GuestDashboard() {
   const filterTestVisibility = (items: any[], showOnlyTest: boolean): any[] =>
     (items || []).filter((x) => (showOnlyTest ? isTestName(x?.name) : !isTestName(x?.name)));
 
-  const tabOrder = ["restaurants", "services", "attractions"];
+  const tabOrder = isLocalMode
+    ? ["accommodation", "restaurants", "services", "attractions"]
+    : ["restaurants", "services", "attractions"];
 
   const handleSwipeLeft = () => {
     const currentIndex = tabOrder.indexOf(activeTab);
@@ -447,6 +451,14 @@ export default function GuestDashboard() {
         backend.attraction.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal }),
       ]);
       apply(r, s, a, ret, npo);
+      // Accommodations that ticked "Also Show Accommodation to Locals".
+      try {
+        const acc = await backend.accommodation.nearbyForLocals({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal });
+        setLocalAccommodations(filterTestVisibility((acc as any).accommodations || [], false));
+      } catch (accErr) {
+        console.error("Failed to load local accommodations:", accErr);
+        setLocalAccommodations([]);
+      }
     } catch (error) {
       console.error("Failed to load local partners:", error);
       toast({ title: "Error", description: "Failed to load local partners", variant: "destructive" });
@@ -1261,6 +1273,9 @@ export default function GuestDashboard() {
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
             <TabsList className="flex flex-col w-full gap-1 p-1 bg-muted rounded-md" style={{ height: "auto" }}>
+              {isLocalMode && (
+                <TabsTrigger value="accommodation" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Accommodation/Caravan Parks ({localAccommodations.length})</TabsTrigger>
+              )}
               <TabsTrigger value="restaurants" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Restaurants/Takeaways ({filteredRestaurants.length})</TabsTrigger>
               <TabsTrigger value="services" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Business/Services ({bizServices.length})</TabsTrigger>
               <TabsTrigger value="retail" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Retail ({retailServices.length})</TabsTrigger>
@@ -1321,6 +1336,54 @@ export default function GuestDashboard() {
               </Button>
             )}
           </div>
+
+            {isLocalMode && (
+              <TabsContent value="accommodation" className="space-y-3 mt-6" {...swipeHandlers}>
+                {localAccommodations.length === 0 ? (
+                  <Card>
+                    <CardContent className="p-8 text-center text-muted-foreground">
+                      No accommodation or caravan parks found within 50km
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="space-y-2">
+                    {localAccommodations.map((acc) => (
+                      <Card key={acc.id} className="hover:shadow-md transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="flex flex-col sm:flex-row gap-3">
+                            <ImageCarousel
+                              images={acc.imageUrls && acc.imageUrls.length > 0 ? acc.imageUrls : (acc.imageUrl ? [acc.imageUrl] : [])}
+                              alt={acc.name}
+                              className="w-full sm:w-28 h-40 sm:h-28 object-cover rounded flex-shrink-0"
+                              placeholderClassName="w-full sm:w-28 h-40 sm:h-28 rounded flex-shrink-0"
+                              intervalMs={3000}
+                            />
+                            <div className="flex-1 min-w-0 space-y-2">
+                              <h4 className="font-semibold">{acc.name}</h4>
+                              <div className="text-sm text-muted-foreground space-y-1">
+                                {acc.area && <div><span className="font-medium text-foreground">Area:</span> {acc.area}</div>}
+                                {acc.province && <div><span className="font-medium text-foreground">Province:</span> {acc.province}</div>}
+                                {acc.country && <div><span className="font-medium text-foreground">Country:</span> {acc.country}</div>}
+                                {acc.postalCode && <div><span className="font-medium text-foreground">Postal Code:</span> {acc.postalCode}</div>}
+                                {acc.contact && <div><span className="font-medium text-foreground">Contact:</span> {acc.contact}</div>}
+                              </div>
+                              {acc.facilities && acc.facilities.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {acc.facilities.map((f, i) => (
+                                    <span key={i} className="px-2 py-0.5 text-xs rounded bg-muted text-foreground">{f}</span>
+                                  ))}
+                                </div>
+                              )}
+                              {acc.description && <p className="text-sm whitespace-pre-wrap break-words">{acc.description}</p>}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            )}
 
             <TabsContent value="realestate" className="space-y-3 mt-6">
               <EstateAgenciesBrowse />

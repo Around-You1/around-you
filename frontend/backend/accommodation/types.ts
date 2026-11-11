@@ -69,6 +69,7 @@ export interface Accommodation {
   imageUrls?: string[];
 
   isActive: boolean;
+  showToLocals: boolean;
 
   officialHoldingCompany?: string;
   officialContactName?: string;

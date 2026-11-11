@@ -409,6 +409,15 @@ export const backend = {
       request("POST", "/accommodation/access-code/regenerate", { body: req }),
     deleteAccommodation: (req: any) =>
       request("DELETE", "/accommodation", { body: req }),
+    nearbyForLocals: (req: { latitude: number; longitude: number; radiusKm?: number; postalCode?: string }) =>
+      request("GET", "/accommodation/nearby-locals", {
+        query: {
+          latitude: req.latitude,
+          longitude: req.longitude,
+          radiusKm: req.radiusKm,
+          postalCode: req.postalCode,
+        },
+      }),
     template: () => request("GET", "/accommodation/template"),
     exportAccommodations: () => request("GET", "/accommodation/export"),
     importAccommodations: (req: any) =>

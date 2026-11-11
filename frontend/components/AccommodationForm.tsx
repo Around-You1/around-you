@@ -156,6 +156,7 @@ export default function AccommodationForm({ accommodation, onClose, partnerEdit 
     units: accommodation?.units || 1,
     facilities: (accommodation?.facilities || []) as string[],
     isActive: accommodation?.isActive ?? false,
+    showToLocals: accommodation?.showToLocals ?? false,
   }));
 
   const [loading, setLoading] = useState(false);
@@ -219,6 +220,7 @@ export default function AccommodationForm({ accommodation, onClose, partnerEdit 
         units: accommodation.units || 1,
         facilities: accommodation.facilities || [],
         isActive: accommodation.isActive,
+        showToLocals: accommodation.showToLocals,
       });
     }
   }, [accommodation]);
@@ -327,6 +329,18 @@ export default function AccommodationForm({ accommodation, onClose, partnerEdit 
           {!partnerEdit && (
             <OfficialUseSection data={officialUse} onChange={setOfficialUse} showTierFields={false} />
           )}
+
+          <div className="flex items-start space-x-2 rounded-md border border-border p-3">
+            <Switch
+              id="showToLocals"
+              checked={formData.showToLocals}
+              onCheckedChange={(checked) => setFormData({ ...formData, showToLocals: checked })}
+            />
+            <div>
+              <Label htmlFor="showToLocals">Also Show Accommodation to Locals</Label>
+              <p className="text-xs text-muted-foreground">When on, this accommodation also appears to Locals under &ldquo;Accommodation/Caravan Parks&rdquo; (photos, area, facilities, contact and description).</p>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">

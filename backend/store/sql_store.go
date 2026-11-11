@@ -82,7 +82,8 @@ const accommodationColumns = `
 	COALESCE(access_level, '') as access_level,
 	COALESCE(units, 1) as units,
 	created_at, updated_at,
-	COALESCE(private_ambulance_contact, '') as private_ambulance_contact
+	COALESCE(private_ambulance_contact, '') as private_ambulance_contact,
+	COALESCE(show_to_locals, false) as show_to_locals
 `
 
 // scanner is satisfied by both *sql.Row (QueryRow) and *sql.Rows (Query),
@@ -111,6 +112,7 @@ func scanAccommodation(row scanner) (*appdb.Accommodation, error) {
 		&a.Units,
 		&a.CreatedAt, &a.UpdatedAt,
 		&a.PrivateAmbulanceContact,
+		&a.ShowToLocals,
 	)
 	if err != nil {
 		return nil, err
@@ -176,6 +178,27 @@ func sortColumn(sortBy, sortOrder string) string {
 
 // List returns every accommodation, ordered per sortBy/sortOrder ("name" or
 // default created_at; "asc" or default desc).
+// ListForLocals returns active accommodations that have opted in to be shown to
+// Locals (show_to_locals = true) and have coordinates, for distance filtering by
+// the caller (the Local "Accommodation/Caravan Parks" section).
+func (s *Store) ListForLocals(ctx context.Context) ([]appdb.Accommodation, error) {
+	rows, err := appdb.SQLDB.QueryContext(ctx,
+		"SELECT"+accommodationColumns+"FROM accommodations WHERE show_to_locals = true AND is_active = true AND latitude IS NOT NULL AND longitude IS NOT NULL")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]appdb.Accommodation, 0)
+	for rows.Next() {
+		a, err := scanAccommodation(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *a)
+	}
+	return out, rows.Err()
+}
+
 func (s *Store) List(ctx context.Context, sortBy, sortOrder string) ([]appdb.Accommodation, error) {
 	query := "SELECT" + accommodationColumns + "FROM accommodations ORDER BY " + sortColumn(sortBy, sortOrder)
 
@@ -311,8 +334,9 @@ type Patch struct {
 	Vets            *appdb.EmergencyEntryList
 	HospitalAddress *string
 
-	Facilities []string // non-nil (even empty) means "replace"
-	IsActive   *bool
+	Facilities   []string // non-nil (even empty) means "replace"
+	IsActive     *bool
+	ShowToLocals *bool
 	Units      *int
 
 	OfficialHoldingCompany *string
@@ -447,6 +471,9 @@ func (s *Store) Update(ctx context.Context, id int64, patch Patch) (*appdb.Accom
 	}
 	if patch.IsActive != nil {
 		sets = append(sets, "is_active = "+arg(*patch.IsActive))
+	}
+	if patch.ShowToLocals != nil {
+		sets = append(sets, "show_to_locals = "+arg(*patch.ShowToLocals))
 	}
 	if patch.Units != nil {
 		sets = append(sets, "units = "+arg(unitsOrDefault(*patch.Units)))

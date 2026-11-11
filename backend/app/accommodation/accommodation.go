@@ -57,6 +57,40 @@ func List(ctx context.Context, req *ListRequest) (*ListResponse, error) {
 	return &ListResponse{Accommodations: publicize(ctx, items)}, nil
 }
 
+// ListNearbyRequest is the Local-side distance query for opted-in accommodations.
+type ListNearbyRequest struct {
+	Latitude   float64 `query:"latitude"`
+	Longitude  float64 `query:"longitude"`
+	RadiusKm   float64 `query:"radiusKm"`
+	PostalCode string  `query:"postalCode"`
+}
+
+// ListNearbyForLocals returns the active accommodations that have opted in to be
+// shown to Locals (show_to_locals), filtered to the searcher's radius — the
+// "Accommodation/Caravan Parks" section on the Local page.
+//
+//encore:api auth method=GET path=/accommodation/nearby-locals
+func ListNearbyForLocals(ctx context.Context, req *ListNearbyRequest) (*ListResponse, error) {
+	all, err := accommodations.ListForLocals(ctx)
+	if err != nil {
+		return nil, err
+	}
+	searchLat, searchLng, haveSearch := appdb.SearcherCoords(req.Latitude, req.Longitude, req.PostalCode)
+	wantPostal := strings.ToLower(strings.TrimSpace(req.PostalCode))
+	radius := req.RadiusKm
+	if radius <= 0 {
+		radius = 50
+	}
+	out := make([]appdb.Accommodation, 0, len(all))
+	for i := range all {
+		a := all[i]
+		if appdb.WithinRadius(searchLat, searchLng, haveSearch, a.Latitude, a.Longitude, a.PostalCode, wantPostal, radius) {
+			out = append(out, a)
+		}
+	}
+	return &ListResponse{Accommodations: publicize(ctx, out)}, nil
+}
+
 //encore:api auth method=GET path=/accommodation/get
 func Get(ctx context.Context, req *GetRequest) (*appdb.Accommodation, error) {
 	a, err := accommodations.Get(ctx, req.ID)
@@ -225,6 +259,7 @@ func Update(ctx context.Context, req *UpdateRequest) (*appdb.Accommodation, erro
 		Units:                   req.Units,
 		Facilities:              req.Facilities,
 		IsActive:                req.IsActive,
+		ShowToLocals:            req.ShowToLocals,
 		OfficialHoldingCompany:  req.OfficialHoldingCompany,
 		OfficialContactName:     req.OfficialContactName,
 		OfficialContactNumber:   req.OfficialContactNumber,

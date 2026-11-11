@@ -177,6 +177,7 @@ func main() {
 
 	// ---- Accommodation (auth) ----------------------------------------------
 	r.auth("GET /accommodation", httpx.Query(accommodation.List))
+	r.auth("GET /accommodation/nearby-locals", httpx.Query(accommodation.ListNearbyForLocals))
 	r.auth("GET /accommodation/get", httpx.Query(accommodation.Get))
 	r.auth("POST /accommodation", httpx.Body(accommodation.Create))
 	r.auth("PUT /accommodation", httpx.Body(accommodation.Update))
