@@ -332,7 +332,7 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
                         <Button
                           variant="outline"
                           size="sm"
-                          className={acceptedIds.has(attraction.id) ? "h-7 text-xs border-muted-foreground/30 text-muted-foreground" : "h-7 text-xs border-[#39FF14]/50 text-[#2a9d12] hover:bg-[#39FF14]/10"}
+                          className={acceptedIds.has(attraction.id) ? "h-7 text-xs border-muted-foreground/30 text-muted-foreground" : "h-7 text-xs border-brand/50 text-[#2a9d12] hover:bg-brand/10"}
                           title={acceptedIds.has(attraction.id) ? "Invoice sent — awaiting payment. Activate once paid." : "Accept: send the first invoice + codes"}
                           disabled={accepting === attraction.id}
                           onClick={() => acceptPartner(attraction)}

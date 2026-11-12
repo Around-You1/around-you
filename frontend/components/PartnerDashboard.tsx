@@ -187,7 +187,7 @@ function RedeemScanner() {
             <Button variant="outline" onClick={stopCamera} className="w-full">Stop camera</Button>
           </div>
         ) : (
-          <Button onClick={startScan} disabled={busy} className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold">
+          <Button onClick={startScan} disabled={busy} className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold">
             Scan Guest/Local's QR code
           </Button>
         )}
@@ -215,7 +215,7 @@ function SpecialStampCard({ partnerType, partnerId, phone, special }: { partnerT
   const [card, setCard] = useState<any | null>(null);
   const [busy, setBusy] = useState(false);
   const [qty, setQty] = useState(1);
-  const GREEN = "bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold";
+  const GREEN = "bg-brand hover:bg-brand/90 text-brand-foreground font-semibold";
   const load = async () => {
     if (!phone) return;
     setBusy(true);
@@ -268,7 +268,7 @@ function SpecialStampCard({ partnerType, partnerId, phone, special }: { partnerT
             {Array.from({ length: threshold }).map((_, i) => (
               <span key={i}
                 className={`h-8 w-8 rounded-full border flex items-center justify-center text-xs font-bold ${
-                  i < stamps ? "bg-[#39FF14] border-[#39FF14] text-black" : "border-border text-muted-foreground"
+                  i < stamps ? "bg-brand border-brand text-black" : "border-border text-muted-foreground"
                 }`}>
                 {i < stamps ? "✓" : i + 1}
               </span>
@@ -315,7 +315,7 @@ function LoyaltyManager({ entityType, entityId, initialBrandColor, specials }: {
   const streamRef = useRef<MediaStream | null>(null);
   const activeRef = useRef(false);
 
-  const GREEN = "bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold";
+  const GREEN = "bg-brand hover:bg-brand/90 text-brand-foreground font-semibold";
   const BRAND_COLORS = [
     { name: "Red", hex: "#E11D2A" },
     { name: "Orange", hex: "#EA580C" },
@@ -587,7 +587,7 @@ function LoyaltyManager({ entityType, entityId, initialBrandColor, specials }: {
                 {Array.from({ length: card.threshold }).map((_, i) => (
                   <span key={i}
                     className={`h-8 w-8 rounded-full border flex items-center justify-center text-xs font-bold ${
-                      i < card.stamps ? "bg-[#39FF14] border-[#39FF14] text-black" : "border-border text-muted-foreground"
+                      i < card.stamps ? "bg-brand border-brand text-black" : "border-border text-muted-foreground"
                     }`}>
                     {i < card.stamps ? "✓" : i + 1}
                   </span>
@@ -801,7 +801,7 @@ export default function PartnerDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#39FF14]/10 to-background flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-brand/10 to-background flex items-center justify-center">
         <p className="text-lg">Loading...</p>
       </div>
     );
@@ -809,7 +809,7 @@ export default function PartnerDashboard() {
 
   if (!entity || !entityType) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#39FF14]/10 to-background flex items-center justify-center p-6">
+      <div className="min-h-screen bg-gradient-to-br from-brand/10 to-background flex items-center justify-center p-6">
         <Card>
           <CardContent className="p-8">
             <p>No partner entity assigned</p>
@@ -827,7 +827,7 @@ export default function PartnerDashboard() {
       loadEntityDetails();
     };
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#39FF14]/10 to-background p-6">
+      <div className="min-h-screen bg-gradient-to-br from-brand/10 to-background p-6">
         <div className="max-w-4xl mx-auto py-8">
           {entityType === "restaurant" && (
             <RestaurantForm restaurantId={(entity as Restaurant).id} onClose={closeAndReload} partnerEdit editCode={verifiedEditCode} />
@@ -852,7 +852,7 @@ export default function PartnerDashboard() {
   if (entityType === "accommodation") {
     const acc = entity as any;
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#39FF14]/10 to-background p-6">
+      <div className="min-h-screen bg-gradient-to-br from-brand/10 to-background p-6">
         <div className="max-w-2xl mx-auto space-y-6 py-8">
           <div className="relative text-center">
             <div className="flex justify-center mb-2"><AppLogo src="/logo-dark.png" /></div>
@@ -867,7 +867,7 @@ export default function PartnerDashboard() {
           <AppInstallButtons />
 
           <Button
-            className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold"
+            className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold"
             onClick={() => { setGateMode("edit"); setShowGate(true); }}
           >
             Edit Profile
@@ -909,7 +909,7 @@ export default function PartnerDashboard() {
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setShowGate(false)} disabled={verifying}>Cancel</Button>
-                  <Button onClick={verifyAndOpen} disabled={verifying} className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black">
+                  <Button onClick={verifyAndOpen} disabled={verifying} className="bg-brand hover:bg-brand/90 text-brand-foreground">
                     {verifying ? "Checking…" : "Unlock"}
                   </Button>
                 </div>
@@ -935,7 +935,7 @@ export default function PartnerDashboard() {
     (e.trailDifficulty || e.wildlifeCautions || e.tideWarnings || e.parkingNotes || e.photographySpots);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#39FF14]/10 to-background p-6">
+    <div className="min-h-screen bg-gradient-to-br from-brand/10 to-background p-6">
       <div className="max-w-4xl mx-auto space-y-8 py-8">
         <div className="relative text-center">
           <div className="flex justify-center mb-2"><AppLogo src="/logo-dark.png" /></div>
@@ -956,7 +956,7 @@ export default function PartnerDashboard() {
         <AppInstallButtons />
 
         <Button
-          className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold"
+          className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold"
           onClick={() => { setGateMode("edit"); setShowGate(true); }}
         >
           Edit Profile
@@ -1026,7 +1026,7 @@ export default function PartnerDashboard() {
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setShowGate(false)} disabled={verifying}>Cancel</Button>
-                <Button onClick={verifyAndOpen} disabled={verifying} className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black">
+                <Button onClick={verifyAndOpen} disabled={verifying} className="bg-brand hover:bg-brand/90 text-brand-foreground">
                   {verifying ? "Checking…" : "Unlock"}
                 </Button>
               </div>
@@ -1049,7 +1049,7 @@ export default function PartnerDashboard() {
                 </p>
                 {entityType === "restaurant" && e.littleExplorerApproved && (
                   <div className="flex flex-wrap gap-2 mt-3">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-black border border-[#39FF14] rounded-full text-sm font-medium">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-black border border-brand rounded-full text-sm font-medium">
                       <Baby className="h-4 w-4" />
                       Child Friendly
                     </span>
@@ -1087,7 +1087,7 @@ export default function PartnerDashboard() {
                 {entity.latitude && entity.longitude && (
                   <Button
                     onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${entity.latitude},${entity.longitude}`, "_blank")}
-                    className="mt-3 bg-[#39FF14] hover:bg-[#39FF14]/90 text-black"
+                    className="mt-3 bg-brand hover:bg-brand/90 text-brand-foreground"
                     title="Opens directions in your default map app"
                   >
                     <Navigation className="h-4 w-4 mr-2" />
@@ -1258,7 +1258,7 @@ export default function PartnerDashboard() {
                 <div>
                   <Button
                     onClick={() => window.open(e.menuLink, "_blank")}
-                    className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black"
+                    className="bg-brand hover:bg-brand/90 text-brand-foreground"
                   >
                     <ExternalLink className="h-5 w-5 mr-2" />
                     View Menu
@@ -1292,7 +1292,7 @@ export default function PartnerDashboard() {
                   <div key={b.id} className={`border rounded-lg p-3 space-y-1 ${b.status === "cancelled" ? "opacity-60" : ""}`}>
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-medium text-sm">{b.bookingDate}{b.bookingTime ? ` \u00B7 ${b.bookingTime}` : ""}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded ${b.status === "cancelled" ? "text-black" : b.status === "pending" ? "bg-[#39FF14] text-black" : "bg-[#39FF14] text-black"}`}>{b.status}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded ${b.status === "cancelled" ? "text-black" : b.status === "pending" ? "bg-brand text-brand-foreground" : "bg-brand text-brand-foreground"}`}>{b.status}</span>
                     </div>
                     <div className="text-sm">{b.customerName}</div>
                     <div className="text-xs text-muted-foreground">{[b.customerPhone, b.customerEmail].filter(Boolean).join(" \u00B7 ")}</div>
@@ -1315,7 +1315,7 @@ export default function PartnerDashboard() {
             <p className="text-sm text-muted-foreground">
               Welcome to the Around You Partner Portal! Your business is now listed on our platform and visible to guests staying at participating accommodations in your area.
             </p>
-            <div className="p-4 bg-[#39FF14]/10 rounded-lg space-y-2">
+            <div className="p-4 bg-brand/10 rounded-lg space-y-2">
               <h4 className="font-semibold text-sm">Need to update your information?</h4>
               <p className="text-sm text-muted-foreground">
                 Please contact the platform administrator to make changes to your business profile, including contact details, images, descriptions, or discount offers.

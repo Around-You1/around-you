@@ -336,7 +336,7 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortSt
                         <Button
                           variant="outline"
                           size="sm"
-                          className={acceptedIds.has(service.id) ? "h-7 text-xs border-muted-foreground/30 text-muted-foreground" : "h-7 text-xs border-[#39FF14]/50 text-[#2a9d12] hover:bg-[#39FF14]/10"}
+                          className={acceptedIds.has(service.id) ? "h-7 text-xs border-muted-foreground/30 text-muted-foreground" : "h-7 text-xs border-brand/50 text-[#2a9d12] hover:bg-brand/10"}
                           title={acceptedIds.has(service.id) ? "Invoice sent — awaiting payment. Activate once paid." : "Accept: send the first invoice + codes"}
                           disabled={accepting === service.id}
                           onClick={() => acceptPartner(service)}

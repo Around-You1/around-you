@@ -1080,11 +1080,11 @@ export default function BillingTab() {
                           title={c.status === "Paid" ? "Tap to mark Accrued (unpaid)" : "Tap to mark Paid"}
                           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border transition-colors ${
                             c.status === "Paid"
-                              ? "bg-[#39FF14]/15 border-[#39FF14]/50 text-[#2a9d12]"
-                              : "bg-muted border-border text-muted-foreground hover:border-[#39FF14]/50"
+                              ? "bg-brand/15 border-brand/50 text-[#2a9d12]"
+                              : "bg-muted border-border text-muted-foreground hover:border-brand/50"
                           } ${togglingCommId === c.id ? "opacity-50 cursor-wait" : "cursor-pointer"}`}
                         >
-                          <span className={`h-1.5 w-1.5 rounded-full ${c.status === "Paid" ? "bg-[#39FF14]" : "bg-muted-foreground/50"}`} />
+                          <span className={`h-1.5 w-1.5 rounded-full ${c.status === "Paid" ? "bg-brand" : "bg-muted-foreground/50"}`} />
                           {togglingCommId === c.id ? "…" : c.status}
                         </button>
                       </td>

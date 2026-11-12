@@ -109,7 +109,7 @@ export default function AdminLoginPage() {
                   fontSize: "0.9rem",
                   outline: "none",
                 }}
-                className="transition-all focus:border-[#39FF14] placeholder-gray-600"
+                className="transition-all focus:border-brand placeholder-gray-600"
               />
             </div>
 
@@ -140,7 +140,7 @@ export default function AdminLoginPage() {
                   fontSize: "0.9rem",
                   outline: "none",
                 }}
-                className="transition-all focus:border-[#39FF14] placeholder-gray-600"
+                className="transition-all focus:border-brand placeholder-gray-600"
               />
             </div>
 
@@ -171,7 +171,7 @@ export default function AdminLoginPage() {
                   fontSize: "0.9rem",
                   outline: "none",
                 }}
-                className="transition-all focus:border-[#39FF14] placeholder-gray-600"
+                className="transition-all focus:border-brand placeholder-gray-600"
               />
             </div>
 

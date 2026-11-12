@@ -536,7 +536,7 @@ export default function GuestDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#39FF14]/10 to-background flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-brand/10 to-background flex items-center justify-center">
         <p className="text-lg">Loading...</p>
       </div>
     );
@@ -549,13 +549,13 @@ export default function GuestDashboard() {
     // here without its role, send them back to sign in instead.
     const isGuest = user.role === "Guest";
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#39FF14]/10 to-background flex items-center justify-center p-6">
+      <div className="min-h-screen bg-gradient-to-br from-brand/10 to-background flex items-center justify-center p-6">
         <Card>
           <CardContent className="p-8 text-center space-y-4">
             <p>{isGuest ? "No accommodation assigned" : "Your session has ended. Please sign in again."}</p>
             {!isGuest && (
               <Button
-                className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold"
+                className="bg-brand hover:bg-brand/90 text-brand-foreground font-semibold"
                 onClick={() => { window.location.href = "/portal"; }}
               >
                 Sign In
@@ -570,7 +570,7 @@ export default function GuestDashboard() {
   // Owner editing their own accommodation profile (Edit Code verified above).
   if (editingProfile && accommodation) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#39FF14]/10 to-background p-6">
+      <div className="min-h-screen bg-gradient-to-br from-brand/10 to-background p-6">
         <div className="max-w-4xl mx-auto py-8">
           <AccommodationForm
             accommodation={accommodation}
@@ -589,7 +589,7 @@ export default function GuestDashboard() {
     );
   }
 
-  const triggerClass = "flex items-center gap-2 text-sm font-medium hover:text-black transition-colors w-full text-left";
+  const triggerClass = "flex items-center gap-2 text-sm font-medium hover:text-foreground transition-colors w-full text-left";
   const contentClass = "pl-6 pt-2";
   const fallbackSpan = <OptedOut />;
 
@@ -642,7 +642,7 @@ export default function GuestDashboard() {
                             {BOOKINGS_ENABLED && !isNpo && !isRetail && (service.offersBookings || service.accessLevel === "Booking") && (service.bookingItems?.length ?? 0) > 0 && (
                               <Button
                                 size="sm"
-                                className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black w-full sm:w-auto"
+                                className="bg-brand hover:bg-brand/90 text-brand-foreground w-full sm:w-auto"
                                 onClick={() => setBookingFor({ entityType: entityType, entityId: Number(service.id), entityName: service.name, items: (service.bookingItems || []) as BookItem[] })}
                               >
                                 Click here to book at this establishment.
@@ -652,7 +652,7 @@ export default function GuestDashboard() {
                             {discOffered(service) && (
                               <Button
                                 size="sm"
-                                className="w-full sm:w-auto bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold"
+                                className="w-full sm:w-auto bg-brand hover:bg-brand/90 text-brand-foreground font-semibold"
                                 onClick={() => setRedeemFor({ entityType: entityType, entityId: Number(service.id), entityName: service.name, discount: discOffered(service), discountCode: discCode(service) })}
                               >
                                 Redeem discount
@@ -674,15 +674,15 @@ export default function GuestDashboard() {
 
                             {!isRetail && (
                             <HideWhenOptedOut><Collapsible>
-                              <CollapsibleTrigger className={(discOffered(service) || discCode(service)) ? `${triggerClass} bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold rounded-lg px-3 py-2` : triggerClass}>
+                              <CollapsibleTrigger className={(discOffered(service) || discCode(service)) ? `${triggerClass} bg-brand hover:bg-brand/90 text-brand-foreground font-semibold rounded-lg px-3 py-2` : triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Discount and Discount Code
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm`}>
                                 {discOffered(service) || discCode(service) ? (
-                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#39FF14]/10 border border-[#39FF14] rounded-lg">
+                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-brand/10 border border-brand rounded-lg">
                                     {discOffered(service) && (
-                                      <div className="flex items-center gap-1.5 text-black min-w-0">
+                                      <div className="flex items-center gap-1.5 text-foreground min-w-0">
                                         <Tag className="h-4 w-4 shrink-0 mt-0.5" />
                                         <span className="font-semibold text-sm break-words min-w-0">{discOffered(service)}</span>
                                       </div>
@@ -690,7 +690,7 @@ export default function GuestDashboard() {
                                     {discCode(service) && (
                                       <div className="flex items-center gap-1">
                                         <span className="text-xs text-muted-foreground">Code:</span>
-                                        <span className="px-2 py-0.5 bg-[#39FF14] text-black rounded font-mono text-xs font-bold">
+                                        <span className="px-2 py-0.5 bg-brand text-brand-foreground rounded font-mono text-xs font-bold">
                                           {discCode(service)}
                                         </span>
                                       </div>
@@ -705,7 +705,7 @@ export default function GuestDashboard() {
 
                             {isRetail && (
                             <HideWhenOptedOut><Collapsible>
-                              <CollapsibleTrigger className={retailSpecials.length > 0 ? `${triggerClass} bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold rounded-lg px-3 py-2` : triggerClass}>
+                              <CollapsibleTrigger className={retailSpecials.length > 0 ? `${triggerClass} bg-brand hover:bg-brand/90 text-brand-foreground font-semibold rounded-lg px-3 py-2` : triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Discount / My Stamp Card
                               </CollapsibleTrigger>
@@ -713,8 +713,8 @@ export default function GuestDashboard() {
                                 {retailSpecials.length > 0 ? (
                                   <div className="space-y-2">
                                     {retailSpecials.map((sp, i) => (
-                                      <div key={i} className="px-3 py-2 bg-[#39FF14]/10 border border-[#39FF14] rounded-lg">
-                                        <div className="flex items-center gap-1.5 text-black">
+                                      <div key={i} className="px-3 py-2 bg-brand/10 border border-brand rounded-lg">
+                                        <div className="flex items-center gap-1.5 text-foreground">
                                           <Tag className="h-4 w-4 shrink-0" />
                                           <span className="text-xs font-semibold uppercase tracking-wide">
                                             {sp.type === "stampcard" ? "My Stamp Card" : "Discount"}
@@ -724,17 +724,17 @@ export default function GuestDashboard() {
                                           <img
                                             src={(sp as any).imageUrl}
                                             alt={sp.line1 || "Product"}
-                                            className="mt-2 w-full max-w-[220px] rounded-md border border-[#39FF14]/40 object-cover"
+                                            className="mt-2 w-full max-w-[220px] rounded-md border border-brand/40 object-cover"
                                           />
                                         )}
-                                        <p className="text-sm text-black mt-1">{sp.line1}</p>
+                                        <p className="text-sm text-foreground mt-1">{sp.line1}</p>
                                         {sp.type === "stampcard" && sp.line2 && (
-                                          <p className="text-sm text-black/80 mt-1">{sp.line2}</p>
+                                          <p className="text-sm text-foreground/80 mt-1">{sp.line2}</p>
                                         )}
                                         {sp.type === "stampcard" && (
                                           <Button
                                             size="sm"
-                                            className="mt-2 bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold"
+                                            className="mt-2 bg-brand hover:bg-brand/90 text-brand-foreground font-semibold"
                                             onClick={() => setShowMyStamps(true)}
                                           >
                                             Get Stamps
@@ -790,7 +790,7 @@ export default function GuestDashboard() {
                                 {service.serviceCategories && service.serviceCategories.length > 0 ? (
                                   <div className="flex flex-wrap gap-2">
                                     {service.serviceCategories.map((category) => (
-                                      <span key={category} className="px-2 py-0.5 text-black rounded text-xs">
+                                      <span key={category} className="px-2 py-0.5 text-foreground rounded text-xs">
                                         {category}
                                       </span>
                                     ))}
@@ -805,7 +805,7 @@ export default function GuestDashboard() {
 
                             {BOOKINGS_ENABLED && !isNpo && !isRetail && service.offersBookings && (
                               <div className="mt-1">
-                                <span className="inline-block px-2 py-0.5 text-black rounded text-xs font-medium">Takes bookings</span>
+                                <span className="inline-block px-2 py-0.5 text-foreground rounded text-xs font-medium">Takes bookings</span>
                               </div>
                             )}
 
@@ -817,15 +817,15 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {service.paymentCard || service.paymentCash || service.paymentMobile || service.paymentEft || service.paymentIkhokha || service.paymentGpay || service.paymentSamsungpay || service.paymentSassa || service.paymentApplepay ? (
                                   <div className="flex flex-wrap gap-2">
-                                    {service.paymentCard && <span className="px-2 py-0.5 text-black rounded text-xs">Card</span>}
-                                    {service.paymentCash && <span className="px-2 py-0.5 text-black rounded text-xs">Cash</span>}
-                                    {service.paymentMobile && <span className="px-2 py-0.5 text-black rounded text-xs">Mobile</span>}
-                                    {service.paymentEft && <span className="px-2 py-0.5 text-black rounded text-xs">EFT — Please contact for more info</span>}
-                                    {service.paymentIkhokha && <span className="px-2 py-0.5 text-black rounded text-xs">iKhokha</span>}
-                                    {service.paymentGpay && <span className="px-2 py-0.5 text-black rounded text-xs">G Pay</span>}
-                                    {service.paymentSamsungpay && <span className="px-2 py-0.5 text-black rounded text-xs">Samsung Pay</span>}
-                                    {service.paymentSassa && <span className="px-2 py-0.5 text-black rounded text-xs">SASSA</span>}
-                                    {service.paymentApplepay && <span className="px-2 py-0.5 text-black rounded text-xs">Apple Pay</span>}
+                                    {service.paymentCard && <span className="px-2 py-0.5 text-foreground rounded text-xs">Card</span>}
+                                    {service.paymentCash && <span className="px-2 py-0.5 text-foreground rounded text-xs">Cash</span>}
+                                    {service.paymentMobile && <span className="px-2 py-0.5 text-foreground rounded text-xs">Mobile</span>}
+                                    {service.paymentEft && <span className="px-2 py-0.5 text-foreground rounded text-xs">EFT — Please contact for more info</span>}
+                                    {service.paymentIkhokha && <span className="px-2 py-0.5 text-foreground rounded text-xs">iKhokha</span>}
+                                    {service.paymentGpay && <span className="px-2 py-0.5 text-foreground rounded text-xs">G Pay</span>}
+                                    {service.paymentSamsungpay && <span className="px-2 py-0.5 text-foreground rounded text-xs">Samsung Pay</span>}
+                                    {service.paymentSassa && <span className="px-2 py-0.5 text-foreground rounded text-xs">SASSA</span>}
+                                    {service.paymentApplepay && <span className="px-2 py-0.5 text-foreground rounded text-xs">Apple Pay</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
@@ -841,8 +841,8 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {service.wheelchairAccess || service.parkingAvailability ? (
                                   <div className="flex flex-wrap gap-2">
-                                    {service.wheelchairAccess && <span className="px-2 py-0.5 text-black rounded text-xs">Wheelchair Access</span>}
-                                    {service.parkingAvailability && <span className="px-2 py-0.5 text-black rounded text-xs">Parking Available</span>}
+                                    {service.wheelchairAccess && <span className="px-2 py-0.5 text-foreground rounded text-xs">Wheelchair Access</span>}
+                                    {service.parkingAvailability && <span className="px-2 py-0.5 text-foreground rounded text-xs">Parking Available</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
@@ -857,7 +857,7 @@ export default function GuestDashboard() {
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {service.littleExplorerApproved ? (
-                                  <span className="px-2 py-0.5 text-black rounded text-xs">with pleasure</span>
+                                  <span className="px-2 py-0.5 text-foreground rounded text-xs">with pleasure</span>
                                 ) : (
                                   fallbackSpan
                                 )}
@@ -874,7 +874,7 @@ export default function GuestDashboard() {
                                   <>
                                     <div className="flex items-center justify-between">
                                       <span className="text-muted-foreground">Contact Number:</span>
-                                      <a href={`tel:${service.contactNumber}`} className="text-black hover:underline flex items-center gap-1">
+                                      <a href={`tel:${service.contactNumber}`} className="text-foreground hover:underline flex items-center gap-1">
                                         <Phone className="h-3 w-3" />
                                         {service.contactNumber}
                                       </a>
@@ -907,7 +907,7 @@ export default function GuestDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#39FF14]/10 to-background px-6 pt-3 pb-6">
+    <div className="min-h-screen bg-gradient-to-br from-brand/10 to-background px-6 pt-3 pb-6">
       <div className="max-w-7xl mx-auto space-y-6 pt-3 pb-8">
         {isLocalMode ? (
           <div className="space-y-4">
@@ -992,7 +992,7 @@ export default function GuestDashboard() {
                             <Button
                               variant="default"
                               size="default"
-                              className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black"
+                              className="bg-brand hover:bg-brand/90 text-brand-foreground"
                               onClick={() => (window.location.href = `tel:${selectedContact || accommodation!.primaryContact}`)}
                             >
                               <Phone className="h-4 w-4 mr-2" />
@@ -1071,7 +1071,7 @@ export default function GuestDashboard() {
                         href="https://www.weathersa.co.za"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-black hover:underline flex items-center gap-1"
+                        className="text-foreground hover:underline flex items-center gap-1"
                       >
                         <ExternalLink className="h-3 w-3" />
                         Visit WeatherSA
@@ -1089,7 +1089,7 @@ export default function GuestDashboard() {
                         href="https://www.tides4fishing.com/za"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-black hover:underline flex items-center gap-1"
+                        className="text-foreground hover:underline flex items-center gap-1"
                       >
                         <ExternalLink className="h-3 w-3" />
                         Visit Tides4Fishing
@@ -1106,7 +1106,7 @@ export default function GuestDashboard() {
                       {accommodation!.facilities && accommodation!.facilities.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {accommodation!.facilities.map((facility) => (
-                            <span key={facility} className="px-2 py-0.5 text-black rounded text-xs">
+                            <span key={facility} className="px-2 py-0.5 text-foreground rounded text-xs">
                               {facility}
                             </span>
                           ))}
@@ -1128,7 +1128,7 @@ export default function GuestDashboard() {
                           {accommodation!.ambulanceContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Public Ambulance:</span>
-                              <a href={`tel:${accommodation!.ambulanceContact}`} className="font-medium text-black hover:underline">
+                              <a href={`tel:${accommodation!.ambulanceContact}`} className="font-medium text-foreground hover:underline">
                                 {accommodation!.ambulanceContact}
                               </a>
                             </div>
@@ -1136,7 +1136,7 @@ export default function GuestDashboard() {
                           {accommodation!.privateAmbulanceContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Private Ambulance:</span>
-                              <a href={`tel:${accommodation!.privateAmbulanceContact}`} className="font-medium text-black hover:underline">
+                              <a href={`tel:${accommodation!.privateAmbulanceContact}`} className="font-medium text-foreground hover:underline">
                                 {accommodation!.privateAmbulanceContact}
                               </a>
                             </div>
@@ -1144,7 +1144,7 @@ export default function GuestDashboard() {
                           {accommodation!.policeContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Police Contact:</span>
-                              <a href={`tel:${accommodation!.policeContact}`} className="font-medium text-black hover:underline">
+                              <a href={`tel:${accommodation!.policeContact}`} className="font-medium text-foreground hover:underline">
                                 {accommodation!.policeContact}
                               </a>
                             </div>
@@ -1152,7 +1152,7 @@ export default function GuestDashboard() {
                           {accommodation!.fireDepartmentContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Fire Department:</span>
-                              <a href={`tel:${accommodation!.fireDepartmentContact}`} className="font-medium text-black hover:underline">
+                              <a href={`tel:${accommodation!.fireDepartmentContact}`} className="font-medium text-foreground hover:underline">
                                 {accommodation!.fireDepartmentContact}
                               </a>
                             </div>
@@ -1160,7 +1160,7 @@ export default function GuestDashboard() {
                           {accommodation!.primaryContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Primary Contact:</span>
-                              <a href={`tel:${accommodation!.primaryContact}`} className="font-medium text-black hover:underline">
+                              <a href={`tel:${accommodation!.primaryContact}`} className="font-medium text-foreground hover:underline">
                                 {accommodation!.primaryContact}
                               </a>
                             </div>
@@ -1171,7 +1171,7 @@ export default function GuestDashboard() {
                                   <div className="flex items-center justify-between">
                                     <span className="text-muted-foreground">{d.name ? `Doctor — ${d.name}:` : "Doctor:"}</span>
                                     {d.number && (
-                                      <a href={`tel:${d.number}`} className="font-medium text-black hover:underline">
+                                      <a href={`tel:${d.number}`} className="font-medium text-foreground hover:underline">
                                         {d.number}
                                       </a>
                                     )}
@@ -1187,7 +1187,7 @@ export default function GuestDashboard() {
                             : accommodation!.doctorContact && (
                                 <div className="flex items-center justify-between text-sm">
                                   <span className="text-muted-foreground">Doctor Contact:</span>
-                                  <a href={`tel:${accommodation!.doctorContact}`} className="font-medium text-black hover:underline">
+                                  <a href={`tel:${accommodation!.doctorContact}`} className="font-medium text-foreground hover:underline">
                                     {accommodation!.doctorContact}
                                   </a>
                                 </div>
@@ -1195,7 +1195,7 @@ export default function GuestDashboard() {
                           {accommodation!.hospitalContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Hospital Contact:</span>
-                              <a href={`tel:${accommodation!.hospitalContact}`} className="font-medium text-black hover:underline">
+                              <a href={`tel:${accommodation!.hospitalContact}`} className="font-medium text-foreground hover:underline">
                                 {accommodation!.hospitalContact}
                               </a>
                             </div>
@@ -1209,13 +1209,13 @@ export default function GuestDashboard() {
                           {accommodation!.snakeCatchersContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Snake Catchers:</span>
-                              <a href={`tel:${accommodation!.snakeCatchersContact}`} className="font-medium text-black hover:underline">{accommodation!.snakeCatchersContact}</a>
+                              <a href={`tel:${accommodation!.snakeCatchersContact}`} className="font-medium text-foreground hover:underline">{accommodation!.snakeCatchersContact}</a>
                             </div>
                           )}
                           {accommodation!.nsriContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">NSRI:</span>
-                              <a href={`tel:${accommodation!.nsriContact}`} className="font-medium text-black hover:underline">{accommodation!.nsriContact}</a>
+                              <a href={`tel:${accommodation!.nsriContact}`} className="font-medium text-foreground hover:underline">{accommodation!.nsriContact}</a>
                             </div>
                           )}
                           {accommodation!.vets && accommodation!.vets.length > 0
@@ -1224,7 +1224,7 @@ export default function GuestDashboard() {
                                   <div className="flex items-center justify-between">
                                     <span className="text-muted-foreground">{v.name ? `Vet — ${v.name}:` : "Vet:"}</span>
                                     {v.number && (
-                                      <a href={`tel:${v.number}`} className="font-medium text-black hover:underline">
+                                      <a href={`tel:${v.number}`} className="font-medium text-foreground hover:underline">
                                         {v.number}
                                       </a>
                                     )}
@@ -1240,19 +1240,19 @@ export default function GuestDashboard() {
                             : accommodation!.vetContact && (
                                 <div className="flex items-center justify-between text-sm">
                                   <span className="text-muted-foreground">Vet:</span>
-                                  <a href={`tel:${accommodation!.vetContact}`} className="font-medium text-black hover:underline">{accommodation!.vetContact}</a>
+                                  <a href={`tel:${accommodation!.vetContact}`} className="font-medium text-foreground hover:underline">{accommodation!.vetContact}</a>
                                 </div>
                               )}
                           {accommodation!.communityWatchContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Community Watch:</span>
-                              <a href={`tel:${accommodation!.communityWatchContact}`} className="font-medium text-black hover:underline">{accommodation!.communityWatchContact}</a>
+                              <a href={`tel:${accommodation!.communityWatchContact}`} className="font-medium text-foreground hover:underline">{accommodation!.communityWatchContact}</a>
                             </div>
                           )}
                           {accommodation!.localSecurityContact && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Local Security:</span>
-                              <a href={`tel:${accommodation!.localSecurityContact}`} className="font-medium text-black hover:underline">{accommodation!.localSecurityContact}</a>
+                              <a href={`tel:${accommodation!.localSecurityContact}`} className="font-medium text-foreground hover:underline">{accommodation!.localSecurityContact}</a>
                             </div>
                           )}
                         </>
@@ -1290,7 +1290,7 @@ export default function GuestDashboard() {
                             className="flex-1"
                           />
                           <Button
-                            className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold"
+                            className="bg-brand hover:bg-brand/90 text-brand-foreground font-semibold"
                             onClick={() => void verifyOwnerAndEdit()}
                             disabled={verifyingOwner}
                           >
@@ -1308,8 +1308,8 @@ export default function GuestDashboard() {
         )}
 
         <div className="space-y-4">
-          {BOOKINGS_ENABLED && <Button className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold" onClick={() => setShowMyBookings(true)}>Bookings / Pre-Orders I have made</Button>}
-          <Button className="w-full bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold" onClick={() => setShowMyStamps(true)}>My Stamp Cards</Button>
+          {BOOKINGS_ENABLED && <Button className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold" onClick={() => setShowMyBookings(true)}>Bookings / Pre-Orders I have made</Button>}
+          <Button className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold" onClick={() => setShowMyStamps(true)}>My Stamp Cards</Button>
           <Button variant="outline" className="w-full" onClick={async () => { await signOut(); window.location.href = "/"; }}>Sign out</Button>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
@@ -1483,7 +1483,7 @@ export default function GuestDashboard() {
                             {BOOKINGS_ENABLED && (restaurant.offersBookings || restaurant.accessLevel === "Booking") && (restaurant.bookingItems?.length ?? 0) > 0 && (
                               <Button
                                 size="sm"
-                                className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black w-full sm:w-auto"
+                                className="bg-brand hover:bg-brand/90 text-brand-foreground w-full sm:w-auto"
                                 onClick={() => setBookingFor({ entityType: "restaurant", entityId: Number(restaurant.id), entityName: restaurant.name, items: (restaurant.bookingItems || []) as BookItem[] })}
                               >
                                 Click here to book at this establishment.
@@ -1493,7 +1493,7 @@ export default function GuestDashboard() {
                             {discOffered(restaurant) && (
                               <Button
                                 size="sm"
-                                className="w-full sm:w-auto bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold"
+                                className="w-full sm:w-auto bg-brand hover:bg-brand/90 text-brand-foreground font-semibold"
                                 onClick={() => setRedeemFor({ entityType: "restaurant", entityId: Number(restaurant.id), entityName: restaurant.name, discount: discOffered(restaurant), discountCode: discCode(restaurant) })}
                               >
                                 Redeem discount
@@ -1514,15 +1514,15 @@ export default function GuestDashboard() {
                             )}
 
                             <HideWhenOptedOut><Collapsible>
-                              <CollapsibleTrigger className={(discOffered(restaurant) || discCode(restaurant)) ? `${triggerClass} bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold rounded-lg px-3 py-2` : triggerClass}>
+                              <CollapsibleTrigger className={(discOffered(restaurant) || discCode(restaurant)) ? `${triggerClass} bg-brand hover:bg-brand/90 text-brand-foreground font-semibold rounded-lg px-3 py-2` : triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Discount and Discount Code
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm`}>
                                 {discOffered(restaurant) || discCode(restaurant) ? (
-                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#39FF14]/10 border border-[#39FF14] rounded-lg">
+                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-brand/10 border border-brand rounded-lg">
                                     {discOffered(restaurant) && (
-                                      <div className="flex items-center gap-1.5 text-black min-w-0">
+                                      <div className="flex items-center gap-1.5 text-foreground min-w-0">
                                         <Tag className="h-4 w-4 shrink-0 mt-0.5" />
                                         <span className="font-semibold text-sm break-words min-w-0">{discOffered(restaurant)}</span>
                                       </div>
@@ -1530,7 +1530,7 @@ export default function GuestDashboard() {
                                     {discCode(restaurant) && (
                                       <div className="flex items-center gap-1">
                                         <span className="text-xs text-muted-foreground">Code:</span>
-                                        <span className="px-2 py-0.5 bg-[#39FF14] text-black rounded font-mono text-xs font-bold">
+                                        <span className="px-2 py-0.5 bg-brand text-brand-foreground rounded font-mono text-xs font-bold">
                                           {discCode(restaurant)}
                                         </span>
                                       </div>
@@ -1593,7 +1593,7 @@ export default function GuestDashboard() {
                                 {restaurant.cuisineTypes.length > 0 ? (
                                   <div className="flex flex-wrap gap-2">
                                     {restaurant.cuisineTypes.map((cuisine) => (
-                                      <span key={cuisine} className="px-2 py-0.5 text-black rounded text-xs">
+                                      <span key={cuisine} className="px-2 py-0.5 text-foreground rounded text-xs">
                                         {cuisine}
                                       </span>
                                     ))}
@@ -1613,7 +1613,7 @@ export default function GuestDashboard() {
                                 <CollapsibleContent className={contentClass}>
                                   <div className="flex flex-wrap gap-2">
                                     {restaurant.atmosphere.map((a: string) => (
-                                      <span key={a} className="px-2 py-0.5 text-black rounded text-xs">{a}</span>
+                                      <span key={a} className="px-2 py-0.5 text-foreground rounded text-xs">{a}</span>
                                     ))}
                                   </div>
                                 </CollapsibleContent>
@@ -1629,7 +1629,7 @@ export default function GuestDashboard() {
                                 <CollapsibleContent className={contentClass}>
                                   <div className="flex flex-wrap gap-2">
                                     {restaurant.features.map((f: string) => (
-                                      <span key={f} className="px-2 py-0.5 text-black rounded text-xs">{f}</span>
+                                      <span key={f} className="px-2 py-0.5 text-foreground rounded text-xs">{f}</span>
                                     ))}
                                   </div>
                                 </CollapsibleContent>
@@ -1645,7 +1645,7 @@ export default function GuestDashboard() {
                                 <CollapsibleContent className={contentClass}>
                                   <div className="flex flex-wrap gap-2">
                                     {restaurant.dietaryOptions.map((d: string) => (
-                                      <span key={d} className="px-2 py-0.5 text-black rounded text-xs">{d}</span>
+                                      <span key={d} className="px-2 py-0.5 text-foreground rounded text-xs">{d}</span>
                                     ))}
                                   </div>
                                 </CollapsibleContent>
@@ -1666,7 +1666,7 @@ export default function GuestDashboard() {
 
                             {BOOKINGS_ENABLED && restaurant.offersBookings && (
                               <div className="mt-1">
-                                <span className="inline-block px-2 py-0.5 text-black rounded text-xs font-medium">Takes bookings</span>
+                                <span className="inline-block px-2 py-0.5 text-foreground rounded text-xs font-medium">Takes bookings</span>
                               </div>
                             )}
 
@@ -1679,7 +1679,7 @@ export default function GuestDashboard() {
                                 {restaurant.restaurantType && restaurant.restaurantType.length > 0 ? (
                                   <div className="flex flex-wrap gap-2">
                                     {restaurant.restaurantType.map((rt) => (
-                                      <span key={rt} className="px-2 py-0.5 text-black rounded text-xs">
+                                      <span key={rt} className="px-2 py-0.5 text-foreground rounded text-xs">
                                         {rt}
                                       </span>
                                     ))}
@@ -1701,7 +1701,7 @@ export default function GuestDashboard() {
                                     href={restaurant.menuLink}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-black hover:underline flex items-center gap-1 text-sm"
+                                    className="text-foreground hover:underline flex items-center gap-1 text-sm"
                                   >
                                     <ExternalLink className="h-3 w-3 flex-shrink-0" />
                                     <span className="break-all">{restaurant.menuLink}</span>
@@ -1726,7 +1726,7 @@ export default function GuestDashboard() {
                                         href={url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-black hover:underline flex items-center gap-1 text-sm"
+                                        className="text-foreground hover:underline flex items-center gap-1 text-sm"
                                       >
                                         <ExternalLink className="h-3 w-3 flex-shrink-0" />
                                         <span>View menu — page {i + 1}</span>
@@ -1747,15 +1747,15 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {restaurant.paymentCard || restaurant.paymentCash || restaurant.paymentMobile || restaurant.paymentEft || restaurant.paymentIkhokha || restaurant.paymentGpay || restaurant.paymentSamsungpay || restaurant.paymentSassa || restaurant.paymentApplepay ? (
                                   <div className="flex flex-wrap gap-2">
-                                    {restaurant.paymentCard && <span className="px-2 py-0.5 text-black rounded text-xs">Card</span>}
-                                    {restaurant.paymentCash && <span className="px-2 py-0.5 text-black rounded text-xs">Cash</span>}
-                                    {restaurant.paymentMobile && <span className="px-2 py-0.5 text-black rounded text-xs">Mobile</span>}
-                                    {restaurant.paymentEft && <span className="px-2 py-0.5 text-black rounded text-xs">EFT — Please contact for more info</span>}
-                                    {restaurant.paymentIkhokha && <span className="px-2 py-0.5 text-black rounded text-xs">iKhokha</span>}
-                                    {restaurant.paymentGpay && <span className="px-2 py-0.5 text-black rounded text-xs">G Pay</span>}
-                                    {restaurant.paymentSamsungpay && <span className="px-2 py-0.5 text-black rounded text-xs">Samsung Pay</span>}
-                                    {restaurant.paymentSassa && <span className="px-2 py-0.5 text-black rounded text-xs">SASSA</span>}
-                                    {restaurant.paymentApplepay && <span className="px-2 py-0.5 text-black rounded text-xs">Apple Pay</span>}
+                                    {restaurant.paymentCard && <span className="px-2 py-0.5 text-foreground rounded text-xs">Card</span>}
+                                    {restaurant.paymentCash && <span className="px-2 py-0.5 text-foreground rounded text-xs">Cash</span>}
+                                    {restaurant.paymentMobile && <span className="px-2 py-0.5 text-foreground rounded text-xs">Mobile</span>}
+                                    {restaurant.paymentEft && <span className="px-2 py-0.5 text-foreground rounded text-xs">EFT — Please contact for more info</span>}
+                                    {restaurant.paymentIkhokha && <span className="px-2 py-0.5 text-foreground rounded text-xs">iKhokha</span>}
+                                    {restaurant.paymentGpay && <span className="px-2 py-0.5 text-foreground rounded text-xs">G Pay</span>}
+                                    {restaurant.paymentSamsungpay && <span className="px-2 py-0.5 text-foreground rounded text-xs">Samsung Pay</span>}
+                                    {restaurant.paymentSassa && <span className="px-2 py-0.5 text-foreground rounded text-xs">SASSA</span>}
+                                    {restaurant.paymentApplepay && <span className="px-2 py-0.5 text-foreground rounded text-xs">Apple Pay</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
@@ -1771,8 +1771,8 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {restaurant.serviceDineIn || restaurant.serviceTakeaway ? (
                                   <div className="flex flex-wrap gap-2">
-                                    {restaurant.serviceDineIn && <span className="px-2 py-0.5 text-black rounded text-xs">Dine-in</span>}
-                                    {restaurant.serviceTakeaway && <span className="px-2 py-0.5 text-black rounded text-xs">Takeaway</span>}
+                                    {restaurant.serviceDineIn && <span className="px-2 py-0.5 text-foreground rounded text-xs">Dine-in</span>}
+                                    {restaurant.serviceTakeaway && <span className="px-2 py-0.5 text-foreground rounded text-xs">Takeaway</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
@@ -1788,8 +1788,8 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {restaurant.wheelchairAccess || restaurant.parkingAvailability ? (
                                   <div className="flex flex-wrap gap-2">
-                                    {restaurant.wheelchairAccess && <span className="px-2 py-0.5 text-black rounded text-xs">Wheelchair Access</span>}
-                                    {restaurant.parkingAvailability && <span className="px-2 py-0.5 text-black rounded text-xs">Parking Available</span>}
+                                    {restaurant.wheelchairAccess && <span className="px-2 py-0.5 text-foreground rounded text-xs">Wheelchair Access</span>}
+                                    {restaurant.parkingAvailability && <span className="px-2 py-0.5 text-foreground rounded text-xs">Parking Available</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
@@ -1804,7 +1804,7 @@ export default function GuestDashboard() {
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {restaurant.littleExplorerApproved ? (
-                                  <span className="px-2 py-0.5 text-black rounded text-xs">with pleasure</span>
+                                  <span className="px-2 py-0.5 text-foreground rounded text-xs">with pleasure</span>
                                 ) : (
                                   fallbackSpan
                                 )}
@@ -1835,7 +1835,7 @@ export default function GuestDashboard() {
                                   <>
                                     <div className="flex items-center justify-between">
                                       <span className="text-muted-foreground">Contact Number:</span>
-                                      <a href={`tel:${restaurant.contactNumber}`} className="text-black hover:underline flex items-center gap-1">
+                                      <a href={`tel:${restaurant.contactNumber}`} className="text-foreground hover:underline flex items-center gap-1">
                                         <Phone className="h-3 w-3" />
                                         {restaurant.contactNumber}
                                       </a>
@@ -1871,7 +1871,7 @@ export default function GuestDashboard() {
                                     {restaurant.socialsWebsite && (
                                       <div className="flex items-center gap-2">
                                         <Globe className="h-3 w-3 flex-shrink-0" />
-                                        <a href={restaurant.socialsWebsite} target="_blank" rel="noopener noreferrer" className="text-black hover:underline flex items-center gap-1 break-all">
+                                        <a href={restaurant.socialsWebsite} target="_blank" rel="noopener noreferrer" className="text-foreground hover:underline flex items-center gap-1 break-all">
                                           Website <ExternalLink className="h-3 w-3 flex-shrink-0" />
                                         </a>
                                       </div>
@@ -1879,7 +1879,7 @@ export default function GuestDashboard() {
                                     {restaurant.socialsInstagram && (
                                       <div className="flex items-center gap-2">
                                         <Instagram className="h-3 w-3 flex-shrink-0" />
-                                        <a href={restaurant.socialsInstagram} target="_blank" rel="noopener noreferrer" className="text-black hover:underline flex items-center gap-1 break-all">
+                                        <a href={restaurant.socialsInstagram} target="_blank" rel="noopener noreferrer" className="text-foreground hover:underline flex items-center gap-1 break-all">
                                           Instagram <ExternalLink className="h-3 w-3 flex-shrink-0" />
                                         </a>
                                       </div>
@@ -1887,7 +1887,7 @@ export default function GuestDashboard() {
                                     {restaurant.socialsTwitter && (
                                       <div className="flex items-center gap-2">
                                         <Twitter className="h-3 w-3 flex-shrink-0" />
-                                        <a href={restaurant.socialsTwitter} target="_blank" rel="noopener noreferrer" className="text-black hover:underline flex items-center gap-1 break-all">
+                                        <a href={restaurant.socialsTwitter} target="_blank" rel="noopener noreferrer" className="text-foreground hover:underline flex items-center gap-1 break-all">
                                           X (Twitter) <ExternalLink className="h-3 w-3 flex-shrink-0" />
                                         </a>
                                       </div>
@@ -1895,7 +1895,7 @@ export default function GuestDashboard() {
                                     {restaurant.socialsYoutube && (
                                       <div className="flex items-center gap-2">
                                         <Youtube className="h-3 w-3 flex-shrink-0" />
-                                        <a href={restaurant.socialsYoutube} target="_blank" rel="noopener noreferrer" className="text-black hover:underline flex items-center gap-1 break-all">
+                                        <a href={restaurant.socialsYoutube} target="_blank" rel="noopener noreferrer" className="text-foreground hover:underline flex items-center gap-1 break-all">
                                           YouTube <ExternalLink className="h-3 w-3 flex-shrink-0" />
                                         </a>
                                       </div>
@@ -1903,7 +1903,7 @@ export default function GuestDashboard() {
                                     {restaurant.socialsTiktok && (
                                       <div className="flex items-center gap-2">
                                         <Music className="h-3 w-3 flex-shrink-0" />
-                                        <a href={restaurant.socialsTiktok} target="_blank" rel="noopener noreferrer" className="text-black hover:underline flex items-center gap-1 break-all">
+                                        <a href={restaurant.socialsTiktok} target="_blank" rel="noopener noreferrer" className="text-foreground hover:underline flex items-center gap-1 break-all">
                                           TikTok <ExternalLink className="h-3 w-3 flex-shrink-0" />
                                         </a>
                                       </div>
@@ -1991,7 +1991,7 @@ export default function GuestDashboard() {
                             {BOOKINGS_ENABLED && (attraction.offersBookings || attraction.accessLevel === "Booking") && (attraction.bookingItems?.length ?? 0) > 0 && (
                               <Button
                                 size="sm"
-                                className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black w-full sm:w-auto"
+                                className="bg-brand hover:bg-brand/90 text-brand-foreground w-full sm:w-auto"
                                 onClick={() => setBookingFor({ entityType: "attraction", entityId: Number(attraction.id), entityName: attraction.name, items: (attraction.bookingItems || []) as BookItem[] })}
                               >
                                 Click here to book at this establishment.
@@ -2001,7 +2001,7 @@ export default function GuestDashboard() {
                             {discOffered(attraction) && (
                               <Button
                                 size="sm"
-                                className="w-full sm:w-auto bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold"
+                                className="w-full sm:w-auto bg-brand hover:bg-brand/90 text-brand-foreground font-semibold"
                                 onClick={() => setRedeemFor({ entityType: "attraction", entityId: Number(attraction.id), entityName: attraction.name, discount: discOffered(attraction), discountCode: discCode(attraction) })}
                               >
                                 Redeem discount
@@ -2022,15 +2022,15 @@ export default function GuestDashboard() {
                             )}
 
                             <HideWhenOptedOut><Collapsible>
-                              <CollapsibleTrigger className={(discOffered(attraction) || discCode(attraction)) ? `${triggerClass} bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold rounded-lg px-3 py-2` : triggerClass}>
+                              <CollapsibleTrigger className={(discOffered(attraction) || discCode(attraction)) ? `${triggerClass} bg-brand hover:bg-brand/90 text-brand-foreground font-semibold rounded-lg px-3 py-2` : triggerClass}>
                                 <ChevronDown className="h-4 w-4" />
                                 Discount and Discount Code
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm`}>
                                 {discOffered(attraction) || discCode(attraction) ? (
-                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-[#39FF14]/10 border border-[#39FF14] rounded-lg">
+                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 px-3 py-2 bg-brand/10 border border-brand rounded-lg">
                                     {discOffered(attraction) && (
-                                      <div className="flex items-center gap-1.5 text-black min-w-0">
+                                      <div className="flex items-center gap-1.5 text-foreground min-w-0">
                                         <Tag className="h-4 w-4 shrink-0 mt-0.5" />
                                         <span className="font-semibold text-sm break-words min-w-0">{discOffered(attraction)}</span>
                                       </div>
@@ -2038,7 +2038,7 @@ export default function GuestDashboard() {
                                     {discCode(attraction) && (
                                       <div className="flex items-center gap-1">
                                         <span className="text-xs text-muted-foreground">Code:</span>
-                                        <span className="px-2 py-0.5 bg-[#39FF14] text-black rounded font-mono text-xs font-bold">
+                                        <span className="px-2 py-0.5 bg-brand text-brand-foreground rounded font-mono text-xs font-bold">
                                           {discCode(attraction)}
                                         </span>
                                       </div>
@@ -2089,7 +2089,7 @@ export default function GuestDashboard() {
                                 {attraction.attractionType && attraction.attractionType.length > 0 ? (
                                   <div className="flex flex-wrap gap-2">
                                     {attraction.attractionType.map((type) => (
-                                      <span key={type} className="px-2 py-0.5 text-black rounded text-xs">
+                                      <span key={type} className="px-2 py-0.5 text-foreground rounded text-xs">
                                         {type}
                                       </span>
                                     ))}
@@ -2102,7 +2102,7 @@ export default function GuestDashboard() {
 
                             {BOOKINGS_ENABLED && attraction.offersBookings && (
                               <div className="mt-1">
-                                <span className="inline-block px-2 py-0.5 text-black rounded text-xs font-medium">Takes bookings</span>
+                                <span className="inline-block px-2 py-0.5 text-foreground rounded text-xs font-medium">Takes bookings</span>
                               </div>
                             )}
 
@@ -2114,15 +2114,15 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {attraction.paymentCard || attraction.paymentCash || attraction.paymentMobile || attraction.paymentEft || attraction.paymentIkhokha || attraction.paymentGpay || attraction.paymentSamsungpay || attraction.paymentSassa || attraction.paymentApplepay ? (
                                   <div className="flex flex-wrap gap-2">
-                                    {attraction.paymentCard && <span className="px-2 py-0.5 text-black rounded text-xs">Card</span>}
-                                    {attraction.paymentCash && <span className="px-2 py-0.5 text-black rounded text-xs">Cash</span>}
-                                    {attraction.paymentMobile && <span className="px-2 py-0.5 text-black rounded text-xs">Mobile</span>}
-                                    {attraction.paymentEft && <span className="px-2 py-0.5 text-black rounded text-xs">EFT — Please contact for more info</span>}
-                                    {attraction.paymentIkhokha && <span className="px-2 py-0.5 text-black rounded text-xs">iKhokha</span>}
-                                    {attraction.paymentGpay && <span className="px-2 py-0.5 text-black rounded text-xs">G Pay</span>}
-                                    {attraction.paymentSamsungpay && <span className="px-2 py-0.5 text-black rounded text-xs">Samsung Pay</span>}
-                                    {attraction.paymentSassa && <span className="px-2 py-0.5 text-black rounded text-xs">SASSA</span>}
-                                    {attraction.paymentApplepay && <span className="px-2 py-0.5 text-black rounded text-xs">Apple Pay</span>}
+                                    {attraction.paymentCard && <span className="px-2 py-0.5 text-foreground rounded text-xs">Card</span>}
+                                    {attraction.paymentCash && <span className="px-2 py-0.5 text-foreground rounded text-xs">Cash</span>}
+                                    {attraction.paymentMobile && <span className="px-2 py-0.5 text-foreground rounded text-xs">Mobile</span>}
+                                    {attraction.paymentEft && <span className="px-2 py-0.5 text-foreground rounded text-xs">EFT — Please contact for more info</span>}
+                                    {attraction.paymentIkhokha && <span className="px-2 py-0.5 text-foreground rounded text-xs">iKhokha</span>}
+                                    {attraction.paymentGpay && <span className="px-2 py-0.5 text-foreground rounded text-xs">G Pay</span>}
+                                    {attraction.paymentSamsungpay && <span className="px-2 py-0.5 text-foreground rounded text-xs">Samsung Pay</span>}
+                                    {attraction.paymentSassa && <span className="px-2 py-0.5 text-foreground rounded text-xs">SASSA</span>}
+                                    {attraction.paymentApplepay && <span className="px-2 py-0.5 text-foreground rounded text-xs">Apple Pay</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
@@ -2138,8 +2138,8 @@ export default function GuestDashboard() {
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {attraction.wheelchairAccess || attraction.parkingAvailability ? (
                                   <div className="flex flex-wrap gap-2">
-                                    {attraction.wheelchairAccess && <span className="px-2 py-0.5 text-black rounded text-xs">Wheelchair Access</span>}
-                                    {attraction.parkingAvailability && <span className="px-2 py-0.5 text-black rounded text-xs">Parking Available</span>}
+                                    {attraction.wheelchairAccess && <span className="px-2 py-0.5 text-foreground rounded text-xs">Wheelchair Access</span>}
+                                    {attraction.parkingAvailability && <span className="px-2 py-0.5 text-foreground rounded text-xs">Parking Available</span>}
                                   </div>
                                 ) : (
                                   fallbackSpan
@@ -2154,7 +2154,7 @@ export default function GuestDashboard() {
                               </CollapsibleTrigger>
                               <CollapsibleContent className={`${contentClass} text-sm text-muted-foreground`}>
                                 {attraction.littleExplorerApproved ? (
-                                  <span className="px-2 py-0.5 text-black rounded text-xs">with pleasure</span>
+                                  <span className="px-2 py-0.5 text-foreground rounded text-xs">with pleasure</span>
                                 ) : (
                                   fallbackSpan
                                 )}
@@ -2171,7 +2171,7 @@ export default function GuestDashboard() {
                                   <>
                                     <div className="flex items-center justify-between">
                                       <span className="text-muted-foreground">Contact Number:</span>
-                                      <a href={`tel:${attraction.contactNumber}`} className="text-black hover:underline flex items-center gap-1">
+                                      <a href={`tel:${attraction.contactNumber}`} className="text-foreground hover:underline flex items-center gap-1">
                                         <Phone className="h-3 w-3" />
                                         {attraction.contactNumber}
                                       </a>
@@ -2431,7 +2431,7 @@ function BookingModal({ onClose, entityType, entityId, entityName, items }: {
         <p className="text-xs text-muted-foreground">You can change or cancel this booking yourself from "Bookings / Pre-Orders I have made" using this email. The partner cannot change or cancel it.</p>
         <div className="flex justify-end gap-2 pt-1">
           <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
-          <Button onClick={submit} disabled={saving} className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black">{saving ? "Sending…" : "Confirm Booking"}</Button>
+          <Button onClick={submit} disabled={saving} className="bg-brand hover:bg-brand/90 text-brand-foreground">{saving ? "Sending…" : "Confirm Booking"}</Button>
         </div>
       </div>
     </div>
@@ -2470,9 +2470,9 @@ function RedeemModal({ onClose, entityType, entityId, entityName, discount, disc
         {discount && <p className="text-base font-semibold">{discount}</p>}
 
         {discountCode ? (
-          <div className="rounded-lg border-2 border-dashed border-[#39FF14] bg-[#39FF14]/10 px-4 py-3">
+          <div className="rounded-lg border-2 border-dashed border-brand bg-brand/10 px-4 py-3">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Discount Code</p>
-            <p className="text-2xl font-bold font-mono tracking-widest text-black">{discountCode}</p>
+            <p className="text-2xl font-bold font-mono tracking-widest text-foreground">{discountCode}</p>
           </div>
         ) : (
           discount ? null : <p className="text-sm text-muted-foreground">Show your booking to the venue to claim this offer.</p>
@@ -2591,7 +2591,7 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
         <p className="text-xs text-muted-foreground">Enter the email you booked with to see, cancel, or rate your bookings.</p>
         <div className="flex gap-2">
           <Input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <Button onClick={find} disabled={loading} className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black whitespace-nowrap">{loading ? "…" : "Find"}</Button>
+          <Button onClick={find} disabled={loading} className="bg-brand hover:bg-brand/90 text-brand-foreground whitespace-nowrap">{loading ? "…" : "Find"}</Button>
         </div>
         {bookings !== null &&
           (bookings.length === 0 ? (
@@ -2602,7 +2602,7 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
                 <div key={b.id} className="border rounded-md p-3 space-y-1">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium text-sm">{b.entityName}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded ${b.status === "cancelled" ? "text-black" : "bg-[#39FF14] text-black"}`}>{b.status}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded ${b.status === "cancelled" ? "text-foreground" : "bg-brand text-brand-foreground"}`}>{b.status}</span>
                   </div>
                   <div className="text-xs text-muted-foreground">{b.bookingDate}{b.bookingTime ? ` · ${b.bookingTime}` : ""} · R {(Number(b.total) || 0).toFixed(2)}</div>
                   {Array.isArray(b.items) && b.items.length > 0 && (<div className="text-xs">{b.items.map((it: any) => it.name).join(", ")}</div>)}
@@ -2623,7 +2623,7 @@ function MyBookingsModal({ onClose }: { onClose: () => void }) {
                         </Select>
                       </div>
                       <div className="flex gap-2">
-                        <Button size="sm" className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black" onClick={() => saveEdit(b.id)} disabled={busyId === b.id}>
+                        <Button size="sm" className="bg-brand hover:bg-brand/90 text-brand-foreground" onClick={() => saveEdit(b.id)} disabled={busyId === b.id}>
                           {busyId === b.id ? "Saving…" : "Save"}
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => setEditingId(null)} disabled={busyId === b.id}>Cancel</Button>
@@ -2756,7 +2756,7 @@ function MyStampCardsModal({ onClose, isLocal }: { onClose: () => void; isLocal:
         </p>
         <div className="flex gap-2">
           <Input inputMode="tel" placeholder="Your mobile number" value={phone} onChange={(e) => setPhone(e.target.value)} />
-          <Button onClick={find} disabled={loading} className="bg-[#39FF14] hover:bg-[#39FF14]/90 text-black whitespace-nowrap">{loading ? "…" : "Find"}</Button>
+          <Button onClick={find} disabled={loading} className="bg-brand hover:bg-brand/90 text-brand-foreground whitespace-nowrap">{loading ? "…" : "Find"}</Button>
         </div>
         {cards !== null && phone.replace(/[^0-9]/g, "").length >= 9 && (
           <div className="rounded-md border p-3 flex flex-col items-center gap-2">
@@ -2800,7 +2800,7 @@ function MyStampCardsModal({ onClose, isLocal }: { onClose: () => void; isLocal:
                       {c.area && <span className="text-[11px] text-muted-foreground">{c.area}</span>}
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      {c.rewardReady && <span className="text-xs px-2 py-0.5 rounded bg-[#39FF14] text-black font-semibold">Reward ready!</span>}
+                      {c.rewardReady && <span className="text-xs px-2 py-0.5 rounded bg-brand text-brand-foreground font-semibold">Reward ready!</span>}
                       <button type="button" aria-label={isFav(c) ? "Unfavourite" : "Favourite"} onClick={() => toggleFav(c)}
                         className={`text-lg leading-none ${isFav(c) ? "text-[#f5b301]" : "text-muted-foreground"}`}>
                         {isFav(c) ? "★" : "☆"}
@@ -2811,13 +2811,13 @@ function MyStampCardsModal({ onClose, isLocal }: { onClose: () => void; isLocal:
                     <img src={(c as any).imageUrl} alt={(c as any).label || "Product"} className="w-full max-w-[200px] rounded-md border object-cover" />
                   )}
                   {c.rewardText && (
-                    <div className="text-xs font-medium rounded px-2 py-1 border border-[#39FF14]/40 bg-[#39FF14]/10 text-[#39FF14]">
+                    <div className="text-xs font-medium rounded px-2 py-1 border border-brand/40 bg-brand/10 text-brand">
                       🎁 Reward: {c.rewardText}
                     </div>
                   )}
                   <div className="flex flex-wrap gap-2">
                     {Array.from({ length: c.threshold }).map((_, i) => (
-                      <span key={i} className={`h-7 w-7 rounded-full border flex items-center justify-center text-xs font-bold ${i < c.stamps ? "bg-[#39FF14] border-[#39FF14] text-black" : "border-border text-muted-foreground"}`}>
+                      <span key={i} className={`h-7 w-7 rounded-full border flex items-center justify-center text-xs font-bold ${i < c.stamps ? "bg-brand border-brand text-foreground" : "border-border text-muted-foreground"}`}>
                         {i < c.stamps ? "✓" : i + 1}
                       </span>
                     ))}

@@ -245,7 +245,7 @@ export default function AccommodationList({ accommodations, onEdit, onUpdate }: 
                         <Button
                           variant="outline"
                           size="sm"
-                          className={acceptedIds.has(accommodation.id) ? "h-7 text-xs border-muted-foreground/30 text-muted-foreground" : "h-7 text-xs border-[#39FF14]/50 text-[#2a9d12] hover:bg-[#39FF14]/10"}
+                          className={acceptedIds.has(accommodation.id) ? "h-7 text-xs border-muted-foreground/30 text-muted-foreground" : "h-7 text-xs border-brand/50 text-[#2a9d12] hover:bg-brand/10"}
                           title={acceptedIds.has(accommodation.id) ? "Invoice sent — awaiting payment. Activate once paid." : "Accept: send the first invoice + codes"}
                           disabled={accepting === accommodation.id}
                           onClick={() => acceptPartner(accommodation)}

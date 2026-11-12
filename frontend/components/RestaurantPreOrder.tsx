@@ -87,7 +87,7 @@ export default function RestaurantPreOrder({ entity, entityType }: { entity: Ent
     <div className="mt-2">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full sm:w-auto text-sm font-semibold px-4 py-2 rounded-md bg-[#39FF14] text-black hover:bg-[#39FF14]/90"
+        className="w-full sm:w-auto text-sm font-semibold px-4 py-2 rounded-md bg-brand text-brand-foreground hover:bg-brand/90"
       >
         {open ? "Hide pre-order" : (isRestaurant ? "Click here to pre-order (takeaway / delivery)" : "Click here to pre-order")}
       </button>

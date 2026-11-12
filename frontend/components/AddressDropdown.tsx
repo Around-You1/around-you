@@ -26,7 +26,7 @@ export default function AddressDropdown({
 
   return (
     <Collapsible>
-      <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:text-black transition-colors w-full text-left">
+      <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:text-foreground transition-colors w-full text-left">
         <ChevronDown className="h-4 w-4" />
         Address
       </CollapsibleTrigger>

@@ -71,7 +71,7 @@ function SignInSquareBtn({
         minHeight: 0,
         lineHeight: 1.25,
       }}
-      className="touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39FF14] focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
+      className="touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
       onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1.2)"; }}
       onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1)"; }}
       onMouseDown={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.98)"; }}
@@ -105,7 +105,7 @@ function ThemedInput(props: React.InputHTMLAttributes<HTMLInputElement> & { clas
         outline: "none",
         ...(props.style || {}),
       }}
-      className={`transition-all focus:border-[#39FF14] placeholder-gray-600 ${props.className || ""}`}
+      className={`transition-all focus:border-brand placeholder-gray-600 ${props.className || ""}`}
     />
   );
 }
@@ -139,7 +139,7 @@ function ThemedSelect({
           borderRadius: 8,
           height: 42,
         }}
-        className="transition-all focus:border-[#39FF14]"
+        className="transition-all focus:border-brand"
       >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
@@ -913,7 +913,7 @@ export default function LoginPage() {
             {activePanel === "local"
               ? "We list Restaurant/Takeaway, Business/Service and Attraction/Activity Partners in and around your location up to 50kms. To request inclusion of a Partner, please submit full provider details to "
               : "We list Service Partners in and around your accommodation's location. Use the Radius slider to expand your search up to 150 km. To request inclusion of a service provider, submit full provider details to "}
-            <a href="mailto:sales@aroundyou.co.za" className="underline underline-offset-2 transition-colors hover:text-[#39FF14]" style={{ color: "#aaa" }}>
+            <a href="mailto:sales@aroundyou.co.za" className="underline underline-offset-2 transition-colors hover:text-brand" style={{ color: "#aaa" }}>
               sales@aroundyou.co.za
             </a>
             .

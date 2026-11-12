@@ -20,7 +20,7 @@ if (typeof window !== "undefined") {
   });
 }
 
-const GREEN = "bg-[#39FF14] hover:bg-[#39FF14]/90 text-black font-semibold";
+const GREEN = "bg-brand hover:bg-brand/90 text-brand-foreground font-semibold";
 
 export default function AppInstallButtons() {
   const [modal, setModal] = useState<null | "android" | "ios">(null);
@@ -73,7 +73,7 @@ export default function AppInstallButtons() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-bold text-black">
+              <h3 className="text-lg font-bold text-foreground">
                 {modal === "android"
                   ? "Add the app icon — Android"
                   : "Add the app icon — iPhone"}
@@ -81,7 +81,7 @@ export default function AppInstallButtons() {
               <button
                 type="button"
                 onClick={() => setModal(null)}
-                className="text-2xl leading-none text-gray-500 hover:text-black"
+                className="text-2xl leading-none text-gray-500 hover:text-foreground"
                 aria-label="Close"
               >
                 ×

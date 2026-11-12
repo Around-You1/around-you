@@ -39,6 +39,13 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Brand accent. Light mode uses a readable app-green; dark mode (below) uses
+     the neon green. Everything green in the app reads from --brand so the two
+     themes swap in one place. --brand-foreground is the text/icon colour that
+     sits ON a brand-filled surface (e.g. a green button). */
+  --brand: #16a34a;
+  --brand-foreground: #ffffff;
 }
 
 .dark {
@@ -73,6 +80,10 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* Neon green reads best on the near-black dark surfaces; black text sits on it. */
+  --brand: #39ff14;
+  --brand-foreground: #000000;
 }
 
 @theme inline {
@@ -108,6 +119,8 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

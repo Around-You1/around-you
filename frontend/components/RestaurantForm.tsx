@@ -12,6 +12,7 @@ import ProfileReferenceCodeDisplay from "./ProfileReferenceCodeDisplay";
 import MultiImageUpload from "./MultiImageUpload";
 import MultiPdfUpload from "./MultiPdfUpload";
 import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
+import MonthlyPriceEditor from "./MonthlyPriceEditor";
 import { loadCharity, saveCharity } from "../lib/charity";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { getCurrentPosition } from "../lib/geolocation";
@@ -1151,6 +1152,10 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
               entityId={restaurant.id}
               currentCode={restaurant.profileReferenceCode}
             />
+          )}
+
+          {!partnerEdit && restaurant && (
+            <MonthlyPriceEditor entityType="restaurant" entityId={restaurant.id} />
           )}
 
           <div className="flex flex-col gap-4">

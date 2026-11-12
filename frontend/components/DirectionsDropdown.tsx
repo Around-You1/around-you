@@ -45,7 +45,7 @@ export default function DirectionsDropdown({ latitude, longitude }: DirectionsDr
       <CollapsibleContent className="pl-6 pt-2">
         {hasCoords ? (
           <Button
-            className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-black min-h-[44px] px-4 touch-manipulation flex items-center gap-2"
+            className="bg-[#AEECE4] hover:bg-[#AEECE4]/90 text-foreground min-h-[44px] px-4 touch-manipulation flex items-center gap-2"
             onClick={getDirections}
             disabled={gettingDirections}
           >

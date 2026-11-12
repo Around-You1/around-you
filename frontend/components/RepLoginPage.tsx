@@ -211,15 +211,15 @@ export default function RepLoginPage() {
             <form id="rep-login-form" onSubmit={handleRepLogin} className="space-y-4" aria-label="Rep login form">
               <div className="space-y-1.5">
                 <label htmlFor="rep-full-name" className={labelCls} style={labelStyle}>Full Name</label>
-                <input id="rep-full-name" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your full name" autoComplete="name" autoFocus style={inputStyle} className="transition-all focus:border-[#39FF14] placeholder-gray-600" />
+                <input id="rep-full-name" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your full name" autoComplete="name" autoFocus style={inputStyle} className="transition-all focus:border-brand placeholder-gray-600" />
               </div>
               <div className="space-y-1.5">
                 <label htmlFor="rep-code" className={labelCls} style={labelStyle}>Rep Code</label>
-                <input id="rep-code" type="text" value={repCode} onChange={(e) => setRepCode(e.target.value)} placeholder="e.g. Rep00000002" autoComplete="off" style={inputStyle} className="transition-all focus:border-[#39FF14] placeholder-gray-600" />
+                <input id="rep-code" type="text" value={repCode} onChange={(e) => setRepCode(e.target.value)} placeholder="e.g. Rep00000002" autoComplete="off" style={inputStyle} className="transition-all focus:border-brand placeholder-gray-600" />
               </div>
               <div className="space-y-1.5">
                 <label htmlFor="rep-access-code" className={labelCls} style={labelStyle}>Access Code</label>
-                <RevealInput id="rep-access-code" type="password" value={repAccessCode} onChange={(e) => setRepAccessCode(e.target.value)} placeholder="From your welcome email" autoComplete="one-time-code" style={inputStyle} className="transition-all focus:border-[#39FF14] placeholder-gray-600" />
+                <RevealInput id="rep-access-code" type="password" value={repAccessCode} onChange={(e) => setRepAccessCode(e.target.value)} placeholder="From your welcome email" autoComplete="one-time-code" style={inputStyle} className="transition-all focus:border-brand placeholder-gray-600" />
               </div>
               <button id="rep-login-btn" type="submit" disabled={loading}
                 style={{ background: loading ? "#1a3a0a" : `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`, color: "#000", border: "none", borderRadius: 10, padding: "14px 0", width: "100%", fontWeight: 700, fontSize: "1rem", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.5 : 1, minHeight: 48, marginTop: 8 }}
@@ -472,7 +472,7 @@ function DateOfBirthField({ label, value, onChange }: { label: string; value: st
           }}
           placeholder="dd/mm/yyyy"
           style={{ ...inputStyle, paddingRight: 44 }}
-          className="transition-all focus:border-[#39FF14] placeholder-gray-600"
+          className="transition-all focus:border-brand placeholder-gray-600"
           aria-label={label}
         />
         {/* Transparent native date input over the icon — opens the OS picker on tap/click. */}
@@ -518,7 +518,7 @@ function Field({ label, value, onChange, type = "text", placeholder }: { label: 
   return (
     <div className="space-y-1.5" style={{ flex: 1 }}>
       <label className={labelCls} style={labelStyle}>{label}</label>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={inputStyle} className="transition-all focus:border-[#39FF14] placeholder-gray-600" />
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={inputStyle} className="transition-all focus:border-brand placeholder-gray-600" />
     </div>
   );
 }
