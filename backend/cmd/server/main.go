@@ -115,6 +115,7 @@ func main() {
 	r.staff("POST /admin/bulk-set-active", httpx.Body(admin.BulkSetActive))
 	r.staff("POST /admin/accept-partners", httpx.Body(admin.AcceptPartners))
 	r.staff("POST /admin/set-monthly-price", httpx.Body(admin.SetMonthlyPrice))
+	r.auth("GET /admin/monthly-price", httpx.Query(admin.GetMonthlyPrice))
 	r.auth("GET /admin/invoiced-ids", httpx.Query(admin.InvoicedPartnerIDs))
 	r.staff("POST /admin/bulk-delete", httpx.Body(admin.BulkDelete))
 	r.auth("GET /admin/archived", httpx.Empty(admin.ListArchived))

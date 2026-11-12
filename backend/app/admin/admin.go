@@ -169,6 +169,42 @@ type SetMonthlyPriceResponse struct {
 // the standing monthly fee; invoice-time promos (e.g. the November launch 50%)
 // still apply on top. Durable: it survives the partner editing their profile.
 //
+type GetMonthlyPriceRequest struct {
+	EntityType string `query:"entityType"`
+	EntityID   int64  `query:"entityId"`
+}
+
+type GetMonthlyPriceResponse struct {
+	// MonthlyCents is the current standing monthly price; IsOverride is true when
+	// it's a custom per-partner price rather than the standard computed one.
+	MonthlyCents int  `json:"monthlyCents"`
+	IsOverride   bool `json:"isOverride"`
+}
+
+// GetMonthlyPrice returns a partner's current standing monthly price and whether
+// it's a custom override, so the admin form can show what's set.
+//
+//encore:api auth method=GET path=/admin/monthly-price
+func GetMonthlyPrice(ctx context.Context, req *GetMonthlyPriceRequest) (*GetMonthlyPriceResponse, error) {
+	if err := requireSuperAdmin(ctx); err != nil {
+		return nil, err
+	}
+	if _, ok := tables[req.EntityType]; !ok {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "unknown entity type"}
+	}
+	var monthly sql.NullInt64
+	var override sql.NullInt64
+	_ = appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT monthly_cents, monthly_cents_override FROM partner_subscription WHERE partner_type = $1 AND partner_id = $2`,
+		req.EntityType, req.EntityID).Scan(&monthly, &override)
+	resp := &GetMonthlyPriceResponse{}
+	if monthly.Valid {
+		resp.MonthlyCents = int(monthly.Int64)
+	}
+	resp.IsOverride = override.Valid && override.Int64 > 0
+	return resp, nil
+}
+
 //encore:api auth method=POST path=/admin/set-monthly-price
 func SetMonthlyPrice(ctx context.Context, req *SetMonthlyPriceRequest) (*SetMonthlyPriceResponse, error) {
 	if err := requireSuperAdmin(ctx); err != nil {

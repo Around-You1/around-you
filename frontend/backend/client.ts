@@ -328,6 +328,8 @@ export const backend = {
       request("GET", "/admin/invoiced-ids", { query: req }),
     setMonthlyPrice: (req: { entityType: string; entityId: number; rands: number }) =>
       request("POST", "/admin/set-monthly-price", { body: req }),
+    getMonthlyPrice: (req: { entityType: string; entityId: number }) =>
+      request("GET", "/admin/monthly-price", { query: req }),
     bulkDelete: (req: { entityType: string; ids: number[] }) =>
       request("POST", "/admin/bulk-delete", { body: req }),
     archived: () => request("GET", "/admin/archived"),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getAuthenticatedBackend } from "../lib/backend";
@@ -21,6 +21,26 @@ export default function MonthlyPriceEditor({
   const { toast } = useToast();
   const [rands, setRands] = useState("");
   const [saving, setSaving] = useState(false);
+  // Current stored price, loaded on mount so the admin sees what's set.
+  const [current, setCurrent] = useState<{ rands: number; isOverride: boolean } | null>(null);
+
+  const load = async () => {
+    try {
+      const res: any = await getAuthenticatedBackend().admin.getMonthlyPrice({ entityType, entityId });
+      const r = Math.round((res?.monthlyCents ?? 0) / 100);
+      const isOverride = !!res?.isOverride;
+      setCurrent({ rands: r, isOverride });
+      // Pre-fill the input with the custom price when one is set.
+      if (isOverride && r > 0) setRands(String(r));
+    } catch {
+      /* best-effort — leave the field blank */
+    }
+  };
+
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entityType, entityId]);
 
   const save = async (clear = false) => {
     const value = clear ? 0 : parseInt(rands, 10);
@@ -43,6 +63,7 @@ export default function MonthlyPriceEditor({
           : "This is the standing monthly fee. The November launch promo (50%) still applies on top for Nov–Jan, November pro-rata.",
       });
       if (clear) setRands("");
+      await load();
     } catch (e: any) {
       toast({ title: "Couldn't update price", description: e?.message || "Please try again.", variant: "destructive" });
     } finally {
@@ -53,6 +74,13 @@ export default function MonthlyPriceEditor({
   return (
     <div className="rounded-md border border-border p-3">
       <p className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">Custom Monthly Price</p>
+      {current && (
+        <p className="text-xs text-muted-foreground mb-2">
+          {current.isOverride
+            ? `Currently set to a custom R${current.rands}/month.`
+            : `Currently on standard pricing (R${current.rands}/month).`}
+        </p>
+      )}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-sm text-muted-foreground">R</span>
         <Input
