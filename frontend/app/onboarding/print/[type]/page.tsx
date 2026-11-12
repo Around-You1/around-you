@@ -10,7 +10,7 @@ import { useEffect } from "react";
 import { useParams } from "next/navigation";
 import { getCategorySchema, type Field, type Section } from "@/lib/onboardingSchema";
 
-const GREEN = "#0FB89B";
+const GREEN = "#16A34A";
 
 // Printed-form pricing (blank onboarding forms only — does not affect the online form).
 const ACCOMMODATION_PRICE = "R400 per month";

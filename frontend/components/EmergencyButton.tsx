@@ -121,7 +121,7 @@ export default function EmergencyButton({
                           target="_blank"
                           rel="noopener noreferrer"
                           className="mt-2 inline-flex items-center gap-1 text-sm"
-                          style={{ color: "#0FB89B" }}
+                          style={{ color: "var(--brand)" }}
                         >
                           <Navigation className="h-4 w-4" /> {c.address}
                         </a>

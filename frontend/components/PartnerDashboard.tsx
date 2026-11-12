@@ -46,7 +46,7 @@ const PAYMENT_LABELS: [string, string][] = [
 function Section({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   return (
     <Collapsible defaultOpen={defaultOpen} className="rounded-lg border border-border/60 px-3">
-      <CollapsibleTrigger className="flex w-full items-center justify-between py-3 text-left font-semibold text-sm hover:text-[#0FB89B] transition-colors [&[data-state=open]>svg]:rotate-180">
+      <CollapsibleTrigger className="flex w-full items-center justify-between py-3 text-left font-semibold text-sm hover:text-brand transition-colors [&[data-state=open]>svg]:rotate-180">
         {title}
         <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform" />
       </CollapsibleTrigger>
@@ -875,7 +875,7 @@ export default function PartnerDashboard() {
 
           <Button
             variant="outline"
-            className="w-full border-[#0FB89B] text-[#0FB89B] hover:bg-[#0FB89B]/10 font-semibold"
+            className="w-full border-brand text-brand hover:bg-brand/10 font-semibold"
             onClick={() => { setGateMode("suggest"); setShowGate(true); }}
           >
             My Recommendations
@@ -964,7 +964,7 @@ export default function PartnerDashboard() {
 
         <Button
           variant="outline"
-          className="w-full border-[#0FB89B] text-[#0FB89B] hover:bg-[#0FB89B]/10 font-semibold"
+          className="w-full border-brand text-brand hover:bg-brand/10 font-semibold"
           onClick={() => { setGateMode("suggest"); setShowGate(true); }}
         >
           My Recommendations

@@ -15,7 +15,7 @@ const TYPE_LABEL: Record<string, string> = {
   nonprofit: "NPO / PBO",
 };
 
-const GREEN = "#0FB89B";
+const GREEN = "var(--brand)";
 const MAX = 10;
 
 const keyOf = (i: { type: string; id: number }) => `${i.type}:${i.id}`;
@@ -111,7 +111,7 @@ export default function SuggestionsManager({
   };
 
   const panel: React.CSSProperties = {
-    border: "1px solid rgba(15,184,155,0.4)",
+    border: "1px solid color-mix(in srgb, var(--brand) 40%, transparent)",
     background: "#0f1512",
     borderRadius: 12,
     padding: 14,
@@ -119,7 +119,7 @@ export default function SuggestionsManager({
   const input: React.CSSProperties = {
     width: "100%",
     padding: "9px 12px 9px 34px",
-    border: "1px solid rgba(15,184,155,0.3)",
+    border: "1px solid color-mix(in srgb, var(--brand) 30%, transparent)",
     background: "rgba(255,255,255,0.04)",
     color: "#fff",
     borderRadius: 8,
@@ -181,7 +181,7 @@ export default function SuggestionsManager({
                       padding: "10px 12px",
                       borderRadius: 8,
                       border: on ? `1px solid ${GREEN}` : "1px solid rgba(255,255,255,0.08)",
-                      background: on ? "rgba(15,184,155,0.12)" : "rgba(255,255,255,0.02)",
+                      background: on ? "color-mix(in srgb, var(--brand) 12%, transparent)" : "rgba(255,255,255,0.02)",
                       color: "#e6e9e6",
                       cursor: "pointer",
                       textAlign: "left",
@@ -222,7 +222,7 @@ export default function SuggestionsManager({
                 borderRadius: 8,
                 border: "none",
                 background: GREEN,
-                color: "#000",
+                color: "var(--brand-foreground)",
                 fontWeight: 800,
                 fontSize: 14,
                 cursor: saving ? "default" : "pointer",

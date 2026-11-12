@@ -16,7 +16,7 @@ const TYPE_LABEL: Record<string, string> = {
   accommodation: "Stay",
 };
 
-const GREEN = "#0FB89B";
+const GREEN = "#39FF14";
 
 function asArray(v: any): string[] {
   return Array.isArray(v) ? v.filter((x) => typeof x === "string" && x.trim()) : [];
@@ -106,7 +106,7 @@ export default function PublicProfileView() {
     color: "#d5d8d5",
     borderRadius: 14,
     padding: "18px 18px 24px",
-    border: "1px solid rgba(15,184,155,0.25)",
+    border: "1px solid rgba(57,255,20,0.25)",
   };
 
   if (loading) {
@@ -153,7 +153,7 @@ export default function PublicProfileView() {
     gap: 6,
     padding: "8px 12px",
     borderRadius: 8,
-    border: "1px solid rgba(15,184,155,0.4)",
+    border: "1px solid rgba(57,255,20,0.4)",
     color: GREEN,
     background: "transparent",
     fontSize: 13,
@@ -248,7 +248,7 @@ export default function PublicProfileView() {
                   style={{
                     padding: "4px 10px",
                     borderRadius: 999,
-                    background: "rgba(15,184,155,0.15)",
+                    background: "rgba(57,255,20,0.15)",
                     color: "#eafff8",
                     fontSize: 12,
                   }}

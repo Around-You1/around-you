@@ -71,16 +71,16 @@ export default function SuggestionsBanner({
   return (
     <div
       style={{
-        border: "1px solid rgba(15,184,155,0.4)",
-        background: "linear-gradient(135deg, rgba(15,184,155,0.12), rgba(57,255,20,0.06))",
+        border: "1px solid color-mix(in srgb, var(--brand) 40%, transparent)",
+        background: "linear-gradient(135deg, color-mix(in srgb, var(--brand) 12%, transparent), color-mix(in srgb, var(--brand) 6%, transparent))",
         borderRadius: 12,
         padding: "12px 14px",
         marginBottom: 14,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-        <Sparkles className="h-4 w-4" style={{ color: "#0FB89B" }} />
-        <span style={{ fontWeight: 800, fontSize: 14, color: "#0FB89B" }}>My Recommendations</span>
+        <Sparkles className="h-4 w-4" style={{ color: "var(--brand)" }} />
+        <span style={{ fontWeight: 800, fontSize: 14, color: "var(--brand)" }}>My Recommendations</span>
         <span style={{ fontSize: 11, color: "#8a8f96" }}>— places we recommend nearby</span>
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -95,7 +95,7 @@ export default function SuggestionsBanner({
               gap: 4,
               padding: "8px 12px",
               borderRadius: 999,
-              border: "1px solid rgba(15,184,155,0.5)",
+              border: "1px solid color-mix(in srgb, var(--brand) 50%, transparent)",
               background: "rgba(0,0,0,0.25)",
               color: "#eafff8",
               fontSize: 13,
@@ -105,7 +105,7 @@ export default function SuggestionsBanner({
             title={TYPE_LABEL[it.type] || it.type}
           >
             {it.name}
-            <ChevronRight className="h-3.5 w-3.5" style={{ color: "#0FB89B" }} />
+            <ChevronRight className="h-3.5 w-3.5" style={{ color: "var(--brand)" }} />
           </button>
         ))}
       </div>
