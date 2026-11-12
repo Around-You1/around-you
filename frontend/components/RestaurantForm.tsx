@@ -36,6 +36,7 @@ const CUISINE_TYPES = [
   "American",
   "Asian",
   "BBQ",
+  "Bobotie",
   "Breakfast",
   "Bunny Chow",
   "Burgers",
@@ -73,7 +74,7 @@ const CUISINE_TYPES = [
 ];
 
 const RESTAURANT_TYPES = ["Food Truck", "Home Meals", "Take Away", "Delivery", "Pop Up", "Restaurant"];
-const DRINKS = ["Beer", "Cocktails", "Distilled Spirits", "Liqueurs", "Soft Drinks", "Wine"];
+const DRINKS = ["Beer", "Cocktails", "Coffee", "Distilled Spirits", "Liqueurs", "Soft Drinks", "Wine"];
 const ATMOSPHERE_OPTIONS = ["Family-friendly", "Romantic", "Trendy / Modern", "Quiet", "Lively", "Outdoor Seating", "Sea View", "Mountain View", "Rooftop", "Garden"];
 const RESTAURANT_FEATURES = ["Walk-ins Welcome", "Live Music", "Free Wi-Fi"];
 const DIETARY_OPTIONS = ["Gluten Free", "Halaal", "Kosher", "Nut Free", "Signature Dish", "Chef Recommendation"];

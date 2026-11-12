@@ -235,7 +235,7 @@ const ATTRACTION_CATEGORIES = [
 ];
 
 const CUISINE_TYPES = [
-  "Abalone", "African", "À la carte", "American", "Asian", "BBQ", "Bakery", "Boerewors Rolls",
+  "Abalone", "African", "À la carte", "American", "Asian", "BBQ", "Bakery", "Bobotie", "Boerewors Rolls",
   "Breakfast", "Bunny Chow", "Burgers", "Cafe", "Cake", "Chinese", "Coffee Shop",
   "Crayfish", "Croissant", "Curry", "Dagwood", "Deli", "Eisbein", "Espetada", "Fast Food",
   "Fine Dining", "French", "Gatsby", "Greek", "Indian", "Irish", "Italian",
@@ -245,7 +245,7 @@ const CUISINE_TYPES = [
   "Vegan", "Vegetarian", "Vetkoek",
 ];
 
-const DRINKS = ["Beer", "Cocktails", "Distilled Spirits", "Liqueurs", "Soft Drinks", "Wine"];
+const DRINKS = ["Beer", "Cocktails", "Coffee", "Distilled Spirits", "Liqueurs", "Soft Drinks", "Wine"];
 
 const RESTAURANT_TYPES = ["Food Truck", "Home Meals", "Take Away", "Delivery", "Pop Up", "Restaurant"];
 

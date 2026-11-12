@@ -26,7 +26,7 @@ export const PAYMENT_METHODS = [
 export const SOCIAL_LABELS = ["Website", "Facebook", "Instagram", "X (Twitter)", "TikTok"];
 
 export const CUISINE_TYPES = [
-  "Abalone", "African", "American", "Asian", "BBQ", "Breakfast", "Bunny Chow", "Burgers", "Cafe",
+  "Abalone", "African", "American", "Asian", "BBQ", "Bobotie", "Breakfast", "Bunny Chow", "Burgers", "Cafe",
   "Chinese", "Crayfish", "Curry", "Dagwood", "Deli", "Fast Food", "Fine Dining", "French", "Gatsby", "Greek",
   "Indian", "Irish", "Italian", "Jaffels", "Japanese", "Mediterranean", "Mexican",
   "Middle Eastern", "Pasta", "Pizza", "Prawns", "Ribs", "Seafood", "Spanish", "Steaks", "Sushi",
@@ -35,7 +35,7 @@ export const CUISINE_TYPES = [
 
 export const RESTAURANT_TYPES = ["Food Truck", "Home Meals", "Take Away", "Delivery", "Pop Up", "Restaurant"];
 
-export const DRINKS = ["Beer", "Cocktails", "Distilled Spirits", "Liqueurs", "Soft Drinks", "Wine"];
+export const DRINKS = ["Beer", "Cocktails", "Coffee", "Distilled Spirits", "Liqueurs", "Soft Drinks", "Wine"];
 
 export const ATMOSPHERE_OPTIONS = [
   "Family-friendly", "Romantic", "Trendy / Modern", "Quiet", "Lively",
