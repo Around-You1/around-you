@@ -385,7 +385,7 @@ export default function ServiceList({ onEdit, onUpdate, searchQuery = "", sortSt
                         className="data-[state=checked]:bg-amber-500"
                         title="Suspended — profile stays visible but contact number, address and directions are hidden from guests/locals"
                       />
-                      {suspendedIds.has(service.id) && <span className="hidden sm:inline text-xs text-amber-600 font-medium">Suspended</span>}
+                      <span className={`hidden sm:inline text-xs ${suspendedIds.has(service.id) ? "text-amber-600 font-medium" : "text-muted-foreground"}`}>Suspended</span>
                     </div>
                     <div className="flex gap-1">
                       {service.latitude != null && service.longitude != null && (

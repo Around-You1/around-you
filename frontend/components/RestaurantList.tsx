@@ -346,7 +346,7 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
                         className="data-[state=checked]:bg-amber-500"
                         title="Suspended — profile stays visible but contact number, address and directions are hidden from guests/locals"
                       />
-                      {suspendedIds.has(restaurant.id) && <span className="hidden sm:inline text-xs text-amber-600 font-medium">Suspended</span>}
+                      <span className={`hidden sm:inline text-xs ${suspendedIds.has(restaurant.id) ? "text-amber-600 font-medium" : "text-muted-foreground"}`}>Suspended</span>
                     </div>
                     <div className="flex gap-1">
                       {restaurant.latitude != null && restaurant.longitude != null && (

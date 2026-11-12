@@ -381,7 +381,7 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
                         className="data-[state=checked]:bg-amber-500"
                         title="Suspended — profile stays visible but contact number, address and directions are hidden from guests/locals"
                       />
-                      {suspendedIds.has(attraction.id) && <span className="hidden sm:inline text-xs text-amber-600 font-medium">Suspended</span>}
+                      <span className={`hidden sm:inline text-xs ${suspendedIds.has(attraction.id) ? "text-amber-600 font-medium" : "text-muted-foreground"}`}>Suspended</span>
                     </div>
                     <div className="flex gap-1">
                       {attraction.latitude != null && attraction.longitude != null && (
