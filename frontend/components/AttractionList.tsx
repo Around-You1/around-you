@@ -224,6 +224,33 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
     })();
   }, []);
 
+  const [suspending, setSuspending] = useState<number | null>(null);
+  const [suspendedIds, setSuspendedIds] = useState<Set<number>>(new Set());
+  useEffect(() => {
+    (async () => {
+      try {
+        const res: any = await getAuthenticatedBackend().admin.suspendedIds({ entityType: "attraction" });
+        setSuspendedIds(new Set<number>(res?.ids || []));
+      } catch { /* ignore */ }
+    })();
+  }, []);
+
+  const toggleSuspended = async (attraction: AttractionData) => {
+    const next = !suspendedIds.has(attraction.id);
+    setSuspending(attraction.id);
+    try {
+      await getAuthenticatedBackend().admin.setSuspended({ entityType: "attraction", ids: [attraction.id], suspended: next });
+      setSuspendedIds((prev) => { const s2 = new Set(prev); if (next) s2.add(attraction.id); else s2.delete(attraction.id); return s2; });
+      toast({ title: next ? "Suspended" : "Un-suspended", description: next ? "Profile stays visible, but contact number, address and directions are now hidden from guests/locals." : "Contact number, address and directions are visible again." });
+      onUpdate();
+    } catch (error) {
+      console.error("Failed to toggle suspension:", error);
+      toast({ title: "Error", description: "Failed to update suspension", variant: "destructive" });
+    } finally {
+      setSuspending(null);
+    }
+  };
+
   const toggleActive = async (attraction: AttractionData) => {
     setToggling(attraction.attractionId);
     try {
@@ -347,6 +374,14 @@ export default function AttractionList({ onEdit, onUpdate, searchQuery = "", sor
                         className="data-[state=checked]:bg-green-600"
                       />
                       <span className="hidden sm:inline text-xs text-muted-foreground">{attraction.isActive ? "Active" : "Disabled"}</span>
+                      <Switch
+                        checked={suspendedIds.has(attraction.id)}
+                        onCheckedChange={() => toggleSuspended(attraction)}
+                        disabled={suspending === attraction.id}
+                        className="data-[state=checked]:bg-amber-500"
+                        title="Suspended — profile stays visible but contact number, address and directions are hidden from guests/locals"
+                      />
+                      {suspendedIds.has(attraction.id) && <span className="hidden sm:inline text-xs text-amber-600 font-medium">Suspended</span>}
                     </div>
                     <div className="flex gap-1">
                       {attraction.latitude != null && attraction.longitude != null && (

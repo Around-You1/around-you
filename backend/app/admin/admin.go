@@ -233,6 +233,69 @@ type InvoicedIDsResponse struct {
 // lists use it to show an "Accepted" state on partners awaiting payment.
 //
 //encore:api auth method=GET path=/admin/invoiced-ids
+type SuspendRequest struct {
+	EntityType string  `json:"entityType"`
+	IDs        []int64 `json:"ids"`
+	Suspended  bool    `json:"suspended"`
+}
+
+// SetSuspended marks profiles suspended (or un-suspends them). A suspended
+// partner stays visible to guests/locals, but its contact number, address and
+// map directions are hidden until un-suspended. Independent of accept/activate.
+//
+//encore:api auth method=POST path=/admin/set-suspended
+func SetSuspended(ctx context.Context, req *SuspendRequest) (*BulkResponse, error) {
+	if err := requireSuperAdmin(ctx); err != nil {
+		return nil, err
+	}
+	table, ok := tables[req.EntityType]
+	if !ok {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "unknown entity type"}
+	}
+	if len(req.IDs) == 0 {
+		return &BulkResponse{}, nil
+	}
+	if _, err := appdb.SQLDB.ExecContext(ctx,
+		fmt.Sprintf("UPDATE %s SET suspended = $1, updated_at = now() WHERE id IN %s", table, intInClause(req.IDs)),
+		req.Suspended,
+	); err != nil {
+		return nil, err
+	}
+	return &BulkResponse{Affected: len(req.IDs)}, nil
+}
+
+type SuspendedIDsRequest struct {
+	EntityType string `query:"entityType"`
+}
+
+// SuspendedPartnerIDs returns the ids of currently-suspended profiles for a
+// category, so the admin list can show the Suspended toggle state.
+//
+//encore:api auth method=GET path=/admin/suspended-ids
+func SuspendedPartnerIDs(ctx context.Context, req *SuspendedIDsRequest) (*InvoicedIDsResponse, error) {
+	if err := requireSuperAdmin(ctx); err != nil {
+		return nil, err
+	}
+	table, ok := tables[req.EntityType]
+	if !ok {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "unknown entity type"}
+	}
+	rows, err := appdb.SQLDB.QueryContext(ctx, "SELECT id FROM "+table+" WHERE suspended = true")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ids := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return &InvoicedIDsResponse{IDs: ids}, rows.Err()
+}
+
 func InvoicedPartnerIDs(ctx context.Context, req *InvoicedIDsRequest) (*InvoicedIDsResponse, error) {
 	if err := requireSuperAdmin(ctx); err != nil {
 		return nil, err

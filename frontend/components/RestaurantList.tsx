@@ -189,6 +189,33 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
     })();
   }, []);
 
+  const [suspending, setSuspending] = useState<number | null>(null);
+  const [suspendedIds, setSuspendedIds] = useState<Set<number>>(new Set());
+  useEffect(() => {
+    (async () => {
+      try {
+        const res: any = await getAuthenticatedBackend().admin.suspendedIds({ entityType: "restaurant" });
+        setSuspendedIds(new Set<number>(res?.ids || []));
+      } catch { /* ignore */ }
+    })();
+  }, []);
+
+  const toggleSuspended = async (restaurant: Restaurant) => {
+    const next = !suspendedIds.has(restaurant.id);
+    setSuspending(restaurant.id);
+    try {
+      await getAuthenticatedBackend().admin.setSuspended({ entityType: "restaurant", ids: [restaurant.id], suspended: next });
+      setSuspendedIds((prev) => { const s2 = new Set(prev); if (next) s2.add(restaurant.id); else s2.delete(restaurant.id); return s2; });
+      toast({ title: next ? "Suspended" : "Un-suspended", description: next ? "Profile stays visible, but contact number, address and directions are now hidden from guests/locals." : "Contact number, address and directions are visible again." });
+      onUpdate();
+    } catch (error) {
+      console.error("Failed to toggle suspension:", error);
+      toast({ title: "Error", description: "Failed to update suspension", variant: "destructive" });
+    } finally {
+      setSuspending(null);
+    }
+  };
+
   const toggleActive = async (restaurant: Restaurant) => {
     setToggling(restaurant.id);
     try {
@@ -312,6 +339,14 @@ export default function RestaurantList({ restaurants, onEdit, onUpdate }: Restau
                         className="data-[state=checked]:bg-green-600"
                       />
                       <span className="hidden sm:inline text-xs text-muted-foreground">{restaurant.isActive ? "Active" : "Disabled"}</span>
+                      <Switch
+                        checked={suspendedIds.has(restaurant.id)}
+                        onCheckedChange={() => toggleSuspended(restaurant)}
+                        disabled={suspending === restaurant.id}
+                        className="data-[state=checked]:bg-amber-500"
+                        title="Suspended — profile stays visible but contact number, address and directions are hidden from guests/locals"
+                      />
+                      {suspendedIds.has(restaurant.id) && <span className="hidden sm:inline text-xs text-amber-600 font-medium">Suspended</span>}
                     </div>
                     <div className="flex gap-1">
                       {restaurant.latitude != null && restaurant.longitude != null && (

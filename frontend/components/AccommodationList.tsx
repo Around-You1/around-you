@@ -149,6 +149,33 @@ export default function AccommodationList({ accommodations, onEdit, onUpdate }: 
     })();
   }, []);
 
+  const [suspending, setSuspending] = useState<number | null>(null);
+  const [suspendedIds, setSuspendedIds] = useState<Set<number>>(new Set());
+  useEffect(() => {
+    (async () => {
+      try {
+        const res: any = await getAuthenticatedBackend().admin.suspendedIds({ entityType: "accommodation" });
+        setSuspendedIds(new Set<number>(res?.ids || []));
+      } catch { /* ignore */ }
+    })();
+  }, []);
+
+  const toggleSuspended = async (accommodation: Accommodation) => {
+    const next = !suspendedIds.has(accommodation.id);
+    setSuspending(accommodation.id);
+    try {
+      await getAuthenticatedBackend().admin.setSuspended({ entityType: "accommodation", ids: [accommodation.id], suspended: next });
+      setSuspendedIds((prev) => { const s2 = new Set(prev); if (next) s2.add(accommodation.id); else s2.delete(accommodation.id); return s2; });
+      toast({ title: next ? "Suspended" : "Un-suspended", description: next ? "Profile stays visible, but contact number, address and directions are now hidden from guests/locals." : "Contact number, address and directions are visible again." });
+      onUpdate();
+    } catch (error) {
+      console.error("Failed to toggle suspension:", error);
+      toast({ title: "Error", description: "Failed to update suspension", variant: "destructive" });
+    } finally {
+      setSuspending(null);
+    }
+  };
+
   const toggleActive = async (accommodation: Accommodation) => {
     setToggling(accommodation.id);
     try {
@@ -260,6 +287,14 @@ export default function AccommodationList({ accommodations, onEdit, onUpdate }: 
                         className="data-[state=checked]:bg-green-600"
                       />
                       <span className="hidden sm:inline text-xs text-muted-foreground">{accommodation.isActive ? "Active" : "Disabled"}</span>
+                      <Switch
+                        checked={suspendedIds.has(accommodation.id)}
+                        onCheckedChange={() => toggleSuspended(accommodation)}
+                        disabled={suspending === accommodation.id}
+                        className="data-[state=checked]:bg-amber-500"
+                        title="Suspended — profile stays visible but contact number, address and directions are hidden from guests/locals"
+                      />
+                      {suspendedIds.has(accommodation.id) && <span className="hidden sm:inline text-xs text-amber-600 font-medium">Suspended</span>}
                     </div>
                     <div className="flex gap-1">
                       {accommodation.latitude != null && accommodation.longitude != null && (

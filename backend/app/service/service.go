@@ -47,8 +47,19 @@ func publicize(ctx context.Context, items []appdb.ServiceData) []appdb.ServiceDa
 	if auth.IsPrivileged(ctx) {
 		return items
 	}
+	ids := make([]int64, len(items))
+	for i := range items {
+		ids[i] = items[i].ID
+	}
+	susp := appdb.SuspendedIDs(ctx, "services", ids)
 	for i := range items {
 		items[i].StripSensitive()
+		if susp[items[i].ID] {
+			items[i].ContactNumber = ""
+			items[i].Address = ""
+			items[i].Latitude = nil
+			items[i].Longitude = nil
+		}
 	}
 	return items
 }
