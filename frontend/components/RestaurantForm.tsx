@@ -31,6 +31,7 @@ interface RestaurantFormProps {
 }
 
 const CUISINE_TYPES = [
+  "Abalone",
   "African",
   "American",
   "Asian",
@@ -40,6 +41,8 @@ const CUISINE_TYPES = [
   "Burgers",
   "Cafe",
   "Chinese",
+  "Crayfish",
+  "Curry",
   "Dagwood",
   "Deli",
   "Fast Food",
@@ -57,6 +60,7 @@ const CUISINE_TYPES = [
   "Middle Eastern",
   "Pasta",
   "Pizza",
+  "Prawns",
   "Ribs",
   "Seafood",
   "Spanish",
@@ -69,6 +73,7 @@ const CUISINE_TYPES = [
 ];
 
 const RESTAURANT_TYPES = ["Food Truck", "Home Meals", "Take Away", "Delivery", "Pop Up", "Restaurant"];
+const DRINKS = ["Beer", "Cocktails", "Distilled Spirits", "Liqueurs", "Soft Drinks", "Wine"];
 const ATMOSPHERE_OPTIONS = ["Family-friendly", "Romantic", "Trendy / Modern", "Quiet", "Lively", "Outdoor Seating", "Sea View", "Mountain View", "Rooftop", "Garden"];
 const RESTAURANT_FEATURES = ["Walk-ins Welcome", "Live Music", "Free Wi-Fi"];
 const DIETARY_OPTIONS = ["Gluten Free", "Halaal", "Kosher", "Nut Free", "Signature Dish", "Chef Recommendation"];
@@ -666,6 +671,21 @@ export default function RestaurantForm({ restaurantId, onClose, partnerEdit = fa
                   />
                   <Label htmlFor={cuisine} className="cursor-pointer font-normal">
                     {cuisine}
+                  </Label>
+                </div>
+              ))}
+            </div>
+            <Label className="mt-4 block">Drinks</Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {DRINKS.map((drink) => (
+                <div key={drink} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={drink}
+                    checked={formData.cuisineTypes.includes(drink)}
+                    onCheckedChange={() => toggleCuisineType(drink)}
+                  />
+                  <Label htmlFor={drink} className="cursor-pointer font-normal">
+                    {drink}
                   </Label>
                 </div>
               ))}

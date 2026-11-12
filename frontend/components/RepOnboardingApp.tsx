@@ -235,15 +235,17 @@ const ATTRACTION_CATEGORIES = [
 ];
 
 const CUISINE_TYPES = [
-  "African", "À la carte", "American", "Asian", "BBQ", "Bakery", "Boerewors Rolls",
+  "Abalone", "African", "À la carte", "American", "Asian", "BBQ", "Bakery", "Boerewors Rolls",
   "Breakfast", "Bunny Chow", "Burgers", "Cafe", "Cake", "Chinese", "Coffee Shop",
-  "Croissant", "Curry", "Dagwood", "Deli", "Eisbein", "Espetada", "Fast Food",
+  "Crayfish", "Croissant", "Curry", "Dagwood", "Deli", "Eisbein", "Espetada", "Fast Food",
   "Fine Dining", "French", "Gatsby", "Greek", "Indian", "Irish", "Italian",
   "Jaffels", "Japanese", "Mediterranean", "Mexican", "Middle Eastern", "Pancakes", "Panini",
-  "Pasta", "Pizza", "Pies", "Pita", "Quiche", "Ribs", "Roast", "Sandwiches",
+  "Pasta", "Pizza", "Pies", "Pita", "Prawns", "Quiche", "Ribs", "Roast", "Sandwiches",
   "Scones", "Seafood", "Spanish", "Steaks", "Sushi", "Soup", "Thai", "Toasties",
   "Vegan", "Vegetarian", "Vetkoek",
 ];
+
+const DRINKS = ["Beer", "Cocktails", "Distilled Spirits", "Liqueurs", "Soft Drinks", "Wine"];
 
 const RESTAURANT_TYPES = ["Food Truck", "Home Meals", "Take Away", "Delivery", "Pop Up", "Restaurant"];
 
@@ -1497,7 +1499,10 @@ export default function RepOnboardingApp() {
               <>
                 <SectionTitle>{"Categories & Description"}</SectionTitle>
                 {isRestaurant && (
-                  <CheckboxGroup label="Cuisine Types" options={CUISINE_TYPES} selected={data.cuisineTypes || []} onChange={set("cuisineTypes")} />
+                  <>
+                    <CheckboxGroup label="Cuisine Types" options={CUISINE_TYPES} selected={data.cuisineTypes || []} onChange={set("cuisineTypes")} />
+                    <CheckboxGroup label="Drinks" options={DRINKS} selected={data.cuisineTypes || []} onChange={set("cuisineTypes")} />
+                  </>
                 )}
                 {isRestaurant && (
                   <CheckboxGroup label="Restaurant/Takeaway Type" options={RESTAURANT_TYPES} selected={data.restaurantType || []} onChange={set("restaurantType")} />

@@ -26,14 +26,16 @@ export const PAYMENT_METHODS = [
 export const SOCIAL_LABELS = ["Website", "Facebook", "Instagram", "X (Twitter)", "TikTok"];
 
 export const CUISINE_TYPES = [
-  "African", "American", "Asian", "BBQ", "Breakfast", "Bunny Chow", "Burgers", "Cafe",
-  "Chinese", "Dagwood", "Deli", "Fast Food", "Fine Dining", "French", "Gatsby", "Greek",
+  "Abalone", "African", "American", "Asian", "BBQ", "Breakfast", "Bunny Chow", "Burgers", "Cafe",
+  "Chinese", "Crayfish", "Curry", "Dagwood", "Deli", "Fast Food", "Fine Dining", "French", "Gatsby", "Greek",
   "Indian", "Irish", "Italian", "Jaffels", "Japanese", "Mediterranean", "Mexican",
-  "Middle Eastern", "Pasta", "Pizza", "Ribs", "Seafood", "Spanish", "Steaks", "Sushi",
+  "Middle Eastern", "Pasta", "Pizza", "Prawns", "Ribs", "Seafood", "Spanish", "Steaks", "Sushi",
   "Thai", "Vegan", "Vegetarian", "Vetkoek",
 ];
 
 export const RESTAURANT_TYPES = ["Food Truck", "Home Meals", "Take Away", "Delivery", "Pop Up", "Restaurant"];
+
+export const DRINKS = ["Beer", "Cocktails", "Distilled Spirits", "Liqueurs", "Soft Drinks", "Wine"];
 
 export const ATMOSPHERE_OPTIONS = [
   "Family-friendly", "Romantic", "Trendy / Modern", "Quiet", "Lively",
@@ -221,6 +223,7 @@ const restaurant: CategorySchema = {
     officialUse(true),
     businessDetails("Restaurant / Takeaway Name"),
     { title: "Cuisine Types", fields: [{ label: "Cuisine Types", kind: "choose-many", options: CUISINE_TYPES }] },
+    { title: "Drinks", fields: [{ label: "Drinks", kind: "choose-many", options: DRINKS }] },
     { title: "Restaurant / Takeaway Type", fields: [{ label: "Type", kind: "choose-many", options: RESTAURANT_TYPES }] },
     { title: "Atmosphere / Vibe", fields: [{ label: "Atmosphere / Vibe", kind: "choose-many", options: ATMOSPHERE_OPTIONS }] },
     { title: "Features", fields: [{ label: "Features", kind: "choose-many", options: RESTAURANT_FEATURES }] },
