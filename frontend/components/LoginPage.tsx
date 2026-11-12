@@ -16,8 +16,8 @@ import { getCurrentPosition } from "../lib/geolocation";
 const VALID_CODE_RE = /^[A-Za-z0-9]*$/;
 const STRIP_RE = /[^A-Za-z0-9]/g;
 
-const LUMO = "#39FF14";
-const LUMO_DARK = "#2dd10f";
+const LUMO = "var(--brand)";
+const LUMO_DARK = "color-mix(in srgb, var(--brand) 82%, #000)";
 
 type ActivePanel = "holiday" | "local" | "partner" | null;
 type LoginMethod = "code" | "secondary";
@@ -52,9 +52,9 @@ function SignInSquareBtn({
       onClick={onToggle}
       aria-expanded={isOpen}
       style={{
-        background: "#000",
-        border: `2px solid ${isOpen ? "#5fff3a" : LUMO}`,
-        color: isOpen ? "#5fff3a" : LUMO,
+        background: "var(--card)",
+        border: `2px solid ${isOpen ? "color-mix(in srgb, var(--brand) 70%, #fff)" : LUMO}`,
+        color: isOpen ? "color-mix(in srgb, var(--brand) 70%, #fff)" : LUMO,
         borderRadius: 10,
         fontWeight: 700,
         fontSize: "0.65rem",
@@ -71,7 +71,7 @@ function SignInSquareBtn({
         minHeight: 0,
         lineHeight: 1.25,
       }}
-      className="touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
+      className="touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1.2)"; }}
       onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1)"; }}
       onMouseDown={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.98)"; }}
@@ -84,7 +84,7 @@ function SignInSquareBtn({
 
 function ThemedLabel({ children }: { children: React.ReactNode }) {
   return (
-    <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#a0a0a0" }}>
+    <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>
       {children}
     </label>
   );
@@ -95,9 +95,9 @@ function ThemedInput(props: React.InputHTMLAttributes<HTMLInputElement> & { clas
     <input
       {...props}
       style={{
-        background: "rgba(255,255,255,0.05)",
-        border: "1px solid rgba(57,255,20,0.2)",
-        color: "#fff",
+        background: "color-mix(in srgb, var(--foreground) 5%, transparent)",
+        border: "1px solid color-mix(in srgb, var(--brand) 2%, transparent)",
+        color: "var(--foreground)",
         borderRadius: 8,
         padding: "10px 14px",
         width: "100%",
@@ -133,9 +133,9 @@ function ThemedSelect({
     <Select value={value} onValueChange={onValueChange} disabled={disabled}>
       <SelectTrigger
         style={{
-          background: "rgba(255,255,255,0.05)",
-          border: "1px solid rgba(57,255,20,0.2)",
-          color: value ? "#fff" : "#666",
+          background: "color-mix(in srgb, var(--foreground) 5%, transparent)",
+          border: "1px solid color-mix(in srgb, var(--brand) 2%, transparent)",
+          color: value ? "var(--foreground)" : "var(--muted-foreground)",
           borderRadius: 8,
           height: 42,
         }}
@@ -143,7 +143,7 @@ function ThemedSelect({
       >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectContent style={{ background: "#1a1a1a", border: "1px solid rgba(57,255,20,0.25)", color: "#fff" }}>
+      <SelectContent style={{ background: "var(--popover)", border: "1px solid color-mix(in srgb, var(--brand) 25%, transparent)", color: "var(--foreground)" }}>
         {children}
       </SelectContent>
     </Select>
@@ -184,8 +184,8 @@ function ProfileAccessCodeField({
         data-lpignore="true"
         className="font-mono tracking-widest text-center text-lg"
         style={{
-          background: "rgba(57,255,20,0.06)",
-          border: "1px solid rgba(57,255,20,0.35)",
+          background: "color-mix(in srgb, var(--brand) 6%, transparent)",
+          border: "1px solid color-mix(in srgb, var(--brand) 35%, transparent)",
           color: LUMO,
           letterSpacing: "0.15em",
           textAlign: "center",
@@ -200,7 +200,7 @@ function ProfileAccessCodeField({
           aria-label={showCode ? "Hide" : "Show"}
           title={showCode ? "Hide" : "Show"}
           tabIndex={-1}
-          style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", padding: 4, cursor: "pointer", color: "#9aa19a", lineHeight: 0 }}
+          style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", padding: 4, cursor: "pointer", color: "var(--muted-foreground)", lineHeight: 0 }}
         >
           {showCode ? (
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 8 10 8a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/></svg>
@@ -212,7 +212,7 @@ function ProfileAccessCodeField({
       {charError ? (
         <p className="text-xs text-red-400 text-center">Invalid characters removed — letters and numbers only</p>
       ) : (
-        <p className="text-xs text-center" style={{ color: "#666" }}>12-character code provided to you</p>
+        <p className="text-xs text-center" style={{ color: "var(--muted-foreground)" }}>12-character code provided to you</p>
       )}
     </div>
   );
@@ -224,8 +224,8 @@ function LumoButton({ children, disabled }: { children: React.ReactNode; disable
       type="submit"
       disabled={disabled}
       style={{
-        background: disabled ? "#1a3a0a" : `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`,
-        color: "#000",
+        background: disabled ? "var(--muted)" : `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`,
+        color: "var(--brand-foreground)",
         border: "none",
         borderRadius: 10,
         padding: "14px 0",
@@ -255,9 +255,9 @@ function MethodToggle({ method, onChange }: { method: LoginMethod; onChange: (m:
           onClick={() => onChange(m)}
           style={{
             flex: 1,
-            background: method === m ? "rgba(57,255,20,0.15)" : "transparent",
-            border: `1px solid ${method === m ? LUMO : "rgba(57,255,20,0.2)"}`,
-            color: method === m ? LUMO : "#666",
+            background: method === m ? "color-mix(in srgb, var(--brand) 15%, transparent)" : "transparent",
+            border: `1px solid ${method === m ? LUMO : "color-mix(in srgb, var(--brand) 2%, transparent)"}`,
+            color: method === m ? LUMO : "var(--muted-foreground)",
             borderRadius: 6,
             padding: "6px 0",
             fontSize: "0.75rem",
@@ -287,9 +287,9 @@ function PanelWrap({ id, activePanel, children }: { id: ActivePanel; activePanel
       <div
         className="px-4 py-4 space-y-4 text-sm"
         style={{
-          background: "rgba(57,255,20,0.04)",
+          background: "color-mix(in srgb, var(--brand) 4%, transparent)",
           borderRadius: 10,
-          border: "1px solid rgba(57,255,20,0.18)",
+          border: "1px solid color-mix(in srgb, var(--brand) 18%, transparent)",
         }}
       >
         {children}
@@ -691,7 +691,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-start justify-center p-4" style={{ background: "#0a0a0a" }}>
+    <div className="min-h-screen flex items-start justify-center p-4" style={{ background: "var(--background)" }}>
       <div className="w-full max-w-md">
         <div className="mb-4 pt-2">
           <AppLogo />
@@ -702,18 +702,18 @@ export default function LoginPage() {
             src="/testicular-cancer-awareness.jpg"
             alt="Testicular Cancer Awareness — Support · Hope · Cure"
             className="w-full rounded-xl"
-            style={{ display: "block", border: "1px solid rgba(57,255,20,0.12)" }}
+            style={{ display: "block", border: "1px solid color-mix(in srgb, var(--brand) 12%, transparent)" }}
           />
         </div>
 
         <div
           className="rounded-2xl p-6 space-y-3"
-          style={{ background: "#111111", border: "1px solid rgba(57,255,20,0.18)", boxShadow: "0 0 40px rgba(57,255,20,0.06)" }}
+          style={{ background: "var(--card)", border: "1px solid color-mix(in srgb, var(--brand) 18%, transparent)", boxShadow: "0 0 40px color-mix(in srgb, var(--brand) 6%, transparent)" }}
         >
           {!qrMode && (
           <>
           <InfoSquares />
-          <p className="text-center text-sm font-semibold uppercase tracking-widest" style={{ color: "#666" }}>
+          <p className="text-center text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--muted-foreground)" }}>
             Register/Sign in as a …
           </p>
 
@@ -729,7 +729,7 @@ export default function LoginPage() {
               type="button"
               onClick={() => setShowChooser(true)}
               className="w-full text-center text-xs underline"
-              style={{ color: "#666" }}
+              style={{ color: "var(--muted-foreground)" }}
             >
               Not you? Choose a different sign-in option
             </button>
@@ -755,7 +755,7 @@ export default function LoginPage() {
                     <ThemedLabel>Province</ThemedLabel>
                     <ThemedSelect value={holidayProvince} onValueChange={setHolidayProvince} placeholder="Select province">
                       {SA_PROVINCES.map((p) => (
-                        <SelectItem key={p} value={p} style={{ color: "#fff" }}>{p}</SelectItem>
+                        <SelectItem key={p} value={p} style={{ color: "var(--foreground)" }}>{p}</SelectItem>
                       ))}
                     </ThemedSelect>
                   </div>
@@ -774,14 +774,14 @@ export default function LoginPage() {
 
             {rememberedCell && !localUseForm ? (
               <div className="space-y-4">
-                <p style={{ color: "#dcdcdc", fontSize: "1.05rem" }}>Welcome back! Tap to continue.</p>
+                <p style={{ color: "var(--foreground)", fontSize: "1.05rem" }}>Welcome back! Tap to continue.</p>
                 <button
                   type="button"
                   disabled={loading}
                   onClick={() => doLocalLogin(rememberedCell, { skipConfirm: true })}
                   style={{
-                    background: loading ? "#1a3a0a" : `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`,
-                    color: "#000", border: "none", borderRadius: 14, padding: "22px 16px",
+                    background: loading ? "var(--muted)" : `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`,
+                    color: "var(--brand-foreground)", border: "none", borderRadius: 14, padding: "22px 16px",
                     width: "100%", fontWeight: 800, fontSize: "1.3rem", cursor: loading ? "not-allowed" : "pointer",
                     opacity: loading ? 0.6 : 1, minHeight: 68, letterSpacing: "0.02em",
                   }}
@@ -800,7 +800,7 @@ export default function LoginPage() {
             ) : (
             <form onSubmit={handleLocalLogin} className="space-y-5">
               <div className="space-y-2">
-                <label style={{ color: "#e2e2e2", fontSize: "1.05rem", fontWeight: 700 }}>Mobile Number</label>
+                <label style={{ color: "var(--foreground)", fontSize: "1.05rem", fontWeight: 700 }}>Mobile Number</label>
                 <ThemedInput
                   type="tel"
                   value={localCell}
@@ -811,7 +811,7 @@ export default function LoginPage() {
                   enterKeyHint="done"
                   style={{ fontSize: "1.25rem", padding: "16px", height: "auto" }}
                 />
-                <p style={{ color: "#8f8f8f", fontSize: "0.9rem" }}>This is how you sign in and collect stamp cards. No password needed.</p>
+                <p style={{ color: "var(--muted-foreground)", fontSize: "0.9rem" }}>This is how you sign in and collect stamp cards. No password needed.</p>
               </div>
 
               <div className="space-y-2">
@@ -821,9 +821,9 @@ export default function LoginPage() {
                   disabled={locating}
                   style={{
                     width: "100%",
-                    background: locationSet ? "rgba(57,255,20,0.15)" : "rgba(255,255,255,0.05)",
-                    border: `1px solid ${locationSet ? LUMO : "rgba(57,255,20,0.35)"}`,
-                    color: locationSet ? LUMO : "#e8e8e8",
+                    background: locationSet ? "color-mix(in srgb, var(--brand) 15%, transparent)" : "color-mix(in srgb, var(--foreground) 5%, transparent)",
+                    border: `1px solid ${locationSet ? LUMO : "color-mix(in srgb, var(--brand) 35%, transparent)"}`,
+                    color: locationSet ? LUMO : "var(--foreground)",
                     borderRadius: 12, padding: "16px", fontSize: "1.1rem", fontWeight: 600,
                     cursor: locating ? "wait" : "pointer", minHeight: 56,
                   }}
@@ -831,11 +831,11 @@ export default function LoginPage() {
                 >
                   {locating ? "Getting your location…" : locationSet ? "✓ Location set" : "Use my location"}
                 </button>
-                <p style={{ color: "#8f8f8f", fontSize: "0.9rem" }}>Optional — helps us show places near you. Or type your postal code below.</p>
+                <p style={{ color: "var(--muted-foreground)", fontSize: "0.9rem" }}>Optional — helps us show places near you. Or type your postal code below.</p>
               </div>
 
               <div className="space-y-2">
-                <label style={{ color: "#e2e2e2", fontSize: "1.05rem", fontWeight: 700 }}>Postal Code <span style={{ color: "#777", fontWeight: 400 }}>(optional)</span></label>
+                <label style={{ color: "var(--foreground)", fontSize: "1.05rem", fontWeight: 700 }}>Postal Code <span style={{ color: "var(--muted-foreground)", fontWeight: 400 }}>(optional)</span></label>
                 <ThemedInput
                   type="text"
                   value={localPostalCode}
@@ -852,8 +852,8 @@ export default function LoginPage() {
                 type="submit"
                 disabled={loading}
                 style={{
-                  background: loading ? "#1a3a0a" : `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`,
-                  color: "#000", border: "none", borderRadius: 14, padding: "22px 16px",
+                  background: loading ? "var(--muted)" : `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`,
+                  color: "var(--brand-foreground)", border: "none", borderRadius: 14, padding: "22px 16px",
                   width: "100%", fontWeight: 800, fontSize: "1.3rem", cursor: loading ? "not-allowed" : "pointer",
                   opacity: loading ? 0.6 : 1, minHeight: 68, letterSpacing: "0.02em",
                 }}
@@ -866,7 +866,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setLocalUseForm(false)}
-                  style={{ background: "transparent", border: "none", color: "#888", fontSize: "0.95rem", cursor: "pointer", width: "100%", padding: "4px 0" }}
+                  style={{ background: "transparent", border: "none", color: "var(--muted-foreground)", fontSize: "0.95rem", cursor: "pointer", width: "100%", padding: "4px 0" }}
                 >
                   ← Back
                 </button>
@@ -895,7 +895,7 @@ export default function LoginPage() {
                     <ThemedLabel>Province</ThemedLabel>
                     <ThemedSelect value={partnerProvince} onValueChange={setPartnerProvince} placeholder="Select province">
                       {SA_PROVINCES.map((p) => (
-                        <SelectItem key={p} value={p} style={{ color: "#fff" }}>{p}</SelectItem>
+                        <SelectItem key={p} value={p} style={{ color: "var(--foreground)" }}>{p}</SelectItem>
                       ))}
                     </ThemedSelect>
                   </div>
@@ -909,11 +909,11 @@ export default function LoginPage() {
             </form>
           </PanelWrap>
 
-          <p className="text-xs leading-relaxed px-1 pt-1" style={{ color: "#888" }}>
+          <p className="text-xs leading-relaxed px-1 pt-1" style={{ color: "var(--muted-foreground)" }}>
             {activePanel === "local"
               ? "We list Restaurant/Takeaway, Business/Service and Attraction/Activity Partners in and around your location up to 50kms. To request inclusion of a Partner, please submit full provider details to "
               : "We list Service Partners in and around your accommodation's location. Use the Radius slider to expand your search up to 150 km. To request inclusion of a service provider, submit full provider details to "}
-            <a href="mailto:sales@aroundyou.co.za" className="underline underline-offset-2 transition-colors hover:text-brand" style={{ color: "#aaa" }}>
+            <a href="mailto:sales@aroundyou.co.za" className="underline underline-offset-2 transition-colors hover:text-brand" style={{ color: "var(--muted-foreground)" }}>
               sales@aroundyou.co.za
             </a>
             .

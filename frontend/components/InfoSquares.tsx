@@ -2,15 +2,15 @@
 
 import { useState, Fragment } from "react";
 
-const LUMO = "#39FF14";
-const LUMO_DARK = "#2dd10f";
+const LUMO = "var(--brand)";
+const LUMO_DARK = "color-mix(in srgb, var(--brand) 82%, #000)";
 
 // Lumo call-to-action used inside expandable sections (onboard / register links).
 const ctaStyle: React.CSSProperties = {
   display: "inline-block",
   marginTop: 6,
   background: `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`,
-  color: "#000",
+  color: "var(--brand-foreground)",
   fontWeight: 700,
   borderRadius: 8,
   padding: "10px 16px",
@@ -41,9 +41,9 @@ function InfoSquareBtn({
       disabled={dimmed}
       aria-expanded={isOpen}
       style={{
-        background: "#000",
-        border: `2px solid ${dimmed ? "#3a3a3a" : isOpen ? "#5fff3a" : LUMO}`,
-        color: dimmed ? "#555" : isOpen ? "#5fff3a" : LUMO,
+        background: "var(--card)",
+        border: `2px solid ${dimmed ? "var(--border)" : isOpen ? "color-mix(in srgb, var(--brand) 70%, #fff)" : LUMO}`,
+        color: dimmed ? "var(--muted-foreground)" : isOpen ? "color-mix(in srgb, var(--brand) 70%, #fff)" : LUMO,
         opacity: dimmed ? 0.55 : 1,
         pointerEvents: dimmed ? "none" : "auto",
         borderRadius: 10,
@@ -62,7 +62,7 @@ function InfoSquareBtn({
         minHeight: 0,
         lineHeight: 1.25,
       }}
-      className="touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
+      className="touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1.2)";
       }}
@@ -194,9 +194,9 @@ export default function InfoSquares() {
                     href={dimmed ? undefined : section.href}
                     aria-disabled={dimmed}
                     style={{
-                      background: "#000",
-                      border: `2px solid ${dimmed ? "#3a3a3a" : LUMO}`,
-                      color: dimmed ? "#555" : LUMO,
+                      background: "var(--card)",
+                      border: `2px solid ${dimmed ? "var(--border)" : LUMO}`,
+                      color: dimmed ? "var(--muted-foreground)" : LUMO,
                       opacity: dimmed ? 0.55 : 1,
                       pointerEvents: dimmed ? "none" : "auto",
                       borderRadius: 10,
@@ -216,7 +216,7 @@ export default function InfoSquares() {
                       lineHeight: 1.25,
                       textDecoration: "none",
                     }}
-                    className="touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
+                    className="touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.filter = "brightness(1.2)"; }}
                     onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.filter = "brightness(1)"; }}
                     onMouseDown={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = "scale(0.98)"; }}
@@ -240,10 +240,10 @@ export default function InfoSquares() {
                     <div
                       className="px-4 py-4 text-sm leading-relaxed space-y-3"
                       style={{
-                        color: "#a0a0a0",
-                        background: "rgba(57,255,20,0.04)",
+                        color: "var(--muted-foreground)",
+                        background: "color-mix(in srgb, var(--brand) 4%, transparent)",
                         borderRadius: 10,
-                        border: "1px solid rgba(57,255,20,0.18)",
+                        border: "1px solid color-mix(in srgb, var(--brand) 18%, transparent)",
                       }}
                     >
                       <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: LUMO }}>
