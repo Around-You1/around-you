@@ -30,15 +30,15 @@ export default function AdminDashboard() {
     totalPartners: 0,
     activePartners: 0,
     inactivePartners: 0,
-    accommodationStats: { totalCount: 0, activeCount: 0, inactiveCount: 0 },
-    restaurantStats: { totalCount: 0, activeCount: 0, inactiveCount: 0 },
-    serviceStats: { totalCount: 0, activeCount: 0, inactiveCount: 0 },
-    attractionStats: { totalCount: 0, activeCount: 0, inactiveCount: 0 },
-    retailStats: { totalCount: 0, activeCount: 0, inactiveCount: 0 },
-    nonprofitStats: { totalCount: 0, activeCount: 0, inactiveCount: 0 },
+    accommodationStats: { totalCount: 0, activeCount: 0, inactiveCount: 0, suspendedCount: 0 },
+    restaurantStats: { totalCount: 0, activeCount: 0, inactiveCount: 0, suspendedCount: 0 },
+    serviceStats: { totalCount: 0, activeCount: 0, inactiveCount: 0, suspendedCount: 0 },
+    attractionStats: { totalCount: 0, activeCount: 0, inactiveCount: 0, suspendedCount: 0 },
+    retailStats: { totalCount: 0, activeCount: 0, inactiveCount: 0, suspendedCount: 0 },
+    nonprofitStats: { totalCount: 0, activeCount: 0, inactiveCount: 0, suspendedCount: 0 },
   });
 
-  const zero = { totalCount: 0, activeCount: 0, inactiveCount: 0 };
+  const zero = { totalCount: 0, activeCount: 0, inactiveCount: 0, suspendedCount: 0 };
   const [estateStats, setEstateStats] = useState({ agencies: zero, agents: zero });
 
   const { toast } = useToast();
@@ -93,7 +93,7 @@ export default function AdminDashboard() {
       const [ag, agn]: any = await Promise.all([backend.estate.listAgencies(), backend.estate.listAllAgents()]);
       const roll = (arr: any[]) => {
         const active = arr.filter((x) => x.isActive !== false).length;
-        return { totalCount: arr.length, activeCount: active, inactiveCount: arr.length - active };
+        return { totalCount: arr.length, activeCount: active, inactiveCount: arr.length - active, suspendedCount: 0 };
       };
       setEstateStats({ agencies: roll(ag.agencies || []), agents: roll(agn.agents || []) });
     } catch {
@@ -138,8 +138,9 @@ export default function AdminDashboard() {
       total: a.total + (s?.totalCount || 0),
       active: a.active + (s?.activeCount || 0),
       inactive: a.inactive + (s?.inactiveCount || 0),
+      suspended: a.suspended + (s?.suspendedCount || 0),
     }),
-    { total: 0, active: 0, inactive: 0 }
+    { total: 0, active: 0, inactive: 0, suspended: 0 }
   );
   // Small red count badge shown to the right of a tab name.
   const catBadge = (key: string) => {
@@ -190,6 +191,7 @@ export default function AdminDashboard() {
               <span className="font-semibold text-foreground">Total {metricsAgg.total}</span>
               <span className="text-green-600 font-medium">Active {metricsAgg.active}</span>
               <span className="text-red-500 font-medium">Inactive {metricsAgg.inactive}</span>
+              <span className="text-amber-600 font-medium">Suspended {metricsAgg.suspended}</span>
             </span>
             <ChevronDown className={`w-5 h-5 shrink-0 text-muted-foreground transition-transform ${metricsOpen ? "rotate-180" : ""}`} />
           </button>

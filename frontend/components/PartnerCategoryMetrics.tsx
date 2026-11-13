@@ -6,6 +6,7 @@ interface CategoryStats {
   totalCount: number;
   activeCount: number;
   inactiveCount: number;
+  suspendedCount: number;
 }
 
 interface PartnerCategoryMetricsProps {
@@ -73,6 +74,20 @@ export default function PartnerCategoryMetrics({ title, icon: Icon, color, stats
             </div>
             <div className="text-[9px] text-muted-foreground">
               {100 - activePercentage}%
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <Badge
+                variant="outline"
+                className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800 text-[9px] px-1 py-0 h-3.5 leading-none"
+              >
+                Suspended
+              </Badge>
+              <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 leading-none">
+                {stats.suspendedCount}
+              </span>
             </div>
           </div>
         </div>

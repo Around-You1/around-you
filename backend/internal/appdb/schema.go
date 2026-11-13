@@ -712,9 +712,10 @@ type ProfileSettings struct {
 // CategoryStats matches AdminDashboard.tsx's accommodationStats/restaurantStats/
 // serviceStats/attractionStats shape.
 type CategoryStats struct {
-	TotalCount    int `json:"totalCount"`
-	ActiveCount   int `json:"activeCount"`
-	InactiveCount int `json:"inactiveCount"`
+	TotalCount     int `json:"totalCount"`
+	ActiveCount    int `json:"activeCount"`
+	InactiveCount  int `json:"inactiveCount"`
+	SuspendedCount int `json:"suspendedCount"`
 }
 
 // Store is a single in-memory, mutex-guarded store shared by every service

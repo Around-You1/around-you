@@ -27,56 +27,56 @@ type Response struct {
 	NonprofitStats     appdb.CategoryStats `json:"nonprofitStats"`
 }
 
-func countTable(ctx context.Context, table string) (total, active int, err error) {
+func countTable(ctx context.Context, table string) (total, active, suspended int, err error) {
 	row := appdb.SQLDB.QueryRowContext(ctx,
-		"SELECT count(*), count(*) FILTER (WHERE is_active) FROM "+table)
-	err = row.Scan(&total, &active)
-	return total, active, err
+		"SELECT count(*), count(*) FILTER (WHERE is_active), count(*) FILTER (WHERE suspended) FROM "+table)
+	err = row.Scan(&total, &active, &suspended)
+	return total, active, suspended, err
 }
 
 //encore:api auth method=GET path=/stats
 func Get(ctx context.Context) (*Response, error) {
 	resp := &Response{}
 
-	accTotal, accActive, err := countTable(ctx, "accommodations")
+	accTotal, accActive, accSusp, err := countTable(ctx, "accommodations")
 	if err != nil {
 		return nil, err
 	}
 	resp.TotalAccommodations = accTotal
-	resp.AccommodationStats = appdb.CategoryStats{TotalCount: accTotal, ActiveCount: accActive, InactiveCount: accTotal - accActive}
+	resp.AccommodationStats = appdb.CategoryStats{TotalCount: accTotal, ActiveCount: accActive, InactiveCount: accTotal - accActive, SuspendedCount: accSusp}
 
-	restTotal, restActive, err := countTable(ctx, "restaurants")
+	restTotal, restActive, restSusp, err := countTable(ctx, "restaurants")
 	if err != nil {
 		return nil, err
 	}
 	resp.TotalRestaurants = restTotal
-	resp.RestaurantStats = appdb.CategoryStats{TotalCount: restTotal, ActiveCount: restActive, InactiveCount: restTotal - restActive}
+	resp.RestaurantStats = appdb.CategoryStats{TotalCount: restTotal, ActiveCount: restActive, InactiveCount: restTotal - restActive, SuspendedCount: restSusp}
 
-	svcTotal, svcActive, err := countTable(ctx, "services")
+	svcTotal, svcActive, svcSusp, err := countTable(ctx, "services")
 	if err != nil {
 		return nil, err
 	}
 	resp.TotalServices = svcTotal
-	resp.ServiceStats = appdb.CategoryStats{TotalCount: svcTotal, ActiveCount: svcActive, InactiveCount: svcTotal - svcActive}
+	resp.ServiceStats = appdb.CategoryStats{TotalCount: svcTotal, ActiveCount: svcActive, InactiveCount: svcTotal - svcActive, SuspendedCount: svcSusp}
 
-	attTotal, attActive, err := countTable(ctx, "attractions")
+	attTotal, attActive, attSusp, err := countTable(ctx, "attractions")
 	if err != nil {
 		return nil, err
 	}
 	resp.TotalAttractions = attTotal
-	resp.AttractionStats = appdb.CategoryStats{TotalCount: attTotal, ActiveCount: attActive, InactiveCount: attTotal - attActive}
+	resp.AttractionStats = appdb.CategoryStats{TotalCount: attTotal, ActiveCount: attActive, InactiveCount: attTotal - attActive, SuspendedCount: attSusp}
 
-	retTotal, retActive, err := countTable(ctx, "retail")
+	retTotal, retActive, retSusp, err := countTable(ctx, "retail")
 	if err != nil {
 		return nil, err
 	}
-	resp.RetailStats = appdb.CategoryStats{TotalCount: retTotal, ActiveCount: retActive, InactiveCount: retTotal - retActive}
+	resp.RetailStats = appdb.CategoryStats{TotalCount: retTotal, ActiveCount: retActive, InactiveCount: retTotal - retActive, SuspendedCount: retSusp}
 
-	npTotal, npActive, err := countTable(ctx, "nonprofits")
+	npTotal, npActive, npSusp, err := countTable(ctx, "nonprofits")
 	if err != nil {
 		return nil, err
 	}
-	resp.NonprofitStats = appdb.CategoryStats{TotalCount: npTotal, ActiveCount: npActive, InactiveCount: npTotal - npActive}
+	resp.NonprofitStats = appdb.CategoryStats{TotalCount: npTotal, ActiveCount: npActive, InactiveCount: npTotal - npActive, SuspendedCount: npSusp}
 
 	// "Partners" = restaurants + services + attractions. Accommodations are
 	// guest lodging (role "Guest" at login), not partner listings, so
