@@ -608,7 +608,7 @@ export default function GuestDashboard() {
       isRetail ? ((((service as any).specials) || []) as any[]).filter((sp) => sp && sp.enabled && sp.line1 && audienceOk(sp.audience)) : [];
     return (
     <Card key={service.id} className="hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
-                      <CardContent className="p-4">
+                      <CardContent className="p-3">
                         <div className="flex flex-col sm:flex-row gap-3">
                           <ImageCarousel
                             images={service.imageUrls && service.imageUrls.length > 0 ? service.imageUrls : (service.imageUrl ? [service.imageUrl] : [])}
@@ -908,10 +908,10 @@ export default function GuestDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand/10 to-background px-6 pt-3 pb-6">
-      <div className="max-w-7xl mx-auto space-y-6 pt-3 pb-8">
+      <div className="max-w-7xl mx-auto space-y-3 pt-3 pb-6">
         {isLocalMode ? (
-          <div className="space-y-4">
-            <div className="text-center space-y-2">
+          <div className="space-y-3">
+            <div className="text-center space-y-1">
               <div className="flex justify-center mb-1"><AppLogo src="/logo-dark.png" size={150} /></div>
               <h1 className="text-3xl font-bold text-foreground">Around You</h1>
               <p className="text-lg text-muted-foreground">Local Guest</p>
@@ -921,7 +921,7 @@ export default function GuestDashboard() {
           </div>
         ) : (
           <>
-            <div className="text-center space-y-2">
+            <div className="text-center space-y-1">
               <div className="flex justify-center mb-1"><AppLogo src="/logo-dark.png" size={150} /></div>
               <h1 className="text-3xl font-bold text-foreground">Welcome to</h1>
               <p className="text-lg text-muted-foreground">{accommodation!.name}</p>
@@ -930,7 +930,7 @@ export default function GuestDashboard() {
             <AppInstallButtons />
             <SuggestionsBanner ownerType="accommodation" ownerId={accommodation!.id} backName={accommodation!.name} />
             <Card>
-              <CardContent className="p-4">
+              <CardContent className="p-3">
                 <div className="mb-4 mx-auto w-full max-w-xl">
                   <ImageCarousel
                     images={[
@@ -1307,12 +1307,12 @@ export default function GuestDashboard() {
           </>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {BOOKINGS_ENABLED && <Button className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold" onClick={() => setShowMyBookings(true)}>Bookings / Pre-Orders I have made</Button>}
           <Button className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold" onClick={() => setShowMyStamps(true)}>My Stamp Cards</Button>
           <Button variant="outline" className="w-full" onClick={async () => { await signOut(); window.location.href = "/"; }}>Sign out</Button>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-2">
             <TabsList className="flex flex-col w-full gap-1 p-1 bg-muted rounded-md" style={{ height: "auto" }}>
               {isLocalMode && (
                 <TabsTrigger value="accommodation" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Accommodation/Caravan Parks ({localAccommodations.length})</TabsTrigger>
@@ -1379,7 +1379,7 @@ export default function GuestDashboard() {
           </div>
 
             {isLocalMode && (
-              <TabsContent value="accommodation" className="space-y-3 mt-6" {...swipeHandlers}>
+              <TabsContent value="accommodation" className="space-y-2 mt-3" {...swipeHandlers}>
                 {localAccommodations.length === 0 ? (
                   <Card>
                     <CardContent className="p-8 text-center text-muted-foreground">
@@ -1390,7 +1390,7 @@ export default function GuestDashboard() {
                   <div className="space-y-2">
                     {localAccommodations.map((acc) => (
                       <Card key={acc.id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-4">
+                        <CardContent className="p-3">
                           <div className="flex flex-col sm:flex-row gap-3">
                             <ImageCarousel
                               images={acc.imageUrls && acc.imageUrls.length > 0 ? acc.imageUrls : (acc.imageUrl ? [acc.imageUrl] : [])}
@@ -1426,11 +1426,11 @@ export default function GuestDashboard() {
               </TabsContent>
             )}
 
-            <TabsContent value="realestate" className="space-y-3 mt-6">
+            <TabsContent value="realestate" className="space-y-2 mt-3">
               <EstateAgenciesBrowse />
             </TabsContent>
 
-            <TabsContent value="nonprofit" className="space-y-3 mt-6" {...swipeHandlers}>
+            <TabsContent value="nonprofit" className="space-y-2 mt-3" {...swipeHandlers}>
               {npoServices.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
@@ -1444,7 +1444,7 @@ export default function GuestDashboard() {
               )}
             </TabsContent>
 
-            <TabsContent value="restaurants" className="space-y-3 mt-6" {...swipeHandlers}>
+            <TabsContent value="restaurants" className="space-y-2 mt-3" {...swipeHandlers}>
               {filteredRestaurants.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
@@ -1455,7 +1455,7 @@ export default function GuestDashboard() {
                 <div className="space-y-2">
                   {filteredRestaurants.map((restaurant) => (
                     <Card key={restaurant.id} className="hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
-                      <CardContent className="p-4">
+                      <CardContent className="p-3">
                         <div className="flex flex-col sm:flex-row gap-3">
                           <ImageCarousel
                             images={restaurant.imageUrls && restaurant.imageUrls.length > 0 ? restaurant.imageUrls : (restaurant.imageUrl ? [restaurant.imageUrl] : [])}
@@ -1925,7 +1925,7 @@ export default function GuestDashboard() {
               )}
             </TabsContent>
 
-            <TabsContent value="services" className="space-y-3 mt-6" {...swipeHandlers}>
+            <TabsContent value="services" className="space-y-2 mt-3" {...swipeHandlers}>
               {bizServices.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
@@ -1939,7 +1939,7 @@ export default function GuestDashboard() {
               )}
             </TabsContent>
 
-            <TabsContent value="retail" className="space-y-3 mt-6" {...swipeHandlers}>
+            <TabsContent value="retail" className="space-y-2 mt-3" {...swipeHandlers}>
               {retailServices.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
@@ -1953,7 +1953,7 @@ export default function GuestDashboard() {
               )}
             </TabsContent>
 
-            <TabsContent value="attractions" className="space-y-3 mt-6" {...swipeHandlers}>
+            <TabsContent value="attractions" className="space-y-2 mt-3" {...swipeHandlers}>
               {filteredAttractions.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
@@ -1964,7 +1964,7 @@ export default function GuestDashboard() {
                 <div className="space-y-2">
                   {filteredAttractions.map((attraction) => (
                     <Card key={attraction.id} className="hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
-                      <CardContent className="p-4">
+                      <CardContent className="p-3">
                         <div className="flex flex-col sm:flex-row gap-3">
                           <ImageCarousel
                             images={attraction.imageUrls && attraction.imageUrls.length > 0 ? attraction.imageUrls : (attraction.imageUrl ? [attraction.imageUrl] : [])}
