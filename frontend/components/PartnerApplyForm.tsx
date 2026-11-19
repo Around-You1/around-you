@@ -48,9 +48,8 @@ function pricingText(cat: string, half: boolean): string {
     case "attraction":
       return promo ? "R300 per month" + tail : "R300 per month.";
     case "estate":
-      return promo
-        ? "Real Estate & Rentals R300 per month and Estate Agents R200 per month" + tail
-        : "Real Estate & Rentals R300 per month and Estate Agents R200 per month.";
+      // Reads exactly like the other categories (base R300 + the promo line).
+      return promo ? "R300 per month" + tail : "R300 per month.";
     case "retail":
       return promo ? "R500 per month" + tail : "R500 per month.";
     case "nonprofit": return "Free — no monthly fee for registered NPO / PBO organisations.";
