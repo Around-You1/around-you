@@ -51,12 +51,12 @@ function getLocalDeviceEmail(): string {
 
 // Business categories for the Partner "Register" tab (mirror PartnerApplyForm).
 const PARTNER_CATEGORIES: { key: string; label: string }[] = [
-  { key: "accommodation", label: "Accommodation/Caravan Parks" },
   { key: "restaurant", label: "Restaurant/Takeaway" },
   { key: "service", label: "Business/Service" },
   { key: "attraction", label: "Attraction/Activity" },
   { key: "estate", label: "Real Estate & Rentals" },
   { key: "retail", label: "Retail" },
+  { key: "accommodation", label: "Accommodation/Caravan Parks" },
   { key: "nonprofit", label: "NPO / PBO" },
 ];
 
@@ -923,7 +923,7 @@ export default function LoginPage() {
             </>
             ) : (
             <div className="space-y-3">
-              <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>New to Around You? Pick your business type to start your free application.</p>
+              <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>Select your business type, complete the fields and click &ldquo;Submit application&rdquo;. You will then receive a mail with your invoice and codes so that you can populate your profile.</p>
               <div className="grid grid-cols-1 gap-2">
                 {PARTNER_CATEGORIES.map((c) => (
                   <button key={c.key} type="button" onClick={() => navigate(`/apply?type=${c.key}`)}
