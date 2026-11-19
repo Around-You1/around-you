@@ -30,6 +30,25 @@ function sanitizeCode(raw: string): string {
 // +27 / 27 country prefix folded to a leading 0, so "082 123 4567",
 // "+27 82 123 4567" and "0821234567" all compare equal. Used to decide
 // whether a returning local actually changed their number.
+// A Local's identity is a stable, per-device id kept in this browser and shown
+// to the backend as a synthetic email. It replaces the phone number: nothing to
+// type, no confirmation, and a returning Local on this device is recognised
+// automatically (and keeps their stamp cards).
+function getLocalDeviceEmail(): string {
+  try {
+    let id = localStorage.getItem("aroundYouLocalDeviceId");
+    if (!id) {
+      id = (typeof crypto !== "undefined" && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem("aroundYouLocalDeviceId", id);
+    }
+    return `device-${id}@local.aroundyou.co.za`;
+  } catch {
+    return `device-${Date.now()}@local.aroundyou.co.za`;
+  }
+}
+
 function normalizeCellForCompare(raw: string): string {
   let d = (raw || "").replace(/[^\d+]/g, "");
   if (d.startsWith("+27")) d = "0" + d.slice(3);
@@ -582,26 +601,17 @@ export default function LoginPage() {
   // one-tap button. Locals register with just a mobile number; postal code and
   // location are optional aids for finding nearby places.
   async function doLocalLogin(cellRaw: string, opts?: { skipConfirm?: boolean }) {
-    const cell = cellRaw.trim();
-    if (!cell) { toast({ title: "Validation Error", description: "Mobile number is required", variant: "destructive" }); return; }
-    if (!/^(?:\+?27|0)\d{9}$/.test(cell.replace(/\s/g, ""))) { toast({ title: "Validation Error", description: "Please enter a valid South African mobile number (e.g. 082 123 4567)", variant: "destructive" }); return; }
-    // Confirm the mobile number only when it's new or has changed on this device
-    // — a returning local whose number is unchanged taps straight through.
-    if (!opts?.skipConfirm) {
-      let savedCell = "";
-      try { savedCell = JSON.parse(localStorage.getItem("aroundYouLogin") || "{}")?.local?.cell || ""; } catch { savedCell = ""; }
-      const cellChanged = normalizeCellForCompare(cell) !== normalizeCellForCompare(savedCell);
-      if (cellChanged && !window.confirm(`Please confirm your mobile number:\n\n${cell}\n\nIs this correct?`)) return;
-    }
+    // No phone number: a per-device synthetic email is the Local's identity.
+    const email = getLocalDeviceEmail();
     setLoading(true);
     try {
       const postalCode = localPostalCode.trim();
-      const res = await backend.auth.localGuestLogin({ cell, postalCode });
-      const info: Record<string, any> = { postalCode, cell };
+      const res = await backend.auth.localGuestLogin({ email, postalCode });
+      const info: Record<string, any> = { postalCode, email };
       if (localCoords) { info.latitude = localCoords.lat; info.longitude = localCoords.lng; }
       localStorage.setItem("localGuestInfo", JSON.stringify(info));
-      rememberLogin({ local: { postalCode, cell, ...(localCoords ? { coords: localCoords } : {}) } });
-      storeAndNavigate(res.token, res.user, "/local-dashboard", cell, "a Local");
+      rememberLogin({ local: { postalCode, email, ...(localCoords ? { coords: localCoords } : {}) } });
+      storeAndNavigate(res.token, res.user, "/local-dashboard", "Local", "a Local");
     } catch (err: any) {
       console.error(err);
       toast({ title: "Login Failed", description: err?.message || "Unable to sign in. Please try again.", variant: "destructive" });
@@ -802,48 +812,7 @@ export default function LoginPage() {
               <span aria-hidden="true">🆘</span> Emergency Numbers
             </a>
 
-            {rememberedCell && !localUseForm ? (
-              <div className="space-y-4">
-                <p style={{ color: "var(--foreground)", fontSize: "1.05rem" }}>Welcome back! Tap to continue.</p>
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => doLocalLogin(rememberedCell, { skipConfirm: true })}
-                  style={{
-                    background: loading ? "var(--muted)" : `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`,
-                    color: "var(--brand-foreground)", border: "none", borderRadius: 14, padding: "22px 16px",
-                    width: "100%", fontWeight: 800, fontSize: "1.3rem", cursor: loading ? "not-allowed" : "pointer",
-                    opacity: loading ? 0.6 : 1, minHeight: 68, letterSpacing: "0.02em",
-                  }}
-                  className="touch-manipulation"
-                >
-                  {loading ? "Signing in…" : `Continue as ${rememberedCell}`}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLocalUseForm(true)}
-                  style={{ background: "transparent", border: "none", color: LUMO, fontSize: "1rem", textDecoration: "underline", cursor: "pointer", width: "100%", padding: "8px 0" }}
-                >
-                  Use a different number
-                </button>
-              </div>
-            ) : (
             <form onSubmit={handleLocalLogin} className="space-y-5">
-              <div className="space-y-2">
-                <label style={{ color: "var(--foreground)", fontSize: "1.05rem", fontWeight: 700 }}>Mobile Number</label>
-                <ThemedInput
-                  type="tel"
-                  value={localCell}
-                  onChange={(e) => setLocalCell(e.target.value)}
-                  placeholder="e.g. 082 123 4567"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  enterKeyHint="done"
-                  style={{ fontSize: "1.25rem", padding: "16px", height: "auto" }}
-                />
-                <p style={{ color: "var(--muted-foreground)", fontSize: "0.9rem" }}>This is how you sign in and collect stamp cards. No password needed.</p>
-              </div>
-
               <div className="space-y-2">
                 <button
                   type="button"
@@ -861,11 +830,11 @@ export default function LoginPage() {
                 >
                   {locating ? "Getting your location…" : locationSet ? "✓ Location set" : "Use my location"}
                 </button>
-                <p style={{ color: "var(--muted-foreground)", fontSize: "0.9rem" }}>Optional — helps us show places near you. Or type your postal code below.</p>
+                <p style={{ color: "var(--muted-foreground)", fontSize: "0.9rem" }}>Tap to use your GPS so we can show places near you. If your GPS is off, enter your postal code below instead.</p>
               </div>
 
               <div className="space-y-2">
-                <label style={{ color: "var(--foreground)", fontSize: "1.05rem", fontWeight: 700 }}>Postal Code <span style={{ color: "var(--muted-foreground)", fontWeight: 400 }}>(optional)</span></label>
+                <label style={{ color: "var(--foreground)", fontSize: "1.05rem", fontWeight: 700 }}>Postal Code <span style={{ color: "var(--muted-foreground)", fontWeight: 400 }}>(if your GPS is off)</span></label>
                 <ThemedInput
                   type="text"
                   value={localPostalCode}
@@ -889,20 +858,10 @@ export default function LoginPage() {
                 }}
                 className="touch-manipulation"
               >
-                {loading ? (localRegistered ? "Signing in…" : "Registering…") : (localRegistered ? "Sign In" : "Register")}
+                {loading ? "Please wait…" : "Enter"}
               </button>
 
-              {rememberedCell && (
-                <button
-                  type="button"
-                  onClick={() => setLocalUseForm(false)}
-                  style={{ background: "transparent", border: "none", color: "var(--muted-foreground)", fontSize: "0.95rem", cursor: "pointer", width: "100%", padding: "4px 0" }}
-                >
-                  ← Back
-                </button>
-              )}
             </form>
-            )}
           </PanelWrap>
 
           <PanelWrap id="partner" activePanel={activePanel}>
