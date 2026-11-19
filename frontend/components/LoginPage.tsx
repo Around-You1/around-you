@@ -727,10 +727,6 @@ export default function LoginPage() {
         >
           {!qrMode && !showLearnMore && (
           <>
-          <p className="text-center text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--muted-foreground)" }}>
-            View
-          </p>
-
           <div className="grid grid-cols-3 gap-1.5">
             <SignInSquareBtn label="Holiday Guest" isOpen={activePanel === "holiday"} onToggle={() => togglePanel("holiday")} />
             <SignInSquareBtn label="Local" isOpen={activePanel === "local"} onToggle={() => togglePanel("local")} />

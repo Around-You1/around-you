@@ -139,6 +139,27 @@
 
 <script>
 (function () {
+  // Best-effort location capture (for future area-specific numbers). This shows
+  // the browser's permission prompt; the emergency numbers are already on screen
+  // regardless of whether the person allows, denies, or ignores it.
+  try {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        function (pos) {
+          try {
+            localStorage.setItem("aroundYouLastLocation", JSON.stringify({
+              lat: pos.coords.latitude, lng: pos.coords.longitude, at: Date.now()
+            }));
+          } catch (e) {}
+        },
+        function () {},
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
+      );
+    }
+  } catch (e) {}
+})();
+
+(function () {
   var KEY = "aroundYouMyNumbers";
   var listEl = document.getElementById("mynum-list");
   var form = document.getElementById("mynum-form");
