@@ -927,14 +927,8 @@ export default function LoginPage() {
 
           {!showLearnMore && (
           <>
-          <p className="text-xs leading-relaxed px-1 pt-1" style={{ color: "var(--muted-foreground)" }}>
-            {activePanel === "local"
-              ? "We list Restaurant/Takeaway, Business/Service and Attraction/Activity Partners in and around your location up to 50kms. To request inclusion of a Partner, please submit full provider details to "
-              : "We list Service Partners in and around your accommodation's location. Use the Radius slider to expand your search up to 150 km. To request inclusion of a service provider, submit full provider details to "}
-            <a href="mailto:sales@aroundyou.co.za" className="underline underline-offset-2 transition-colors hover:text-brand" style={{ color: "var(--muted-foreground)" }}>
-              sales@aroundyou.co.za
-            </a>
-            .
+          <p className="text-xs leading-relaxed px-1 pt-1 text-center" style={{ color: "var(--muted-foreground)" }}>
+            Your go-to guide for Locals and Holiday guests to explore local businesses, restaurants, take-aways, activities, and services—unlocking exclusive discounts and promotions ONLY available on the AroundYou app.
           </p>
 
           <div className="pt-2 flex justify-center gap-4">
