@@ -916,7 +916,7 @@ export default function LoginPage() {
               <div className="grid grid-cols-1 gap-2">
                 {PARTNER_CATEGORIES.map((c) => (
                   <button key={c.key} type="button" onClick={() => navigate(`/apply?type=${c.key}`)}
-                    className="w-full rounded-lg border border-border bg-transparent py-3 text-sm font-medium text-foreground hover:border-brand hover:text-brand transition-colors">
+                    className="w-full min-h-[48px] rounded-lg flex items-center justify-center text-sm px-3 font-medium bg-muted text-foreground dark:text-foreground border-2 border-foreground hover:border-brand hover:bg-muted/80 transition-colors">
                     {c.label}
                   </button>
                 ))}
