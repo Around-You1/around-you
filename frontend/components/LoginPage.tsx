@@ -745,6 +745,19 @@ export default function LoginPage() {
           >
             Learn More …
           </button>
+
+          <a
+            href="/emergency.html"
+            className="touch-manipulation"
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              width: "100%", minHeight: 52,
+              background: "#dc2626", color: "#ffffff", borderRadius: 12,
+              fontWeight: 800, fontSize: "1.05rem", textDecoration: "none", letterSpacing: "0.02em",
+            }}
+          >
+            <span aria-hidden="true">🆘</span> Emergency Numbers
+          </a>
           </>
           )}
 
