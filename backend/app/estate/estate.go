@@ -11,6 +11,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/lib/pq"
+
 	"backend_encore/app/auth"
 	"backend_encore/internal/appdb"
 	"backend_encore/internal/billing"
@@ -402,6 +404,7 @@ func PublicAgencies(ctx context.Context) (*AgenciesResponse, error) {
 	for i := range list {
 		list[i].StripSensitive()
 	}
+	maskSuspendedAgencies(ctx, list)
 	return &AgenciesResponse{Agencies: list}, nil
 }
 
@@ -414,6 +417,7 @@ func PublicAgents(ctx context.Context) (*AgentsResponse, error) {
 	for i := range list {
 		list[i].StripSensitive()
 	}
+	maskSuspendedAgents(ctx, list)
 	return &AgentsResponse{Agents: list}, nil
 }
 
@@ -451,6 +455,10 @@ func PublicAgency(ctx context.Context, req *codeReq) (*PublicAgencyResponse, err
 	for i := range agentList {
 		agentList[i].StripSensitive()
 	}
+	one := []appdb.EstateAgency{*a}
+	maskSuspendedAgencies(ctx, one)
+	*a = one[0]
+	maskSuspendedAgents(ctx, agentList)
 	return &PublicAgencyResponse{Agency: *a, Agents: agentList, Properties: propList}, nil
 }
 
@@ -463,6 +471,9 @@ func PublicAgent(ctx context.Context, req *codeReq) (*PublicAgentResponse, error
 	propList, _ := properties.ListByAgent(ctx, ag.ID, true)
 	agency, _ := agencies.Get(ctx, ag.AgencyID)
 	ag.StripSensitive()
+	oneAg := []appdb.EstateAgent{*ag}
+	maskSuspendedAgents(ctx, oneAg)
+	*ag = oneAg[0]
 	out := &PublicAgentResponse{Agent: *ag, Properties: propList}
 	if agency != nil {
 		agency.StripSensitive()
@@ -489,6 +500,66 @@ func PublicProperty(ctx context.Context, req *idReq) (*PublicPropertyResponse, e
 		}
 	}
 	return out, nil
+}
+
+// --- Suspend masking --------------------------------------------------------
+//
+// A suspended estate page stays visible, but its contact number, physical
+// address and map directions are hidden from guests/locals (same rule as the
+// other partner categories — see app/admin SetSuspended). Suspension is stored
+// on the estate_* tables by the admin endpoints; these helpers read the flag
+// directly so no scan/struct changes are needed.
+
+func suspendedSet(ctx context.Context, table string, ids []int64) map[int64]bool {
+	out := map[int64]bool{}
+	if len(ids) == 0 {
+		return out
+	}
+	rows, err := appdb.SQLDB.QueryContext(ctx,
+		"SELECT id FROM "+table+" WHERE suspended = true AND id = ANY($1)", pq.Array(ids))
+	if err != nil {
+		return out
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int64
+		if rows.Scan(&id) == nil {
+			out[id] = true
+		}
+	}
+	return out
+}
+
+func maskSuspendedAgencies(ctx context.Context, list []appdb.EstateAgency) {
+	ids := make([]int64, len(list))
+	for i := range list {
+		ids[i] = list[i].ID
+	}
+	sus := suspendedSet(ctx, "estate_agencies", ids)
+	for i := range list {
+		if sus[list[i].ID] {
+			list[i].ContactNumber = ""
+			list[i].Address = ""
+			list[i].Latitude = nil
+			list[i].Longitude = nil
+		}
+	}
+}
+
+func maskSuspendedAgents(ctx context.Context, list []appdb.EstateAgent) {
+	ids := make([]int64, len(list))
+	for i := range list {
+		ids[i] = list[i].ID
+	}
+	sus := suspendedSet(ctx, "estate_agents", ids)
+	for i := range list {
+		if sus[list[i].ID] {
+			list[i].ContactNumber = ""
+			list[i].Address = ""
+			list[i].Latitude = nil
+			list[i].Longitude = nil
+		}
+	}
 }
 
 func mapNotFound(err error) error {

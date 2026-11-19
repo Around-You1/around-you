@@ -50,6 +50,11 @@ var tables = map[string]string{
 	"accommodation": "accommodations",
 	"retail":        "retail",
 	"nonprofit":     "nonprofits",
+	// Real Estate pages are billable "partner-like" entities too. Their entity
+	// keys match the invoice partner_type values so AcceptPartners, SetSuspended,
+	// SuspendedPartnerIDs and InvoicedPartnerIDs all work unchanged.
+	"estate_agency": "estate_agencies",
+	"estate_agent":  "estate_agents",
 }
 
 func requireSuperAdmin(ctx context.Context) error {
