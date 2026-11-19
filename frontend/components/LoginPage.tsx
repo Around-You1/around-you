@@ -336,6 +336,8 @@ export default function LoginPage() {
   // True once this Local has finished first-time registration (info + mobile +
   // email verified). Persisted per-browser so the button stays "Sign In" after.
   const [localRegistered, setLocalRegistered] = useState(false);
+  // "Learn More …" sub-view: the six info squares behind a back arrow.
+  const [showLearnMore, setShowLearnMore] = useState(false);
 
   const [partnerCode, setPartnerCode] = useState("");
   const [partnerCodeError, setPartnerCodeError] = useState(false);
@@ -701,7 +703,7 @@ export default function LoginPage() {
           className="rounded-2xl p-6 space-y-3"
           style={{ background: "var(--card)", border: "1px solid color-mix(in srgb, var(--brand) 18%, transparent)", boxShadow: "0 0 40px color-mix(in srgb, var(--brand) 6%, transparent)" }}
         >
-          {!qrMode && (
+          {!qrMode && !showLearnMore && (
           <>
           <p className="text-center text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--muted-foreground)" }}>
             View
@@ -712,6 +714,29 @@ export default function LoginPage() {
             <SignInSquareBtn label="Local" isOpen={activePanel === "local"} onToggle={() => togglePanel("local")} />
             <SignInSquareBtn label="Partner" isOpen={activePanel === "partner"} onToggle={() => togglePanel("partner")} />
           </div>
+
+          <button
+            type="button"
+            onClick={() => { setActivePanel(null); setShowLearnMore(true); }}
+            className="w-full text-center text-sm font-semibold uppercase tracking-widest rounded-xl py-3 transition-colors"
+            style={{ color: "var(--brand)", border: "1px solid color-mix(in srgb, var(--brand) 35%, transparent)", background: "color-mix(in srgb, var(--brand) 6%, transparent)" }}
+          >
+            Learn More …
+          </button>
+          </>
+          )}
+
+          {!qrMode && showLearnMore && (
+          <>
+          <button
+            type="button"
+            onClick={() => setShowLearnMore(false)}
+            aria-label="Back"
+            className="inline-flex items-center gap-1 text-sm font-semibold"
+            style={{ color: "var(--brand)", background: "transparent", border: "none", padding: "2px 0", cursor: "pointer" }}
+          >
+            <span aria-hidden="true" style={{ fontSize: "1.25rem", lineHeight: 1 }}>←</span> Back
+          </button>
 
           <InfoSquares />
           </>
@@ -914,6 +939,8 @@ export default function LoginPage() {
             </form>
           </PanelWrap>
 
+          {!showLearnMore && (
+          <>
           <p className="text-xs leading-relaxed px-1 pt-1" style={{ color: "var(--muted-foreground)" }}>
             {activePanel === "local"
               ? "We list Restaurant/Takeaway, Business/Service and Attraction/Activity Partners in and around your location up to 50kms. To request inclusion of a Partner, please submit full provider details to "
@@ -950,6 +977,8 @@ export default function LoginPage() {
               Acc
             </button>
           </div>
+          </>
+          )}
         </div>
       </div>
     </div>
