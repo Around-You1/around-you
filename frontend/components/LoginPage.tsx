@@ -697,24 +697,14 @@ export default function LoginPage() {
           <AppLogo />
         </div>
 
-        <div className="mb-4">
-          <img
-            src="/testicular-cancer-awareness.jpg"
-            alt="Testicular Cancer Awareness — Support · Hope · Cure"
-            className="w-full rounded-xl"
-            style={{ display: "block", border: "1px solid color-mix(in srgb, var(--brand) 12%, transparent)" }}
-          />
-        </div>
-
         <div
           className="rounded-2xl p-6 space-y-3"
           style={{ background: "var(--card)", border: "1px solid color-mix(in srgb, var(--brand) 18%, transparent)", boxShadow: "0 0 40px color-mix(in srgb, var(--brand) 6%, transparent)" }}
         >
           {!qrMode && (
           <>
-          <InfoSquares />
           <p className="text-center text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--muted-foreground)" }}>
-            Register/Sign in as a …
+            View
           </p>
 
           <div className="grid grid-cols-3 gap-1.5">
@@ -722,6 +712,8 @@ export default function LoginPage() {
             <SignInSquareBtn label="Local" isOpen={activePanel === "local"} onToggle={() => togglePanel("local")} />
             <SignInSquareBtn label="Partner" isOpen={activePanel === "partner"} onToggle={() => togglePanel("partner")} />
           </div>
+
+          <InfoSquares />
           </>
           )}
           {qrMode && (

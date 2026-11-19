@@ -13,6 +13,10 @@ import { useTutorial } from "@/components/tutorial/TutorialProvider";
 // component relies on browser APIs (navigation, localStorage) that must not run
 // during SSR. LoadingScreen (JHB/Table Mountain splash) covers the load, so no
 // separate fallback UI is needed here.
+// Tutorial intro + loading splash are archived for now (kept in the codebase so
+// they can be reused elsewhere). Flip SKIP_INTRO to false to bring them back.
+const SKIP_INTRO: boolean = true;
+
 const LoginPage = dynamic(() => import("@/components/LoginPage"), {
   ssr: false,
   loading: () => null,
@@ -149,11 +153,11 @@ export default function Page() {
   // finished loading, AND the minimum display time has passed — never before.
   const ready = !checking && chunkLoaded && minTimeElapsed;
 
-  if (!introDone) {
+  if (!SKIP_INTRO && !introDone) {
     return <TutorialIntro onDone={() => setIntroDone(true)} />;
   }
 
-  if (showLoader) {
+  if (!SKIP_INTRO && showLoader) {
     return <LoadingScreen ready={ready} onFinished={() => setShowLoader(false)} />;
   }
 
