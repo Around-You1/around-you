@@ -106,6 +106,9 @@ export default function GuestDashboard() {
   const [radiusKm, setRadiusKm] = useState([10]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>("restaurants");
+  // Scroll target: on selecting a category we bring the Sign out button to the
+  // top so the results sit right under it.
+  const signOutAnchorRef = useRef<HTMLDivElement>(null);
 
   const [visiblePasswords, setVisiblePasswords] = useState<Set<number>>(new Set());
   const [selectedContact, setSelectedContact] = useState<string>("");
@@ -176,10 +179,10 @@ export default function GuestDashboard() {
   const tabOrder = isLocalMode
     ? ["restaurants", "services", "attractions", "accommodation"]
     : ["restaurants", "services", "attractions"];
-  // Category buttons: solid brand green like the Android button, in both themes,
-  // with a white inset ring marking the active one.
+  // Category buttons: grey with a black (foreground) border; the selected one
+  // gets a green (brand) border instead.
   const GREEN_TAB =
-    "w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3 font-semibold border-transparent bg-brand hover:bg-brand/90 text-brand-foreground hover:text-brand-foreground dark:text-brand-foreground dark:hover:text-brand-foreground data-[state=active]:bg-brand dark:data-[state=active]:bg-brand data-[state=active]:text-brand-foreground dark:data-[state=active]:text-brand-foreground dark:data-[state=active]:border-transparent data-[state=active]:ring-2 data-[state=active]:ring-inset data-[state=active]:ring-white/70 data-[state=active]:shadow-sm";
+    "w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3 font-medium bg-muted text-foreground hover:bg-muted/80 border-2 border-foreground data-[state=active]:bg-muted dark:data-[state=active]:bg-muted data-[state=active]:text-foreground dark:data-[state=active]:text-foreground data-[state=active]:border-brand dark:data-[state=active]:border-brand";
 
   const handleSwipeLeft = () => {
     const currentIndex = tabOrder.indexOf(activeTab);
@@ -621,7 +624,7 @@ export default function GuestDashboard() {
       isRetail ? ((((service as any).specials) || []) as any[]).filter((sp) => sp && sp.enabled && sp.line1 && audienceOk(sp.audience)) : [];
     return (
     <Card key={service.id} className="hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
-                      <CardContent className="p-3">
+                      <CardContent className="px-3 pt-1.5 pb-2">
                         <div className="flex flex-col sm:flex-row gap-3">
                           <ImageCarousel
                             images={service.imageUrls && service.imageUrls.length > 0 ? service.imageUrls : (service.imageUrl ? [service.imageUrl] : [])}
@@ -943,7 +946,7 @@ export default function GuestDashboard() {
             <AppInstallButtons />
             <SuggestionsBanner ownerType="accommodation" ownerId={accommodation!.id} backName={accommodation!.name} />
             <Card>
-              <CardContent className="p-3">
+              <CardContent className="px-3 pt-1.5 pb-2">
                 <div className="mb-4 mx-auto w-full max-w-xl">
                   <ImageCarousel
                     images={[
@@ -1324,7 +1327,7 @@ export default function GuestDashboard() {
           {BOOKINGS_ENABLED && <Button className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold" onClick={() => setShowMyBookings(true)}>Bookings / Pre-Orders I have made</Button>}
           <Button className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold" onClick={() => setShowMyStamps(true)}>My Stamp Cards</Button>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-2">
+          <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setTimeout(() => signOutAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }} className="w-full space-y-2">
             <TabsList className="flex flex-col w-full gap-2 bg-transparent p-0" style={{ height: "auto" }}>
               <TabsTrigger value="restaurants" className={GREEN_TAB}>Restaurants/Takeaways ({filteredRestaurants.length})</TabsTrigger>
               <TabsTrigger value="services" className={GREEN_TAB}>Business/Services ({bizServices.length})</TabsTrigger>
@@ -1336,7 +1339,9 @@ export default function GuestDashboard() {
               )}
               <TabsTrigger value="nonprofit" className={GREEN_TAB}>NPO / PBO ({npoServices.length})</TabsTrigger>
             </TabsList>
-            <Button variant="outline" className="w-full" onClick={async () => { await signOut(); window.location.href = "/"; }}>Sign out</Button>
+            <div ref={signOutAnchorRef} className="scroll-mt-2">
+              <Button variant="outline" className="w-full" onClick={async () => { await signOut(); window.location.href = "/"; }}>Sign out</Button>
+            </div>
           {isLocalMode ? (
             <Label className="text-lg font-medium">Local Partners</Label>
           ) : (
@@ -1403,7 +1408,7 @@ export default function GuestDashboard() {
                   <div className="space-y-2">
                     {localAccommodations.map((acc) => (
                       <Card key={acc.id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-3">
+                        <CardContent className="px-3 pt-1.5 pb-2">
                           <div className="flex flex-col sm:flex-row gap-3">
                             <ImageCarousel
                               images={acc.imageUrls && acc.imageUrls.length > 0 ? acc.imageUrls : (acc.imageUrl ? [acc.imageUrl] : [])}
@@ -1468,7 +1473,7 @@ export default function GuestDashboard() {
                 <div className="space-y-2">
                   {filteredRestaurants.map((restaurant) => (
                     <Card key={restaurant.id} className="hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
-                      <CardContent className="p-3">
+                      <CardContent className="px-3 pt-1.5 pb-2">
                         <div className="flex flex-col sm:flex-row gap-3">
                           <ImageCarousel
                             images={restaurant.imageUrls && restaurant.imageUrls.length > 0 ? restaurant.imageUrls : (restaurant.imageUrl ? [restaurant.imageUrl] : [])}
@@ -1977,7 +1982,7 @@ export default function GuestDashboard() {
                 <div className="space-y-2">
                   {filteredAttractions.map((attraction) => (
                     <Card key={attraction.id} className="hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
-                      <CardContent className="p-3">
+                      <CardContent className="px-3 pt-1.5 pb-2">
                         <div className="flex flex-col sm:flex-row gap-3">
                           <ImageCarousel
                             images={attraction.imageUrls && attraction.imageUrls.length > 0 ? attraction.imageUrls : (attraction.imageUrl ? [attraction.imageUrl] : [])}
