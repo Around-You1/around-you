@@ -37,9 +37,16 @@ export default function Page() {
 
   useEffect(() => {
     let active = true;
-    import("@/components/LoginPage").then(() => {
-      if (active) setChunkLoaded(true);
-    });
+    import("@/components/LoginPage")
+      .then(() => {
+        if (active) setChunkLoaded(true);
+      })
+      .catch(() => {
+        // The landing chunk can't be fetched (almost always: no connection).
+        // Rather than spin on the loading screen forever, send the user to the
+        // cached offline screen, which has the one-tap Emergency Numbers button.
+        if (active) window.location.replace("/offline.html");
+      });
     return () => {
       active = false;
     };
@@ -55,6 +62,9 @@ export default function Page() {
     const authReturn = hash.includes("access_token") || hash.includes("type=");
     const wantLocal = p.get("role") === "local" || p.get("panel") === "local";
     if (p.get("code") || p.get("accessCode") || wantLocal || authReturn) setIntroDone(true);
+    // The Local deep-link (?panel=local) skips the tutorial AND the loading
+    // splash, landing straight on the Local page where the Emergency button is.
+    if (wantLocal) setShowLoader(false);
   }, []);
 
   // The minimum loading-screen display time only starts once the intro is done,
