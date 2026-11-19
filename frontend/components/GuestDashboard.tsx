@@ -182,7 +182,7 @@ export default function GuestDashboard() {
   // Category buttons: grey with a black (foreground) border; the selected one
   // gets a green (brand) border instead.
   const GREEN_TAB =
-    "w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3 font-medium bg-muted text-foreground hover:bg-muted/80 border-2 border-foreground data-[state=active]:bg-muted dark:data-[state=active]:bg-muted data-[state=active]:text-foreground dark:data-[state=active]:text-foreground data-[state=active]:border-brand dark:data-[state=active]:border-brand";
+    "w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3 font-medium bg-muted text-foreground dark:text-foreground hover:bg-muted/80 border-2 border-foreground data-[state=active]:bg-muted dark:data-[state=active]:bg-muted data-[state=active]:text-foreground dark:data-[state=active]:text-foreground data-[state=active]:border-brand dark:data-[state=active]:border-brand";
 
   const handleSwipeLeft = () => {
     const currentIndex = tabOrder.indexOf(activeTab);

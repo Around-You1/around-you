@@ -49,6 +49,17 @@ function getLocalDeviceEmail(): string {
   }
 }
 
+// Business categories for the Partner "Register" tab (mirror PartnerApplyForm).
+const PARTNER_CATEGORIES: { key: string; label: string }[] = [
+  { key: "accommodation", label: "Accommodation/Caravan Parks" },
+  { key: "restaurant", label: "Restaurant/Takeaway" },
+  { key: "service", label: "Business/Service" },
+  { key: "attraction", label: "Attraction/Activity" },
+  { key: "estate", label: "Real Estate & Rentals" },
+  { key: "retail", label: "Retail" },
+  { key: "nonprofit", label: "NPO / PBO" },
+];
+
 function normalizeCellForCompare(raw: string): string {
   let d = (raw || "").replace(/[^\d+]/g, "");
   if (d.startsWith("+27")) d = "0" + d.slice(3);
@@ -358,6 +369,7 @@ export default function LoginPage() {
   // "Learn More …" sub-view: the six info squares behind a back arrow.
   const [showLearnMore, setShowLearnMore] = useState(false);
 
+  const [partnerMode, setPartnerMode] = useState<"signin" | "register">("signin");
   const [partnerCode, setPartnerCode] = useState("");
   const [partnerCodeError, setPartnerCodeError] = useState(false);
   const [partnerMethod, setPartnerMethod] = useState<LoginMethod>("code");
@@ -866,6 +878,20 @@ export default function LoginPage() {
 
           <PanelWrap id="partner" activePanel={activePanel}>
             <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: LUMO }}>Partner</p>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => setPartnerMode("signin")}
+                className={`rounded-lg py-2 text-xs font-semibold uppercase tracking-wide border transition-colors ${partnerMode === "signin" ? "bg-brand text-brand-foreground border-brand" : "bg-transparent text-foreground border-border hover:border-brand"}`}>
+                Partner Sign In
+              </button>
+              <button type="button" onClick={() => setPartnerMode("register")}
+                className={`rounded-lg py-2 text-xs font-semibold uppercase tracking-wide border transition-colors ${partnerMode === "register" ? "bg-brand text-brand-foreground border-brand" : "bg-transparent text-foreground border-border hover:border-brand"}`}>
+                Register
+              </button>
+            </div>
+
+            {partnerMode === "signin" ? (
+            <>
             <MethodToggle method={partnerMethod} onChange={setPartnerMethod} />
             <form onSubmit={handlePartnerLogin} className="space-y-4">
               {partnerMethod === "code" ? (
@@ -896,6 +922,20 @@ export default function LoginPage() {
               )}
               <LumoButton disabled={loading}>{loading ? "Signing in…" : "Sign In"}</LumoButton>
             </form>
+            </>
+            ) : (
+            <div className="space-y-3">
+              <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>New to Around You? Pick your business type to start your free application.</p>
+              <div className="grid grid-cols-1 gap-2">
+                {PARTNER_CATEGORIES.map((c) => (
+                  <button key={c.key} type="button" onClick={() => navigate(`/apply?type=${c.key}`)}
+                    className="w-full rounded-lg border border-border bg-transparent py-3 text-sm font-medium text-foreground hover:border-brand hover:text-brand transition-colors">
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            )}
           </PanelWrap>
 
           {!showLearnMore && (
