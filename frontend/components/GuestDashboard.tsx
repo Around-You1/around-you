@@ -13,6 +13,7 @@ import DirectionsDropdown from "../components/DirectionsDropdown";
 import AddressDirectionsButton from "../components/AddressDirectionsButton";
 import WhatsAppButton from "../components/WhatsAppButton";
 import { getAuthenticatedBackend } from "../lib/backend";
+import { enablePushNotifications, isPushEnabled } from "../lib/push";
 import { signOut } from "../lib/auth";
 import { getCurrentPosition } from "../lib/geolocation";
 import { useToast } from "@/components/ui/use-toast";
@@ -109,6 +110,9 @@ export default function GuestDashboard() {
   // Scroll target: on selecting a category we bring the Sign out button to the
   // top so the results sit right under it.
   const signOutAnchorRef = useRef<HTMLDivElement>(null);
+  // Push notifications opt-in (deals & lucky-draw alerts).
+  const [pushOn, setPushOn] = useState(false);
+  useEffect(() => { isPushEnabled().then(setPushOn); }, []);
 
   const [visiblePasswords, setVisiblePasswords] = useState<Set<number>>(new Set());
   const [selectedContact, setSelectedContact] = useState<string>("");
@@ -1326,6 +1330,21 @@ export default function GuestDashboard() {
         <div className="space-y-3">
           {BOOKINGS_ENABLED && <Button className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold" onClick={() => setShowMyBookings(true)}>Bookings / Pre-Orders I have made</Button>}
           <Button className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold" onClick={() => setShowMyStamps(true)}>My Stamp Cards</Button>
+          {!pushOn && (
+            <Button
+              variant="outline"
+              className="w-full border-brand text-brand hover:bg-brand/10"
+              onClick={async () => {
+                const r = await enablePushNotifications();
+                if (r === "ok") { setPushOn(true); toast({ title: "Alerts on", description: "We'll notify you about new deals and our lucky draw." }); }
+                else if (r === "denied") toast({ title: "Notifications blocked", description: "Allow notifications for this site in your browser settings to get alerts.", variant: "destructive" });
+                else if (r === "unsupported") toast({ title: "Not supported here", description: "On iPhone, add the app to your home screen first, then try again.", variant: "destructive" });
+                else toast({ title: "Couldn't turn on alerts", description: "Please try again.", variant: "destructive" });
+              }}
+            >
+              🔔 Turn on alerts for deals &amp; draws
+            </Button>
+          )}
 
           <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setTimeout(() => signOutAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }} className="w-full space-y-2">
             <TabsList className="flex flex-col w-full gap-2 bg-transparent p-0" style={{ height: "auto" }}>

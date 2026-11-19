@@ -45,6 +45,9 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState("accommodations");
   const [modOpenCount, setModOpenCount] = useState(0);
   const [pendingByCat, setPendingByCat] = useState<Record<string, number>>({});
+  const [pushTitle, setPushTitle] = useState("");
+  const [pushBody, setPushBody] = useState("");
+  const [pushSending, setPushSending] = useState(false);
   const [pendingReps, setPendingReps] = useState(0);
   const [metricsOpen, setMetricsOpen] = useState(false);
 
@@ -177,6 +180,40 @@ export default function AdminDashboard() {
             </Button>
           </div>
           <LogoPlaceholder allowUpload={true} />
+        </div>
+
+        <div className="rounded-xl border-2 border-green-500 bg-background p-5 space-y-3">
+          <h2 className="text-lg font-bold text-foreground">Send a push notification</h2>
+          <p className="text-sm text-muted-foreground">Reaches every Local who has turned on alerts — anonymously, no email or number needed. Use it for new deals, a new partner, or a lucky-draw winner.</p>
+          <input
+            value={pushTitle}
+            onChange={(e) => setPushTitle(e.target.value)}
+            placeholder="Title (e.g. New deal at Blue Whale!)"
+            className="w-full rounded border border-border bg-background px-3 py-2"
+          />
+          <textarea
+            value={pushBody}
+            onChange={(e) => setPushBody(e.target.value)}
+            placeholder="Message (optional)"
+            rows={2}
+            className="w-full rounded border border-border bg-background px-3 py-2"
+          />
+          <Button
+            disabled={pushSending || !pushTitle.trim()}
+            className="bg-brand hover:bg-brand/90 text-brand-foreground font-semibold"
+            onClick={async () => {
+              setPushSending(true);
+              try {
+                const res: any = await getAuthenticatedBackend().push.send({ title: pushTitle.trim(), body: pushBody.trim(), audience: "local" });
+                toast({ title: "Notification sent", description: `Delivered to ${res?.sent ?? 0} device${res?.sent === 1 ? "" : "s"}${res?.failed ? `, ${res.failed} failed` : ""}.` });
+                setPushTitle(""); setPushBody("");
+              } catch (e: any) {
+                toast({ title: "Couldn't send", description: e?.message || "Please try again.", variant: "destructive" });
+              } finally { setPushSending(false); }
+            }}
+          >
+            {pushSending ? "Sending…" : "Send to all Locals"}
+          </Button>
         </div>
 
         <div className="space-y-2">

@@ -53,3 +53,32 @@ self.addEventListener("fetch", (event) => {
 
   // Everything else (app JS/CSS/API data): network only — nothing cached, nothing stale.
 });
+
+// --- Web Push ---------------------------------------------------------------
+self.addEventListener("push", function (event) {
+  var data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (e) {}
+  var title = data.title || "Around You";
+  var opts = {
+    body: data.body || "",
+    icon: "/app-icon-512.png",
+    badge: "/app-icon-512.png",
+    data: { url: data.url || "/" },
+  };
+  event.waitUntil(self.registration.showNotification(title, opts));
+  if (navigator.setAppBadge) { try { navigator.setAppBadge(1); } catch (e) {} }
+});
+
+self.addEventListener("notificationclick", function (event) {
+  event.notification.close();
+  if (navigator.clearAppBadge) { try { navigator.clearAppBadge(); } catch (e) {} }
+  var url = (event.notification.data && event.notification.data.url) || "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (list) {
+      for (var i = 0; i < list.length; i++) {
+        if ("focus" in list[i]) { list[i].navigate && list[i].navigate(url); return list[i].focus(); }
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(url);
+    })
+  );
+});

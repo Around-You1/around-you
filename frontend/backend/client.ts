@@ -301,6 +301,17 @@ export const backend = {
     overallSignins: (req: { period: "daily" | "weekly" | "monthly" | "yearly"; periodKey: string; actorType?: string }) =>
       request("GET", "/analytics/overall/signins", { query: req }),
   },
+  push: {
+    // Public: the VAPID key the browser needs to subscribe this device.
+    vapidPublicKey: () => request("GET", "/push/vapid-public"),
+    // Store this device's anonymous push token (signed-in users only).
+    subscribe: (req: { endpoint: string; p256dh: string; auth: string }) =>
+      request("POST", "/push/subscribe", { body: req }),
+    // SuperAdmin: push a notification to all Locals (default), everyone
+    // ("all"), or one user (userId > 0, e.g. a draw winner).
+    send: (req: { title: string; body?: string; url?: string; audience?: string; userId?: number }) =>
+      request("POST", "/push/send", { body: req }),
+  },
   events: {
     record: (req: {
       eventType: string;

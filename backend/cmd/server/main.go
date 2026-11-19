@@ -37,6 +37,7 @@ import (
 	"backend_encore/app/partnerapp"
 	"backend_encore/app/preorder"
 	"backend_encore/app/rating"
+	"backend_encore/app/push"
 	"backend_encore/app/redemption"
 	"backend_encore/app/repinvoice"
 	"backend_encore/app/repnearby"
@@ -181,6 +182,11 @@ func main() {
 	r.auth("GET /analytics/superadmins", httpx.Empty(analytics.SuperAdminsList))
 	r.auth("GET /analytics/superadmins/logins", httpx.Query(analytics.SuperAdminLoginTotals))
 	r.auth("GET /analytics/superadmins/signins", httpx.Query(analytics.SuperAdminSignins))
+
+	// ---- Web Push notifications -------------------------------------------
+	r.public("GET /push/vapid-public", httpx.Empty(push.VapidPublicKey))
+	r.auth("POST /push/subscribe", httpx.Body(push.Subscribe))
+	r.auth("POST /push/send", httpx.Body(push.Send))
 
 	// ---- Accommodation (auth) ----------------------------------------------
 	r.auth("GET /accommodation", httpx.Query(accommodation.List))
