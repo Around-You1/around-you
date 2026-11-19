@@ -130,6 +130,10 @@ func Send(ctx context.Context, req *SendRequest) (*SendResponse, error) {
 	case req.UserID > 0:
 		q += ` WHERE ps.user_id = $1`
 		args = append(args, req.UserID)
+	case strings.EqualFold(strings.TrimSpace(req.Audience), "self"):
+		// Only the admin's own device(s) — for test sends.
+		q += ` WHERE ps.user_id = $1`
+		args = append(args, data.UserID)
 	case strings.EqualFold(strings.TrimSpace(req.Audience), "all"):
 		// no role filter — everyone with a subscription
 	default:

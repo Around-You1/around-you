@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Home, UtensilsCrossed, Scissors, Camera, BarChart3, Building2, UserRound, ChevronDown, ShoppingBag, HandHeart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getAuthenticatedBackend } from "../lib/backend";
+import { enablePushNotifications } from "../lib/push";
 import { useToast } from "@/components/ui/use-toast";
 import StatsCard from "../components/StatsCard";
 import PartnerCategoryMetrics from "../components/PartnerCategoryMetrics";
@@ -198,22 +199,45 @@ export default function AdminDashboard() {
             rows={2}
             className="w-full rounded border border-border bg-background px-3 py-2"
           />
-          <Button
-            disabled={pushSending || !pushTitle.trim()}
-            className="bg-brand hover:bg-brand/90 text-brand-foreground font-semibold"
-            onClick={async () => {
-              setPushSending(true);
-              try {
-                const res: any = await getAuthenticatedBackend().push.send({ title: pushTitle.trim(), body: pushBody.trim(), audience: "local" });
-                toast({ title: "Notification sent", description: `Delivered to ${res?.sent ?? 0} device${res?.sent === 1 ? "" : "s"}${res?.failed ? `, ${res.failed} failed` : ""}.` });
-                setPushTitle(""); setPushBody("");
-              } catch (e: any) {
-                toast({ title: "Couldn't send", description: e?.message || "Please try again.", variant: "destructive" });
-              } finally { setPushSending(false); }
-            }}
-          >
-            {pushSending ? "Sending…" : "Send to all Locals"}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              disabled={pushSending}
+              className="border-brand text-brand hover:bg-brand/10"
+              onClick={async () => {
+                setPushSending(true);
+                try {
+                  const en = await enablePushNotifications();
+                  if (en !== "ok") {
+                    toast({ title: "Enable alerts on this device first", description: en === "denied" ? "Allow notifications for this site, then try again." : en === "unsupported" ? "This browser can't receive push here." : "Couldn't enable notifications on this device.", variant: "destructive" });
+                    return;
+                  }
+                  const res: any = await getAuthenticatedBackend().push.send({ title: pushTitle.trim() || "Test — Around You", body: pushBody.trim() || "If you can see this, push notifications are working 🎉", audience: "self" });
+                  toast({ title: res?.sent ? "Test sent" : "No device reached", description: res?.sent ? "Check this device for the notification." : "Allow notifications and try again." });
+                } catch (e: any) {
+                  toast({ title: "Couldn't send test", description: e?.message || "Please try again.", variant: "destructive" });
+                } finally { setPushSending(false); }
+              }}
+            >
+              {pushSending ? "Working…" : "Send a test to this device"}
+            </Button>
+            <Button
+              disabled={pushSending || !pushTitle.trim()}
+              className="bg-brand hover:bg-brand/90 text-brand-foreground font-semibold"
+              onClick={async () => {
+                setPushSending(true);
+                try {
+                  const res: any = await getAuthenticatedBackend().push.send({ title: pushTitle.trim(), body: pushBody.trim(), audience: "local" });
+                  toast({ title: "Notification sent", description: `Delivered to ${res?.sent ?? 0} device${res?.sent === 1 ? "" : "s"}${res?.failed ? `, ${res.failed} failed` : ""}.` });
+                  setPushTitle(""); setPushBody("");
+                } catch (e: any) {
+                  toast({ title: "Couldn't send", description: e?.message || "Please try again.", variant: "destructive" });
+                } finally { setPushSending(false); }
+              }}
+            >
+              {pushSending ? "Sending…" : "Send to all Locals"}
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-2">
