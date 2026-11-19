@@ -624,8 +624,8 @@ export default function GuestDashboard() {
       isRetail ? ((((service as any).specials) || []) as any[]).filter((sp) => sp && sp.enabled && sp.line1 && audienceOk(sp.audience)) : [];
     return (
     <Card key={service.id} className="hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
-                      <CardContent className="px-3 pt-1.5 pb-2">
-                        <div className="flex flex-col sm:flex-row gap-3">
+                      <CardContent className="px-3 py-1">
+                        <div className="flex flex-col sm:flex-row gap-1.5">
                           <ImageCarousel
                             images={service.imageUrls && service.imageUrls.length > 0 ? service.imageUrls : (service.imageUrl ? [service.imageUrl] : [])}
                             alt={service.name}
@@ -634,7 +634,7 @@ export default function GuestDashboard() {
                             intervalMs={3000}
                             firstIntervalMs={isRetail ? 6000 : undefined}
                           />
-                          <div className="flex-1 min-w-0 space-y-2">
+                          <div className="flex-1 min-w-0 space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <h4 className="font-semibold truncate">{service.name}</h4>
                               <SupportBadge orgName={service.supportOrgName} />
@@ -946,7 +946,7 @@ export default function GuestDashboard() {
             <AppInstallButtons />
             <SuggestionsBanner ownerType="accommodation" ownerId={accommodation!.id} backName={accommodation!.name} />
             <Card>
-              <CardContent className="px-3 pt-1.5 pb-2">
+              <CardContent className="px-3 py-1">
                 <div className="mb-4 mx-auto w-full max-w-xl">
                   <ImageCarousel
                     images={[
@@ -1408,8 +1408,8 @@ export default function GuestDashboard() {
                   <div className="space-y-2">
                     {localAccommodations.map((acc) => (
                       <Card key={acc.id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="px-3 pt-1.5 pb-2">
-                          <div className="flex flex-col sm:flex-row gap-3">
+                        <CardContent className="px-3 py-1">
+                          <div className="flex flex-col sm:flex-row gap-1.5">
                             <ImageCarousel
                               images={acc.imageUrls && acc.imageUrls.length > 0 ? acc.imageUrls : (acc.imageUrl ? [acc.imageUrl] : [])}
                               alt={acc.name}
@@ -1417,7 +1417,7 @@ export default function GuestDashboard() {
                               placeholderClassName="w-full sm:w-28 h-40 sm:h-28 rounded flex-shrink-0"
                               intervalMs={3000}
                             />
-                            <div className="flex-1 min-w-0 space-y-2">
+                            <div className="flex-1 min-w-0 space-y-1">
                               <h4 className="font-semibold">{acc.name}</h4>
                               <div className="text-sm text-muted-foreground space-y-1">
                                 {acc.area && <div><span className="font-medium text-foreground">Area:</span> {acc.area}</div>}
@@ -1473,8 +1473,8 @@ export default function GuestDashboard() {
                 <div className="space-y-2">
                   {filteredRestaurants.map((restaurant) => (
                     <Card key={restaurant.id} className="hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
-                      <CardContent className="px-3 pt-1.5 pb-2">
-                        <div className="flex flex-col sm:flex-row gap-3">
+                      <CardContent className="px-3 py-1">
+                        <div className="flex flex-col sm:flex-row gap-1.5">
                           <ImageCarousel
                             images={restaurant.imageUrls && restaurant.imageUrls.length > 0 ? restaurant.imageUrls : (restaurant.imageUrl ? [restaurant.imageUrl] : [])}
                             alt={restaurant.name}
@@ -1482,7 +1482,7 @@ export default function GuestDashboard() {
                             placeholderClassName="w-full sm:w-20 h-32 sm:h-20 rounded flex-shrink-0"
                             intervalMs={3000}
                           />
-                          <div className="flex-1 min-w-0 space-y-2">
+                          <div className="flex-1 min-w-0 space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <h4 className="font-semibold truncate">{restaurant.name}</h4>
                               <SupportBadge orgName={restaurant.supportOrgName} />
@@ -1982,8 +1982,8 @@ export default function GuestDashboard() {
                 <div className="space-y-2">
                   {filteredAttractions.map((attraction) => (
                     <Card key={attraction.id} className="hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
-                      <CardContent className="px-3 pt-1.5 pb-2">
-                        <div className="flex flex-col sm:flex-row gap-3">
+                      <CardContent className="px-3 py-1">
+                        <div className="flex flex-col sm:flex-row gap-1.5">
                           <ImageCarousel
                             images={attraction.imageUrls && attraction.imageUrls.length > 0 ? attraction.imageUrls : (attraction.imageUrl ? [attraction.imageUrl] : [])}
                             alt={attraction.name}
@@ -1991,7 +1991,7 @@ export default function GuestDashboard() {
                             placeholderClassName="w-full sm:w-20 h-32 sm:h-20 rounded flex-shrink-0"
                             intervalMs={3000}
                           />
-                          <div className="flex-1 min-w-0 space-y-2">
+                          <div className="flex-1 min-w-0 space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <h4 className="font-semibold truncate">{attraction.name}</h4>
                               <SupportBadge orgName={attraction.supportOrgName} />
