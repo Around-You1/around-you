@@ -1713,10 +1713,14 @@ func UpdateRep(ctx context.Context, req *UpdateRepRequest) (*Rep, error) {
 	}
 
 	upline := strings.TrimSpace(req.UplineRepCode)
+	// A rep listing their own code as their upline is meaningless and happens
+	// routinely when an applicant types their own intended code into the
+	// "who recruited you" field and is then assigned that same code. Treat it
+	// as "no upline" and save, instead of blocking the admin with an error.
+	if upline != "" && strings.EqualFold(upline, repCode) {
+		upline = ""
+	}
 	if upline != "" {
-		if strings.EqualFold(upline, repCode) {
-			return nil, &errs.Error{Code: errs.InvalidArgument, Message: "a rep cannot be their own upline"}
-		}
 		// Upline must be an existing rep, and must not already report to this
 		// rep (blocks the obvious two-step loop A->B->A).
 		var uplineUpline sql.NullString
@@ -1934,6 +1938,16 @@ func SetRepCode(ctx context.Context, req *SetRepCodeRequest) (*Rep, error) {
 		}
 	}
 	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	// A rename can leave a rep as their own upline (e.g. the applicant listed
+	// their soon-to-be code as who recruited them). Clear it so a rep is never
+	// their own upline.
+	if _, err := appdb.SQLDB.ExecContext(ctx, `
+		UPDATE users SET upline_rep_code = NULL
+		WHERE role = 'Rep' AND lower(rep_code) = lower($1) AND lower(upline_rep_code) = lower($1)`, newCode,
+	); err != nil {
 		return nil, err
 	}
 

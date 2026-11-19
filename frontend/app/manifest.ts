@@ -30,5 +30,14 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: "any",
       },
     ],
+    shortcuts: [
+      {
+        name: "Emergency Numbers",
+        short_name: "Emergency",
+        description: "St Helena Bay emergency numbers — works offline",
+        url: "/emergency.html",
+        icons: [{ src: "/app-icon-512.png", sizes: "512x512", type: "image/png" }],
+      },
+    ],
   };
 }

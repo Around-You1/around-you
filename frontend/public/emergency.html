@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Emergency Numbers — Around You</title>
+<meta name="theme-color" content="#000000" />
+<link rel="icon" href="/app-icon-512.png" />
+<style>
+  :root { --bg:#000; --card:#0d0d0d; --line:#222; --green:#39ff14; --fg:#fff; --muted:#9aa09a; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin:0; background:var(--bg); color:var(--fg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  body { padding: calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 92px); }
+  .wrap { max-width: 560px; margin: 0 auto; }
+  header { display:flex; align-items:center; gap:12px; margin-bottom: 20px; }
+  header img { width:44px; height:44px; border-radius:10px; }
+  header .t { line-height:1.1; }
+  header .t b { font-size:1.15rem; }
+  header .t span { display:block; color:var(--muted); font-size:.8rem; margin-top:2px; }
+  h1 { font-size:1.9rem; font-weight:800; letter-spacing:.5px; text-transform:uppercase; margin:4px 0 16px; }
+  .card { background:var(--card); border:2px solid var(--green); border-radius:18px; padding:16px; margin-bottom:16px; }
+  .card.plain { border-color:var(--line); }
+  .cat { display:flex; align-items:baseline; gap:8px; margin-bottom:12px; }
+  .cat b { color:var(--green); font-size:1.1rem; font-weight:800; text-transform:uppercase; }
+  .cat span { color:var(--muted); font-size:.85rem; }
+  .row { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+  a.num { display:flex; flex-direction:column; align-items:center; justify-content:center;
+    min-height:60px; border-radius:12px; text-decoration:none; padding:8px;
+    background:transparent; border:2px solid var(--green); color:var(--fg); font-weight:700; }
+  a.num.fill { background:var(--green); color:#000; }
+  a.num.full { grid-column: 1 / -1; }
+  a.num small { display:block; color:var(--muted); font-size:.68rem; font-weight:600; text-transform:uppercase; margin-bottom:2px; }
+  a.num.fill small { color:#0a3d00; }
+  a.num .n { font-size:1.15rem; letter-spacing:.3px; }
+  .note { color:var(--muted); font-size:.82rem; line-height:1.5; margin: 6px 2px 0; }
+  .note b { color:var(--green); }
+  .back { display:inline-block; margin-top:18px; color:var(--muted); text-decoration:none; font-size:.9rem; }
+  .sticky { position:fixed; left:0; right:0; bottom:0; padding: 10px 16px calc(env(safe-area-inset-bottom,0px) + 10px);
+    background:#000; border-top:1px solid var(--line); display:flex; align-items:center; gap:12px; }
+  .sticky p { margin:0; font-weight:800; text-transform:uppercase; font-size:.9rem; line-height:1.1; }
+  .sticky a { margin-left:auto; background:var(--green); color:#000; font-weight:800; text-decoration:none;
+    padding:12px 18px; border-radius:12px; font-size:1.05rem; white-space:nowrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="/app-icon-512.png" alt="Around You" />
+    <div class="t"><b>Around You</b><span>St Helena Bay · Emergency</span></div>
+  </header>
+
+  <h1>Emergency Numbers</h1>
+
+  <div class="card">
+    <div class="cat"><b>National</b><span>anywhere in SA</span></div>
+    <div class="row">
+      <a class="num fill" href="tel:10111"><small>Police</small><span class="n">10111</span></a>
+      <a class="num fill" href="tel:10177"><small>Ambulance</small><span class="n">10177</span></a>
+      <a class="num full" href="tel:112"><small>Mobile emergency · works with no airtime or signal</small><span class="n">112</span></a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="cat"><b>Police</b><span>SAPS St Helena Bay</span></div>
+    <div class="row">
+      <a class="num fill" href="tel:0227368060"><span class="n">022 736 8060</span></a>
+      <a class="num" href="tel:0227368061"><span class="n">022 736 8061</span></a>
+      <a class="num" href="tel:0227368073"><span class="n">022 736 8073</span></a>
+      <a class="num" href="tel:0824438384"><small>If busy</small><span class="n">082 443 8384</span></a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="cat"><b>Fire</b><span>SBM Fire Services</span></div>
+    <div class="row">
+      <a class="num fill" href="tel:0227131815"><span class="n">022 713 1815</span></a>
+      <a class="num" href="tel:0860073473"><span class="n">086 007 3473</span></a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="cat"><b>Medical</b><span>West Coast Medical Rescue</span></div>
+    <div class="row">
+      <a class="num fill full" href="tel:0818293355"><span class="n">081 829 3355</span></a>
+    </div>
+  </div>
+
+  <p class="note">These numbers are for the St&nbsp;Helena&nbsp;Bay area — please check they are current before relying on them. <b>112</b> reaches emergency services from any mobile, even with no airtime or signal.</p>
+
+  <a class="back" href="/">&larr; Back to Around You</a>
+</div>
+
+<div class="sticky">
+  <p>Emergency?<br>Call SAPS</p>
+  <a href="tel:0227368060">022 736 8060</a>
+</div>
+</body>
+</html>
