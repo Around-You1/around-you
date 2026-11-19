@@ -4,7 +4,7 @@
 // so deploys are never served stale — only the two static safety pages and the
 // app icon are cached, and they refresh quietly in the background when online.
 
-const CACHE = "around-you-v1";
+const CACHE = "around-you-v2";
 const PRECACHE = ["/emergency.html", "/offline.html", "/app-icon-512.png"];
 
 self.addEventListener("install", (event) => {

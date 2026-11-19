@@ -184,7 +184,9 @@
     e.preventDefault();
     var name = (nameEl.value || "").trim();
     var number = (numEl.value || "").trim();
-    if (!name || !number) return;
+    nameEl.style.borderColor = ""; numEl.style.borderColor = "";
+    if (!name) { nameEl.style.borderColor = "#dc2626"; nameEl.focus(); return; }
+    if (!number) { numEl.style.borderColor = "#dc2626"; numEl.focus(); return; }
     var arr = load();
     arr.push({ name: name, number: number });
     store(arr);
