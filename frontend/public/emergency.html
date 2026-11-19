@@ -20,8 +20,7 @@
   header .t span { display:block; color:var(--muted); font-size:.8rem; margin-top:2px; }
   h1 { font-size:1.9rem; font-weight:800; letter-spacing:.5px; text-transform:uppercase; margin:4px 0 16px; }
   .card { background:var(--card); border:2px solid var(--green); border-radius:18px; padding:16px; margin-bottom:16px; }
-  .card.plain { border-color:var(--line); }
-  .cat { display:flex; align-items:baseline; gap:8px; margin-bottom:12px; }
+  .cat { display:flex; align-items:baseline; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
   .cat b { color:var(--green); font-size:1.1rem; font-weight:800; text-transform:uppercase; }
   .cat span { color:var(--muted); font-size:.85rem; }
   .row { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
@@ -41,6 +40,18 @@
   .sticky p { margin:0; font-weight:800; text-transform:uppercase; font-size:.9rem; line-height:1.1; }
   .sticky a { margin-left:auto; background:var(--green); color:#000; font-weight:800; text-decoration:none;
     padding:12px 18px; border-radius:12px; font-size:1.05rem; white-space:nowrap; }
+  /* My Numbers */
+  #mynum-list { margin-bottom:10px; }
+  .mynum-row { display:flex; align-items:stretch; gap:8px; margin-bottom:10px; }
+  .mynum-row a.num { flex:1; }
+  .mynum-del { flex:0 0 auto; width:50px; background:transparent; border:2px solid var(--line);
+    color:var(--muted); border-radius:12px; font-size:1.15rem; cursor:pointer; }
+  .addform { display:flex; gap:8px; flex-wrap:wrap; }
+  .addform input { flex:1 1 130px; min-width:0; background:#0d0d0d; border:1px solid var(--line);
+    color:var(--fg); border-radius:10px; padding:13px; font-size:1rem; }
+  .addform input::placeholder { color:#6b716b; }
+  .addform button { flex:0 0 auto; background:var(--green); color:#000; font-weight:800; border:none;
+    border-radius:10px; padding:13px 20px; font-size:1rem; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -53,11 +64,18 @@
   <h1>Emergency Numbers</h1>
 
   <div class="card">
-    <div class="cat"><b>National</b><span>anywhere in SA</span></div>
+    <div class="cat"><b>Ambulance</b><span>Public</span></div>
     <div class="row">
-      <a class="num fill" href="tel:10111"><small>Police</small><span class="n">10111</span></a>
-      <a class="num fill" href="tel:10177"><small>Ambulance</small><span class="n">10177</span></a>
-      <a class="num full" href="tel:112"><small>Mobile emergency · works with no airtime or signal</small><span class="n">112</span></a>
+      <a class="num fill" href="tel:10177"><small>Public ambulance</small><span class="n">10177</span></a>
+      <a class="num" href="tel:0227097200"><small>Vredenburg Hospital</small><span class="n">022 709 7200</span></a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="cat"><b>Ambulance</b><span>Private</span></div>
+    <div class="row">
+      <a class="num fill" href="tel:084124"><small>ER24</small><span class="n">084 124</span></a>
+      <a class="num fill" href="tel:082911"><small>Netcare 911</small><span class="n">082 911</span></a>
     </div>
   </div>
 
@@ -80,10 +98,33 @@
   </div>
 
   <div class="card">
-    <div class="cat"><b>Medical</b><span>West Coast Medical Rescue</span></div>
+    <div class="cat"><b>NSRI</b><span>Sea Rescue</span></div>
     <div class="row">
-      <a class="num fill full" href="tel:0818293355"><span class="n">081 829 3355</span></a>
+      <a class="num fill" href="tel:0227141726"><small>Station Saldanha</small><span class="n">022 714 1726</span></a>
+      <a class="num" href="tel:0870949774"><small>NSRI national</small><span class="n">087 094 9774</span></a>
     </div>
+  </div>
+
+  <div class="card">
+    <div class="cat"><b>National</b><span>anywhere in SA</span></div>
+    <div class="row">
+      <a class="num fill" href="tel:10111"><small>Police</small><span class="n">10111</span></a>
+      <a class="num fill" href="tel:10177"><small>Ambulance</small><span class="n">10177</span></a>
+      <a class="num full" href="tel:112"><small>Mobile emergency · works with no airtime or signal</small><span class="n">112</span></a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="cat"><b>My Numbers</b><span>your own contacts</span></div>
+    <div id="mynum-list"></div>
+    <form id="mynum-form" autocomplete="off">
+      <div class="addform">
+        <input id="mynum-name" type="text" placeholder="Name (e.g. My Doctor)" maxlength="40" />
+        <input id="mynum-number" type="tel" inputmode="tel" placeholder="Number" maxlength="24" />
+        <button type="submit">Add</button>
+      </div>
+    </form>
+    <p class="note">Saved on this phone only. Add your own doctor, ambulance, vet, or anyone you'd want to reach fast.</p>
   </div>
 
   <p class="note">These numbers are for the St&nbsp;Helena&nbsp;Bay area — please check they are current before relying on them. <b>112</b> reaches emergency services from any mobile, even with no airtime or signal.</p>
@@ -95,5 +136,65 @@
   <p>Emergency?<br>Call SAPS</p>
   <a href="tel:0227368060">022 736 8060</a>
 </div>
+
+<script>
+(function () {
+  var KEY = "aroundYouMyNumbers";
+  var listEl = document.getElementById("mynum-list");
+  var form = document.getElementById("mynum-form");
+  var nameEl = document.getElementById("mynum-name");
+  var numEl = document.getElementById("mynum-number");
+
+  function load() { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { return []; } }
+  function store(arr) { try { localStorage.setItem(KEY, JSON.stringify(arr)); } catch (e) {} }
+  function telHref(n) { return "tel:" + String(n).replace(/[^0-9+]/g, ""); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  function render() {
+    var arr = load();
+    listEl.innerHTML = "";
+    if (!arr.length) {
+      var p = document.createElement("p");
+      p.className = "note";
+      p.style.margin = "0 0 10px";
+      p.textContent = "No saved numbers yet — add one below.";
+      listEl.appendChild(p);
+      return;
+    }
+    arr.forEach(function (item, i) {
+      var row = document.createElement("div");
+      row.className = "mynum-row";
+      var a = document.createElement("a");
+      a.className = "num fill";
+      a.href = telHref(item.number);
+      a.innerHTML = "<small>" + esc(item.name) + "</small><span class='n'>" + esc(item.number) + "</span>";
+      var del = document.createElement("button");
+      del.type = "button";
+      del.className = "mynum-del";
+      del.setAttribute("aria-label", "Delete " + esc(item.name));
+      del.innerHTML = "&#10005;";
+      del.onclick = function () { var cur = load(); cur.splice(i, 1); store(cur); render(); };
+      row.appendChild(a);
+      row.appendChild(del);
+      listEl.appendChild(row);
+    });
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var name = (nameEl.value || "").trim();
+    var number = (numEl.value || "").trim();
+    if (!name || !number) return;
+    var arr = load();
+    arr.push({ name: name, number: number });
+    store(arr);
+    nameEl.value = "";
+    numEl.value = "";
+    render();
+  });
+
+  render();
+})();
+</script>
 </body>
 </html>
