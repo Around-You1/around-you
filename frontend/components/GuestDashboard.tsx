@@ -174,8 +174,12 @@ export default function GuestDashboard() {
     (items || []).filter((x) => (showOnlyTest ? isTestName(x?.name) : !isTestName(x?.name)));
 
   const tabOrder = isLocalMode
-    ? ["accommodation", "restaurants", "services", "attractions"]
+    ? ["restaurants", "services", "attractions", "accommodation"]
     : ["restaurants", "services", "attractions"];
+  // Category buttons: solid brand green like the Android button, in both themes,
+  // with a white inset ring marking the active one.
+  const GREEN_TAB =
+    "w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3 font-semibold border-transparent bg-brand hover:bg-brand/90 text-brand-foreground hover:text-brand-foreground dark:text-brand-foreground dark:hover:text-brand-foreground data-[state=active]:bg-brand dark:data-[state=active]:bg-brand data-[state=active]:text-brand-foreground dark:data-[state=active]:text-brand-foreground dark:data-[state=active]:border-transparent data-[state=active]:ring-2 data-[state=active]:ring-inset data-[state=active]:ring-white/70 data-[state=active]:shadow-sm";
 
   const handleSwipeLeft = () => {
     const currentIndex = tabOrder.indexOf(activeTab);
@@ -206,25 +210,34 @@ export default function GuestDashboard() {
   // modal is open and otherwise keeps the user on the category selection — it
   // never signs them out. A ref lets one stable listener always see the latest
   // open state without re-subscribing on every render.
-  const closeTopOverlayRef = useRef<() => void>(() => {});
+  const closeTopOverlayRef = useRef<() => boolean>(() => false);
   closeTopOverlayRef.current = () => {
-    if (editingProfile) { setEditingProfile(false); return; }
-    if (showEditGate) { setShowEditGate(false); return; }
-    if (bookingFor) { setBookingFor(null); return; }
-    if (redeemFor) { setRedeemFor(null); return; }
-    if (showMyBookings) { setShowMyBookings(false); return; }
-    if (showMyStamps) { setShowMyStamps(false); return; }
-    if (showAccInfo) { setShowAccInfo(false); return; }
-    if (expandedCards.size > 0) { setExpandedCards(new Set()); return; }
-    // Nothing open: already at the category selection — stay put.
+    if (editingProfile) { setEditingProfile(false); return true; }
+    if (showEditGate) { setShowEditGate(false); return true; }
+    if (bookingFor) { setBookingFor(null); return true; }
+    if (redeemFor) { setRedeemFor(null); return true; }
+    if (showMyBookings) { setShowMyBookings(false); return true; }
+    if (showMyStamps) { setShowMyStamps(false); return true; }
+    if (showAccInfo) { setShowAccInfo(false); return true; }
+    if (expandedCards.size > 0) { setExpandedCards(new Set()); return true; }
+    return false; // nothing open
   };
   useEffect(() => {
-    // Arm one history entry so the first Back press has something to pop without
-    // leaving the page, then re-arm after every Back so the user stays inside.
+    // Arm one history entry so a Back press that only needs to close an open
+    // detail/modal can do so without leaving the page. When nothing is open,
+    // Back is allowed through to the previous page instead of trapping the user.
     try { window.history.pushState({ auGuard: true }, ""); } catch { /* ignore */ }
     const onPop = () => {
-      try { closeTopOverlayRef.current(); } catch { /* ignore */ }
-      try { window.history.pushState({ auGuard: true }, ""); } catch { /* ignore */ }
+      let closed = false;
+      try { closed = closeTopOverlayRef.current(); } catch { /* ignore */ }
+      if (closed) {
+        // Consumed this Back to close an overlay — re-arm so we stay on the page.
+        try { window.history.pushState({ auGuard: true }, ""); } catch { /* ignore */ }
+      } else {
+        // Nothing open — let Back go to the previous page (e.g. the landing).
+        window.removeEventListener("popstate", onPop);
+        try { window.history.back(); } catch { /* ignore */ }
+      }
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
@@ -1310,20 +1323,20 @@ export default function GuestDashboard() {
         <div className="space-y-3">
           {BOOKINGS_ENABLED && <Button className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold" onClick={() => setShowMyBookings(true)}>Bookings / Pre-Orders I have made</Button>}
           <Button className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold" onClick={() => setShowMyStamps(true)}>My Stamp Cards</Button>
-          <Button variant="outline" className="w-full" onClick={async () => { await signOut(); window.location.href = "/"; }}>Sign out</Button>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-2">
-            <TabsList className="flex flex-col w-full gap-1 p-1 bg-muted rounded-md" style={{ height: "auto" }}>
+            <TabsList className="flex flex-col w-full gap-2 bg-transparent p-0" style={{ height: "auto" }}>
+              <TabsTrigger value="restaurants" className={GREEN_TAB}>Restaurants/Takeaways ({filteredRestaurants.length})</TabsTrigger>
+              <TabsTrigger value="services" className={GREEN_TAB}>Business/Services ({bizServices.length})</TabsTrigger>
+              <TabsTrigger value="retail" className={GREEN_TAB}>Retail ({retailServices.length})</TabsTrigger>
+              <TabsTrigger value="attractions" className={GREEN_TAB}>Attractions/Activities ({filteredAttractions.length})</TabsTrigger>
+              <TabsTrigger value="realestate" className={GREEN_TAB}>Real Estate</TabsTrigger>
               {isLocalMode && (
-                <TabsTrigger value="accommodation" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Accommodation/Caravan Parks ({localAccommodations.length})</TabsTrigger>
+                <TabsTrigger value="accommodation" className={GREEN_TAB}>Accommodation/Caravan Parks ({localAccommodations.length})</TabsTrigger>
               )}
-              <TabsTrigger value="restaurants" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Restaurants/Takeaways ({filteredRestaurants.length})</TabsTrigger>
-              <TabsTrigger value="services" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Business/Services ({bizServices.length})</TabsTrigger>
-              <TabsTrigger value="retail" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Retail ({retailServices.length})</TabsTrigger>
-              <TabsTrigger value="attractions" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Attractions/Activities ({filteredAttractions.length})</TabsTrigger>
-              <TabsTrigger value="realestate" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">Real Estate</TabsTrigger>
-              <TabsTrigger value="nonprofit" className="w-full min-h-[44px] justify-center whitespace-nowrap touch-manipulation text-sm px-3">NPO / PBO ({npoServices.length})</TabsTrigger>
+              <TabsTrigger value="nonprofit" className={GREEN_TAB}>NPO / PBO ({npoServices.length})</TabsTrigger>
             </TabsList>
+            <Button variant="outline" className="w-full" onClick={async () => { await signOut(); window.location.href = "/"; }}>Sign out</Button>
           {isLocalMode ? (
             <Label className="text-lg font-medium">Local Partners</Label>
           ) : (
