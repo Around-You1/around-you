@@ -286,6 +286,13 @@ export const backend = {
       request("GET", "/analytics/partners/logins", { query: req }),
     partnerSignins: (req: { period: "daily" | "weekly" | "monthly" | "yearly"; periodKey: string; entityType?: string; entityId?: number }) =>
       request("GET", "/analytics/partners/signins", { query: req }),
+    // "SuperAdmins" — the dropdown of SuperAdmins who have signed in, mirroring
+    // the Locals analytics but keyed by the SuperAdmin user.
+    superadmins: () => request("GET", "/analytics/superadmins"),
+    superAdminLoginTotals: (req: { period: "daily" | "weekly" | "monthly" | "yearly"; userId?: number }) =>
+      request("GET", "/analytics/superadmins/logins", { query: req }),
+    superAdminSignins: (req: { period: "daily" | "weekly" | "monthly" | "yearly"; periodKey: string; userId?: number }) =>
+      request("GET", "/analytics/superadmins/signins", { query: req }),
     // "Overall sign ins" — combined across Accommodation Guests + Locals +
     // Partners. actorType ("guest" | "local" | "partner") narrows to one.
     overallSummary: () => request("GET", "/analytics/overall"),

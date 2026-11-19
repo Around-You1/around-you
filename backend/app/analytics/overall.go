@@ -35,8 +35,10 @@ func overallRoleIn(actorType string) string {
 		roles = []string{"LocalGuest"}
 	case "partner":
 		roles = []string{"Partner"}
+	case "superadmin", "super_admin", "admin":
+		roles = []string{"SuperAdmin"}
 	default:
-		roles = []string{"Guest", "LocalGuest", "Partner"}
+		roles = []string{"Guest", "LocalGuest", "Partner", "SuperAdmin"}
 	}
 	quoted := make([]string, len(roles))
 	for i, r := range roles {
@@ -51,6 +53,7 @@ type OverallSummaryResponse struct {
 	AccommodationGuest int `json:"accommodationGuest"`
 	Local              int `json:"local"`
 	Partner            int `json:"partner"`
+	SuperAdmin         int `json:"superAdmin"`
 	Total              int `json:"total"`
 }
 
@@ -64,20 +67,25 @@ func OverallSummary(ctx context.Context) (*OverallSummaryResponse, error) {
 		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can view analytics"}
 	}
 
+	// Each audience is counted from its own launch date (so these headline
+	// numbers match the per-section views exactly). overallSince is the broad
+	// lower bound; the per-role FILTERs apply each section's real start date.
 	var r OverallSummaryResponse
 	err := appdb.SQLDB.QueryRowContext(ctx, `
 		SELECT
-			count(*) FILTER (WHERE u.role = 'Guest'),
-			count(*) FILTER (WHERE u.role = 'LocalGuest'),
-			count(*) FILTER (WHERE u.role = 'Partner'),
-			count(*) FILTER (WHERE u.role IN ('Guest','LocalGuest','Partner'))
+			count(*) FILTER (WHERE u.role = 'Guest'      AND s.created_at >= $1::timestamptz),
+			count(*) FILTER (WHERE u.role = 'LocalGuest' AND s.created_at >= $2::timestamptz),
+			count(*) FILTER (WHERE u.role = 'Partner'    AND s.created_at >= $3::timestamptz),
+			count(*) FILTER (WHERE u.role = 'SuperAdmin' AND s.created_at >= $4::timestamptz)
 		FROM sessions s
 		JOIN users u ON u.id = s.user_id
-		WHERE s.created_at >= $1::timestamptz`, overallSince,
-	).Scan(&r.AccommodationGuest, &r.Local, &r.Partner, &r.Total)
+		WHERE s.created_at >= $5::timestamptz`,
+		holidayGuestsSince, localsSince, partnersSince, superAdminsSince, overallSince,
+	).Scan(&r.AccommodationGuest, &r.Local, &r.Partner, &r.SuperAdmin)
 	if err != nil {
 		return nil, err
 	}
+	r.Total = r.AccommodationGuest + r.Local + r.Partner + r.SuperAdmin
 	return &r, nil
 }
 
@@ -134,7 +142,12 @@ func OverallLoginTotals(ctx context.Context, req *OverallLoginTotalsRequest) (*O
 			SELECT date_trunc('` + trunc + `', s.created_at AT TIME ZONE 'Africa/Johannesburg') AS b, count(*) AS c
 			FROM sessions s
 			JOIN users u ON u.id = s.user_id
-			WHERE ` + roleIn + ` AND s.created_at >= $1::timestamptz
+			WHERE ` + roleIn + ` AND (
+				(u.role = 'Guest'      AND s.created_at >= $2::timestamptz) OR
+				(u.role = 'LocalGuest' AND s.created_at >= $3::timestamptz) OR
+				(u.role = 'Partner'    AND s.created_at >= $4::timestamptz) OR
+				(u.role = 'SuperAdmin' AND s.created_at >= $5::timestamptz)
+			)
 			GROUP BY 1
 		)
 		SELECT to_char(buckets.b, '` + format + `') AS period, COALESCE(counts.c, 0) AS count
@@ -142,7 +155,7 @@ func OverallLoginTotals(ctx context.Context, req *OverallLoginTotalsRequest) (*O
 		LEFT JOIN counts ON counts.b = buckets.b
 		ORDER BY buckets.b ASC`
 
-	rows, err := appdb.SQLDB.QueryContext(ctx, query, overallSince)
+	rows, err := appdb.SQLDB.QueryContext(ctx, query, overallSince, holidayGuestsSince, localsSince, partnersSince, superAdminsSince)
 	if err != nil {
 		return nil, err
 	}
@@ -209,22 +222,29 @@ func OverallSignins(ctx context.Context, req *OverallSigninsRequest) (*OverallSi
 				WHEN 'Guest'      THEN COALESCE((SELECT name FROM accommodations WHERE id = u.accommodation_id), '')
 				WHEN 'LocalGuest' THEN u.email
 				WHEN 'Partner'    THEN ` + partnerNameExpr + `
+				WHEN 'SuperAdmin' THEN u.email
 				ELSE u.email
 			END AS who,
 			CASE u.role
 				WHEN 'Guest'      THEN 'Accommodation Guest'
 				WHEN 'LocalGuest' THEN 'Local'
 				WHEN 'Partner'    THEN 'Partner'
+				WHEN 'SuperAdmin' THEN 'SuperAdmin'
 				ELSE u.role
 			END AS type,
 			to_char(s.created_at AT TIME ZONE 'Africa/Johannesburg', 'YYYY-MM-DD HH24:MI') AS signed_in_at
 		FROM sessions s
 		JOIN users u ON u.id = s.user_id
-		WHERE ` + roleIn + ` AND s.created_at >= $1::timestamptz
+		WHERE ` + roleIn + ` AND s.created_at >= $1::timestamptz AND (
+			(u.role = 'Guest'      AND s.created_at >= $3::timestamptz) OR
+			(u.role = 'LocalGuest' AND s.created_at >= $4::timestamptz) OR
+			(u.role = 'Partner'    AND s.created_at >= $5::timestamptz) OR
+			(u.role = 'SuperAdmin' AND s.created_at >= $6::timestamptz)
+		)
 		  AND to_char(date_trunc('` + trunc + `', s.created_at AT TIME ZONE 'Africa/Johannesburg'), '` + format + `') = $2
 		ORDER BY s.created_at ASC`
 
-	rows, err := appdb.SQLDB.QueryContext(ctx, query, overallSince, strings.TrimSpace(req.PeriodKey))
+	rows, err := appdb.SQLDB.QueryContext(ctx, query, overallSince, strings.TrimSpace(req.PeriodKey), holidayGuestsSince, localsSince, partnersSince, superAdminsSince)
 	if err != nil {
 		return nil, err
 	}

@@ -813,6 +813,23 @@ export default function LoginPage() {
 
             <form onSubmit={handleLocalLogin} className="space-y-5">
               <div className="space-y-2">
+                <label style={{ color: "var(--foreground)", fontSize: "1.05rem", fontWeight: 700 }}>Postal Code</label>
+                <ThemedInput
+                  type="text"
+                  value={localPostalCode}
+                  onChange={(e) => setLocalPostalCode(e.target.value)}
+                  placeholder="e.g. 7395"
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                  enterKeyHint="done"
+                  style={{ fontSize: "1.25rem", padding: "16px", height: "auto" }}
+                />
+              </div>
+
+              <p style={{ color: "var(--muted-foreground)", fontSize: "0.95rem", textAlign: "center", fontWeight: 600 }}>OR if you prefer</p>
+
+              <div className="space-y-2">
+                <p style={{ color: "var(--muted-foreground)", fontSize: "0.9rem" }}>Tap to use your GPS so we can show places near you. If your GPS is off, use the postal code above instead.</p>
                 <button
                   type="button"
                   onClick={handleUseMyLocation}
@@ -829,21 +846,6 @@ export default function LoginPage() {
                 >
                   {locating ? "Getting your location…" : locationSet ? "✓ Location set" : "Use my location"}
                 </button>
-                <p style={{ color: "var(--muted-foreground)", fontSize: "0.9rem" }}>Tap to use your GPS so we can show places near you. If your GPS is off, enter your postal code below instead.</p>
-              </div>
-
-              <div className="space-y-2">
-                <label style={{ color: "var(--foreground)", fontSize: "1.05rem", fontWeight: 700 }}>Postal Code <span style={{ color: "var(--muted-foreground)", fontWeight: 400 }}>(if your GPS is off)</span></label>
-                <ThemedInput
-                  type="text"
-                  value={localPostalCode}
-                  onChange={(e) => setLocalPostalCode(e.target.value)}
-                  placeholder="e.g. 7395"
-                  inputMode="numeric"
-                  autoComplete="postal-code"
-                  enterKeyHint="done"
-                  style={{ fontSize: "1.25rem", padding: "16px", height: "auto" }}
-                />
               </div>
 
               <button

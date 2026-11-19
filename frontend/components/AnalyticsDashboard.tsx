@@ -111,6 +111,19 @@ interface LocalSignin {
 
 type LocalsPeriod = "daily" | "weekly" | "monthly" | "yearly";
 
+interface SuperAdminOption {
+  userId: number;
+  email: string;
+  name: string;
+  totalLogins: number;
+}
+
+interface SuperAdminSignin {
+  email: string;
+  name: string;
+  signedInAt: string;
+}
+
 interface HolidayAccommodationOption {
   accommodationId: number;
   name: string;
@@ -143,6 +156,7 @@ interface OverallSummary {
   accommodationGuest: number;
   local: number;
   partner: number;
+  superAdmin: number;
   total: number;
 }
 
@@ -312,6 +326,16 @@ export default function AnalyticsDashboard() {
   const [signins, setSignins] = useState<LocalSignin[]>([]);
   const [signinsLoading, setSigninsLoading] = useState(false);
 
+  // SuperAdmins — dropdown of SuperAdmins + Daily/Weekly/Monthly/Yearly totals.
+  const [superAdmins, setSuperAdmins] = useState<SuperAdminOption[]>([]);
+  const [selectedSuperAdminId, setSelectedSuperAdminId] = useState<number>(0); // 0 = All SuperAdmins
+  const [saPeriod, setSaPeriod] = useState<LocalsPeriod>("daily");
+  const [saPoints, setSaPoints] = useState<LocalLoginPoint[]>([]);
+  const [saPointsLoading, setSaPointsLoading] = useState(false);
+  const [saSelectedPeriodKey, setSaSelectedPeriodKey] = useState<string | null>(null);
+  const [saSignins, setSaSignins] = useState<SuperAdminSignin[]>([]);
+  const [saSigninsLoading, setSaSigninsLoading] = useState(false);
+
   // Holiday Guests — dropdown of accommodations with guest sign-ins + totals.
   const [holidayAccoms, setHolidayAccoms] = useState<HolidayAccommodationOption[]>([]);
   const [selectedAccomId, setSelectedAccomId] = useState<number>(0); // 0 = All Accommodations
@@ -361,6 +385,14 @@ export default function AnalyticsDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLocalId, localsPeriod]);
 
+  // Refetch SuperAdmin totals whenever the selected SuperAdmin or period changes.
+  useEffect(() => {
+    loadSaPoints();
+    setSaSelectedPeriodKey(null);
+    setSaSignins([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSuperAdminId, saPeriod]);
+
   // Refetch Holiday Guest totals whenever the selected accommodation or period changes.
   useEffect(() => {
     loadHgPoints();
@@ -401,7 +433,7 @@ export default function AnalyticsDashboard() {
     setLoading(true);
     try {
       const backend = getAuthenticatedBackend();
-      const [activity, stats, biz, ev, charity, localsList, hgList, partnersList, overallSum] = await Promise.all([
+      const [activity, stats, biz, ev, charity, localsList, hgList, partnersList, overallSum, saList] = await Promise.all([
         backend.analytics.repActivity(),
         backend.analytics.reps(),
         backend.analytics.business(),
@@ -411,6 +443,7 @@ export default function AnalyticsDashboard() {
         backend.analytics.holidayGuests().catch(() => ({ accommodations: [] })),
         backend.analytics.partners().catch(() => ({ partners: [] })),
         backend.analytics.overallSummary().catch(() => null),
+        backend.analytics.superadmins().catch(() => ({ superAdmins: [] })),
       ]);
       setReps(activity.reps);
       setRepStats(stats);
@@ -422,6 +455,7 @@ export default function AnalyticsDashboard() {
       setHolidayAccoms((hgList as any).accommodations || []);
       setPartners((partnersList as any).partners || []);
       setOverallSummary(overallSum as any);
+      setSuperAdmins((saList as any).superAdmins || []);
     } catch (error) {
       console.error("Failed to load analytics:", error);
       toast({ title: "Error", description: "Failed to load analytics", variant: "destructive" });
@@ -463,6 +497,42 @@ export default function AnalyticsDashboard() {
       toast({ title: "Error", description: "Failed to load sign-ins for that period", variant: "destructive" });
     } finally {
       setSigninsLoading(false);
+    }
+  };
+
+  const loadSaPoints = async () => {
+    setSaPointsLoading(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const res = await backend.analytics.superAdminLoginTotals({
+        period: saPeriod,
+        userId: selectedSuperAdminId || undefined,
+      });
+      setSaPoints((res as any).points || []);
+    } catch (error) {
+      console.error("Failed to load SuperAdmin login totals:", error);
+      toast({ title: "Error", description: "Failed to load SuperAdmins totals", variant: "destructive" });
+    } finally {
+      setSaPointsLoading(false);
+    }
+  };
+
+  const loadSaSignins = async (periodKey: string) => {
+    setSaSelectedPeriodKey(periodKey);
+    setSaSigninsLoading(true);
+    try {
+      const backend = getAuthenticatedBackend();
+      const res = await backend.analytics.superAdminSignins({
+        period: saPeriod,
+        periodKey,
+        userId: selectedSuperAdminId || undefined,
+      });
+      setSaSignins((res as any).signins || []);
+    } catch (error) {
+      console.error("Failed to load SuperAdmin sign-ins:", error);
+      toast({ title: "Error", description: "Failed to load sign-ins for that period", variant: "destructive" });
+    } finally {
+      setSaSigninsLoading(false);
     }
   };
 
@@ -704,6 +774,111 @@ export default function AnalyticsDashboard() {
           )}
         </Section>
 
+        <Section title="SuperAdmins">
+          <p className="text-sm text-muted-foreground mb-4">
+            Every SuperAdmin who has signed into the app. Pick one to see their sign-in history, or leave
+            "All SuperAdmins" selected to see totals across everyone.
+          </p>
+
+          <div className="flex flex-wrap items-end gap-3 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">SuperAdmin</label>
+              <select
+                value={selectedSuperAdminId}
+                onChange={(e) => setSelectedSuperAdminId(Number(e.target.value))}
+                className="text-base rounded border border-border bg-background px-3 py-2 min-w-[280px]"
+              >
+                <option value={0}>All SuperAdmins{superAdmins.length > 0 ? ` (${superAdmins.length})` : ""}</option>
+                {superAdmins.map((a) => (
+                  <option key={a.userId} value={a.userId}>
+                    {a.name ? `${a.name} — ` : ""}{a.email} ({a.totalLogins} sign-in{a.totalLogins === 1 ? "" : "s"})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Totals per</label>
+              <div className="flex gap-1">
+                {([
+                  ["daily", "Daily"],
+                  ["weekly", "Weekly"],
+                  ["monthly", "Monthly"],
+                  ["yearly", "Yearly"],
+                ] as [LocalsPeriod, string][]).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setSaPeriod(value)}
+                    className={`text-base px-4 py-2 rounded border ${
+                      saPeriod === value
+                        ? "bg-[#AEECE4] border-[#AEECE4] text-black font-semibold"
+                        : "bg-muted/40 border-border text-muted-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {loading ? (
+            <Pending loading={loading} />
+          ) : superAdmins.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No SuperAdmins have signed in yet.</p>
+          ) : saPointsLoading ? (
+            <Pending loading={true} />
+          ) : saPoints.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No sign-ins in this period yet.</p>
+          ) : (
+            <>
+              <SigninLineChart points={saPoints} selectedKey={saSelectedPeriodKey} onSelect={loadSaSignins} />
+              <p className="text-base text-muted-foreground">
+                Total for this selection:{" "}
+                <span className="text-3xl font-bold text-foreground">
+                  {saPoints.reduce((sum, p) => sum + p.count, 0)}
+                </span>{" "}
+                sign-in{saPoints.reduce((sum, p) => sum + p.count, 0) === 1 ? "" : "s"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 print:hidden">Tip: click a point to see which SuperAdmins signed in.</p>
+
+              {saSelectedPeriodKey && (
+                <div className="mt-4 rounded-lg border border-border p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold">
+                      Sign-ins on {saSelectedPeriodKey}
+                      {!saSigninsLoading && saSignins.length > 0 ? ` (${saSignins.length})` : ""}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { setSaSelectedPeriodKey(null); setSaSignins([]); }}
+                      className="text-xs text-muted-foreground hover:text-foreground print:hidden"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  {saSigninsLoading ? (
+                    <Pending loading={true} />
+                  ) : saSignins.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No sign-ins found for this period.</p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {saSignins.map((s, i) => (
+                        <li key={i} className="text-sm flex flex-wrap items-center gap-x-2">
+                          <span className="font-mono">{s.email}</span>
+                          {s.name ? <span className="text-muted-foreground">— {s.name}</span> : null}
+                          <span className="text-muted-foreground">· {s.signedInAt}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </Section>
+
         <Section title="Holiday Guests">
           <p className="text-sm text-muted-foreground mb-4">
             Every accommodation a holiday guest has signed into. Pick an accommodation to see its sign-in history, or
@@ -915,7 +1090,7 @@ export default function AnalyticsDashboard() {
 
         <Section title="Overall sign ins">
           <p className="text-sm text-muted-foreground mb-4">
-            Every sign-in across the whole platform — Accommodation Guests, Locals and Partners combined. Filter to one
+            Every sign-in across the whole platform — Accommodation Guests, Locals, Partners and SuperAdmins combined. Filter to one
             audience, or leave "All audiences" selected to see the grand total over time.
           </p>
 
@@ -925,6 +1100,7 @@ export default function AnalyticsDashboard() {
                 ["Accommodation Guests", overallSummary.accommodationGuest],
                 ["Locals", overallSummary.local],
                 ["Partners", overallSummary.partner],
+                ["SuperAdmins", overallSummary.superAdmin],
                 ["Total", overallSummary.total],
               ] as [string, number][]).map(([label, value]) => (
                 <div key={label} className="rounded-lg border border-border px-4 py-3 min-w-[150px]">
@@ -947,6 +1123,7 @@ export default function AnalyticsDashboard() {
                 <option value="guest">Accommodation Guests</option>
                 <option value="local">Locals</option>
                 <option value="partner">Partners</option>
+                <option value="superadmin">SuperAdmins</option>
               </select>
             </div>
 

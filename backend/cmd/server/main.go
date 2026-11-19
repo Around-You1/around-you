@@ -178,6 +178,9 @@ func main() {
 	r.auth("GET /analytics/overall", httpx.Empty(analytics.OverallSummary))
 	r.auth("GET /analytics/overall/logins", httpx.Query(analytics.OverallLoginTotals))
 	r.auth("GET /analytics/overall/signins", httpx.Query(analytics.OverallSignins))
+	r.auth("GET /analytics/superadmins", httpx.Empty(analytics.SuperAdminsList))
+	r.auth("GET /analytics/superadmins/logins", httpx.Query(analytics.SuperAdminLoginTotals))
+	r.auth("GET /analytics/superadmins/signins", httpx.Query(analytics.SuperAdminSignins))
 
 	// ---- Accommodation (auth) ----------------------------------------------
 	r.auth("GET /accommodation", httpx.Query(accommodation.List))
