@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, Children, isValidElement } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
@@ -87,6 +88,22 @@ type BookItem = { name: string; price: number; duration: number };
 const ratingKey = (entityType: string, entityId: number | string) =>
   `${entityType}:${Number(entityId)}`;
 
+type NotifItem = { id: number; title: string; body: string; url: string; createdAt: string };
+
+function notifTimeAgo(iso: string): string {
+  const t = Date.parse(iso);
+  if (isNaN(t)) return "";
+  const mins = Math.floor((Date.now() - t) / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return mins + "m ago";
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + "h ago";
+  const days = Math.floor(hrs / 24);
+  if (days === 1) return "Yesterday";
+  if (days < 7) return days + "d ago";
+  return new Date(t).toLocaleDateString();
+}
+
 export default function GuestDashboard() {
   const [accommodation, setAccommodation] = useState<Accommodation | null>(null);
   // Accommodations that opted in to being shown to Locals (info-only cards).
@@ -113,6 +130,38 @@ export default function GuestDashboard() {
   // Push notifications opt-in (deals & lucky-draw alerts).
   const [pushOn, setPushOn] = useState(false);
   useEffect(() => { isPushEnabled().then(setPushOn); }, []);
+
+  // In-app notifications inbox (opened from a tapped push, or the Messages button).
+  const searchParams = useSearchParams();
+  const [showNotifs, setShowNotifs] = useState(false);
+  const [notifItems, setNotifItems] = useState<NotifItem[]>([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const notifCountedRef = useRef(false);
+
+  // A tapped push lands on /local-dashboard?notifications=1: open the inbox and
+  // record the read as a sign-in (counts in Overall sign-ins) — once per arrival.
+  useEffect(() => {
+    if (searchParams.get("notifications") === "1") {
+      setShowNotifs(true);
+      if (!notifCountedRef.current) {
+        notifCountedRef.current = true;
+        try { getAuthenticatedBackend().notifications.opened().catch(() => {}); } catch { /* best-effort */ }
+      }
+    }
+  }, [searchParams]);
+
+  // Load recent broadcasts whenever the inbox opens.
+  useEffect(() => {
+    if (!showNotifs) return;
+    let cancelled = false;
+    setNotifLoading(true);
+    getAuthenticatedBackend().notifications
+      .recent()
+      .then((res: any) => { if (!cancelled) setNotifItems((res?.notifications || []) as NotifItem[]); })
+      .catch(() => { if (!cancelled) setNotifItems([]); })
+      .finally(() => { if (!cancelled) setNotifLoading(false); });
+    return () => { cancelled = true; };
+  }, [showNotifs]);
 
   const [visiblePasswords, setVisiblePasswords] = useState<Set<number>>(new Set());
   const [selectedContact, setSelectedContact] = useState<string>("");
@@ -219,6 +268,7 @@ export default function GuestDashboard() {
   // open state without re-subscribing on every render.
   const closeTopOverlayRef = useRef<() => boolean>(() => false);
   closeTopOverlayRef.current = () => {
+    if (showNotifs) { setShowNotifs(false); return true; }
     if (editingProfile) { setEditingProfile(false); return true; }
     if (showEditGate) { setShowEditGate(false); return true; }
     if (bookingFor) { setBookingFor(null); return true; }
@@ -1330,6 +1380,7 @@ export default function GuestDashboard() {
         <div className="space-y-3">
           {BOOKINGS_ENABLED && <Button className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold" onClick={() => setShowMyBookings(true)}>Bookings / Pre-Orders I have made</Button>}
           <Button className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold" onClick={() => setShowMyStamps(true)}>My Stamp Cards</Button>
+          <Button variant="outline" className="w-full border-brand text-brand hover:bg-brand/10" onClick={() => setShowNotifs(true)}>📣 Messages &amp; Alerts</Button>
           {!pushOn && (
             <Button
               variant="outline"
@@ -2264,6 +2315,35 @@ export default function GuestDashboard() {
         )}
         {showMyBookings && <MyBookingsModal onClose={() => setShowMyBookings(false)} />}
         {showMyStamps && <MyStampCardsModal onClose={() => setShowMyStamps(false)} isLocal={isLocalMode} />}
+        {showNotifs && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowNotifs(false)}>
+            <Card className="w-full max-w-md max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold">📣 Messages &amp; Alerts</h3>
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setShowNotifs(false)} aria-label="Close">✕</Button>
+                </div>
+                {notifLoading ? (
+                  <p className="text-sm text-center text-muted-foreground py-6">Loading…</p>
+                ) : notifItems.length === 0 ? (
+                  <p className="text-sm text-center text-muted-foreground py-6">No messages yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {notifItems.map((n) => (
+                      <div key={n.id} className="rounded-xl border border-brand/20 bg-brand/5 p-3">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <p className="text-sm font-bold text-foreground">{n.title}</p>
+                          <span className="text-xs shrink-0 text-muted-foreground">{notifTimeAgo(n.createdAt)}</span>
+                        </div>
+                        {n.body && <p className="text-sm mt-1 text-muted-foreground whitespace-pre-wrap">{n.body}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
         <SwipeIndicator show={filteredRestaurants.length > 0 || filteredServices.length > 0 || filteredAttractions.length > 0} />
       </div>
     </div>

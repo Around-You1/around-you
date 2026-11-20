@@ -187,6 +187,8 @@ func main() {
 	r.public("GET /push/vapid-public", httpx.Empty(push.VapidPublicKey))
 	r.auth("POST /push/subscribe", httpx.Body(push.Subscribe))
 	r.auth("POST /push/send", httpx.Body(push.Send))
+	r.public("GET /notifications/recent", httpx.Empty(push.RecentNotifications))
+	r.auth("POST /notifications/opened", httpx.Empty(push.NotificationOpened))
 
 	// ---- Accommodation (auth) ----------------------------------------------
 	r.auth("GET /accommodation", httpx.Query(accommodation.List))

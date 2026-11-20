@@ -19,6 +19,24 @@ const STRIP_RE = /[^A-Za-z0-9]/g;
 const LUMO = "var(--brand)";
 const LUMO_DARK = "color-mix(in srgb, var(--brand) 82%, #000)";
 
+type NotifItem = { id: number; title: string; body: string; url: string; createdAt: string };
+
+// "3h ago" / "Yesterday" / a date — compact relative time for the inbox.
+function notifTimeAgo(iso: string): string {
+  const t = Date.parse(iso);
+  if (isNaN(t)) return "";
+  const diff = Date.now() - t;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return mins + "m ago";
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + "h ago";
+  const days = Math.floor(hrs / 24);
+  if (days === 1) return "Yesterday";
+  if (days < 7) return days + "d ago";
+  return new Date(t).toLocaleDateString();
+}
+
 type ActivePanel = "holiday" | "local" | "partner" | null;
 type LoginMethod = "code" | "secondary";
 
@@ -368,6 +386,32 @@ export default function LoginPage() {
   const [localRegistered, setLocalRegistered] = useState(false);
   // "Learn More …" sub-view: the six info squares behind a back arrow.
   const [showLearnMore, setShowLearnMore] = useState(false);
+  // In-app notifications inbox.
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifItems, setNotifItems] = useState<NotifItem[]>([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  // Open the inbox when a tapped push lands on /?notifications=1.
+  useEffect(() => {
+    if (searchParams.get("notifications") === "1") {
+      setActivePanel(null);
+      setShowLearnMore(false);
+      setShowNotifications(true);
+    }
+  }, [searchParams]);
+
+  // Load recent broadcasts whenever the inbox opens.
+  useEffect(() => {
+    if (!showNotifications) return;
+    let cancelled = false;
+    setNotifLoading(true);
+    backend.notifications
+      .recent()
+      .then((res: any) => { if (!cancelled) setNotifItems((res?.notifications || []) as NotifItem[]); })
+      .catch(() => { if (!cancelled) setNotifItems([]); })
+      .finally(() => { if (!cancelled) setNotifLoading(false); });
+    return () => { cancelled = true; };
+  }, [showNotifications]);
 
   const [partnerMode, setPartnerMode] = useState<"signin" | "register">("signin");
   const [partnerCode, setPartnerCode] = useState("");
@@ -725,7 +769,7 @@ export default function LoginPage() {
           className="rounded-2xl p-6 space-y-3"
           style={{ background: "var(--card)", border: "1px solid color-mix(in srgb, var(--brand) 18%, transparent)", boxShadow: "0 0 40px color-mix(in srgb, var(--brand) 6%, transparent)" }}
         >
-          {!qrMode && !showLearnMore && (
+          {!qrMode && !showLearnMore && !showNotifications && (
           <>
           <div className="grid grid-cols-3 gap-1.5">
             <SignInSquareBtn label="Holiday Guest" isOpen={activePanel === "holiday"} onToggle={() => togglePanel("holiday")} />
@@ -740,6 +784,15 @@ export default function LoginPage() {
             style={{ color: "var(--brand)", border: "1px solid color-mix(in srgb, var(--brand) 35%, transparent)", background: "color-mix(in srgb, var(--brand) 6%, transparent)" }}
           >
             Learn More …
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setActivePanel(null); setShowNotifications(true); }}
+            className="w-full text-center text-sm font-semibold uppercase tracking-widest rounded-xl py-3 transition-colors"
+            style={{ color: "var(--brand)", border: "1px solid color-mix(in srgb, var(--brand) 35%, transparent)", background: "color-mix(in srgb, var(--brand) 6%, transparent)" }}
+          >
+            🔔 Notifications
           </button>
 
           <a
@@ -770,6 +823,46 @@ export default function LoginPage() {
           </button>
 
           <InfoSquares />
+          </>
+          )}
+
+          {!qrMode && showNotifications && (
+          <>
+          <button
+            type="button"
+            onClick={() => setShowNotifications(false)}
+            aria-label="Back"
+            className="inline-flex items-center gap-1 text-sm font-semibold"
+            style={{ color: "var(--brand)", background: "transparent", border: "none", padding: "2px 0", cursor: "pointer" }}
+          >
+            <span aria-hidden="true" style={{ fontSize: "1.25rem", lineHeight: 1 }}>←</span> Back
+          </button>
+
+          <p className="text-center text-sm font-bold" style={{ color: "var(--foreground)" }}>Notifications</p>
+
+          {notifLoading ? (
+            <p className="text-sm text-center" style={{ color: "var(--muted-foreground)" }}>Loading…</p>
+          ) : notifItems.length === 0 ? (
+            <p className="text-sm text-center" style={{ color: "var(--muted-foreground)" }}>No messages yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {notifItems.map((n) => (
+                <div
+                  key={n.id}
+                  className="rounded-xl p-3 text-left"
+                  style={{ background: "color-mix(in srgb, var(--brand) 5%, transparent)", border: "1px solid color-mix(in srgb, var(--brand) 20%, transparent)" }}
+                >
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="text-sm font-bold" style={{ color: "var(--foreground)" }}>{n.title}</p>
+                    <span className="text-xs shrink-0" style={{ color: "var(--muted-foreground)" }}>{notifTimeAgo(n.createdAt)}</span>
+                  </div>
+                  {n.body && (
+                    <p className="text-sm mt-1" style={{ color: "var(--muted-foreground)", whiteSpace: "pre-wrap" }}>{n.body}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
           </>
           )}
           {qrMode && (

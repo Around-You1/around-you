@@ -312,6 +312,13 @@ export const backend = {
     send: (req: { title: string; body?: string; url?: string; audience?: string; userId?: number }) =>
       request("POST", "/push/send", { body: req }),
   },
+
+  notifications: {
+    // Public: recent broadcast notifications for the in-app inbox (newest first).
+    recent: () => request("GET", "/notifications/recent"),
+    // Auth: records a sign-in for the current user when they open a notification.
+    opened: () => request("POST", "/notifications/opened", {}),
+  },
   events: {
     record: (req: {
       eventType: string;

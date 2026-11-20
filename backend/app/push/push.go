@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	webpush "github.com/SherClockHolmes/webpush-go"
 
@@ -119,7 +120,20 @@ func Send(ctx context.Context, req *SendRequest) (*SendResponse, error) {
 	}
 	url := strings.TrimSpace(req.URL)
 	if url == "" {
-		url = "/"
+		// Tapping a notification opens the app and the in-app inbox.
+		url = "/local-dashboard?notifications=1"
+	}
+
+	// Log broadcasts (to all Locals / everyone) so they appear in the in-app
+	// inbox. One-device test sends ("self") and single-user sends are not logged.
+	aud := strings.ToLower(strings.TrimSpace(req.Audience))
+	if aud == "" {
+		aud = "local"
+	}
+	if req.UserID == 0 && (aud == "local" || aud == "all") {
+		_, _ = appdb.SQLDB.ExecContext(ctx,
+			`INSERT INTO notifications (title, body, url, audience) VALUES ($1, $2, $3, $4)`,
+			title, strings.TrimSpace(req.Body), url, aud)
 	}
 
 	q := `SELECT ps.id, ps.endpoint, ps.p256dh, ps.auth
@@ -207,4 +221,72 @@ func Send(ctx context.Context, req *SendRequest) (*SendResponse, error) {
 	}
 
 	return &SendResponse{Sent: sent, Failed: failed}, nil
+}
+
+
+// --- In-app inbox: recent broadcast notifications ---------------------------
+
+type NotificationItem struct {
+	ID        int64  `json:"id"`
+	Title     string `json:"title"`
+	Body      string `json:"body"`
+	URL       string `json:"url"`
+	CreatedAt string `json:"createdAt"`
+}
+
+type RecentNotificationsResponse struct {
+	Notifications []NotificationItem `json:"notifications"`
+}
+
+// RecentNotifications returns the most recent broadcast notifications (newest
+// first) for the in-app inbox. Public: these are messages already pushed to
+// every Local, so there is nothing private to protect.
+//
+//encore:api public method=GET path=/notifications/recent
+func RecentNotifications(ctx context.Context) (*RecentNotificationsResponse, error) {
+	rows, err := appdb.SQLDB.QueryContext(ctx, `
+		SELECT id, title, body, url, created_at
+		FROM notifications
+		WHERE audience IN ('local', 'all')
+		ORDER BY created_at DESC, id DESC
+		LIMIT 30`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []NotificationItem{}
+	for rows.Next() {
+		var n NotificationItem
+		var created time.Time
+		if err := rows.Scan(&n.ID, &n.Title, &n.Body, &n.URL, &created); err != nil {
+			return nil, err
+		}
+		n.CreatedAt = created.UTC().Format(time.RFC3339)
+		out = append(out, n)
+	}
+	return &RecentNotificationsResponse{Notifications: out}, rows.Err()
+}
+
+
+// --- Notification read -> counts as a sign-in --------------------------------
+
+type OpenedResponse struct {
+	OK bool `json:"ok"`
+}
+
+// NotificationOpened records a sign-in for the current user when they open a
+// notification (tapping it lands them on the Local page). This makes a
+// notification read show up in the Overall sign-ins analytics, the same way a
+// fresh login does. Best-effort and silent when not signed in.
+//
+//encore:api auth method=POST path=/notifications/opened
+func NotificationOpened(ctx context.Context) (*OpenedResponse, error) {
+	data := auth.FromContext(ctx)
+	if data == nil || data.UserID == 0 {
+		return &OpenedResponse{OK: true}, nil
+	}
+	token := "no_" + appdb.RandomCode(30)
+	_, _ = appdb.SQLDB.ExecContext(ctx,
+		`INSERT INTO sessions (token, user_id) VALUES ($1, $2)`, token, data.UserID)
+	return &OpenedResponse{OK: true}, nil
 }
