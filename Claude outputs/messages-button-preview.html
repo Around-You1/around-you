@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Messages Button Preview</title>
+<style>
+  :root { --brand:#16a34a; --fg:#0f172a; --muted:#64748b; --card:#ffffff; --bg:#f1f5f9; --line:#e2e8f0; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; background:var(--bg); color:var(--fg);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  .wrap { max-width:420px; margin:0 auto; padding:24px 16px 48px; }
+  h1 { font-size:1.25rem; margin:0 0 4px; }
+  .sub { color:var(--muted); font-size:.9rem; margin:0 0 20px; line-height:1.5; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; margin-bottom:16px;
+    box-shadow:0 1px 3px rgba(0,0,0,.05); }
+  .label { font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 0 10px; }
+  /* App button — matches the real styles */
+  .btn { width:100%; min-height:46px; border-radius:12px; font-size:1rem; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:8px; transition:all .15s ease; }
+  .btn-normal { background:transparent; border:1px solid var(--brand); color:var(--brand); font-weight:600; }
+  .btn-normal:hover { background:color-mix(in srgb, var(--brand) 10%, transparent); }
+  .btn-alert { background:var(--brand); border:1px solid var(--brand); color:#fff; font-weight:700; }
+  .btn-alert:hover { background:color-mix(in srgb, var(--brand) 90%, black); }
+  .note { font-size:.82rem; color:var(--muted); margin:10px 2px 0; line-height:1.5; }
+  .divider { height:1px; background:var(--line); margin:26px 0 20px; }
+  .row { display:flex; gap:10px; }
+  .mini { flex:1; min-height:42px; border-radius:10px; border:1px solid var(--line); background:#fff; color:var(--fg);
+    font-size:.9rem; font-weight:600; cursor:pointer; }
+  .mini:hover { background:#f8fafc; }
+  .mini.primary { background:var(--brand); color:#fff; border-color:var(--brand); }
+  .status { text-align:center; font-size:.85rem; color:var(--muted); margin:14px 0 0; }
+  @media (prefers-color-scheme: dark) {
+    :root { --brand:#39ff14; --fg:#e5e7eb; --muted:#94a3b8; --card:#0d1117; --bg:#000; --line:#1f2937; }
+    .btn-alert { color:#000; }
+    .mini { background:#0d1117; }
+    .mini:hover { background:#161b22; }
+    .mini.primary { color:#000; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>“Messages &amp; Alerts” button</h1>
+  <p class="sub">A preview of the two states and the chime. This is a mock-up, not the live app — tap the buttons to try it.</p>
+
+  <div class="card">
+    <p class="label">Normal — no new messages</p>
+    <button class="btn btn-normal">Messages &amp; Alerts</button>
+    <p class="note">Plain button, no icon.</p>
+  </div>
+
+  <div class="card">
+    <p class="label">New alert waiting</p>
+    <button class="btn btn-alert">🔔 Messages &amp; Alerts</button>
+    <p class="note">Turns green with a bell. Clears back to normal the moment it’s opened.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <p class="label" style="text-align:center">Try it live</p>
+  <button id="live" class="btn btn-normal">Messages &amp; Alerts</button>
+  <p id="status" class="status">No new messages.</p>
+  <div class="row" style="margin-top:14px">
+    <button id="simulate" class="mini primary">🔔 Simulate a new alert</button>
+    <button id="chime" class="mini">Play chime only</button>
+  </div>
+  <p class="note" style="text-align:center">“Simulate a new alert” plays the sound and lights the button green. Tap the green button (as if opening it) to clear it.</p>
+</div>
+
+<script>
+(function () {
+  function playAlertSound() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      var ctx = new AC();
+      var now = ctx.currentTime;
+      function beep(freq, start, dur) {
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type = "sine"; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.0001, now + start);
+        g.gain.exponentialRampToValueAtTime(0.25, now + start + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+        o.start(now + start); o.stop(now + start + dur + 0.03);
+      }
+      beep(880, 0, 0.18);
+      beep(1175, 0.16, 0.30);
+      setTimeout(function () { try { ctx.close(); } catch (e) {} }, 800);
+    } catch (e) {}
+  }
+
+  var live = document.getElementById("live");
+  var status = document.getElementById("status");
+  var alertState = false;
+
+  function render() {
+    if (alertState) {
+      live.className = "btn btn-alert";
+      live.textContent = "🔔 Messages & Alerts";
+      status.textContent = "1 new message — tap the button to open.";
+    } else {
+      live.className = "btn btn-normal";
+      live.textContent = "Messages & Alerts";
+      status.textContent = "No new messages.";
+    }
+  }
+
+  document.getElementById("simulate").addEventListener("click", function () {
+    alertState = true; render(); playAlertSound();
+  });
+  document.getElementById("chime").addEventListener("click", playAlertSound);
+  live.addEventListener("click", function () {
+    if (alertState) { alertState = false; render(); }
+  });
+  render();
+})();
+</script>
+</body>
+</html>

@@ -90,6 +90,30 @@ const ratingKey = (entityType: string, entityId: number | string) =>
 
 type NotifItem = { id: number; title: string; body: string; url: string; createdAt: string };
 
+function playAlertSound() {
+  try {
+    const AC = (window.AudioContext || (window as any).webkitAudioContext);
+    if (!AC) return;
+    const ctx = new AC();
+    const now = ctx.currentTime;
+    const beep = (freq: number, start: number, dur: number) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = "sine";
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, now + start);
+      g.gain.exponentialRampToValueAtTime(0.25, now + start + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+      o.start(now + start);
+      o.stop(now + start + dur + 0.03);
+    };
+    beep(880, 0, 0.18);
+    beep(1175, 0.16, 0.30);
+    setTimeout(() => { try { ctx.close(); } catch { /* ignore */ } }, 800);
+  } catch { /* ignore */ }
+}
+
 function notifTimeAgo(iso: string): string {
   const t = Date.parse(iso);
   if (isNaN(t)) return "";
@@ -136,6 +160,33 @@ export default function GuestDashboard() {
   const [showNotifs, setShowNotifs] = useState(false);
   const [notifItems, setNotifItems] = useState<NotifItem[]>([]);
   const [notifLoading, setNotifLoading] = useState(false);
+  // Unread-alert badge + notification sound (while the app is open).
+  const [hasUnreadNotif, setHasUnreadNotif] = useState(false);
+  const lastSeenNotifRef = useRef<number>(0);
+  const knownLatestNotifRef = useRef<number>(-1);
+
+  // Poll for new broadcasts: light up the button (green + bell) and chime when a
+  // new one arrives. First pass just sets the baseline (no sound for old ones).
+  useEffect(() => {
+    try { lastSeenNotifRef.current = parseInt(localStorage.getItem("aroundYouLastSeenNotif") || "0", 10) || 0; } catch { /* ignore */ }
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const res: any = await getAuthenticatedBackend().notifications.recent();
+        const items = res?.notifications || [];
+        if (cancelled || !items.length) return;
+        const maxId = Math.max(...items.map((n: any) => Number(n.id) || 0));
+        if (maxId > lastSeenNotifRef.current) setHasUnreadNotif(true);
+        if (knownLatestNotifRef.current >= 0 && maxId > knownLatestNotifRef.current && maxId > lastSeenNotifRef.current) {
+          playAlertSound();
+        }
+        knownLatestNotifRef.current = Math.max(knownLatestNotifRef.current, maxId);
+      } catch { /* ignore */ }
+    };
+    check();
+    const t = setInterval(check, 45000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, []);
   // A tapped push lands on /local-dashboard?notifications=1. The Local page
   // auto-signs the device in (that is the counted sign-in), so here we only
   // open the inbox to show the message.
@@ -143,14 +194,26 @@ export default function GuestDashboard() {
     if (searchParams.get("notifications") === "1") setShowNotifs(true);
   }, [searchParams]);
 
-  // Load recent broadcasts whenever the inbox opens.
+  // Load recent broadcasts whenever the inbox opens, and mark them all as seen
+  // (clears the green/bell alert state).
   useEffect(() => {
     if (!showNotifs) return;
     let cancelled = false;
     setNotifLoading(true);
     getAuthenticatedBackend().notifications
       .recent()
-      .then((res: any) => { if (!cancelled) setNotifItems((res?.notifications || []) as NotifItem[]); })
+      .then((res: any) => {
+        if (cancelled) return;
+        const items = (res?.notifications || []) as NotifItem[];
+        setNotifItems(items);
+        const maxId = items.length ? Math.max(...items.map((n) => Number(n.id) || 0)) : 0;
+        if (maxId > 0) {
+          try { localStorage.setItem("aroundYouLastSeenNotif", String(maxId)); } catch { /* ignore */ }
+          lastSeenNotifRef.current = maxId;
+          knownLatestNotifRef.current = Math.max(knownLatestNotifRef.current, maxId);
+        }
+        setHasUnreadNotif(false);
+      })
       .catch(() => { if (!cancelled) setNotifItems([]); })
       .finally(() => { if (!cancelled) setNotifLoading(false); });
     return () => { cancelled = true; };
@@ -1373,7 +1436,13 @@ export default function GuestDashboard() {
         <div className="space-y-3">
           {BOOKINGS_ENABLED && <Button className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold" onClick={() => setShowMyBookings(true)}>Bookings / Pre-Orders I have made</Button>}
           <Button className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold" onClick={() => setShowMyStamps(true)}>My Stamp Cards</Button>
-          <Button variant="outline" className="w-full border-brand text-brand hover:bg-brand/10" onClick={() => setShowNotifs(true)}>📣 Messages &amp; Alerts</Button>
+          <Button
+            variant={hasUnreadNotif ? "default" : "outline"}
+            className={hasUnreadNotif ? "w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold" : "w-full border-brand text-brand hover:bg-brand/10"}
+            onClick={() => setShowNotifs(true)}
+          >
+            {hasUnreadNotif ? "🔔 " : ""}Messages &amp; Alerts
+          </Button>
           {!pushOn && (
             <Button
               variant="outline"
