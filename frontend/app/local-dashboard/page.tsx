@@ -20,6 +20,23 @@ const GuestDashboard = dynamic(() => import("@/components/GuestDashboard"), {
 // /guest-dashboard. Both accept a Local or Guest session here. Deliberately NOT under app/dashboard/, since that folder's
 // layout.tsx requires a Supabase session and was bouncing every access-code
 // guest straight back to the sign-in screen the moment they landed here.
+// A tapped push lands on /local-dashboard?notifications=1. Mirrors LoginPage's
+// per-device Local identity so we can silently sign the device in.
+function getLocalDeviceEmail(): string {
+  try {
+    let id = localStorage.getItem("aroundYouLocalDeviceId");
+    if (!id) {
+      id = (typeof crypto !== "undefined" && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem("aroundYouLocalDeviceId", id);
+    }
+    return `device-${id}@local.aroundyou.co.za`;
+  } catch {
+    return `device-${Date.now()}@local.aroundyou.co.za`;
+  }
+}
+
 export default function LocalDashboardPage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
@@ -28,6 +45,29 @@ export default function LocalDashboardPage() {
     let active = true;
 
     (async () => {
+      // A tapped push arrives with ?notifications=1. Silently sign this device
+      // in as a Local using its stored identity — this records the sign-in
+      // "click" in analytics and lands the user on the Local page with the
+      // message — then show the dashboard. No "stay signed in" needed.
+      const notifTap =
+        typeof window !== "undefined" &&
+        new URLSearchParams(window.location.search).get("notifications") === "1";
+      if (notifTap) {
+        try {
+          const email = getLocalDeviceEmail();
+          let postalCode = "";
+          try { postalCode = JSON.parse(localStorage.getItem("localGuestInfo") || "{}").postalCode || ""; } catch { /* ignore */ }
+          const res = await backend.auth.localGuestLogin({ email, postalCode });
+          localStorage.setItem("token", res.token);
+          localStorage.setItem("user", JSON.stringify(res.user));
+          try { localStorage.setItem("localGuestInfo", JSON.stringify({ ...JSON.parse(localStorage.getItem("localGuestInfo") || "{}"), email, postalCode })); } catch { /* ignore */ }
+          if (active) setReady(true);
+          return;
+        } catch {
+          /* fall through to the normal auth checks below */
+        }
+      }
+
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const userRaw = typeof window !== "undefined" ? localStorage.getItem("user") : null;
 

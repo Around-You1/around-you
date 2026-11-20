@@ -136,18 +136,11 @@ export default function GuestDashboard() {
   const [showNotifs, setShowNotifs] = useState(false);
   const [notifItems, setNotifItems] = useState<NotifItem[]>([]);
   const [notifLoading, setNotifLoading] = useState(false);
-  const notifCountedRef = useRef(false);
-
-  // A tapped push lands on /local-dashboard?notifications=1: open the inbox and
-  // record the read as a sign-in (counts in Overall sign-ins) — once per arrival.
+  // A tapped push lands on /local-dashboard?notifications=1. The Local page
+  // auto-signs the device in (that is the counted sign-in), so here we only
+  // open the inbox to show the message.
   useEffect(() => {
-    if (searchParams.get("notifications") === "1") {
-      setShowNotifs(true);
-      if (!notifCountedRef.current) {
-        notifCountedRef.current = true;
-        try { getAuthenticatedBackend().notifications.opened().catch(() => {}); } catch { /* best-effort */ }
-      }
-    }
+    if (searchParams.get("notifications") === "1") setShowNotifs(true);
   }, [searchParams]);
 
   // Load recent broadcasts whenever the inbox opens.

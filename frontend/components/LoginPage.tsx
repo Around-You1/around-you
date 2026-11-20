@@ -786,15 +786,6 @@ export default function LoginPage() {
             Learn More …
           </button>
 
-          <button
-            type="button"
-            onClick={() => { setActivePanel(null); setShowNotifications(true); }}
-            className="w-full text-center text-sm font-semibold uppercase tracking-widest rounded-xl py-3 transition-colors"
-            style={{ color: "var(--brand)", border: "1px solid color-mix(in srgb, var(--brand) 35%, transparent)", background: "color-mix(in srgb, var(--brand) 6%, transparent)" }}
-          >
-            🔔 Notifications
-          </button>
-
           <a
             href="/emergency.html"
             className="touch-manipulation"
