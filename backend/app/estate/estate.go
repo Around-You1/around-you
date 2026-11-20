@@ -81,6 +81,10 @@ func CreateAgency(ctx context.Context, req *appdb.EstateAgency) (*appdb.EstateAg
 	); err != nil {
 		return nil, err
 	}
+	// New pages start Disabled, exactly like the other partner categories: the
+	// admin then clicks Accept (first invoice + codes email) and only switches
+	// the page live once payment is received.
+	req.IsActive = false
 	created, err := agencies.Create(ctx, req)
 	if err != nil {
 		return nil, err
@@ -200,6 +204,10 @@ func CreateAgent(ctx context.Context, req *appdb.EstateAgent) (*appdb.EstateAgen
 	); err != nil {
 		return nil, err
 	}
+	// New pages start Disabled, exactly like the other partner categories: the
+	// admin then clicks Accept (first invoice + codes email) and only switches
+	// the page live once payment is received.
+	req.IsActive = false
 	created, err := agents.Create(ctx, req)
 	if err != nil {
 		return nil, err

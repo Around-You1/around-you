@@ -267,7 +267,16 @@ func AcceptPartner(ctx context.Context, partnerType string, partnerID int64) err
 		return err
 	}
 	if invoiced {
-		return nil // already accepted — don't send a second first-invoice
+		// Already has a first invoice — re-send that invoice's email (with codes)
+		// instead of doing nothing, so clicking Accept again reliably re-delivers
+		// the invoice + codes (e.g. after a mail hiccup or a late email capture).
+		var invID int64
+		if err := appdb.SQLDB.QueryRowContext(ctx,
+			`SELECT id FROM invoice WHERE subscription_id = $1 ORDER BY id DESC LIMIT 1`, subID,
+		).Scan(&invID); err == nil && invID > 0 {
+			return ResendInvoiceEmail(ctx, invID, true)
+		}
+		return nil
 	}
 	// First invoice (with codes), WITHOUT setting the recurring anchor — the
 	// monthly cycle starts only at Activation, after payment.
@@ -378,6 +387,17 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 		FROM `+tbl+` WHERE id = $1`, partnerID,
 	).Scan(&name, &holding, &reg, &vat, &repName, &repCode, &email, &contactName, &contactNumber); err != nil {
 		return err
+	}
+	// Estate pages capture a single contact email (labelled "for your account &
+	// invoices") in the `email` column, not Official Use → Email. Fall back to it
+	// so the invoice actually reaches the agency/agent.
+	if strings.TrimSpace(email) == "" {
+		switch partnerType {
+		case "estate_agency", "estate_agent":
+			_ = appdb.SQLDB.QueryRowContext(ctx,
+				`SELECT COALESCE(email,'') FROM `+tbl+` WHERE id = $1`, partnerID).Scan(&email)
+			email = strings.TrimSpace(email)
+		}
 	}
 
 	// Item code + description from the subscription's tier/audience and (for
@@ -529,8 +549,21 @@ func buildInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) (st
 	if strings.TrimSpace(email) == "" {
 		email = strings.TrimSpace(partnerEmail)
 	}
+	// Estate pages store their billing email in the contact `email` column, not
+	// Official Use → Email — fall back to it before giving up.
 	if strings.TrimSpace(email) == "" {
-		return "", "", nil, "", nil, fmt.Errorf("this invoice has no billing email on file — set the partner's Official Use → Email, then try again")
+		if tbl := partnerTable(partnerType); tbl != "" {
+			switch partnerType {
+			case "estate_agency", "estate_agent":
+				var contactEmail string
+				_ = appdb.SQLDB.QueryRowContext(ctx,
+					`SELECT COALESCE(email,'') FROM `+tbl+` WHERE id = $1`, partnerID).Scan(&contactEmail)
+				email = strings.TrimSpace(contactEmail)
+			}
+		}
+	}
+	if strings.TrimSpace(email) == "" {
+		return "", "", nil, "", nil, fmt.Errorf("this invoice has no billing email on file — set the partner's Email, then try again")
 	}
 
 	settings, _ := LoadInvoiceSettings(ctx)

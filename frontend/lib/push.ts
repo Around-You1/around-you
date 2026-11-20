@@ -10,6 +10,17 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return out;
 }
 
+// Compares the key an existing subscription was created with against the key we
+// want to use now. After a VAPID key rotation these differ, and the old
+// subscription can no longer receive pushes — so we drop it and re-subscribe.
+function sameApplicationServerKey(existing: ArrayBuffer | null | undefined, desired: Uint8Array): boolean {
+  if (!existing) return false;
+  const a = new Uint8Array(existing);
+  if (a.length !== desired.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== desired[i]) return false;
+  return true;
+}
+
 export type PushResult = "ok" | "denied" | "unsupported" | "error";
 
 // Asks for notification permission, subscribes this device to Web Push, and
@@ -30,11 +41,19 @@ export async function enablePushNotifications(): Promise<PushResult> {
     const publicKey: string = res?.publicKey || "";
     if (!publicKey) return "error";
 
+    const desiredKey = urlBase64ToUint8Array(publicKey);
+
     let sub = await reg.pushManager.getSubscription();
+    if (sub && !sameApplicationServerKey(sub.options?.applicationServerKey, desiredKey)) {
+      // Existing subscription was made under a different (rotated) VAPID key and
+      // can no longer be delivered to — drop it so we re-subscribe cleanly.
+      try { await sub.unsubscribe(); } catch { /* ignore */ }
+      sub = null;
+    }
     if (!sub) {
       sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
+        applicationServerKey: desiredKey as BufferSource,
       });
     }
     const json: any = sub.toJSON();
