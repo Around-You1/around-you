@@ -68,12 +68,20 @@ func PriceForUnits(partnerType, accessLevel, guestType string, units int) Plan {
 		if units >= 6 {
 			return accommodationUnitBand(units) // unit bands unchanged
 		}
-		return Plan{Plan: "tier", Tier: 2, Audience: "Both", MonthlyCents: Tier2Cents}
+		// 1–5 units: R200 (Nov 2026 — was R300).
+		return Plan{Plan: "tier", Tier: 2, Audience: "Both", MonthlyCents: Tier1Cents}
 	}
 	if accessLevel == "Booking" {
 		// R300/month base; per-cover / per-booking commission added at billing time.
 		return Plan{Plan: "booking", Tier: 0, Audience: "Both", MonthlyCents: Tier2Cents}
 	}
+	// Business/Services and Attractions/Activities: R200 (Nov 2026 — was R300).
+	if partnerType == "service" || partnerType == "attraction" {
+		return Plan{Plan: "tier", Tier: 2, Audience: "Both", MonthlyCents: Tier1Cents}
+	}
+	// Restaurants: R300 by default (sit-down). Takeaway-style profiles — any that
+	// are NOT tagged "Restaurant" — are dropped to R200 in EnsureSubscription,
+	// which has the profile's type to hand.
 	return Plan{Plan: "tier", Tier: 2, Audience: "Both", MonthlyCents: Tier2Cents}
 }
 

@@ -76,9 +76,13 @@ func novSignupHalfOff(ctx context.Context, subID int64, periodStart time.Time) b
 		return false
 	}
 	// Eligible only if the partner signed up during November 2026.
+	// The launch promo is now CLOSED to new sign-ups: only partners whose
+	// subscription was created before this cutoff keep their 50% (through their
+	// Jan 2027 invoice). Anyone onboarded on/after the cutoff pays full price —
+	// use a discount Rep Code to give a discount instead.
 	novStart := time.Date(2026, 11, 1, 0, 0, 0, 0, sast)
-	decStart := time.Date(2026, 12, 1, 0, 0, 0, 0, sast)
-	return !createdAt.Before(novStart) && createdAt.Before(decStart)
+	promoClosed := time.Date(2026, 11, 22, 0, 0, 0, 0, sast)
+	return !createdAt.Before(novStart) && createdAt.Before(promoClosed)
 }
 
 // Invoice mirrors an invoice row for read APIs.

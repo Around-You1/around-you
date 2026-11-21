@@ -34,26 +34,26 @@ function isHalfRep(code: string): boolean {
 }
 const rand = (n: number) => "R" + n.toLocaleString("en-US");
 const mo = (n: number, half: boolean) => rand(half ? Math.round(n / 2) : n);
-function pricingText(cat: string, half: boolean): string {
-  const m = (n: number) => mo(n, half);
-  // The 50%-off launch promo is only for sign-ups during November 2026, so the
-  // promo line shows only through 30 Nov; from 1 Dec it's normal pricing.
-  const promo = Date.now() < Date.parse("2026-12-01T00:00:00+02:00");
-  const tail = " - 50% discount for November and December 2026 and January 2027. Normal pricing resumes 01 February 2027.";
+function pricingText(cat: string, _half: boolean): string {
+  // The launch promo is closed — prices below are the standard monthly fees. A
+  // discount Rep Code is the way to give a partner a reduced price now.
   switch (cat) {
     case "accommodation":
-      return promo ? "R300 per month" + tail : "R300 per month.";
+      return "R200 per month.";
     case "restaurant":
+      return "Restaurants R300 per month · Takeaways R200 per month.";
     case "service":
+      return "R200 per month.";
     case "attraction":
-      return promo ? "R300 per month" + tail : "R300 per month.";
+      return "R200 per month.";
     case "estate":
-      // Reads exactly like the other categories (base R300 + the promo line).
-      return promo ? "R300 per month" + tail : "R300 per month.";
+      return "R300 per month.";
     case "retail":
-      return promo ? "R500 per month" + tail : "R500 per month.";
-    case "nonprofit": return "Free — no monthly fee for registered NPO / PBO organisations.";
-    default: return "";
+      return "R500 per month.";
+    case "nonprofit":
+      return "Free — no monthly fee for registered NPO / PBO organisations.";
+    default:
+      return "";
   }
 }
 

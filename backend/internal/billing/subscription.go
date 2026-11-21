@@ -40,6 +40,45 @@ func EnsureSubscription(ctx context.Context, partnerType string, partnerID int64
 	}
 	p := PriceForUnits(partnerType, accessLevel, guestType, units)
 
+	// Restaurants tagged "Restaurant" bill R300; any takeaway-style profile (Take
+	// Away, Food Truck, Home Meals, Delivery, Pop Up — i.e. not tagged
+	// "Restaurant") bills R200.
+	if partnerType == "restaurant" {
+		var sitDown bool
+		_ = appdb.SQLDB.QueryRowContext(ctx,
+			`SELECT COALESCE('Restaurant' = ANY(restaurant_type), false) FROM restaurants WHERE id = $1`,
+			partnerID).Scan(&sitDown)
+		if sitDown {
+			p.MonthlyCents = Tier2Cents // R300
+		} else {
+			p.MonthlyCents = Tier1Cents // R200
+		}
+	}
+
+	// Fetch the subscription's override and creation time together.
+	var override sql.NullInt64
+	var subCreatedAt sql.NullTime
+	_ = appdb.SQLDB.QueryRowContext(ctx,
+		`SELECT monthly_cents_override, created_at FROM partner_subscription WHERE partner_type = $1 AND partner_id = $2`,
+		partnerType, partnerID).Scan(&override, &subCreatedAt)
+
+	// The Nov-2026 price cut (Accommodation/Business/Attractions → R200, and the
+	// Restaurant-vs-Takeaway split) applies to NEW sign-ups only. A subscription
+	// that already existed before the cut keeps the previous flat R300 even when
+	// its profile is re-saved, so existing partners are never re-priced.
+	priceSast := time.FixedZone("SAST", 2*3600)
+	priceCutoff := time.Date(2026, 11, 22, 0, 0, 0, 0, priceSast)
+	if subCreatedAt.Valid && subCreatedAt.Time.Before(priceCutoff) {
+		switch partnerType {
+		case "service", "attraction", "restaurant":
+			p.MonthlyCents = Tier2Cents // previous flat R300
+		case "accommodation":
+			if units < 6 {
+				p.MonthlyCents = Tier2Cents // previous R300 for 1–5 units
+			}
+		}
+	}
+
 	// Half-price reps (e.g. the internal "Around You 12" account, Rep00000012)
 	// bill their partners at half the normal monthly cost. The per-booking /
 	// pre-order usage fees added at billing time are unchanged.
@@ -51,12 +90,7 @@ func EnsureSubscription(ctx context.Context, partnerType string, partnerID int64
 	}
 
 	// A per-partner price override (an admin-set negotiated monthly fee) wins
-	// over the computed plan price and survives profile re-saves. The launch
-	// promo still applies on top at invoice time.
-	var override sql.NullInt64
-	_ = appdb.SQLDB.QueryRowContext(ctx,
-		`SELECT monthly_cents_override FROM partner_subscription WHERE partner_type = $1 AND partner_id = $2`,
-		partnerType, partnerID).Scan(&override)
+	// over the computed plan price and survives profile re-saves.
 	if override.Valid && override.Int64 > 0 {
 		p.MonthlyCents = int(override.Int64)
 	}

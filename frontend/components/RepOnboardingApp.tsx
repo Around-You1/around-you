@@ -69,7 +69,7 @@ function accMonthlyLabel(v: any) {
   if (n >= 21) return "R1,200";
   if (n >= 11) return "R800";
   if (n >= 6) return "R500";
-  return "R300";
+  return "R200";
 }
 
 const COUNTRY_OPTIONS = ["South Africa", "Asia", "Europe", "USA"];
@@ -1390,7 +1390,7 @@ export default function RepOnboardingApp() {
                       onChange={(next) => setVisibility(next)}
                     />
                     <p style={{ fontSize: 12, color: colors.textSecondary, marginTop: 6, marginBottom: 10 }}>
-                      <b style={{ color: colors.textPrimary }}>Monthly cost:</b> R300/month to show your profile to either Guests or Locals, or R400/month to show it to Both.
+                      <b style={{ color: colors.textPrimary }}>Monthly cost:</b> {isNpo ? "Free — no monthly fee for registered NPO / PBO organisations." : isRetail ? "R500/month." : isRestaurant ? "Restaurants R300/month · Takeaways (not tagged \"Restaurant\") R200/month." : "R200/month."}
                     </p>
                   </>
                 )}
@@ -1425,7 +1425,7 @@ export default function RepOnboardingApp() {
                 <TextField label="Number of Units / Rooms" value={data.units} onChange={set("units")} />
                 <div style={{ border: `1px solid ${colors.border}`, borderRadius: 8, padding: 10, marginBottom: 12, fontSize: 12, color: colors.textSecondary }}>
                   <div style={{ fontWeight: 700, color: colors.textPrimary, marginBottom: 6 }}>Monthly price by units</div>
-                  <div>1–5 units — R300</div>
+                  <div>1–5 units — R200</div>
                   <div>6–10 units — R500</div>
                   <div>11–20 units — R800</div>
                   <div>21–40 units — R1,200</div>
