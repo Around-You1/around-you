@@ -309,7 +309,7 @@ export const backend = {
       request("POST", "/push/subscribe", { body: req }),
     // SuperAdmin: push a notification to all Locals (default), everyone
     // ("all"), or one user (userId > 0, e.g. a draw winner).
-    send: (req: { title: string; body?: string; url?: string; audience?: string; userId?: number }) =>
+    send: (req: { title: string; body?: string; url?: string; audience?: string; userId?: number; expiresAt?: string }) =>
       request("POST", "/push/send", { body: req }),
   },
 

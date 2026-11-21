@@ -48,6 +48,7 @@ export default function AdminDashboard() {
   const [pendingByCat, setPendingByCat] = useState<Record<string, number>>({});
   const [pushTitle, setPushTitle] = useState("");
   const [pushBody, setPushBody] = useState("");
+  const [pushExpires, setPushExpires] = useState("");
   const [pushSending, setPushSending] = useState(false);
   const [pendingReps, setPendingReps] = useState(0);
   const [metricsOpen, setMetricsOpen] = useState(false);
@@ -199,6 +200,15 @@ export default function AdminDashboard() {
             rows={2}
             className="w-full rounded border border-border bg-background px-3 py-2"
           />
+          <div className="space-y-1">
+            <label className="block text-sm text-muted-foreground">End date &amp; time (optional) — the message is removed from everyone's inbox after this. Leave blank to keep it until you remove it.</label>
+            <input
+              type="datetime-local"
+              value={pushExpires}
+              onChange={(e) => setPushExpires(e.target.value)}
+              className="w-full rounded border border-border bg-background px-3 py-2"
+            />
+          </div>
           <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
@@ -227,9 +237,9 @@ export default function AdminDashboard() {
               onClick={async () => {
                 setPushSending(true);
                 try {
-                  const res: any = await getAuthenticatedBackend().push.send({ title: pushTitle.trim(), body: pushBody.trim(), audience: "local" });
+                  const res: any = await getAuthenticatedBackend().push.send({ title: pushTitle.trim(), body: pushBody.trim(), audience: "local", expiresAt: pushExpires ? new Date(pushExpires).toISOString() : undefined });
                   toast({ title: "Notification sent", description: `Delivered to ${res?.sent ?? 0} device${res?.sent === 1 ? "" : "s"}${res?.failed ? `, ${res.failed} failed` : ""}.` });
-                  setPushTitle(""); setPushBody("");
+                  setPushTitle(""); setPushBody(""); setPushExpires("");
                 } catch (e: any) {
                   toast({ title: "Couldn't send", description: e?.message || "Please try again.", variant: "destructive" });
                 } finally { setPushSending(false); }

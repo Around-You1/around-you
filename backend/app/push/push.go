@@ -83,8 +83,9 @@ type SendRequest struct {
 	Title    string `json:"title"`
 	Body     string `json:"body"`
 	URL      string `json:"url"`      // where tapping opens; defaults to "/"
-	Audience string `json:"audience"` // "local" (default) | "all"
-	UserID   int64  `json:"userId"`   // when > 0, send only to this user's devices
+	Audience string `json:"audience"`  // "local" (default) | "all"
+	UserID   int64  `json:"userId"`    // when > 0, send only to this user's devices
+	ExpiresAt string `json:"expiresAt"` // optional RFC3339; after this the inbox message is removed
 }
 
 type SendResponse struct {
@@ -130,10 +131,16 @@ func Send(ctx context.Context, req *SendRequest) (*SendResponse, error) {
 	if aud == "" {
 		aud = "local"
 	}
+	var expiresAt *time.Time
+	if e := strings.TrimSpace(req.ExpiresAt); e != "" {
+		if t, err := time.Parse(time.RFC3339, e); err == nil {
+			expiresAt = &t
+		}
+	}
 	if req.UserID == 0 && (aud == "local" || aud == "all") {
 		_, _ = appdb.SQLDB.ExecContext(ctx,
-			`INSERT INTO notifications (title, body, url, audience) VALUES ($1, $2, $3, $4)`,
-			title, strings.TrimSpace(req.Body), url, aud)
+			`INSERT INTO notifications (title, body, url, audience, expires_at) VALUES ($1, $2, $3, $4, $5)`,
+			title, strings.TrimSpace(req.Body), url, aud, expiresAt)
 	}
 
 	q := `SELECT ps.id, ps.endpoint, ps.p256dh, ps.auth
@@ -244,12 +251,20 @@ type RecentNotificationsResponse struct {
 //
 //encore:api public method=GET path=/notifications/recent
 func RecentNotifications(ctx context.Context) (*RecentNotificationsResponse, error) {
+	// Remove any messages whose end date/time has passed, so they disappear from
+	// every device's inbox.
+	_, _ = appdb.SQLDB.ExecContext(ctx, `DELETE FROM notifications WHERE expires_at IS NOT NULL AND expires_at <= now()`)
+	// Newest 30 that are still live, shown oldest-first so a newer message appears
+	// underneath the earlier ones (the first one stays at the top).
 	rows, err := appdb.SQLDB.QueryContext(ctx, `
-		SELECT id, title, body, url, created_at
-		FROM notifications
-		WHERE audience IN ('local', 'all')
-		ORDER BY created_at DESC, id DESC
-		LIMIT 30`)
+		SELECT id, title, body, url, created_at FROM (
+			SELECT id, title, body, url, created_at
+			FROM notifications
+			WHERE audience IN ('local', 'all') AND (expires_at IS NULL OR expires_at > now())
+			ORDER BY created_at DESC, id DESC
+			LIMIT 30
+		) t
+		ORDER BY created_at ASC, id ASC`)
 	if err != nil {
 		return nil, err
 	}
