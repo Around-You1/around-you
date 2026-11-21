@@ -13,6 +13,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import MonthlyPriceEditor from "./MonthlyPriceEditor";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -367,6 +368,8 @@ export default function EstateAgentForm({
           })
         )}
       </div>
+
+      {agentId ? <MonthlyPriceEditor entityType="estate_agent" entityId={agentId} /> : null}
 
       <div className="flex gap-2">
         <Button

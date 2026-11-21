@@ -11,6 +11,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import MonthlyPriceEditor from "./MonthlyPriceEditor";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -155,6 +156,8 @@ export default function EstateAgencyForm({
             <Input type="email" value={agency.email} onChange={(e) => setA("email")(e.target.value)} />
           </div>
         </div>
+
+        {agencyId ? <MonthlyPriceEditor entityType="estate_agency" entityId={agencyId} /> : null}
 
         <div className="flex gap-2">
           <Button

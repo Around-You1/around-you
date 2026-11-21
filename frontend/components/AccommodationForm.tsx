@@ -16,6 +16,7 @@ import { getAuthenticatedBackend } from "../lib/backend";
 import type { Accommodation } from "~backend/accommodation/types";
 import { useToast } from "@/components/ui/use-toast";
 import ProfileReferenceCodeDisplay from "./ProfileReferenceCodeDisplay";
+import MonthlyPriceEditor from "./MonthlyPriceEditor";
 import AccommodationAccessCode from "./AccommodationAccessCode";
 import { SA_PROVINCES } from "../lib/saRegions";
 
@@ -752,6 +753,10 @@ export default function AccommodationForm({ accommodation, onClose, partnerEdit 
               entityId={accommodation.id}
               currentCode={accommodation.profileReferenceCode}
             />
+          )}
+
+          {accommodation && !partnerEdit && (
+            <MonthlyPriceEditor entityType="accommodation" entityId={accommodation.id} />
           )}
 
           {accommodation && partnerEdit && (

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import ProfileReferenceCodeDisplay from "./ProfileReferenceCodeDisplay";
+import MonthlyPriceEditor from "./MonthlyPriceEditor";
 import MultiImageUpload from "./MultiImageUpload";
 import ImageUpload from "./ImageUpload";
 import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
@@ -1373,6 +1374,10 @@ export default function ServiceForm({ serviceId, onClose, partnerEdit = false, e
               entityStringId={serviceData.serviceId}
               currentCode={serviceData.profileReferenceCode}
             />
+          )}
+
+          {!partnerEdit && serviceData && kind !== "nonprofit" && (
+            <MonthlyPriceEditor entityType={kind} entityId={serviceData.id} />
           )}
 
           <div className="flex flex-col gap-4">

@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import ProfileReferenceCodeDisplay from "./ProfileReferenceCodeDisplay";
+import MonthlyPriceEditor from "./MonthlyPriceEditor";
 import MultiImageUpload from "./MultiImageUpload";
 import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
 import { loadCharity, saveCharity } from "../lib/charity";
@@ -1077,6 +1078,10 @@ export default function AttractionForm({ attractionId, onClose, partnerEdit = fa
               entityStringId={attractionData.attractionId}
               currentCode={attractionData.profileReferenceCode}
             />
+          )}
+
+          {!partnerEdit && attractionData && (
+            <MonthlyPriceEditor entityType="attraction" entityId={attractionData.id} />
           )}
 
           <div className="flex flex-col gap-4">
