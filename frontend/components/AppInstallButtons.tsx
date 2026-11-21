@@ -24,6 +24,15 @@ const GREEN = "bg-brand hover:bg-brand/90 text-brand-foreground font-semibold";
 
 export default function AppInstallButtons() {
   const [modal, setModal] = useState<null | "android" | "ios">(null);
+  // "Already Done?" hides this whole block for good on this device.
+  const [dismissed, setDismissed] = useState(false);
+  useEffect(() => {
+    try { if (localStorage.getItem("aroundYouIconDone") === "1") setDismissed(true); } catch { /* ignore */ }
+  }, []);
+  const markDone = () => {
+    try { localStorage.setItem("aroundYouIconDone", "1"); } catch { /* ignore */ }
+    setDismissed(true);
+  };
 
   // Register a minimal service worker so Chrome treats the site as installable.
   useEffect(() => {
@@ -49,19 +58,30 @@ export default function AppInstallButtons() {
     setModal("android");
   };
 
+  if (dismissed) return null;
+
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
-      <p className="text-lg font-medium text-foreground text-center sm:text-right max-w-sm">
-        To download the Around You app icon, click which one applies to you
+    <div className="flex flex-col items-center justify-center gap-3 pt-1">
+      <p className="text-lg font-medium text-foreground text-center max-w-sm">
+        Download the icon to your Home Screen click ...
       </p>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
         <Button type="button" className={GREEN} onClick={handleAndroid}>
           Android
         </Button>
+        <span className="text-sm font-bold text-muted-foreground">OR</span>
         <Button type="button" className={GREEN} onClick={() => setModal("ios")}>
           iPhone
         </Button>
       </div>
+      <Button
+        type="button"
+        variant="outline"
+        className="border-brand text-brand hover:bg-brand/10"
+        onClick={markDone}
+      >
+        Already Done?
+      </Button>
 
       {modal && (
         <div

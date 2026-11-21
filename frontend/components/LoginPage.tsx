@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
@@ -539,6 +539,18 @@ export default function LoginPage() {
     setActivePanel((prev) => (prev === panel ? null : panel));
   }
 
+  // When the Local panel opens, scroll its Enter button into view so the user
+  // doesn't have to scroll down to find it.
+  const localEnterRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (activePanel === "local") {
+      const t = setTimeout(() => {
+        localEnterRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 180);
+      return () => clearTimeout(t);
+    }
+  }, [activePanel]);
+
   function makeCodeHandlers(setter: (v: string) => void, errSetter: (v: boolean) => void) {
     return {
       onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -942,6 +954,7 @@ export default function LoginPage() {
               </div>
 
               <button
+                ref={localEnterRef}
                 type="submit"
                 disabled={loading}
                 style={{

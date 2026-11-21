@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Phone, ExternalLink, Tag, ChevronDown, ChevronLeft, ChevronRight, Search, Eye, EyeOff, MapPin, Globe, Instagram, Twitter, Youtube, Music, Star } from "lucide-react";
+import { Phone, ExternalLink, Tag, ChevronDown, ChevronLeft, ChevronRight, Search, Eye, EyeOff, MapPin, Globe, Instagram, Twitter, Youtube, Music, Star, Bell } from "lucide-react";
 import AddressDropdown from "../components/AddressDropdown";
 import DirectionsDropdown from "../components/DirectionsDropdown";
 import AddressDirectionsButton from "../components/AddressDirectionsButton";
@@ -1438,10 +1438,10 @@ export default function GuestDashboard() {
           <Button className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold" onClick={() => setShowMyStamps(true)}>My Stamp Cards</Button>
           <Button
             variant={hasUnreadNotif ? "default" : "outline"}
-            className={hasUnreadNotif ? "w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold" : "w-full border-brand text-brand hover:bg-brand/10"}
+            className={hasUnreadNotif ? "w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold" : "w-full border-brand text-brand hover:bg-brand/10"}
             onClick={() => setShowNotifs(true)}
           >
-            {hasUnreadNotif ? "🔔 " : ""}Messages &amp; Alerts
+            {hasUnreadNotif && <Bell className="w-4 h-4 mr-2 text-white" />}Messages &amp; Alerts
           </Button>
           {!pushOn && (
             <Button
