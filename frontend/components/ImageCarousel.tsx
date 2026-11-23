@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 interface ImageCarouselProps {
   images: string[];
@@ -135,7 +136,7 @@ export default function ImageCarousel({
         )}
       </div>
 
-      {lightbox && (
+      {lightbox && typeof document !== "undefined" && createPortal(
         <div
           className="fixed inset-0 z-[1000] bg-black/90 flex items-center justify-center"
           onClick={() => setLightbox(false)}
@@ -187,7 +188,8 @@ export default function ImageCarousel({
               {lightIndex + 1} / {validImages.length}
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
