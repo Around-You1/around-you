@@ -190,11 +190,17 @@ function SigninLineChart({
   const PAD_TOP = 26;
   const PAD_BOTTOM = 30;
   const H = PLOT_H + PAD_TOP + PAD_BOTTOM;
-  const max = Math.max(1, ...points.map((p) => p.count));
-  const width = Math.max(points.length * STEP, STEP);
+  // When printing, Chrome captures a scroll container from the far left, so the
+  // latest data gets cut off. Show only the most recent window (right-aligned,
+  // scaled to the page) so the PDF always lands on the latest dates.
+  const pc = useContext(PrintContext);
+  const printing = pc.printing;
+  const shown = printing ? points.slice(-11) : points;
+  const max = Math.max(1, ...shown.map((p) => p.count));
+  const width = Math.max(shown.length * STEP, STEP);
   const xAt = (i: number) => i * STEP + STEP / 2;
   const yAt = (c: number) => PAD_TOP + PLOT_H * (1 - c / max);
-  const linePoints = points.map((p, i) => `${xAt(i)},${yAt(p.count)}`).join(" ");
+  const linePoints = shown.map((p, i) => `${xAt(i)},${yAt(p.count)}`).join(" ");
 
   // Always open scrolled to the latest data (the right-hand end).
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -204,12 +210,18 @@ function SigninLineChart({
   }, [points]);
 
   return (
-    <div ref={scrollRef} className="overflow-x-auto pb-3 mb-4">
-      <svg width={width} height={H} className="block">
-        {points.length > 1 && (
+    <div ref={scrollRef} className={printing ? "pb-3 mb-4" : "overflow-x-auto pb-3 mb-4"}>
+      <svg
+        {...(printing
+          ? { width: "100%", viewBox: `0 0 ${width} ${H}`, preserveAspectRatio: "xMaxYMid meet" }
+          : { width })}
+        height={H}
+        className="block"
+      >
+        {shown.length > 1 && (
           <polyline fill="none" stroke="#AEECE4" strokeWidth={2} points={linePoints} />
         )}
-        {points.map((p, i) => {
+        {shown.map((p, i) => {
           const isSel = selectedKey === p.period;
           const cx = xAt(i);
           const cy = yAt(p.count);
