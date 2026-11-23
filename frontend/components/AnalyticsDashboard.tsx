@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, ReactNode, createContext, useContext } from "react";
+import { useState, useEffect, useRef, ReactNode, createContext, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -196,8 +196,15 @@ function SigninLineChart({
   const yAt = (c: number) => PAD_TOP + PLOT_H * (1 - c / max);
   const linePoints = points.map((p, i) => `${xAt(i)},${yAt(p.count)}`).join(" ");
 
+  // Always open scrolled to the latest data (the right-hand end).
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, [points]);
+
   return (
-    <div className="overflow-x-auto pb-3 mb-4">
+    <div ref={scrollRef} className="overflow-x-auto pb-3 mb-4">
       <svg width={width} height={H} className="block">
         {points.length > 1 && (
           <polyline fill="none" stroke="#AEECE4" strokeWidth={2} points={linePoints} />
@@ -298,6 +305,33 @@ function Section({
       </div>
       {isOpen && <CardContent className="pt-0">{children}</CardContent>}
     </Card>
+  );
+}
+
+// GraphReveal: inside an opened sign-in Section, show just the total first; the
+// description, breakdown tiles, filters and the graph sit behind a toggle (and
+// are forced open during a PDF export so the chart is captured).
+function GraphReveal({ total, children }: { total: number; children: ReactNode }) {
+  const [show, setShow] = useState(false);
+  const pc = useContext(PrintContext);
+  const open = show || pc.printing;
+  return (
+    <>
+      <p className="text-base text-muted-foreground">
+        Total for this selection:{" "}
+        <span className="text-3xl font-bold text-foreground">{total}</span>{" "}
+        sign-in{total === 1 ? "" : "s"}
+      </p>
+      <button
+        type="button"
+        onClick={() => setShow((v) => !v)}
+        className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[#00a99d] hover:underline print:hidden"
+      >
+        {open ? "Hide graph & breakdown" : "Show graph & breakdown"}
+        <ChevronDown className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && <div className="mt-4">{children}</div>}
+    </>
   );
 }
 
@@ -669,6 +703,7 @@ export default function AnalyticsDashboard() {
         <h1 className="text-4xl font-bold text-foreground">Analytics Dashboard</h1>
 
         <Section title="Locals">
+          <GraphReveal total={localPoints.reduce((sum, p) => sum + p.count, 0)}>
           <p className="text-sm text-muted-foreground mb-4">
             Every local resident who has signed into the app. Pick a local to see their sign-in history, or leave
             "All Locals" selected to see totals across everyone.
@@ -729,13 +764,6 @@ export default function AnalyticsDashboard() {
           ) : (
             <>
               <SigninLineChart points={localPoints} selectedKey={selectedPeriodKey} onSelect={loadSignins} />
-              <p className="text-base text-muted-foreground">
-                Total for this selection:{" "}
-                <span className="text-3xl font-bold text-foreground">
-                  {localPoints.reduce((sum, p) => sum + p.count, 0)}
-                </span>{" "}
-                sign-in{localPoints.reduce((sum, p) => sum + p.count, 0) === 1 ? "" : "s"}
-              </p>
               <p className="text-xs text-muted-foreground mt-1 print:hidden">Tip: click a point to see which locals signed in.</p>
 
               {selectedPeriodKey && (
@@ -772,9 +800,11 @@ export default function AnalyticsDashboard() {
               )}
             </>
           )}
+          </GraphReveal>
         </Section>
 
         <Section title="SuperAdmins">
+          <GraphReveal total={saPoints.reduce((sum, p) => sum + p.count, 0)}>
           <p className="text-sm text-muted-foreground mb-4">
             Every SuperAdmin who has signed into the app. Pick one to see their sign-in history, or leave
             "All SuperAdmins" selected to see totals across everyone.
@@ -834,13 +864,6 @@ export default function AnalyticsDashboard() {
           ) : (
             <>
               <SigninLineChart points={saPoints} selectedKey={saSelectedPeriodKey} onSelect={loadSaSignins} />
-              <p className="text-base text-muted-foreground">
-                Total for this selection:{" "}
-                <span className="text-3xl font-bold text-foreground">
-                  {saPoints.reduce((sum, p) => sum + p.count, 0)}
-                </span>{" "}
-                sign-in{saPoints.reduce((sum, p) => sum + p.count, 0) === 1 ? "" : "s"}
-              </p>
               <p className="text-xs text-muted-foreground mt-1 print:hidden">Tip: click a point to see which SuperAdmins signed in.</p>
 
               {saSelectedPeriodKey && (
@@ -877,9 +900,11 @@ export default function AnalyticsDashboard() {
               )}
             </>
           )}
+          </GraphReveal>
         </Section>
 
         <Section title="Holiday Guests">
+          <GraphReveal total={hgPoints.reduce((sum, p) => sum + p.count, 0)}>
           <p className="text-sm text-muted-foreground mb-4">
             Every accommodation a holiday guest has signed into. Pick an accommodation to see its sign-in history, or
             leave "All Accommodations" selected to see totals across all of them.
@@ -939,13 +964,6 @@ export default function AnalyticsDashboard() {
           ) : (
             <>
               <SigninLineChart points={hgPoints} selectedKey={hgSelectedPeriodKey} onSelect={loadHgSignins} />
-              <p className="text-base text-muted-foreground">
-                Total for this selection:{" "}
-                <span className="text-3xl font-bold text-foreground">
-                  {hgPoints.reduce((sum, p) => sum + p.count, 0)}
-                </span>{" "}
-                sign-in{hgPoints.reduce((sum, p) => sum + p.count, 0) === 1 ? "" : "s"}
-              </p>
               <p className="text-xs text-muted-foreground mt-1 print:hidden">Tip: click a point to see which guests signed in.</p>
 
               {hgSelectedPeriodKey && (
@@ -981,9 +999,11 @@ export default function AnalyticsDashboard() {
               )}
             </>
           )}
+          </GraphReveal>
         </Section>
 
         <Section title="Partners">
+          <GraphReveal total={partnerPoints.reduce((sum, p) => sum + p.count, 0)}>
           <p className="text-sm text-muted-foreground mb-4">
             Every partner that has signed into the Partner Portal. Pick a partner to see their sign-in history, or
             leave "All Partners" selected to see totals across all of them.
@@ -1043,13 +1063,6 @@ export default function AnalyticsDashboard() {
           ) : (
             <>
               <SigninLineChart points={partnerPoints} selectedKey={pSelectedPeriodKey} onSelect={loadPSignins} />
-              <p className="text-base text-muted-foreground">
-                Total for this selection:{" "}
-                <span className="text-3xl font-bold text-foreground">
-                  {partnerPoints.reduce((sum, p) => sum + p.count, 0)}
-                </span>{" "}
-                sign-in{partnerPoints.reduce((sum, p) => sum + p.count, 0) === 1 ? "" : "s"}
-              </p>
               <p className="text-xs text-muted-foreground mt-1 print:hidden">Tip: click a point to see which partners signed in.</p>
 
               {pSelectedPeriodKey && (
@@ -1086,9 +1099,11 @@ export default function AnalyticsDashboard() {
               )}
             </>
           )}
+          </GraphReveal>
         </Section>
 
         <Section title="Overall sign ins">
+          <GraphReveal total={overallPoints.reduce((sum, p) => sum + p.count, 0)}>
           <p className="text-sm text-muted-foreground mb-4">
             Every sign-in across the whole platform — Accommodation Guests, Locals, Partners and SuperAdmins combined. Filter to one
             audience, or leave "All audiences" selected to see the grand total over time.
@@ -1162,13 +1177,6 @@ export default function AnalyticsDashboard() {
           ) : (
             <>
               <SigninLineChart points={overallPoints} selectedKey={oSelectedPeriodKey} onSelect={loadOSignins} />
-              <p className="text-base text-muted-foreground">
-                Total for this selection:{" "}
-                <span className="text-3xl font-bold text-foreground">
-                  {overallPoints.reduce((sum, p) => sum + p.count, 0)}
-                </span>{" "}
-                sign-in{overallPoints.reduce((sum, p) => sum + p.count, 0) === 1 ? "" : "s"}
-              </p>
               <p className="text-xs text-muted-foreground mt-1 print:hidden">Tip: click a point to see who signed in.</p>
 
               {oSelectedPeriodKey && (
@@ -1205,6 +1213,7 @@ export default function AnalyticsDashboard() {
               )}
             </>
           )}
+          </GraphReveal>
         </Section>
 
         <Section title="Charity Support by Province">
