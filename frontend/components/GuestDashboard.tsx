@@ -746,7 +746,7 @@ export default function GuestDashboard() {
                           />
                           <div className="flex-1 min-w-0 space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="font-semibold truncate">{service.name}</h4>
+                              <h4 className="text-lg font-bold text-brand truncate">{service.name}</h4>
                               <SupportBadge orgName={service.supportOrgName} />
                             </div>
                             {isNpo && (((service as any).npoNumber || (service as any).pboNumber)) && (
@@ -1069,7 +1069,7 @@ export default function GuestDashboard() {
                     intervalMs={3000}
                   />
                 </div>
-                <h3 className="font-semibold text-lg truncate">{accommodation!.name}</h3>
+                <h3 className="text-lg font-bold text-brand truncate">{accommodation!.name}</h3>
 
                 <Button
                   variant="outline"
@@ -1550,7 +1550,7 @@ export default function GuestDashboard() {
                               intervalMs={3000}
                             />
                             <div className="flex-1 min-w-0 space-y-1">
-                              <h4 className="font-semibold">{acc.name}</h4>
+                              <h4 className="text-lg font-bold text-brand">{acc.name}</h4>
                               <div className="text-sm text-muted-foreground space-y-1">
                                 {acc.area && <div><span className="font-medium text-foreground">Area:</span> {acc.area}</div>}
                                 {acc.province && <div><span className="font-medium text-foreground">Province:</span> {acc.province}</div>}
@@ -1616,7 +1616,7 @@ export default function GuestDashboard() {
                           />
                           <div className="flex-1 min-w-0 space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="font-semibold truncate">{restaurant.name}</h4>
+                              <h4 className="text-lg font-bold text-brand truncate">{restaurant.name}</h4>
                               <SupportBadge orgName={restaurant.supportOrgName} />
                               {restaurant.littleExplorerApproved && <span title="Child Friendly">👶</span>}
                             </div>
@@ -2125,7 +2125,7 @@ export default function GuestDashboard() {
                           />
                           <div className="flex-1 min-w-0 space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="font-semibold truncate">{attraction.name}</h4>
+                              <h4 className="text-lg font-bold text-brand truncate">{attraction.name}</h4>
                               <SupportBadge orgName={attraction.supportOrgName} />
                             </div>
 
