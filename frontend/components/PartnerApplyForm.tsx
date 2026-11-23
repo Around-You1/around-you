@@ -241,6 +241,7 @@ export default function PartnerApplyForm() {
     const businessName = (vals[nameSpec?.key || ""] || "").trim();
     const province = (vals["Province"] || "").trim();
     if (!businessName) { setErr("Please enter your business name."); return; }
+    if (!province) { setErr("Please select your province."); return; }
     if (!(vals["Contact email"] || "").trim()) { setErr("Please enter a contact email (for your account and invoices)."); return; }
     if (!(vals["Contact number"] || "").trim()) { setErr("Please enter a contact number."); return; }
     if (!(vals["Postal code"] || "").trim()) { setErr("Please enter your postal code — this sets your area."); return; }

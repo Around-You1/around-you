@@ -486,7 +486,7 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 		view := invoiceView{
 			Number: number, Date: start, Due: due,
 			Lines:    lines,
-			BillName: firstNonEmpty(holding, name), BillReg: reg, BillVat: vat,
+			BillName: firstNonEmpty(holding, name), BillBusinessName: name, BillReg: reg, BillVat: vat,
 			BillContactName: contactName, BillContactNumber: contactNumber, BillEmail: email,
 		}
 		html := invoiceEmailBodyHTML(view, withCodes)
@@ -497,7 +497,7 @@ func GenerateInvoice(ctx context.Context, subID int64, partnerType string, partn
 		atts := []mailer.Attachment{{Filename: invoicePDFName(number), Content: pdf}}
 		if qr, ok := buildQRCodePDF(ctx, partnerType, partnerID); ok {
 			atts = append(atts, mailer.Attachment{Filename: "profile-qr-code.pdf", Content: qr})
-			html = qrDecalNoteHTML() + html
+			html = qrDecalNoteHTML(name) + html
 		}
 		_ = mailer.SendFull(email, "Your "+bizName+" invoice "+number, html, "", []string{"accounts@aroundyou.co.za"}, copyBcc(settings), atts)
 	}
@@ -578,7 +578,7 @@ func buildInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) (st
 	view := invoiceView{
 		Number: number, Date: start, Due: due,
 		Lines:    lines,
-		BillName: firstNonEmpty(billHolding, billName), BillReg: billReg, BillVat: billVat,
+		BillName: firstNonEmpty(billHolding, billName), BillBusinessName: billName, BillReg: billReg, BillVat: billVat,
 		BillContactName: contactName, BillContactNumber: contactNumber, BillEmail: email,
 	}
 	html := invoiceEmailBodyHTML(view, withCodes)
@@ -589,7 +589,7 @@ func buildInvoiceEmail(ctx context.Context, invoiceID int64, withCodes bool) (st
 	atts := []mailer.Attachment{{Filename: invoicePDFName(number), Content: pdf}}
 	if qr, ok := buildQRCodePDF(ctx, partnerType, partnerID); ok {
 		atts = append(atts, mailer.Attachment{Filename: "profile-qr-code.pdf", Content: qr})
-		html = qrDecalNoteHTML() + html
+		html = qrDecalNoteHTML(billName) + html
 	}
 	return "Your " + bizName + " invoice " + number, html, atts, email, settings, nil
 }
@@ -719,7 +719,7 @@ func SendComplimentaryOnboardingEmail(ctx context.Context, partnerType string, p
 	body := b.String()
 	if qr, ok := buildQRCodePDF(ctx, partnerType, partnerID); ok {
 		atts = append(atts, mailer.Attachment{Filename: "profile-qr-code.pdf", Content: qr})
-		body = qrDecalNoteHTML() + body
+		body = qrDecalNoteHTML(name) + body
 	}
 	return mailer.SendFull(email, "Welcome to "+bizName+" — "+name, body, "", []string{"accounts@aroundyou.co.za"}, copyBcc(settings), atts)
 }
@@ -757,7 +757,7 @@ func ResendPartnerWelcome(ctx context.Context, partnerType string, partnerID int
 	var atts []mailer.Attachment
 	if qr, ok := buildQRCodePDF(ctx, partnerType, partnerID); ok {
 		atts = append(atts, mailer.Attachment{Filename: "profile-qr-code.pdf", Content: qr})
-		body = qrDecalNoteHTML() + body
+		body = qrDecalNoteHTML(name) + body
 	}
 	if err := mailer.SendFull(email, bizName+" — your sign-in details ("+name+")", body, "", []string{"accounts@aroundyou.co.za"}, copyBcc(settings), atts); err != nil {
 		return false, err
@@ -887,7 +887,7 @@ type invoiceView struct {
 	Cents              int
 	Lines              []invoiceLine
 	// Bill-to (pulled from the partner's Official Use).
-	BillName, BillReg, BillVat, BillContactName, BillContactNumber, BillEmail string
+	BillName, BillBusinessName, BillReg, BillVat, BillContactName, BillContactNumber, BillEmail string
 }
 
 // lines normalises a view to its item rows, folding the single-item fields into
@@ -939,8 +939,12 @@ func money(cents int) string {
 
 // qrDecalNoteHTML is the one-line note shown at the top of partner emails that
 // carry the profile-QR attachment, so partners know what the QR is for.
-func qrDecalNoteHTML() string {
-	return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:780px;color:#111;font-size:13px;margin:0 0 14px"><p style="margin:0;font-weight:bold">The attached QR Code opens your Around You profile when scanned. Print it for your front door, window or vehicle decals (such as car branding), so Guests and Locals can scan straight through to your listing.</p></div>`
+func qrDecalNoteHTML(businessName string) string {
+	who := ""
+	if b := strings.TrimSpace(businessName); b != "" {
+		who = " for " + htmlPkg.EscapeString(b)
+	}
+	return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:780px;color:#111;font-size:13px;margin:0 0 14px"><p style="margin:0;font-weight:bold">The attached QR Code` + who + ` opens your Around You profile when scanned. Print it for your front door, window or vehicle decals (such as car branding), so Guests and Locals can scan straight through to your listing.</p></div>`
 }
 
 // invoiceEmailBodyHTML is the short message shown in the invoice EMAIL body. The
@@ -1013,6 +1017,9 @@ func renderInvoiceHTML(s *InvoiceSettings, v invoiceView) string {
 	row("Balance Due", total)
 	b.WriteString(`</table></td><td valign="top" width="50%">`)
 	b.WriteString(`<div style="font-weight:bold">` + esc(firstNonEmpty(v.BillName, "Partner")) + `</div>`)
+	if bn := strings.TrimSpace(v.BillBusinessName); bn != "" && !strings.EqualFold(bn, strings.TrimSpace(v.BillName)) {
+		b.WriteString(`<div>` + esc(bn) + `</div>`)
+	}
 	addBill := func(val string) {
 		if strings.TrimSpace(val) != "" {
 			b.WriteString(`<div>` + esc(val) + `</div>`)
