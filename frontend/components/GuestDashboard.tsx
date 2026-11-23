@@ -733,7 +733,7 @@ export default function GuestDashboard() {
     const retailSpecials: Array<{ type: string; audience: string; enabled: boolean; line1: string; line2: string }> =
       isRetail ? ((((service as any).specials) || []) as any[]).filter((sp) => sp && sp.enabled && sp.line1 && audienceOk(sp.audience)) : [];
     return (
-    <Card key={service.id} className="hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
+    <Card key={service.id} className="border-l-4 border-l-brand dark:bg-[#0e2638] dark:border-y-[#1e4a6b] dark:border-r-[#1e4a6b] hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
                       <CardContent className="px-3 py-1">
                         <div className="flex flex-col sm:flex-row gap-1.5">
                           <ImageCarousel
@@ -1539,7 +1539,7 @@ export default function GuestDashboard() {
                 ) : (
                   <div className="space-y-2">
                     {localAccommodations.map((acc) => (
-                      <Card key={acc.id} className="hover:shadow-md transition-shadow">
+                      <Card key={acc.id} className="border-l-4 border-l-brand dark:bg-[#0e2638] dark:border-y-[#1e4a6b] dark:border-r-[#1e4a6b] hover:shadow-md transition-shadow">
                         <CardContent className="px-3 py-1">
                           <div className="flex flex-col sm:flex-row gap-1.5">
                             <ImageCarousel
@@ -1604,7 +1604,7 @@ export default function GuestDashboard() {
               ) : (
                 <div className="space-y-2">
                   {filteredRestaurants.map((restaurant) => (
-                    <Card key={restaurant.id} className="hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
+                    <Card key={restaurant.id} className="border-l-4 border-l-brand dark:bg-[#0e2638] dark:border-y-[#1e4a6b] dark:border-r-[#1e4a6b] hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
                       <CardContent className="px-3 py-1">
                         <div className="flex flex-col sm:flex-row gap-1.5">
                           <ImageCarousel
@@ -2113,7 +2113,7 @@ export default function GuestDashboard() {
               ) : (
                 <div className="space-y-2">
                   {filteredAttractions.map((attraction) => (
-                    <Card key={attraction.id} className="hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
+                    <Card key={attraction.id} className="border-l-4 border-l-brand dark:bg-[#0e2638] dark:border-y-[#1e4a6b] dark:border-r-[#1e4a6b] hover:shadow-md transition-shadow active:scale-[0.98] transition-transform">
                       <CardContent className="px-3 py-1">
                         <div className="flex flex-col sm:flex-row gap-1.5">
                           <ImageCarousel

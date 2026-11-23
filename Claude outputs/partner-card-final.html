@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Partner Card — Final</title>
+<style>
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:#eef2f5; color:#0f172a; }
+  .wrap{ max-width:900px; margin:0 auto; padding:22px 16px 48px; }
+  h1{ font-size:1.25rem; margin:0 0 4px; }
+  .sub{ color:#64748b; font-size:.9rem; margin:0 0 20px; line-height:1.5; }
+  .cols{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:680px){ .cols{ grid-template-columns:1fr; } }
+  .panel{ border-radius:16px; padding:16px; }
+  .panel.light{ background:#f1f5f9; }
+  .panel.dark{ background:#0a0a0a; }
+  .panel h2{ font-size:.8rem; text-transform:uppercase; letter-spacing:.06em; margin:2px 4px 14px; }
+  .panel.light h2{ color:#64748b; }
+  .panel.dark h2{ color:#94a3b8; }
+
+  .card{ border-radius:16px; padding:12px; border:1px solid transparent; border-left:4px solid var(--brand); }
+  .thumb{ height:120px; border-radius:12px; margin-bottom:12px;
+    background:linear-gradient(135deg,#cbd5e1,#94a3b8); display:flex; align-items:center; justify-content:center; color:#f8fafc; font-size:.8rem; }
+  .meta{ font-size:.82rem; margin:2px 2px 0; color:var(--meta); }
+  .more{ display:inline-block; margin-top:12px; font-size:.85rem; padding:8px 16px; border-radius:10px; border:1px solid; font-weight:600; color:var(--brand); }
+
+  .light{ --brand:#16a34a; --fg:#0f172a; --meta:#475569; }
+  .dark{ --brand:#39ff14; --fg:#f1f5f9; --meta:#9ca3af; }
+  .name{ font-size:1.15rem; font-weight:800; color:var(--brand); margin:2px; }
+
+  /* LIGHT: white card + green accent bar */
+  .light .card{ background:#ffffff; border-color:#e2e8f0; border-left-color:var(--brand); }
+  .light .more{ border-color:#cbd5e1; }
+
+  /* DARK: deep navy card + green accent bar (as per image 1) */
+  .dark .card{ background:#0e2638; border-color:#1e4a6b; border-left-color:var(--brand); }
+  .dark .more{ border-color:#38bdf8; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Partner card — final</h1>
+  <p class="sub">Light mode white with the green accent bar (left); dark mode deep-navy with the green accent bar, matching image 1 (right). This is what I’ll apply to both the Guest and Local partner cards.</p>
+
+  <div class="cols">
+    <div class="panel light">
+      <h2>Light mode</h2>
+      <div class="card">
+        <div class="thumb">photo</div>
+        <div class="name">Die See Ster</div>
+        <div class="meta">Self-catering · Jongensfontein</div>
+        <span class="more">More info</span>
+      </div>
+    </div>
+
+    <div class="panel dark">
+      <h2>Dark mode</h2>
+      <div class="card">
+        <div class="thumb">photo</div>
+        <div class="name">Die See Ster</div>
+        <div class="meta">Self-catering · Jongensfontein</div>
+        <span class="more">More info</span>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

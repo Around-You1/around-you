@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Partner Card — White, Green Accent</title>
+<style>
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:#eef2f5; color:#0f172a; }
+  .wrap{ max-width:900px; margin:0 auto; padding:22px 16px 48px; }
+  h1{ font-size:1.25rem; margin:0 0 4px; }
+  .sub{ color:#64748b; font-size:.9rem; margin:0 0 20px; line-height:1.5; }
+  .cols{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:680px){ .cols{ grid-template-columns:1fr; } }
+  .panel{ border-radius:16px; padding:16px; }
+  .panel.light{ background:#f1f5f9; }
+  .panel.dark{ background:#0a0a0a; }
+  .panel h2{ font-size:.8rem; text-transform:uppercase; letter-spacing:.06em; margin:2px 4px 14px; }
+  .panel.light h2{ color:#64748b; }
+  .panel.dark h2{ color:#94a3b8; }
+
+  .card{ border-radius:16px; padding:12px; margin-bottom:16px; border:1px solid transparent; border-left:4px solid var(--brand); }
+  .optlabel{ font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; opacity:.6; margin:0 2px 8px; }
+  .thumb{ height:120px; border-radius:12px; margin-bottom:12px;
+    background:linear-gradient(135deg,#cbd5e1,#94a3b8); display:flex; align-items:center; justify-content:center; color:#f8fafc; font-size:.8rem; }
+  .meta{ font-size:.82rem; margin:2px 2px 0; color:var(--meta); }
+  .more{ display:inline-block; margin-top:12px; font-size:.85rem; padding:8px 16px; border-radius:10px; border:1px solid; font-weight:600; color:var(--brand); }
+
+  .light{ --brand:#16a34a; --fg:#0f172a; --meta:#475569; }
+  .dark{ --brand:#39ff14; --fg:#f1f5f9; --meta:#9ca3af; }
+  .name{ font-size:1.15rem; font-weight:800; color:var(--brand); margin:2px; }
+
+  /* white light-mode card, green accent bar */
+  .light .w{ background:#ffffff; border-color:#e2e8f0; border-left-color:var(--brand); }
+  .light .w .more{ border-color:#cbd5e1; }
+
+  /* dark-mode equivalent: card surface + green accent bar */
+  .dark .w{ background:#141414; border-color:#262626; border-left-color:var(--brand); }
+  .dark .w .more{ border-color:#3f3f46; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>White card · green accent bar</h1>
+  <p class="sub">Light mode stays white (left) with just the green accent bar added; the dark-mode equivalent is on the right. If you’d like this instead of the blue, say the word and I’ll apply it to the Guest and Local partner cards.</p>
+
+  <div class="cols">
+    <!-- LIGHT -->
+    <div class="panel light">
+      <h2>Light mode</h2>
+      <div class="card w">
+        <div class="optlabel">White + green accent</div>
+        <div class="thumb">photo</div>
+        <div class="name">Die See Ster</div>
+        <div class="meta">Self-catering · Jongensfontein</div>
+        <span class="more">More info</span>
+      </div>
+    </div>
+
+    <!-- DARK -->
+    <div class="panel dark">
+      <h2>Dark mode</h2>
+      <div class="card w">
+        <div class="optlabel" style="color:#9aa">Dark card + green accent</div>
+        <div class="thumb">photo</div>
+        <div class="name">Die See Ster</div>
+        <div class="meta">Self-catering · Jongensfontein</div>
+        <span class="more">More info</span>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
