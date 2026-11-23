@@ -234,7 +234,7 @@ export default function AccommodationList({ accommodations, onEdit, onUpdate }: 
           <Collapsible key={accommodation.id} open={isOpen} onOpenChange={() => toggleOpen(accommodation.id)}>
             <Card className="shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="p-2">
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                   {isAdmin && (
                     <input
                       type="checkbox"
@@ -246,9 +246,9 @@ export default function AccommodationList({ accommodations, onEdit, onUpdate }: 
                     />
                   )}
                   <CollapsibleTrigger asChild>
-                    <button className="flex items-center gap-2 flex-1 min-w-0 text-left">
+                    <button className="flex items-center flex-wrap gap-2 flex-1 min-w-0 text-left w-full">
                       {isOpen ? <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />}
-                      <h3 className="font-semibold text-sm text-foreground truncate min-w-0 flex-1">{accommodation.name}</h3>
+                      <h3 className="font-semibold text-sm text-foreground min-w-0">{accommodation.name}</h3>
                       {accommodation.isDuplicate && (
                         <Badge variant="destructive" className="text-xs shrink-0" title={accommodation.duplicateReason || "Duplicate Entry"}>
                           Duplicate
@@ -258,7 +258,7 @@ export default function AccommodationList({ accommodations, onEdit, onUpdate }: 
                       <span className="hidden sm:inline text-xs text-muted-foreground truncate">{accommodation.province}</span>
                     </button>
                   </CollapsibleTrigger>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
                     {accommodation.profileReferenceCode && (
                       <div className="hidden sm:flex items-center gap-1">
                         <span className="text-xs font-mono text-muted-foreground">{accommodation.profileReferenceCode}</span>
