@@ -784,7 +784,7 @@ export default function GuestDashboard() {
                                 Redeem discount
                               </Button>
                             )}
-                            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => toggleCard(entityType + ":" + service.id)}>
+                            <Button variant="outline" size="sm" className="w-full sm:w-auto border-brand dark:border-input" onClick={() => toggleCard(entityType + ":" + service.id)}>
                               {expandedCards.has(entityType + ":" + service.id) ? "Less info" : "More info"}
                             </Button>
                             {expandedCards.has(entityType + ":" + service.id) && (
@@ -1074,7 +1074,7 @@ export default function GuestDashboard() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full mt-3"
+                  className="w-full mt-3 border-brand dark:border-input"
                   onClick={() => setShowAccInfo((v) => !v)}
                 >
                   {showAccInfo ? "Less info" : "More info"}
@@ -1649,7 +1649,7 @@ export default function GuestDashboard() {
                                 Redeem discount
                               </Button>
                             )}
-                            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => toggleCard("restaurant:" + restaurant.id)}>
+                            <Button variant="outline" size="sm" className="w-full sm:w-auto border-brand dark:border-input" onClick={() => toggleCard("restaurant:" + restaurant.id)}>
                               {expandedCards.has("restaurant:" + restaurant.id) ? "Less info" : "More info"}
                             </Button>
                             {expandedCards.has("restaurant:" + restaurant.id) && (
@@ -2157,7 +2157,7 @@ export default function GuestDashboard() {
                                 Redeem discount
                               </Button>
                             )}
-                            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => toggleCard("attraction:" + attraction.id)}>
+                            <Button variant="outline" size="sm" className="w-full sm:w-auto border-brand dark:border-input" onClick={() => toggleCard("attraction:" + attraction.id)}>
                               {expandedCards.has("attraction:" + attraction.id) ? "Less info" : "More info"}
                             </Button>
                             {expandedCards.has("attraction:" + attraction.id) && (
