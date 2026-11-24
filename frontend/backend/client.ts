@@ -229,6 +229,9 @@ export const backend = {
     sendTestInvoice: (req?: { to?: string }) => request("POST", "/billing/invoice/test-send", { body: req || {} }),
     reminders: () => request("GET", "/billing/reminders"),
     sendReminders: (req: { invoiceIds: number[] }) => request("POST", "/billing/reminders/send", { body: req }),
+    nextRunPaid: () => request("GET", "/billing/next-run-paid"),
+    setNextRunPaid: (req: { partnerType: string; partnerId: number; billDate: string; paid: boolean }) =>
+      request("POST", "/billing/next-run/set-paid", { body: req }),
   },
 
   loyalty: {

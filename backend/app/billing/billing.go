@@ -160,6 +160,87 @@ func SetCommissionPaid(ctx context.Context, req *SetCommissionPaidRequest) (*Set
 	return &SetCommissionPaidResponse{OK: true}, nil
 }
 
+// --- New Billing Run: per-partner "paid" tracker -------------------------
+// A SuperAdmin ticks off who has paid for an upcoming run. Purely a visual
+// tracker keyed by (partner, bill date); it does NOT touch invoices, reminders
+// or partner status.
+
+type NextRunPaidRow struct {
+	PartnerType string `json:"partnerType"`
+	PartnerID   int64  `json:"partnerId"`
+	BillDate    string `json:"billDate"` // YYYY-MM-DD
+}
+type NextRunPaidResponse struct {
+	Paid []NextRunPaidRow `json:"paid"`
+}
+
+// NextRunPaid lists every (partner, bill date) a SuperAdmin has marked paid, so
+// the New Billing Run view can show green/empty circles. SuperAdmin-only.
+//
+//encore:api auth method=GET path=/billing/next-run-paid
+func NextRunPaid(ctx context.Context) (*NextRunPaidResponse, error) {
+	if !isSuperAdmin(ctx) {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can view the billing run"}
+	}
+	rows, err := appdb.SQLDB.QueryContext(ctx, `
+		SELECT partner_type, partner_id, to_char(bill_date, 'YYYY-MM-DD')
+		FROM billing_run_paid`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []NextRunPaidRow{}
+	for rows.Next() {
+		var r NextRunPaidRow
+		if err := rows.Scan(&r.PartnerType, &r.PartnerID, &r.BillDate); err != nil {
+			return nil, err
+		}
+		out = append(out, r)
+	}
+	return &NextRunPaidResponse{Paid: out}, rows.Err()
+}
+
+type SetNextRunPaidRequest struct {
+	PartnerType string `json:"partnerType"`
+	PartnerID   int64  `json:"partnerId"`
+	BillDate    string `json:"billDate"` // YYYY-MM-DD
+	Paid        bool   `json:"paid"`
+}
+type SetNextRunPaidResponse struct {
+	OK bool `json:"ok"`
+}
+
+// SetNextRunPaid marks one partner paid (green) or outstanding (empty) for a
+// given bill date. SuperAdmin-only.
+//
+//encore:api auth method=POST path=/billing/next-run/set-paid
+func SetNextRunPaid(ctx context.Context, req *SetNextRunPaidRequest) (*SetNextRunPaidResponse, error) {
+	if !isSuperAdmin(ctx) {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can update the billing run"}
+	}
+	if strings.TrimSpace(req.PartnerType) == "" || req.PartnerID == 0 || strings.TrimSpace(req.BillDate) == "" {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "partnerType, partnerId and billDate are required"}
+	}
+	if req.Paid {
+		_, err := appdb.SQLDB.ExecContext(ctx, `
+			INSERT INTO billing_run_paid (partner_type, partner_id, bill_date, paid_at)
+			VALUES ($1, $2, $3::date, now())
+			ON CONFLICT (partner_type, partner_id, bill_date) DO UPDATE SET paid_at = now()`,
+			req.PartnerType, req.PartnerID, req.BillDate)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		_, err := appdb.SQLDB.ExecContext(ctx, `
+			DELETE FROM billing_run_paid WHERE partner_type = $1 AND partner_id = $2 AND bill_date = $3::date`,
+			req.PartnerType, req.PartnerID, req.BillDate)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &SetNextRunPaidResponse{OK: true}, nil
+}
+
 type EmailStatementsRequest struct {
 	Period string `json:"period"`
 }

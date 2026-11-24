@@ -154,6 +154,175 @@ function CollapsibleCard({
   );
 }
 
+// --- New Billing Run -------------------------------------------------------
+// The upcoming monthly run grouped by category. Collapsed, each category shows
+// its total; expand to see each partner, their bill date and amount, and a
+// click-to-toggle Paid circle (green = paid, empty = still outstanding). The
+// Paid state is a saved visual tracker only — it does not change invoices,
+// reminders or partner status.
+const RUN_CATEGORIES: { type: string; label: string }[] = [
+  { type: "accommodation", label: "Accommodation" },
+  { type: "restaurant", label: "Restaurant" },
+  { type: "service", label: "Business" },
+  { type: "attraction", label: "Attraction" },
+  { type: "estate_agency", label: "Real Estate" },
+  { type: "estate_agent", label: "Estate Agents" },
+  { type: "retail", label: "Retail" },
+];
+
+function NextBillingRunCard({ subs }: { subs: Subscription[] }) {
+  const { toast } = useToast();
+  const [paid, setPaid] = useState<Set<string>>(new Set());
+  const [openCats, setOpenCats] = useState<Set<string>>(new Set());
+  const [saving, setSaving] = useState<string | null>(null);
+
+  const keyOf = (s: Subscription) => `${s.partnerType}:${s.partnerId}:${s.nextBillDate}`;
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res: any = await getAuthenticatedBackend().billing.nextRunPaid();
+        if (!alive) return;
+        const set = new Set<string>();
+        for (const r of (res?.paid || [])) set.add(`${r.partnerType}:${r.partnerId}:${r.billDate}`);
+        setPaid(set);
+      } catch {
+        /* best-effort — circles just start empty */
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  const byType = useMemo(() => {
+    const m: Record<string, Subscription[]> = {};
+    for (const s of subs) (m[s.partnerType] ||= []).push(s);
+    for (const k of Object.keys(m)) {
+      m[k].sort((a, b) => (a.partnerName || "").localeCompare(b.partnerName || ""));
+    }
+    return m;
+  }, [subs]);
+
+  const grandTotal = subs.reduce((sum, s) => sum + s.monthlyCents, 0);
+
+  const toggleCat = (t: string) =>
+    setOpenCats((prev) => {
+      const n = new Set(prev);
+      n.has(t) ? n.delete(t) : n.add(t);
+      return n;
+    });
+
+  const togglePaid = async (s: Subscription) => {
+    const k = keyOf(s);
+    const willPay = !paid.has(k);
+    setSaving(k);
+    setPaid((prev) => {
+      const n = new Set(prev);
+      willPay ? n.add(k) : n.delete(k);
+      return n;
+    });
+    try {
+      await getAuthenticatedBackend().billing.setNextRunPaid({
+        partnerType: s.partnerType,
+        partnerId: s.partnerId,
+        billDate: s.nextBillDate,
+        paid: willPay,
+      });
+    } catch (e: any) {
+      setPaid((prev) => {
+        const n = new Set(prev);
+        willPay ? n.delete(k) : n.add(k);
+        return n;
+      });
+      toast({ title: "Couldn't update", description: e?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  return (
+    <CollapsibleCard title={`New Billing Run · Total ${rand(grandTotal)}`} defaultOpen contentClassName="space-y-2">
+      <p className="text-sm text-muted-foreground">
+        Every partner the next monthly run will invoice, grouped by category. Click a category to see each
+        partner, their bill date and amount. Tap the circle under <strong>Paid</strong> as payments come in —
+        green means paid, empty means still outstanding so you can follow up.
+      </p>
+      <div className="rounded-md border border-border divide-y divide-border">
+        {RUN_CATEGORIES.map(({ type, label }) => {
+          const rows = byType[type] || [];
+          const catTotal = rows.reduce((sum, s) => sum + s.monthlyCents, 0);
+          const isOpen = openCats.has(type);
+          return (
+            <div key={type}>
+              <button
+                type="button"
+                onClick={() => rows.length && toggleCat(type)}
+                disabled={rows.length === 0}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-muted/50 disabled:cursor-default disabled:opacity-70"
+              >
+                <span className="flex items-center gap-2 min-w-0">
+                  <span className="w-4 text-center text-muted-foreground">{rows.length === 0 ? "" : isOpen ? "▾" : "▸"}</span>
+                  <span className="font-medium">{label}</span>
+                  {rows.length > 0 && <span className="text-xs text-muted-foreground">({rows.length})</span>}
+                </span>
+                <span className="font-semibold tabular-nums">{catTotal > 0 ? rand(catTotal) : "—"}</span>
+              </button>
+              {isOpen && rows.length > 0 && (
+                <div className="overflow-x-auto px-3 pb-3">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-muted-foreground">
+                        <th className="py-1 pr-3">Partner</th>
+                        <th className="py-1 pr-3">Date</th>
+                        <th className="py-1 pr-3">Amount</th>
+                        <th className="py-1 pr-3 text-center">Paid</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((s) => {
+                        const k = keyOf(s);
+                        const isPaid = paid.has(k);
+                        return (
+                          <tr key={s.id} className="border-t border-border/50">
+                            <td className="py-1.5 pr-3">{s.partnerName || `${s.partnerType} #${s.partnerId}`}</td>
+                            <td className="py-1.5 pr-3 whitespace-nowrap">{s.nextBillDate || "—"}</td>
+                            <td className="py-1.5 pr-3 tabular-nums">{rand(s.monthlyCents)}</td>
+                            <td className="py-1.5 pr-3 text-center">
+                              <button
+                                type="button"
+                                onClick={() => togglePaid(s)}
+                                disabled={saving === k}
+                                aria-pressed={isPaid}
+                                title={isPaid ? "Paid — click to mark outstanding" : "Outstanding — click to mark paid"}
+                                className="inline-flex items-center justify-center align-middle"
+                              >
+                                <span
+                                  className={`inline-block w-5 h-5 rounded-full border-2 transition-colors ${
+                                    isPaid ? "bg-green-600 border-green-600" : "border-muted-foreground/50 bg-transparent"
+                                  } ${saving === k ? "opacity-50" : ""}`}
+                                />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {subs.length === 0 && (
+          <p className="px-3 py-3 text-sm text-muted-foreground">
+            No partners are due for the next billing run yet.
+          </p>
+        )}
+      </div>
+    </CollapsibleCard>
+  );
+}
+
 // Small toolbar button that sits above a table and exports it to CSV.
 function CsvButton({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
   return (
@@ -717,52 +886,7 @@ export default function BillingTab() {
 
   return (
     <div className="space-y-6">
-      <CollapsibleCard
-        title={`Expected revenue · next billing run ${rand(expectedCents)}`}
-        defaultOpen
-        contentClassName="space-y-3"
-      >
-        <p className="text-sm text-muted-foreground">
-          Base subscription revenue that the next monthly billing run will invoice (first
-          payable run: 1 November 2026), summed live from every partner that is active, on a
-          paid plan, activated for billing, and onboarded by a real (non-test) agent. Each
-          partner is counted at its own monthly fee. Excludes free NPO/PBO listings, partners
-          not yet activated for billing, per-booking and pre-order usage fees, commission, and VAT.
-        </p>
-        <div className="text-2xl font-semibold">
-          {rand(expectedCents)}
-          <span className="ml-2 text-sm font-normal text-muted-foreground">
-            / month · {expectedSubs.length} partner{expectedSubs.length === 1 ? "" : "s"}
-          </span>
-        </div>
-        {expectedTypeRows.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-muted-foreground">
-                  <th className="py-1 pr-3">Category</th>
-                  <th className="py-1 pr-3">Partners</th>
-                  <th className="py-1 pr-3">Expected / month</th>
-                </tr>
-              </thead>
-              <tbody>
-                {expectedTypeRows.map(([k, v]) => (
-                  <tr key={k} className="border-t">
-                    <td className="py-1 pr-3 capitalize">{k.replace(/_/g, " ")}</td>
-                    <td className="py-1 pr-3">{v.count}</td>
-                    <td className="py-1 pr-3">{rand(v.cents)}</td>
-                  </tr>
-                ))}
-                <tr className="border-t font-semibold">
-                  <td className="py-1 pr-3">Total</td>
-                  <td className="py-1 pr-3">{expectedSubs.length}</td>
-                  <td className="py-1 pr-3">{rand(expectedCents)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        )}
-      </CollapsibleCard>
+      <NextBillingRunCard subs={expectedSubs} />
 
       <RevenueSummary invoices={billableInvoices} />
 
@@ -814,74 +938,6 @@ export default function BillingTab() {
       <AccountantsCard />
       <InvoiceSettingsCard />
 
-      <CollapsibleCard
-        title={`Subscriptions (${billableSubs.length}) · Monthly recurring ${rand(mrrCents)}`}
-      >
-        {billableSubs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No billable subscriptions yet — a subscription becomes billable once the partner is on a paid plan and activated for billing.
-          </p>
-        ) : (
-          <>
-            <CsvButton
-              onClick={() =>
-                downloadCsv(
-                  "subscriptions.csv",
-                  ["Partner", "Type", "Plan", "Monthly (R)", "Agent", "Status", "Next bill"],
-                  billableSubs.map((s) => [
-                    s.partnerName || `${s.partnerType} #${s.partnerId}`,
-                    `${s.partnerType} #${s.partnerId}`,
-                    planLabel(s),
-                    (s.monthlyCents / 100).toFixed(2),
-                    s.repCode || "",
-                    s.status,
-                    s.nextBillDate,
-                  ]),
-                )
-              }
-            />
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-muted-foreground border-b border-border">
-                    <th className="py-2 pr-3">Partner</th>
-                    <th className="py-2 pr-3">Plan</th>
-                    <th className="py-2 pr-3">Monthly</th>
-                    <th className="py-2 pr-3">Agent</th>
-                    <th className="py-2 pr-3">Status</th>
-                    <th className="py-2 pr-3">Next bill</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {billableSubs.map((s) => (
-                    <tr key={s.id} className="border-b border-border/50">
-                      <td className="py-2 pr-3">
-                        {s.partnerName || `${s.partnerType} #${s.partnerId}`}
-                        <span className="ml-2 text-xs text-muted-foreground">{s.partnerType} #{s.partnerId}</span>
-                      </td>
-                      <td className="py-2 pr-3">{planLabel(s)}</td>
-                      <td className="py-2 pr-3">{rand(s.monthlyCents)}</td>
-                      <td className="py-2 pr-3 font-mono">{s.repCode || "—"}</td>
-                      <td className="py-2 pr-3">
-                        <select
-                          className="h-8 rounded-md border border-border bg-background px-1 text-xs"
-                          value={s.status}
-                          onChange={(e) => handleSetStatus(s.id, e.target.value)}
-                        >
-                          <option value="Active">Active</option>
-                          <option value="Paused">Paused</option>
-                          <option value="Cancelled">Cancelled</option>
-                        </select>
-                      </td>
-                      <td className="py-2 pr-3">{s.nextBillDate}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-      </CollapsibleCard>
 
       <CollapsibleCard title={`Email Delivery (${emailLog.length})`}>
         {emailLog.length === 0 ? (
