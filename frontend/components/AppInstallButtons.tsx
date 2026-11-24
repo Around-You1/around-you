@@ -65,23 +65,25 @@ export default function AppInstallButtons() {
       <p className="text-lg font-medium text-foreground text-center max-w-sm">
         Download the icon to your Home Screen click ...
       </p>
-      <div className="flex items-center gap-2">
-        <Button type="button" className={GREEN} onClick={handleAndroid}>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <Button type="button" size="sm" className={GREEN} onClick={handleAndroid}>
           Android
         </Button>
         <span className="text-sm font-bold text-muted-foreground">OR</span>
-        <Button type="button" className={GREEN} onClick={() => setModal("ios")}>
+        <Button type="button" size="sm" className={GREEN} onClick={() => setModal("ios")}>
           iPhone
         </Button>
+        <span className="text-sm font-bold text-muted-foreground">OR</span>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="border-brand text-brand hover:bg-brand/10"
+          onClick={markDone}
+        >
+          Already Done?
+        </Button>
       </div>
-      <Button
-        type="button"
-        variant="outline"
-        className="border-brand text-brand hover:bg-brand/10"
-        onClick={markDone}
-      >
-        Already Done?
-      </Button>
 
       {modal && (
         <div
