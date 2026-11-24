@@ -24,6 +24,7 @@ type Subscription struct {
 	AutoRenew    bool   `json:"autoRenew"`
 	NextBillDate string `json:"nextBillDate"` // YYYY-MM-DD
 	PartnerName  string `json:"partnerName"`  // resolved from the partner's own table
+	PartnerExists bool  `json:"partnerExists"` // the partner profile still exists (not deleted/archived)
 	Billable     bool   `json:"billable"`     // active, paid plan, real (non-test) rep, billing anchored
 	Expected     bool   `json:"expected"`     // active, paid plan, real (non-test) rep — counts even if not yet activated for billing
 }
@@ -229,7 +230,17 @@ func List(ctx context.Context) ([]Subscription, error) {
 		         WHEN 'accommodation' THEN (SELECT suspended FROM accommodations  WHERE id = ps.partner_id)
 		         WHEN 'estate_agency' THEN (SELECT suspended FROM estate_agencies WHERE id = ps.partner_id)
 		         WHEN 'estate_agent'  THEN (SELECT suspended FROM estate_agents   WHERE id = ps.partner_id)
-		       END), false)
+		       END), false),
+		       COALESCE((CASE ps.partner_type
+		         WHEN 'restaurant'    THEN EXISTS(SELECT 1 FROM restaurants     WHERE id = ps.partner_id)
+		         WHEN 'service'       THEN EXISTS(SELECT 1 FROM services        WHERE id = ps.partner_id)
+		         WHEN 'retail'        THEN EXISTS(SELECT 1 FROM retail          WHERE id = ps.partner_id)
+		         WHEN 'nonprofit'     THEN EXISTS(SELECT 1 FROM nonprofits      WHERE id = ps.partner_id)
+		         WHEN 'attraction'    THEN EXISTS(SELECT 1 FROM attractions     WHERE id = ps.partner_id)
+		         WHEN 'accommodation' THEN EXISTS(SELECT 1 FROM accommodations  WHERE id = ps.partner_id)
+		         WHEN 'estate_agency' THEN EXISTS(SELECT 1 FROM estate_agencies WHERE id = ps.partner_id)
+		         WHEN 'estate_agent'  THEN EXISTS(SELECT 1 FROM estate_agents   WHERE id = ps.partner_id)
+		       END), true)
 		FROM partner_subscription ps
 		ORDER BY ps.created_at DESC`)
 	if err != nil {
@@ -242,9 +253,10 @@ func List(ctx context.Context) ([]Subscription, error) {
 		var s Subscription
 		var svcNonProfit bool
 		var suspended bool
+		var partnerExists bool
 		if err := rows.Scan(&s.ID, &s.PartnerType, &s.PartnerID, &s.Plan,
 			&s.Tier, &s.Audience, &s.MonthlyCents, &s.RepCode, &s.Status,
-			&s.AutoRenew, &s.NextBillDate, &s.PartnerName, &svcNonProfit, &suspended); err != nil {
+			&s.AutoRenew, &s.NextBillDate, &s.PartnerName, &svcNonProfit, &suspended, &partnerExists); err != nil {
 			return nil, err
 		}
 		// Billable = money actually changes hands: active, paid plan, billing
@@ -264,7 +276,8 @@ func List(ctx context.Context) ([]Subscription, error) {
 			strings.TrimSpace(s.RepCode) != "" &&
 			!isTestRep(s.RepCode) &&
 			!freeListing &&
-			!suspended
+			!suspended &&
+			partnerExists
 		// Expected revenue mirrors Billable exactly, so the Admin Billing
 		// "Expected revenue" forecast equals what the next monthly run will
 		// actually invoice: active, paid, activated-for-billing partners on a
@@ -272,6 +285,7 @@ func List(ctx context.Context) ([]Subscription, error) {
 		// that have NOT yet been activated for billing (next_bill_date still NULL)
 		// are not invoiced, so they are not counted here either.
 		s.Expected = s.Billable
+		s.PartnerExists = partnerExists
 		subs = append(subs, s)
 	}
 	return subs, rows.Err()

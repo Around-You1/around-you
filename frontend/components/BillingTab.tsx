@@ -23,6 +23,7 @@ interface Subscription {
   partnerName: string;
   billable: boolean;
   expected: boolean;
+  partnerExists?: boolean;
 }
 
 interface Invoice {
@@ -965,6 +966,7 @@ export default function BillingTab() {
               </thead>
               <tbody>
                 {[...subs]
+                  .filter((s) => s.partnerExists !== false)
                   .sort((a, b) => {
                     const name = (x: Subscription) => (x.partnerName || `${x.partnerType} #${x.partnerId}`).toLowerCase();
                     if (subSort === "type") return a.partnerType.localeCompare(b.partnerType) || name(a).localeCompare(name(b));
