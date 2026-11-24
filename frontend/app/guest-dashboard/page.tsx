@@ -5,14 +5,11 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
 import backend from "@/backend/client";
+import BrandLoading from "@/components/BrandLoading";
 
 const GuestDashboard = dynamic(() => import("@/components/GuestDashboard"), {
   ssr: false,
-  loading: () => (
-    <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-      Loading…
-    </div>
-  ),
+  loading: () => <BrandLoading />,
 });
 
 // Reached after Holiday Guest access-code login (LoginPage.tsx's
@@ -86,11 +83,7 @@ export default function GuestDashboardPage() {
   }, [router]);
 
   if (!ready) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-        Loading…
-      </div>
-    );
+    return <BrandLoading />;
   }
 
   return <GuestDashboard />;
