@@ -18,6 +18,7 @@ import RepsTab from "../components/RepsTab";
 import BillingTab from "../components/BillingTab";
 import ModerationTab from "../components/ModerationTab";
 import ArchivedTab from "../components/ArchivedTab";
+import CouncillorsTab from "../components/CouncillorsTab";
 import EstateTab from "../components/EstateTab";
 import { ShieldAlert } from "lucide-react";
 
@@ -45,6 +46,7 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const [tab, setTab] = useState("accommodations");
   const [modOpenCount, setModOpenCount] = useState(0);
+  const [pendingCouncillors, setPendingCouncillors] = useState(0);
   const [pendingByCat, setPendingByCat] = useState<Record<string, number>>({});
   const [pushTitle, setPushTitle] = useState("");
   const [pushBody, setPushBody] = useState("");
@@ -56,6 +58,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     loadStats();
     loadModCount();
+    loadCouncillorCount();
     loadPendingCount();
     loadPendingReps();
     loadEstate();
@@ -113,6 +116,16 @@ export default function AdminDashboard() {
       setModOpenCount(Number((res as any).openCount || 0));
     } catch {
       // non-fatal — the moderation tab will surface any real error
+    }
+  };
+
+  const loadCouncillorCount = async () => {
+    try {
+      const backend = getAuthenticatedBackend();
+      const res: any = await backend.admin.listCouncillors();
+      setPendingCouncillors((res?.councillors || []).filter((c: any) => c.status === "pending").length);
+    } catch {
+      // non-fatal — the councillors tab surfaces any real error
     }
   };
 
@@ -383,7 +396,7 @@ export default function AdminDashboard() {
                 </TabsList>
 
                 {/* Row 2: admin sections */}
-                <TabsList className="grid w-full h-auto! grid-cols-2 sm:grid-cols-4 gap-1">
+                <TabsList className="grid w-full h-auto! grid-cols-2 sm:grid-cols-5 gap-1">
                   <TabsTrigger value="reps" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation data-[state=active]:text-brand dark:data-[state=active]:text-brand">
                     Agents
                     {pendingReps > 0 && (
@@ -398,6 +411,14 @@ export default function AdminDashboard() {
                     {modOpenCount > 0 && (
                       <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold h-4 min-w-[16px] px-1">
                         {modOpenCount}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="councillors" className="min-h-[44px] h-auto py-1.5 whitespace-normal leading-tight text-xs sm:text-sm touch-manipulation data-[state=active]:text-brand dark:data-[state=active]:text-brand">
+                    Councillors
+                    {pendingCouncillors > 0 && (
+                      <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold h-4 min-w-[16px] px-1">
+                        {pendingCouncillors}
                       </span>
                     )}
                   </TabsTrigger>
@@ -435,6 +456,10 @@ export default function AdminDashboard() {
 
               <TabsContent value="moderation">
                 <ModerationTab onCountChange={setModOpenCount} />
+              </TabsContent>
+
+              <TabsContent value="councillors">
+                <CouncillorsTab onCountChange={setPendingCouncillors} />
               </TabsContent>
 
               <TabsContent value="archived">

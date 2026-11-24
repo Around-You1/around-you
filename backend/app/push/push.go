@@ -178,14 +178,21 @@ func Send(ctx context.Context, req *SendRequest) (*SendResponse, error) {
 		return nil, err
 	}
 
-	payload, _ := json.Marshal(pushPayload{Title: title, Body: strings.TrimSpace(req.Body), URL: url})
+	sent, failed := fanout(ctx, title, strings.TrimSpace(req.Body), url, targets)
+	return &SendResponse{Sent: sent, Failed: failed}, nil
+}
+
+// fanout delivers a web-push payload to every target concurrently and prunes
+// dead subscriptions. Returns (sent, failed). Shared by the SuperAdmin broadcast
+// and the ward-councillor scoped alerts.
+func fanout(ctx context.Context, title, body, url string, targets []pushTarget) (int, int) {
+	payload, _ := json.Marshal(pushPayload{Title: title, Body: body, URL: url})
 	opts := &webpush.Options{
 		Subscriber:      vapidSubject(),
 		VAPIDPublicKey:  vapidPublic(),
 		VAPIDPrivateKey: vapidPrivate(),
 		TTL:             86400,
 	}
-
 	var (
 		mu     sync.Mutex
 		sent   int
@@ -210,7 +217,7 @@ func Send(ctx context.Context, req *SendRequest) (*SendResponse, error) {
 			}
 			defer resp.Body.Close()
 			if resp.StatusCode == 404 || resp.StatusCode == 410 {
-				dead = append(dead, t.id) // subscription gone — clean it up
+				dead = append(dead, t.id)
 				failed++
 				return
 			}
@@ -222,12 +229,10 @@ func Send(ctx context.Context, req *SendRequest) (*SendResponse, error) {
 		}(t)
 	}
 	wg.Wait()
-
 	for _, id := range dead {
 		_, _ = appdb.SQLDB.ExecContext(ctx, `DELETE FROM push_subscriptions WHERE id = $1`, id)
 	}
-
-	return &SendResponse{Sent: sent, Failed: failed}, nil
+	return sent, failed
 }
 
 
@@ -250,21 +255,28 @@ type RecentNotificationsResponse struct {
 // every Local, so there is nothing private to protect.
 //
 //encore:api public method=GET path=/notifications/recent
-func RecentNotifications(ctx context.Context) (*RecentNotificationsResponse, error) {
+type RecentNotificationsRequest struct {
+	PostalCode string `query:"postalCode"`
+}
+
+func RecentNotifications(ctx context.Context, req *RecentNotificationsRequest) (*RecentNotificationsResponse, error) {
 	// Remove any messages whose end date/time has passed, so they disappear from
 	// every device's inbox.
 	_, _ = appdb.SQLDB.ExecContext(ctx, `DELETE FROM notifications WHERE expires_at IS NOT NULL AND expires_at <= now()`)
-	// Newest 30 that are still live, shown oldest-first so a newer message appears
-	// underneath the earlier ones (the first one stays at the top).
+	// Newest 30 that are still live, shown oldest-first. A ward-scoped message
+	// (postal_codes set) only shows to a viewer whose postal code is in the list;
+	// platform-wide messages (no postal_codes) show to everyone.
+	pc := strings.TrimSpace(req.PostalCode)
 	rows, err := appdb.SQLDB.QueryContext(ctx, `
 		SELECT id, title, body, url, created_at FROM (
 			SELECT id, title, body, url, created_at
 			FROM notifications
 			WHERE audience IN ('local', 'all') AND (expires_at IS NULL OR expires_at > now())
+			  AND (postal_codes IS NULL OR cardinality(postal_codes) = 0 OR $1 = ANY(postal_codes))
 			ORDER BY created_at DESC, id DESC
 			LIMIT 30
 		) t
-		ORDER BY created_at ASC, id ASC`)
+		ORDER BY created_at ASC, id ASC`, pc)
 	if err != nil {
 		return nil, err
 	}

@@ -318,9 +318,23 @@ export const backend = {
 
   notifications: {
     // Public: recent broadcast notifications for the in-app inbox (newest first).
-    recent: () => request("GET", "/notifications/recent"),
+    // Pass the viewer's postal code so ward-scoped councillor alerts only reach
+    // residents/partners in that ward (broadcasts with no postal codes always show).
+    recent: (req?: { postalCode?: string }) =>
+      request("GET", "/notifications/recent", { query: { postalCode: req?.postalCode } }),
     // Auth: records a sign-in for the current user when they open a notification.
     opened: () => request("POST", "/notifications/opened", {}),
+  },
+  councillor: {
+    // Public: a ward councillor registers (goes to the SuperAdmin pending queue).
+    register: (req: { fullName: string; idNumber?: string; staffNumber?: string; postalCodes: string[] }) =>
+      request("POST", "/councillor/register", { body: req }),
+    // Public (access-code): confirm a code and fetch the councillor's assigned wards.
+    me: (req: { accessCode: string }) =>
+      request("POST", "/councillor/me", { body: req }),
+    // Public (access-code): post an alert to every resident/partner in the ward's postal codes.
+    alert: (req: { accessCode: string; title: string; body?: string; endsAt?: string }) =>
+      request("POST", "/councillor/alert", { body: req }),
   },
   events: {
     record: (req: {
@@ -371,6 +385,12 @@ export const backend = {
       request("POST", "/admin/reinstate", { body: req }),
     purge: (req: { archiveId: number }) =>
       request("POST", "/admin/purge", { body: req }),
+    // Ward councillors: SuperAdmin review / approval queue.
+    listCouncillors: () => request("GET", "/admin/councillors"),
+    approveCouncillor: (req: { id: number }) =>
+      request("POST", "/admin/councillors/approve", { body: req }),
+    setCouncillorStatus: (req: { id: number; status: string }) =>
+      request("POST", "/admin/councillors/status", { body: req }),
   },
   charity: {
     set: (req: { partnerType: string; partnerId: number; name: string; address: string; contact: string }) =>

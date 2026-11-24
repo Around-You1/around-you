@@ -165,6 +165,17 @@ export default function GuestDashboard() {
   const [hasUnreadNotif, setHasUnreadNotif] = useState(false);
   const lastSeenNotifRef = useRef<number>(0);
   const knownLatestNotifRef = useRef<number>(-1);
+  // Postal code of the current viewer, so ward-scoped councillor alerts only
+  // reach residents/partners in that ward. Locals read it from their saved
+  // profile; accommodation guests/owners get it from the loaded accommodation.
+  const viewerPostalRef = useRef<string>("");
+  const viewerPostal = () => {
+    try {
+      const u = JSON.parse(localStorage.getItem("user") || "{}");
+      if (u && u.postalCode) return String(u.postalCode);
+    } catch { /* ignore */ }
+    return viewerPostalRef.current || "";
+  };
 
   // Poll for new broadcasts: light up the button (green + bell) and chime when a
   // new one arrives. First pass just sets the baseline (no sound for old ones).
@@ -173,7 +184,7 @@ export default function GuestDashboard() {
     let cancelled = false;
     const check = async () => {
       try {
-        const res: any = await getAuthenticatedBackend().notifications.recent();
+        const res: any = await getAuthenticatedBackend().notifications.recent({ postalCode: viewerPostal() });
         const items = res?.notifications || [];
         if (cancelled || !items.length) return;
         const maxId = Math.max(...items.map((n: any) => Number(n.id) || 0));
@@ -202,7 +213,7 @@ export default function GuestDashboard() {
     let cancelled = false;
     setNotifLoading(true);
     getAuthenticatedBackend().notifications
-      .recent()
+      .recent({ postalCode: viewerPostal() })
       .then((res: any) => {
         if (cancelled) return;
         const items = (res?.notifications || []) as NotifItem[];
@@ -274,6 +285,11 @@ export default function GuestDashboard() {
     if (tutorial && !isLocalMode) tutorial.play("VO4");
   }, [tutorial, isLocalMode]);
   const localPostal: string = user.postalCode || "";
+  // Keep the viewer-postal ref current for the notification inbox: a Local's own
+  // postal code, or the accommodation's once it loads.
+  useEffect(() => {
+    viewerPostalRef.current = (isLocalMode ? localPostal : accommodation?.postalCode) || localPostal || "";
+  }, [isLocalMode, localPostal, accommodation]);
 
   // "Test" partner isolation: a partner (or the guesthouse) is a test entity when
   // its name starts with the word "Test" (e.g. "Test Guesthouse", "Test Spa").

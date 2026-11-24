@@ -188,7 +188,13 @@ func main() {
 	r.public("GET /push/vapid-public", httpx.Empty(push.VapidPublicKey))
 	r.auth("POST /push/subscribe", httpx.Body(push.Subscribe))
 	r.auth("POST /push/send", httpx.Body(push.Send))
-	r.public("GET /notifications/recent", httpx.Empty(push.RecentNotifications))
+	r.public("GET /notifications/recent", httpx.Query(push.RecentNotifications))
+	r.public("POST /councillor/register", httpx.Body(push.CouncillorRegister))
+	r.public("POST /councillor/me", httpx.Body(push.CouncillorMe))
+	r.public("POST /councillor/alert", httpx.Body(push.CouncillorAlert))
+	r.auth("GET /admin/councillors", httpx.Empty(push.ListCouncillors))
+	r.auth("POST /admin/councillors/approve", httpx.Body(push.ApproveCouncillor))
+	r.auth("POST /admin/councillors/status", httpx.Body(push.SetCouncillorStatus))
 	r.auth("POST /notifications/opened", httpx.Empty(push.NotificationOpened))
 
 	// ---- Accommodation (auth) ----------------------------------------------
