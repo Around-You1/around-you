@@ -266,6 +266,26 @@ func SetSuspended(ctx context.Context, req *SuspendRequest) (*BulkResponse, erro
 	); err != nil {
 		return nil, err
 	}
+	// Suspension controls billing: a suspended partner receives no further
+	// invoices (and drops out of the New Billing Run); reinstating resumes
+	// billing, but only if the profile is also active (not disabled).
+	for _, id := range req.IDs {
+		if req.Suspended {
+			if err := billing.PausePartnerBilling(ctx, req.EntityType, id); err != nil {
+				log.Printf("admin: could not pause billing on suspend (%s %d): %v", req.EntityType, id, err)
+			}
+		} else {
+			var active bool
+			if err := appdb.SQLDB.QueryRowContext(ctx,
+				fmt.Sprintf("SELECT COALESCE(is_active,false) FROM %s WHERE id = $1", table), id).Scan(&active); err != nil {
+				log.Printf("admin: could not read is_active on reinstate (%s %d): %v", req.EntityType, id, err)
+			} else if active {
+				if err := billing.OnPartnerActivated(ctx, req.EntityType, id); err != nil {
+					log.Printf("admin: could not resume billing on reinstate (%s %d): %v", req.EntityType, id, err)
+				}
+			}
+		}
+	}
 	return &BulkResponse{Affected: len(req.IDs)}, nil
 }
 

@@ -101,6 +101,8 @@ type Invoice struct {
 	DueAt         string `json:"dueAt"`
 	PaidAt        string `json:"paidAt"`
 	Billable      bool   `json:"billable"` // belongs to a real (non-test) rep — the billing view hides the rest
+	PartnerExists    bool `json:"partnerExists"`    // the partner still exists (not deleted/archived)
+	PartnerSuspended bool `json:"partnerSuspended"` // the partner is currently suspended
 }
 
 // partnerTable maps a partner_type to its table name. The set is a fixed
@@ -1113,7 +1115,27 @@ func ListInvoices(ctx context.Context) ([]Invoice, error) {
 		         WHEN 'accommodation' THEN (SELECT official_rep_code FROM accommodations  WHERE id = i.partner_id)
 		         WHEN 'estate_agency' THEN (SELECT official_rep_code FROM estate_agencies WHERE id = i.partner_id)
 		         WHEN 'estate_agent'  THEN (SELECT official_rep_code FROM estate_agents   WHERE id = i.partner_id)
-		       END), COALESCE(i.bill_rep_code,''))
+		       END), COALESCE(i.bill_rep_code,'')),
+		       COALESCE((CASE i.partner_type
+		         WHEN 'restaurant'    THEN EXISTS(SELECT 1 FROM restaurants     WHERE id = i.partner_id)
+		         WHEN 'service'       THEN EXISTS(SELECT 1 FROM services        WHERE id = i.partner_id)
+		         WHEN 'retail'        THEN EXISTS(SELECT 1 FROM retail          WHERE id = i.partner_id)
+		         WHEN 'nonprofit'     THEN EXISTS(SELECT 1 FROM nonprofits      WHERE id = i.partner_id)
+		         WHEN 'attraction'    THEN EXISTS(SELECT 1 FROM attractions     WHERE id = i.partner_id)
+		         WHEN 'accommodation' THEN EXISTS(SELECT 1 FROM accommodations  WHERE id = i.partner_id)
+		         WHEN 'estate_agency' THEN EXISTS(SELECT 1 FROM estate_agencies WHERE id = i.partner_id)
+		         WHEN 'estate_agent'  THEN EXISTS(SELECT 1 FROM estate_agents   WHERE id = i.partner_id)
+		       END), true),
+		       COALESCE((CASE i.partner_type
+		         WHEN 'restaurant'    THEN (SELECT suspended FROM restaurants     WHERE id = i.partner_id)
+		         WHEN 'service'       THEN (SELECT suspended FROM services        WHERE id = i.partner_id)
+		         WHEN 'retail'        THEN (SELECT suspended FROM retail          WHERE id = i.partner_id)
+		         WHEN 'nonprofit'     THEN (SELECT suspended FROM nonprofits      WHERE id = i.partner_id)
+		         WHEN 'attraction'    THEN (SELECT suspended FROM attractions     WHERE id = i.partner_id)
+		         WHEN 'accommodation' THEN (SELECT suspended FROM accommodations  WHERE id = i.partner_id)
+		         WHEN 'estate_agency' THEN (SELECT suspended FROM estate_agencies WHERE id = i.partner_id)
+		         WHEN 'estate_agent'  THEN (SELECT suspended FROM estate_agents   WHERE id = i.partner_id)
+		       END), false)
 		FROM invoice i ORDER BY i.issued_at DESC, i.id DESC`)
 	if err != nil {
 		return nil, err
@@ -1126,7 +1148,7 @@ func ListInvoices(ctx context.Context) ([]Invoice, error) {
 		var currentRep string
 		if err := rows.Scan(&v.ID, &v.InvoiceNumber, &v.PartnerType, &v.PartnerID,
 			&v.BillName, &v.RepCode, &v.PeriodStart, &v.PeriodEnd,
-			&v.TotalCents, &v.Status, &v.IssuedAt, &v.DueAt, &v.PaidAt, &currentRep); err != nil {
+			&v.TotalCents, &v.Status, &v.IssuedAt, &v.DueAt, &v.PaidAt, &currentRep, &v.PartnerExists, &v.PartnerSuspended); err != nil {
 			return nil, err
 		}
 		// Billable is judged on the partner's CURRENT profile rep, not the rep

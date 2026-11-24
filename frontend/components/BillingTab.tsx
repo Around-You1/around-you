@@ -38,6 +38,8 @@ interface Invoice {
   status: string;
   issuedAt: string;
   billable: boolean;
+  partnerExists?: boolean;
+  partnerSuspended?: boolean;
 }
 
 interface Commission {
@@ -181,12 +183,19 @@ function NextBillingRunCard({ invoices }: { invoices: Invoice[] }) {
     setPaidIds(new Set(invoices.filter((v) => v.status === "Paid").map((v) => v.id)));
   }, [invoices]);
 
-  // Issued invoices only (hide Void); newest first within a category.
-  const live = invoices.filter((v) => v.status !== "Void");
+  // Only invoices that are genuinely collectable: drop Void, R0 (free
+  // accounts), deleted partners, and suspended partners (they bill nothing
+  // until reinstated).
+  const isHidden = (v: Invoice) =>
+    v.status === "Void" ||
+    v.totalCents === 0 ||
+    v.partnerExists === false ||
+    v.partnerSuspended === true;
+  const live = invoices.filter((v) => !isHidden(v));
   const byType = useMemo(() => {
     const m: Record<string, Invoice[]> = {};
     for (const v of invoices) {
-      if (v.status === "Void") continue;
+      if (isHidden(v)) continue;
       (m[v.partnerType] ||= []).push(v);
     }
     for (const k of Object.keys(m)) {
@@ -232,7 +241,7 @@ function NextBillingRunCard({ invoices }: { invoices: Invoice[] }) {
       <p className="text-sm text-muted-foreground">
         Every invoice that has been issued, grouped by category. Click a category to see each invoice, its date and
         amount. Tap the circle under <strong>Paid</strong> when a payment comes in — green means paid, empty means still
-        outstanding. The totals show what is still owed.
+        outstanding. Free (R0), deleted and suspended partners are left out. The totals show what is still owed.
       </p>
       <div className="rounded-md border border-border divide-y divide-border">
         {RUN_CATEGORIES.map(({ type, label }) => {

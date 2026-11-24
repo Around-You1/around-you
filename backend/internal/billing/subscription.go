@@ -219,6 +219,16 @@ func List(ctx context.Context) ([]Subscription, error) {
 		       COALESCE((CASE ps.partner_type
 		         WHEN 'service' THEN (SELECT is_nonprofit FROM services WHERE id = ps.partner_id)
 		         ELSE false
+		       END), false),
+		       COALESCE((CASE ps.partner_type
+		         WHEN 'restaurant'    THEN (SELECT suspended FROM restaurants     WHERE id = ps.partner_id)
+		         WHEN 'service'       THEN (SELECT suspended FROM services        WHERE id = ps.partner_id)
+		         WHEN 'retail'        THEN (SELECT suspended FROM retail          WHERE id = ps.partner_id)
+		         WHEN 'nonprofit'     THEN (SELECT suspended FROM nonprofits      WHERE id = ps.partner_id)
+		         WHEN 'attraction'    THEN (SELECT suspended FROM attractions     WHERE id = ps.partner_id)
+		         WHEN 'accommodation' THEN (SELECT suspended FROM accommodations  WHERE id = ps.partner_id)
+		         WHEN 'estate_agency' THEN (SELECT suspended FROM estate_agencies WHERE id = ps.partner_id)
+		         WHEN 'estate_agent'  THEN (SELECT suspended FROM estate_agents   WHERE id = ps.partner_id)
 		       END), false)
 		FROM partner_subscription ps
 		ORDER BY ps.created_at DESC`)
@@ -231,9 +241,10 @@ func List(ctx context.Context) ([]Subscription, error) {
 	for rows.Next() {
 		var s Subscription
 		var svcNonProfit bool
+		var suspended bool
 		if err := rows.Scan(&s.ID, &s.PartnerType, &s.PartnerID, &s.Plan,
 			&s.Tier, &s.Audience, &s.MonthlyCents, &s.RepCode, &s.Status,
-			&s.AutoRenew, &s.NextBillDate, &s.PartnerName, &svcNonProfit); err != nil {
+			&s.AutoRenew, &s.NextBillDate, &s.PartnerName, &svcNonProfit, &suspended); err != nil {
 			return nil, err
 		}
 		// Billable = money actually changes hands: active, paid plan, billing
@@ -252,7 +263,8 @@ func List(ctx context.Context) ([]Subscription, error) {
 			strings.TrimSpace(s.NextBillDate) != "" &&
 			strings.TrimSpace(s.RepCode) != "" &&
 			!isTestRep(s.RepCode) &&
-			!freeListing
+			!freeListing &&
+			!suspended
 		// Expected revenue mirrors Billable exactly, so the Admin Billing
 		// "Expected revenue" forecast equals what the next monthly run will
 		// actually invoice: active, paid, activated-for-billing partners on a
