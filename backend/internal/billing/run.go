@@ -43,6 +43,24 @@ func RunMonthlyBilling(ctx context.Context) (int, error) {
 		// Due date is 2 days after the invoice date (invoice 10th -> due 12th).
 		dueDate := start.AddDate(0, 0, 2)
 
+		// Dunning: once a partner has 3 unpaid invoices outstanding, stop charging
+		// them. We advance the schedule (so no back-charges pile up) but issue no
+		// new invoice; billing resumes automatically once they pay down below 3.
+		var unpaid int
+		if cerr := appdb.SQLDB.QueryRowContext(ctx,
+			`SELECT COUNT(*) FROM invoice WHERE subscription_id = $1 AND status NOT IN ('Paid','Void')`,
+			s.ID).Scan(&unpaid); cerr != nil {
+			log.Printf("billing run: unpaid count for sub %d failed: %v", s.ID, cerr)
+		} else if unpaid >= 3 {
+			log.Printf("billing run: sub %d has %d unpaid invoices \u2014 skipping this charge (dunning)", s.ID, unpaid)
+			if _, aerr := appdb.SQLDB.ExecContext(ctx,
+				`UPDATE partner_subscription SET next_bill_date = next_bill_date + interval '1 month', updated_at = now() WHERE id = $1`,
+				s.ID); aerr != nil {
+				log.Printf("billing run: advancing next_bill_date (dunning) for sub %d failed: %v", s.ID, aerr)
+			}
+			continue
+		}
+
 		base := s.MonthlyCents
 		covers := 0
 		if s.Plan == "booking" {

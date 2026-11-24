@@ -427,6 +427,15 @@ func BulkDelete(ctx context.Context, req *BulkRequest) (*BulkResponse, error) {
 		if err := archiveOne(ctx, req.EntityType, id, actor); err != nil {
 			continue // best-effort; skip failures
 		}
+		// A deleted partner must never be invoiced again: cancel its subscription
+		// AND clear its billing anchor, so neither the monthly run nor any future
+		// rule can charge it (mirrors the estate delete flow).
+		if err := billing.SetStatusByPartner(ctx, req.EntityType, id, "Cancelled"); err != nil {
+			log.Printf("admin: could not cancel subscription on delete (%s %d): %v", req.EntityType, id, err)
+		}
+		if err := billing.PausePartnerBilling(ctx, req.EntityType, id); err != nil {
+			log.Printf("admin: could not clear bill date on delete (%s %d): %v", req.EntityType, id, err)
+		}
 		n++
 	}
 	return &BulkResponse{Affected: n}, nil

@@ -308,6 +308,8 @@ func main() {
 	r.auth("POST /billing/invoice/test-send", httpx.Body(billing.SendTestInvoice))
 	r.auth("GET /billing/reminders", httpx.Empty(billing.ListPaymentReminders))
 	r.auth("POST /billing/reminders/send", httpx.Body(billing.SendPaymentReminders))
+	r.auth("GET /billing/next-run-paid", httpx.Empty(billing.NextRunPaid))
+	r.auth("POST /billing/next-run/set-paid", httpx.Body(billing.SetNextRunPaid))
 
 	// ---- Accountant portal (Accountant or SuperAdmin) ----------------------
 	r.auth("GET /accounts/invoices", httpx.Empty(billing.AccountsInvoices))

@@ -155,11 +155,10 @@ function CollapsibleCard({
 }
 
 // --- New Billing Run -------------------------------------------------------
-// The upcoming monthly run grouped by category. Collapsed, each category shows
-// its total; expand to see each partner, their bill date and amount, and a
-// click-to-toggle Paid circle (green = paid, empty = still outstanding). The
-// Paid state is a saved visual tracker only — it does not change invoices,
-// reminders or partner status.
+// Every invoice that has been issued, grouped by category, so a SuperAdmin can
+// reconcile payments. Each row's circle marks the REAL invoice Paid (green) or
+// Outstanding (empty) via the invoice-status endpoint; the category and grand
+// totals show what is still outstanding (unpaid).
 const RUN_CATEGORIES: { type: string; label: string }[] = [
   { type: "accommodation", label: "Accommodation" },
   { type: "restaurant", label: "Restaurant" },
@@ -170,40 +169,34 @@ const RUN_CATEGORIES: { type: string; label: string }[] = [
   { type: "retail", label: "Retail" },
 ];
 
-function NextBillingRunCard({ subs }: { subs: Subscription[] }) {
+function NextBillingRunCard({ invoices }: { invoices: Invoice[] }) {
   const { toast } = useToast();
-  const [paid, setPaid] = useState<Set<string>>(new Set());
+  const [paidIds, setPaidIds] = useState<Set<number>>(
+    () => new Set(invoices.filter((v) => v.status === "Paid").map((v) => v.id)),
+  );
   const [openCats, setOpenCats] = useState<Set<string>>(new Set());
-  const [saving, setSaving] = useState<string | null>(null);
-
-  const keyOf = (s: Subscription) => `${s.partnerType}:${s.partnerId}:${s.nextBillDate}`;
+  const [saving, setSaving] = useState<number | null>(null);
 
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const res: any = await getAuthenticatedBackend().billing.nextRunPaid();
-        if (!alive) return;
-        const set = new Set<string>();
-        for (const r of (res?.paid || [])) set.add(`${r.partnerType}:${r.partnerId}:${r.billDate}`);
-        setPaid(set);
-      } catch {
-        /* best-effort — circles just start empty */
-      }
-    })();
-    return () => { alive = false; };
-  }, []);
+    setPaidIds(new Set(invoices.filter((v) => v.status === "Paid").map((v) => v.id)));
+  }, [invoices]);
 
+  // Issued invoices only (hide Void); newest first within a category.
+  const live = invoices.filter((v) => v.status !== "Void");
   const byType = useMemo(() => {
-    const m: Record<string, Subscription[]> = {};
-    for (const s of subs) (m[s.partnerType] ||= []).push(s);
+    const m: Record<string, Invoice[]> = {};
+    for (const v of invoices) {
+      if (v.status === "Void") continue;
+      (m[v.partnerType] ||= []).push(v);
+    }
     for (const k of Object.keys(m)) {
-      m[k].sort((a, b) => (a.partnerName || "").localeCompare(b.partnerName || ""));
+      m[k].sort((a, b) => (b.issuedAt || b.periodStart || "").localeCompare(a.issuedAt || a.periodStart || ""));
     }
     return m;
-  }, [subs]);
+  }, [invoices]);
 
-  const grandTotal = subs.reduce((sum, s) => sum + s.monthlyCents, 0);
+  const outstanding = (v: Invoice) => (paidIds.has(v.id) ? 0 : v.totalCents);
+  const grandOutstanding = live.reduce((sum, v) => sum + outstanding(v), 0);
 
   const toggleCat = (t: string) =>
     setOpenCats((prev) => {
@@ -212,26 +205,20 @@ function NextBillingRunCard({ subs }: { subs: Subscription[] }) {
       return n;
     });
 
-  const togglePaid = async (s: Subscription) => {
-    const k = keyOf(s);
-    const willPay = !paid.has(k);
-    setSaving(k);
-    setPaid((prev) => {
+  const togglePaid = async (v: Invoice) => {
+    const willPay = !paidIds.has(v.id);
+    setSaving(v.id);
+    setPaidIds((prev) => {
       const n = new Set(prev);
-      willPay ? n.add(k) : n.delete(k);
+      willPay ? n.add(v.id) : n.delete(v.id);
       return n;
     });
     try {
-      await getAuthenticatedBackend().billing.setNextRunPaid({
-        partnerType: s.partnerType,
-        partnerId: s.partnerId,
-        billDate: s.nextBillDate,
-        paid: willPay,
-      });
+      await getAuthenticatedBackend().accounts.setInvoiceStatus({ id: v.id, status: willPay ? "Paid" : "Issued" });
     } catch (e: any) {
-      setPaid((prev) => {
+      setPaidIds((prev) => {
         const n = new Set(prev);
-        willPay ? n.delete(k) : n.add(k);
+        willPay ? n.delete(v.id) : n.add(v.id);
         return n;
       });
       toast({ title: "Couldn't update", description: e?.message || "Please try again.", variant: "destructive" });
@@ -241,16 +228,16 @@ function NextBillingRunCard({ subs }: { subs: Subscription[] }) {
   };
 
   return (
-    <CollapsibleCard title={`New Billing Run · Total ${rand(grandTotal)}`} defaultOpen contentClassName="space-y-2">
+    <CollapsibleCard title={`New Billing Run · Outstanding ${rand(grandOutstanding)}`} defaultOpen contentClassName="space-y-2">
       <p className="text-sm text-muted-foreground">
-        Every partner the next monthly run will invoice, grouped by category. Click a category to see each
-        partner, their bill date and amount. Tap the circle under <strong>Paid</strong> as payments come in —
-        green means paid, empty means still outstanding so you can follow up.
+        Every invoice that has been issued, grouped by category. Click a category to see each invoice, its date and
+        amount. Tap the circle under <strong>Paid</strong> when a payment comes in — green means paid, empty means still
+        outstanding. The totals show what is still owed.
       </p>
       <div className="rounded-md border border-border divide-y divide-border">
         {RUN_CATEGORIES.map(({ type, label }) => {
           const rows = byType[type] || [];
-          const catTotal = rows.reduce((sum, s) => sum + s.monthlyCents, 0);
+          const catOutstanding = rows.reduce((sum, v) => sum + outstanding(v), 0);
           const isOpen = openCats.has(type);
           return (
             <div key={type}>
@@ -265,7 +252,7 @@ function NextBillingRunCard({ subs }: { subs: Subscription[] }) {
                   <span className="font-medium">{label}</span>
                   {rows.length > 0 && <span className="text-xs text-muted-foreground">({rows.length})</span>}
                 </span>
-                <span className="font-semibold tabular-nums">{catTotal > 0 ? rand(catTotal) : "—"}</span>
+                <span className="font-semibold tabular-nums">{rows.length === 0 ? "—" : rand(catOutstanding)}</span>
               </button>
               {isOpen && rows.length > 0 && (
                 <div className="overflow-x-auto px-3 pb-3">
@@ -273,25 +260,26 @@ function NextBillingRunCard({ subs }: { subs: Subscription[] }) {
                     <thead>
                       <tr className="text-left text-muted-foreground">
                         <th className="py-1 pr-3">Partner</th>
+                        <th className="py-1 pr-3">Invoice</th>
                         <th className="py-1 pr-3">Date</th>
                         <th className="py-1 pr-3">Amount</th>
                         <th className="py-1 pr-3 text-center">Paid</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.map((s) => {
-                        const k = keyOf(s);
-                        const isPaid = paid.has(k);
+                      {rows.map((v) => {
+                        const isPaid = paidIds.has(v.id);
                         return (
-                          <tr key={s.id} className="border-t border-border/50">
-                            <td className="py-1.5 pr-3">{s.partnerName || `${s.partnerType} #${s.partnerId}`}</td>
-                            <td className="py-1.5 pr-3 whitespace-nowrap">{s.nextBillDate || "—"}</td>
-                            <td className="py-1.5 pr-3 tabular-nums">{rand(s.monthlyCents)}</td>
+                          <tr key={v.id} className="border-t border-border/50">
+                            <td className="py-1.5 pr-3">{v.billName || `${v.partnerType} #${v.partnerId}`}</td>
+                            <td className="py-1.5 pr-3 font-mono text-xs text-muted-foreground">{v.invoiceNumber}</td>
+                            <td className="py-1.5 pr-3 whitespace-nowrap">{(v.issuedAt || v.periodStart || "").slice(0, 10) || "—"}</td>
+                            <td className="py-1.5 pr-3 tabular-nums">{rand(v.totalCents)}</td>
                             <td className="py-1.5 pr-3 text-center">
                               <button
                                 type="button"
-                                onClick={() => togglePaid(s)}
-                                disabled={saving === k}
+                                onClick={() => togglePaid(v)}
+                                disabled={saving === v.id}
                                 aria-pressed={isPaid}
                                 title={isPaid ? "Paid — click to mark outstanding" : "Outstanding — click to mark paid"}
                                 className="inline-flex items-center justify-center align-middle"
@@ -299,7 +287,7 @@ function NextBillingRunCard({ subs }: { subs: Subscription[] }) {
                                 <span
                                   className={`inline-block w-5 h-5 rounded-full border-2 transition-colors ${
                                     isPaid ? "bg-green-600 border-green-600" : "border-muted-foreground/50 bg-transparent"
-                                  } ${saving === k ? "opacity-50" : ""}`}
+                                  } ${saving === v.id ? "opacity-50" : ""}`}
                                 />
                               </button>
                             </td>
@@ -313,15 +301,14 @@ function NextBillingRunCard({ subs }: { subs: Subscription[] }) {
             </div>
           );
         })}
-        {subs.length === 0 && (
-          <p className="px-3 py-3 text-sm text-muted-foreground">
-            No partners are due for the next billing run yet.
-          </p>
+        {live.length === 0 && (
+          <p className="px-3 py-3 text-sm text-muted-foreground">No invoices issued yet.</p>
         )}
       </div>
     </CollapsibleCard>
   );
 }
+
 
 // Small toolbar button that sits above a table and exports it to CSV.
 function CsvButton({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
@@ -645,6 +632,7 @@ function PaymentRemindersCard() {
 
 export default function BillingTab() {
   const [subs, setSubs] = useState<Subscription[]>([]);
+  const [subSort, setSubSort] = useState<"name" | "type" | "status">("name");
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [period, setPeriod] = useState(() => new Date().toISOString().slice(0, 7));
@@ -886,7 +874,7 @@ export default function BillingTab() {
 
   return (
     <div className="space-y-6">
-      <NextBillingRunCard subs={expectedSubs} />
+      <NextBillingRunCard invoices={invoices} />
 
       <RevenueSummary invoices={billableInvoices} />
 
@@ -946,6 +934,18 @@ export default function BillingTab() {
           <p className="text-sm text-muted-foreground">No subscriptions yet.</p>
         ) : (
           <div className="overflow-x-auto">
+            <div className="flex items-center gap-2 mb-3">
+              <label className="text-xs text-muted-foreground">Sort by:</label>
+              <select
+                className="h-8 rounded-md border border-border bg-background px-2 text-xs"
+                value={subSort}
+                onChange={(e) => setSubSort(e.target.value as "name" | "type" | "status")}
+              >
+                <option value="name">Partner (A–Z)</option>
+                <option value="type">Category</option>
+                <option value="status">Status</option>
+              </select>
+            </div>
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-muted-foreground border-b border-border">
@@ -956,7 +956,12 @@ export default function BillingTab() {
               </thead>
               <tbody>
                 {[...subs]
-                  .sort((a, b) => (a.partnerName || "").localeCompare(b.partnerName || ""))
+                  .sort((a, b) => {
+                    const name = (x: Subscription) => (x.partnerName || `${x.partnerType} #${x.partnerId}`).toLowerCase();
+                    if (subSort === "type") return a.partnerType.localeCompare(b.partnerType) || name(a).localeCompare(name(b));
+                    if (subSort === "status") return (a.status || "").localeCompare(b.status || "") || name(a).localeCompare(name(b));
+                    return name(a).localeCompare(name(b));
+                  })
                   .map((s) => (
                     <tr key={s.id} className="border-b border-border/50">
                       <td className="py-2 pr-3">{s.partnerName || `${s.partnerType} #${s.partnerId}`}</td>
