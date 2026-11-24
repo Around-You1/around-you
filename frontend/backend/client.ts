@@ -358,6 +358,8 @@ export const backend = {
       request("POST", "/admin/set-monthly-price", { body: req }),
     getMonthlyPrice: (req: { entityType: string; entityId: number }) =>
       request("GET", "/admin/monthly-price", { query: req }),
+    setPromoHalf: (req: { entityType: string; entityId: number; mode: string }) =>
+      request("POST", "/admin/promo-half", { body: req }),
     setSuspended: (req: { entityType: string; ids: number[]; suspended: boolean }) =>
       request("POST", "/admin/set-suspended", { body: req }),
     suspendedIds: (req: { entityType: string }) =>

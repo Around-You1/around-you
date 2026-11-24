@@ -117,6 +117,7 @@ func main() {
 	r.staff("POST /admin/accept-partners", httpx.Body(admin.AcceptPartners))
 	r.staff("POST /admin/set-monthly-price", httpx.Body(admin.SetMonthlyPrice))
 	r.auth("GET /admin/monthly-price", httpx.Query(admin.GetMonthlyPrice))
+	r.staff("POST /admin/promo-half", httpx.Body(admin.SetPromoHalf))
 	r.auth("GET /admin/invoiced-ids", httpx.Query(admin.InvoicedPartnerIDs))
 	r.staff("POST /admin/set-suspended", httpx.Body(admin.SetSuspended))
 	r.auth("GET /admin/suspended-ids", httpx.Query(admin.SuspendedPartnerIDs))

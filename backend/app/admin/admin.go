@@ -184,6 +184,8 @@ type GetMonthlyPriceResponse struct {
 	// it's a custom per-partner price rather than the standard computed one.
 	MonthlyCents int  `json:"monthlyCents"`
 	IsOverride   bool `json:"isOverride"`
+	// PromoHalf: "auto" (sign-up-date rule), "on" (force 50%), "off" (never).
+	PromoHalf string `json:"promoHalf"`
 }
 
 // GetMonthlyPrice returns a partner's current standing monthly price and whether
@@ -199,14 +201,22 @@ func GetMonthlyPrice(ctx context.Context, req *GetMonthlyPriceRequest) (*GetMont
 	}
 	var monthly sql.NullInt64
 	var override sql.NullInt64
+	var promoHalf sql.NullBool
 	_ = appdb.SQLDB.QueryRowContext(ctx,
-		`SELECT monthly_cents, monthly_cents_override FROM partner_subscription WHERE partner_type = $1 AND partner_id = $2`,
-		req.EntityType, req.EntityID).Scan(&monthly, &override)
-	resp := &GetMonthlyPriceResponse{}
+		`SELECT monthly_cents, monthly_cents_override, promo_half FROM partner_subscription WHERE partner_type = $1 AND partner_id = $2`,
+		req.EntityType, req.EntityID).Scan(&monthly, &override, &promoHalf)
+	resp := &GetMonthlyPriceResponse{PromoHalf: "auto"}
 	if monthly.Valid {
 		resp.MonthlyCents = int(monthly.Int64)
 	}
 	resp.IsOverride = override.Valid && override.Int64 > 0
+	if promoHalf.Valid {
+		if promoHalf.Bool {
+			resp.PromoHalf = "on"
+		} else {
+			resp.PromoHalf = "off"
+		}
+	}
 	return resp, nil
 }
 
@@ -223,6 +233,45 @@ func SetMonthlyPrice(ctx context.Context, req *SetMonthlyPriceRequest) (*SetMont
 		return nil, &errs.Error{Code: errs.Internal, Message: err.Error()}
 	}
 	return &SetMonthlyPriceResponse{MonthlyCents: m}, nil
+}
+
+type SetPromoHalfRequest struct {
+	EntityType string `json:"entityType"`
+	EntityID   int64  `json:"entityId"`
+	Mode       string `json:"mode"` // "auto" | "on" | "off"
+}
+type SetPromoHalfResponse struct {
+	OK bool `json:"ok"`
+}
+
+// SetPromoHalf forces the November 50% promo on or off for one partner, or
+// returns it to automatic (sign-up-date) handling. SuperAdmin-only.
+//
+//encore:api auth method=POST path=/admin/promo-half
+func SetPromoHalf(ctx context.Context, req *SetPromoHalfRequest) (*SetPromoHalfResponse, error) {
+	if err := requireSuperAdmin(ctx); err != nil {
+		return nil, err
+	}
+	if _, ok := tables[req.EntityType]; !ok {
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "unknown entity type"}
+	}
+	var val interface{}
+	switch req.Mode {
+	case "on":
+		val = true
+	case "off":
+		val = false
+	case "auto", "":
+		val = nil
+	default:
+		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "mode must be auto, on or off"}
+	}
+	if _, err := appdb.SQLDB.ExecContext(ctx,
+		`UPDATE partner_subscription SET promo_half = $3, updated_at = now() WHERE partner_type = $1 AND partner_id = $2`,
+		req.EntityType, req.EntityID, val); err != nil {
+		return nil, &errs.Error{Code: errs.Internal, Message: err.Error()}
+	}
+	return &SetPromoHalfResponse{OK: true}, nil
 }
 
 type InvoicedIDsRequest struct {

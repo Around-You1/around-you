@@ -23,6 +23,29 @@ export default function MonthlyPriceEditor({
   const [saving, setSaving] = useState(false);
   // Current stored price, loaded on mount so the admin sees what's set.
   const [current, setCurrent] = useState<{ rands: number; isOverride: boolean } | null>(null);
+  const [promo, setPromo] = useState<"auto" | "on" | "off">("auto");
+  const [promoSaving, setPromoSaving] = useState(false);
+
+  const changePromo = async (mode: "auto" | "on" | "off") => {
+    setPromo(mode);
+    setPromoSaving(true);
+    try {
+      await getAuthenticatedBackend().admin.setPromoHalf({ entityType, entityId, mode });
+      toast({
+        title: mode === "on" ? "November 50% promo: ON" : mode === "off" ? "November 50% promo: OFF" : "Promo: automatic",
+        description:
+          mode === "on"
+            ? "This partner gets 50% off their monthly fee for Nov\u2013Jan."
+            : mode === "off"
+            ? "This partner is billed the full monthly fee \u2014 no promo."
+            : "Uses the sign-up-date rule: only partners who joined before 22 Nov get the 50%.",
+      });
+    } catch (e: any) {
+      toast({ title: "Couldn't update promo", description: e?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setPromoSaving(false);
+    }
+  };
 
   const load = async () => {
     try {
@@ -32,6 +55,7 @@ export default function MonthlyPriceEditor({
       setCurrent({ rands: r, isOverride });
       // Pre-fill the input with the custom price when one is set.
       if (isOverride && r > 0) setRands(String(r));
+      setPromo(res?.promoHalf === "on" || res?.promoHalf === "off" ? res.promoHalf : "auto");
     } catch {
       /* best-effort — leave the field blank */
     }
@@ -60,7 +84,7 @@ export default function MonthlyPriceEditor({
         title: clear ? "Reverted to standard pricing" : `Monthly price set to R${r}`,
         description: clear
           ? "This partner now bills at the standard computed price."
-          : "This is the standing monthly fee. The November launch promo (50%) still applies on top for Nov–Jan, November pro-rata.",
+          : "This is the standing monthly fee. The November 50% promo is controlled separately, below.",
       });
       if (clear) setRands("");
       await load();
@@ -106,8 +130,26 @@ export default function MonthlyPriceEditor({
       </div>
       <p className="text-xs text-muted-foreground mt-1">
         Overrides this partner&apos;s standard monthly price only. Set this before Accepting so the first invoice is
-        correct. The promo still applies on top.
+        correct. The November 50% promo is controlled separately, below.
       </p>
+
+      <div className="mt-3 border-t border-border pt-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">November 50% promo</p>
+        <select
+          className="h-8 rounded-md border border-border bg-background px-2 text-xs"
+          value={promo}
+          disabled={promoSaving}
+          onChange={(e) => changePromo(e.target.value as "auto" | "on" | "off")}
+        >
+          <option value="auto">Automatic (by sign-up date)</option>
+          <option value="on">Apply 50% (force on)</option>
+          <option value="off">No promo (force off)</option>
+        </select>
+        <p className="text-xs text-muted-foreground mt-1">
+          <strong>Automatic</strong> gives 50% only to partners who joined before 22 Nov. Use <strong>Apply 50%</strong> to
+          give a specific partner the promo, or <strong>No promo</strong> to always bill the full fee.
+        </p>
+      </div>
     </div>
   );
 }
