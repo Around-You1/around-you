@@ -158,10 +158,13 @@ function CollapsibleCard({
 }
 
 // --- New Billing Run -------------------------------------------------------
-// Every invoice that has been issued, grouped by category, so a SuperAdmin can
-// reconcile payments. Each row's circle marks the REAL invoice Paid (green) or
-// Outstanding (empty) via the invoice-status endpoint; the category and grand
-// totals show what is still outstanding (unpaid).
+// Two views in one card:
+//  • Next Monthly Run — a forecast of what the upcoming recurring run will
+//    invoice (each billable subscription's standing fee + its bill date). These
+//    invoices don't exist yet, so there is no Paid toggle.
+//  • Outstanding — every invoice already issued, grouped by category, with a
+//    Paid circle that marks the real invoice Paid/Outstanding. Totals show what
+//    is still owed. Free (R0), deleted and suspended partners are excluded.
 const RUN_CATEGORIES: { type: string; label: string }[] = [
   { type: "accommodation", label: "Accommodation" },
   { type: "restaurant", label: "Restaurant" },
@@ -172,26 +175,22 @@ const RUN_CATEGORIES: { type: string; label: string }[] = [
   { type: "retail", label: "Retail" },
 ];
 
-function NextBillingRunCard({ invoices }: { invoices: Invoice[] }) {
+function NextBillingRunCard({ invoices, upcoming }: { invoices: Invoice[]; upcoming: Subscription[] }) {
   const { toast } = useToast();
   const [paidIds, setPaidIds] = useState<Set<number>>(
     () => new Set(invoices.filter((v) => v.status === "Paid").map((v) => v.id)),
   );
   const [openCats, setOpenCats] = useState<Set<string>>(new Set());
+  const [openUp, setOpenUp] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState<number | null>(null);
 
   useEffect(() => {
     setPaidIds(new Set(invoices.filter((v) => v.status === "Paid").map((v) => v.id)));
   }, [invoices]);
 
-  // Only invoices that are genuinely collectable: drop Void, R0 (free
-  // accounts), deleted partners, and suspended partners (they bill nothing
-  // until reinstated).
+  // ----- Outstanding (already-issued invoices) -----
   const isHidden = (v: Invoice) =>
-    v.status === "Void" ||
-    v.totalCents === 0 ||
-    v.partnerExists === false ||
-    v.partnerSuspended === true;
+    v.status === "Void" || v.totalCents === 0 || v.partnerExists === false || v.partnerSuspended === true;
   const live = invoices.filter((v) => !isHidden(v));
   const byType = useMemo(() => {
     const m: Record<string, Invoice[]> = {};
@@ -204,33 +203,29 @@ function NextBillingRunCard({ invoices }: { invoices: Invoice[] }) {
     }
     return m;
   }, [invoices]);
-
   const outstanding = (v: Invoice) => (paidIds.has(v.id) ? 0 : v.totalCents);
   const grandOutstanding = live.reduce((sum, v) => sum + outstanding(v), 0);
 
-  const toggleCat = (t: string) =>
-    setOpenCats((prev) => {
-      const n = new Set(prev);
-      n.has(t) ? n.delete(t) : n.add(t);
-      return n;
-    });
+  // ----- Next monthly run (forecast from billable subscriptions) -----
+  const upByType = useMemo(() => {
+    const m: Record<string, Subscription[]> = {};
+    for (const s of upcoming) (m[s.partnerType] ||= []).push(s);
+    for (const k of Object.keys(m)) m[k].sort((a, b) => (a.partnerName || "").localeCompare(b.partnerName || ""));
+    return m;
+  }, [upcoming]);
+  const nextRunTotal = upcoming.reduce((sum, s) => sum + s.monthlyCents, 0);
+
+  const toggleCat = (t: string) => setOpenCats((p) => { const n = new Set(p); n.has(t) ? n.delete(t) : n.add(t); return n; });
+  const toggleUp = (t: string) => setOpenUp((p) => { const n = new Set(p); n.has(t) ? n.delete(t) : n.add(t); return n; });
 
   const togglePaid = async (v: Invoice) => {
     const willPay = !paidIds.has(v.id);
     setSaving(v.id);
-    setPaidIds((prev) => {
-      const n = new Set(prev);
-      willPay ? n.add(v.id) : n.delete(v.id);
-      return n;
-    });
+    setPaidIds((p) => { const n = new Set(p); willPay ? n.add(v.id) : n.delete(v.id); return n; });
     try {
       await getAuthenticatedBackend().accounts.setInvoiceStatus({ id: v.id, status: willPay ? "Paid" : "Issued" });
     } catch (e: any) {
-      setPaidIds((prev) => {
-        const n = new Set(prev);
-        willPay ? n.delete(v.id) : n.add(v.id);
-        return n;
-      });
+      setPaidIds((p) => { const n = new Set(p); willPay ? n.delete(v.id) : n.add(v.id); return n; });
       toast({ title: "Couldn't update", description: e?.message || "Please try again.", variant: "destructive" });
     } finally {
       setSaving(null);
@@ -238,82 +233,112 @@ function NextBillingRunCard({ invoices }: { invoices: Invoice[] }) {
   };
 
   return (
-    <CollapsibleCard title={`New Billing Run · Outstanding ${rand(grandOutstanding)}`} defaultOpen contentClassName="space-y-2">
+    <CollapsibleCard
+      title={`New Billing Run · Outstanding ${rand(grandOutstanding)} · Next Monthly Run ${rand(nextRunTotal)}`}
+      defaultOpen
+      contentClassName="space-y-3"
+    >
       <p className="text-sm text-muted-foreground">
-        Every invoice that has been issued, grouped by category. Click a category to see each invoice, its date and
-        amount. Tap the circle under <strong>Paid</strong> when a payment comes in — green means paid, empty means still
-        outstanding. Free (R0), deleted and suspended partners are left out. The totals show what is still owed.
+        <strong>Next Monthly Run</strong> forecasts what the upcoming recurring run will invoice (not yet issued).{" "}
+        <strong>Outstanding</strong> lists every invoice already issued — tap the circle under <strong>Paid</strong> when a
+        payment comes in (green = paid, empty = still owed). Free (R0), deleted and suspended partners are excluded.
       </p>
-      <div className="rounded-md border border-border divide-y divide-border">
-        {RUN_CATEGORIES.map(({ type, label }) => {
-          const rows = byType[type] || [];
-          const catOutstanding = rows.reduce((sum, v) => sum + outstanding(v), 0);
-          const isOpen = openCats.has(type);
-          return (
-            <div key={type}>
-              <button
-                type="button"
-                onClick={() => rows.length && toggleCat(type)}
-                disabled={rows.length === 0}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-muted/50 disabled:cursor-default disabled:opacity-70"
-              >
-                <span className="flex items-center gap-2 min-w-0">
-                  <span className="w-4 text-center text-muted-foreground">{rows.length === 0 ? "" : isOpen ? "▾" : "▸"}</span>
-                  <span className="font-medium">{label}</span>
-                  {rows.length > 0 && <span className="text-xs text-muted-foreground">({rows.length})</span>}
-                </span>
-                <span className="font-semibold tabular-nums">{rows.length === 0 ? "—" : rand(catOutstanding)}</span>
-              </button>
-              {isOpen && rows.length > 0 && (
-                <div className="overflow-x-auto px-3 pb-3">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-muted-foreground">
-                        <th className="py-1 pr-3">Partner</th>
-                        <th className="py-1 pr-3">Invoice</th>
-                        <th className="py-1 pr-3">Date</th>
-                        <th className="py-1 pr-3">Amount</th>
-                        <th className="py-1 pr-3 text-center">Paid</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map((v) => {
-                        const isPaid = paidIds.has(v.id);
-                        return (
-                          <tr key={v.id} className="border-t border-border/50">
-                            <td className="py-1.5 pr-3">{v.billName || `${v.partnerType} #${v.partnerId}`}</td>
-                            <td className="py-1.5 pr-3 font-mono text-xs text-muted-foreground">{v.invoiceNumber}</td>
-                            <td className="py-1.5 pr-3 whitespace-nowrap">{(v.issuedAt || v.periodStart || "").slice(0, 10) || "—"}</td>
-                            <td className="py-1.5 pr-3 tabular-nums">{rand(v.totalCents)}</td>
-                            <td className="py-1.5 pr-3 text-center">
-                              <button
-                                type="button"
-                                onClick={() => togglePaid(v)}
-                                disabled={saving === v.id}
-                                aria-pressed={isPaid}
-                                title={isPaid ? "Paid — click to mark outstanding" : "Outstanding — click to mark paid"}
-                                className="inline-flex items-center justify-center align-middle"
-                              >
-                                <span
-                                  className={`inline-block w-5 h-5 rounded-full border-2 transition-colors ${
-                                    isPaid ? "bg-green-600 border-green-600" : "border-muted-foreground/50 bg-transparent"
-                                  } ${saving === v.id ? "opacity-50" : ""}`}
-                                />
-                              </button>
-                            </td>
+
+      <div className="space-y-1">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground px-1">
+          Next monthly run · {rand(nextRunTotal)}
+        </p>
+        <div className="rounded-md border border-dashed border-brand/50 bg-brand/5 divide-y divide-border">
+          {RUN_CATEGORIES.map(({ type, label }) => {
+            const rows = upByType[type] || [];
+            const total = rows.reduce((sum, s) => sum + s.monthlyCents, 0);
+            const open = openUp.has(type);
+            return (
+              <div key={type}>
+                <button type="button" onClick={() => rows.length && toggleUp(type)} disabled={rows.length === 0}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-muted/50 disabled:cursor-default disabled:opacity-70">
+                  <span className="flex items-center gap-2 min-w-0">
+                    <span className="w-4 text-center text-muted-foreground">{rows.length === 0 ? "" : open ? "▾" : "▸"}</span>
+                    <span className="font-medium">{label}</span>
+                    {rows.length > 0 && <span className="text-xs text-muted-foreground">({rows.length})</span>}
+                  </span>
+                  <span className="font-semibold tabular-nums">{rows.length === 0 ? "—" : rand(total)}</span>
+                </button>
+                {open && rows.length > 0 && (
+                  <div className="overflow-x-auto px-3 pb-3">
+                    <table className="w-full text-sm">
+                      <thead><tr className="text-left text-muted-foreground"><th className="py-1 pr-3">Partner</th><th className="py-1 pr-3">Bill date</th><th className="py-1 pr-3">Amount</th></tr></thead>
+                      <tbody>
+                        {rows.map((s) => (
+                          <tr key={s.id} className="border-t border-border/50">
+                            <td className="py-1.5 pr-3">{s.partnerName || `${s.partnerType} #${s.partnerId}`}</td>
+                            <td className="py-1.5 pr-3 whitespace-nowrap">{s.nextBillDate || "—"}</td>
+                            <td className="py-1.5 pr-3 tabular-nums">{rand(s.monthlyCents)}</td>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          );
-        })}
-        {live.length === 0 && (
-          <p className="px-3 py-3 text-sm text-muted-foreground">No invoices issued yet.</p>
-        )}
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {upcoming.length === 0 && <p className="px-3 py-3 text-sm text-muted-foreground">Nothing scheduled for the next run.</p>}
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground px-1">
+          Outstanding invoices · {rand(grandOutstanding)}
+        </p>
+        <div className="rounded-md border border-border divide-y divide-border">
+          {RUN_CATEGORIES.map(({ type, label }) => {
+            const rows = byType[type] || [];
+            const catOutstanding = rows.reduce((sum, v) => sum + outstanding(v), 0);
+            const open = openCats.has(type);
+            return (
+              <div key={type}>
+                <button type="button" onClick={() => rows.length && toggleCat(type)} disabled={rows.length === 0}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-muted/50 disabled:cursor-default disabled:opacity-70">
+                  <span className="flex items-center gap-2 min-w-0">
+                    <span className="w-4 text-center text-muted-foreground">{rows.length === 0 ? "" : open ? "▾" : "▸"}</span>
+                    <span className="font-medium">{label}</span>
+                    {rows.length > 0 && <span className="text-xs text-muted-foreground">({rows.length})</span>}
+                  </span>
+                  <span className="font-semibold tabular-nums">{rows.length === 0 ? "—" : rand(catOutstanding)}</span>
+                </button>
+                {open && rows.length > 0 && (
+                  <div className="overflow-x-auto px-3 pb-3">
+                    <table className="w-full text-sm">
+                      <thead><tr className="text-left text-muted-foreground"><th className="py-1 pr-3">Partner</th><th className="py-1 pr-3">Invoice</th><th className="py-1 pr-3">Date</th><th className="py-1 pr-3">Amount</th><th className="py-1 pr-3 text-center">Paid</th></tr></thead>
+                      <tbody>
+                        {rows.map((v) => {
+                          const isPaid = paidIds.has(v.id);
+                          return (
+                            <tr key={v.id} className="border-t border-border/50">
+                              <td className="py-1.5 pr-3">{v.billName || `${v.partnerType} #${v.partnerId}`}</td>
+                              <td className="py-1.5 pr-3 font-mono text-xs text-muted-foreground">{v.invoiceNumber}</td>
+                              <td className="py-1.5 pr-3 whitespace-nowrap">{(v.issuedAt || v.periodStart || "").slice(0, 10) || "—"}</td>
+                              <td className="py-1.5 pr-3 tabular-nums">{rand(v.totalCents)}</td>
+                              <td className="py-1.5 pr-3 text-center">
+                                <button type="button" onClick={() => togglePaid(v)} disabled={saving === v.id} aria-pressed={isPaid}
+                                  title={isPaid ? "Paid — click to mark outstanding" : "Outstanding — click to mark paid"}
+                                  className="inline-flex items-center justify-center align-middle">
+                                  <span className={`inline-block w-5 h-5 rounded-full border-2 transition-colors ${isPaid ? "bg-green-600 border-green-600" : "border-muted-foreground/50 bg-transparent"} ${saving === v.id ? "opacity-50" : ""}`} />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {live.length === 0 && <p className="px-3 py-3 text-sm text-muted-foreground">No invoices issued yet.</p>}
+        </div>
       </div>
     </CollapsibleCard>
   );
@@ -884,7 +909,7 @@ export default function BillingTab() {
 
   return (
     <div className="space-y-6">
-      <NextBillingRunCard invoices={invoices} />
+      <NextBillingRunCard invoices={invoices} upcoming={expectedSubs} />
 
       <RevenueSummary invoices={billableInvoices} />
 
