@@ -20,6 +20,7 @@ import { getCurrentPosition } from "../lib/geolocation";
 import { useToast } from "@/components/ui/use-toast";
 import { useSwipe } from "../lib/useSwipe";
 import ImageCarousel from "../components/ImageCarousel";
+import BrandLoading from "./BrandLoading";
 import RestaurantPreOrder from "../components/RestaurantPreOrder";
 import { BOOKINGS_ENABLED } from "../lib/features";
 import { useTutorial } from "../components/tutorial/TutorialProvider";
@@ -661,11 +662,7 @@ export default function GuestDashboard() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-brand/10 to-background flex items-center justify-center">
-        <p className="text-lg">Loading...</p>
-      </div>
-    );
+    return <BrandLoading />;
   }
 
   if (!isLocalMode && !accommodation) {
@@ -784,6 +781,54 @@ export default function GuestDashboard() {
                                 Redeem discount
                               </Button>
                             )}
+                            {isRetail && retailSpecials.length > 0 && (
+                            <HideWhenOptedOut><Collapsible>
+                              <CollapsibleTrigger className={retailSpecials.length > 0 ? `${triggerClass} bg-brand hover:bg-brand/90 text-brand-foreground font-semibold rounded-lg px-3 py-2` : triggerClass}>
+                                <ChevronDown className="h-4 w-4" />
+                                Redeem Discount/My Stamp Card
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className={`${contentClass} text-sm`}>
+                                {retailSpecials.length > 0 ? (
+                                  <div className="space-y-2">
+                                    {retailSpecials.map((sp, i) => (
+                                      <div key={i} className="px-3 py-2 bg-brand/10 border border-brand rounded-lg">
+                                        <div className="flex items-center gap-1.5 text-foreground">
+                                          <Tag className="h-4 w-4 shrink-0" />
+                                          <span className="text-xs font-semibold uppercase tracking-wide">
+                                            {sp.type === "stampcard" ? "My Stamp Card" : "Discount"}
+                                          </span>
+                                        </div>
+                                        {(sp as any).imageUrl && (
+                                          <ImageCarousel
+                                            images={[(sp as any).imageUrl]}
+                                            alt={sp.line1 || "Product"}
+                                            className="mt-2 w-full max-w-[220px] h-40 rounded-md border border-brand/40"
+                                            placeholderClassName="mt-2 w-full max-w-[220px] h-40 rounded-md"
+                                          />
+                                        )}
+                                        <p className="text-sm text-foreground mt-1">{sp.line1}</p>
+                                        {sp.type === "stampcard" && sp.line2 && (
+                                          <p className="text-sm text-foreground/80 mt-1">{sp.line2}</p>
+                                        )}
+                                        {sp.type === "stampcard" && (
+                                          <Button
+                                            size="sm"
+                                            className="mt-2 bg-brand hover:bg-brand/90 text-brand-foreground font-semibold"
+                                            onClick={() => setShowMyStamps(true)}
+                                          >
+                                            Get Stamps
+                                          </Button>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  fallbackSpan
+                                )}
+                              </CollapsibleContent>
+                            </Collapsible></HideWhenOptedOut>
+                            )}
+
                             <Button variant="outline" size="sm" className="w-full sm:w-auto border-brand dark:border-input" onClick={() => toggleCard(entityType + ":" + service.id)}>
                               {expandedCards.has(entityType + ":" + service.id) ? "Less info" : "More info"}
                             </Button>
@@ -829,52 +874,6 @@ export default function GuestDashboard() {
                             </Collapsible></HideWhenOptedOut>
                             )}
 
-                            {isRetail && (
-                            <HideWhenOptedOut><Collapsible>
-                              <CollapsibleTrigger className={retailSpecials.length > 0 ? `${triggerClass} bg-brand hover:bg-brand/90 text-brand-foreground font-semibold rounded-lg px-3 py-2` : triggerClass}>
-                                <ChevronDown className="h-4 w-4" />
-                                Discount / My Stamp Card
-                              </CollapsibleTrigger>
-                              <CollapsibleContent className={`${contentClass} text-sm`}>
-                                {retailSpecials.length > 0 ? (
-                                  <div className="space-y-2">
-                                    {retailSpecials.map((sp, i) => (
-                                      <div key={i} className="px-3 py-2 bg-brand/10 border border-brand rounded-lg">
-                                        <div className="flex items-center gap-1.5 text-foreground">
-                                          <Tag className="h-4 w-4 shrink-0" />
-                                          <span className="text-xs font-semibold uppercase tracking-wide">
-                                            {sp.type === "stampcard" ? "My Stamp Card" : "Discount"}
-                                          </span>
-                                        </div>
-                                        {(sp as any).imageUrl && (
-                                          <img
-                                            src={(sp as any).imageUrl}
-                                            alt={sp.line1 || "Product"}
-                                            className="mt-2 w-full max-w-[220px] rounded-md border border-brand/40 object-cover"
-                                          />
-                                        )}
-                                        <p className="text-sm text-foreground mt-1">{sp.line1}</p>
-                                        {sp.type === "stampcard" && sp.line2 && (
-                                          <p className="text-sm text-foreground/80 mt-1">{sp.line2}</p>
-                                        )}
-                                        {sp.type === "stampcard" && (
-                                          <Button
-                                            size="sm"
-                                            className="mt-2 bg-brand hover:bg-brand/90 text-brand-foreground font-semibold"
-                                            onClick={() => setShowMyStamps(true)}
-                                          >
-                                            Get Stamps
-                                          </Button>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  fallbackSpan
-                                )}
-                              </CollapsibleContent>
-                            </Collapsible></HideWhenOptedOut>
-                            )}
 
                             <HideWhenOptedOut><Collapsible>
                               <CollapsibleTrigger className={triggerClass}>
@@ -2987,7 +2986,12 @@ function MyStampCardsModal({ onClose, isLocal }: { onClose: () => void; isLocal:
                     </div>
                   </div>
                   {(c as any).imageUrl && (
-                    <img src={(c as any).imageUrl} alt={(c as any).label || "Product"} className="w-full max-w-[200px] rounded-md border object-cover" />
+                    <ImageCarousel
+                      images={[(c as any).imageUrl]}
+                      alt={(c as any).label || "Product"}
+                      className="w-full max-w-[200px] h-40 rounded-md border"
+                      placeholderClassName="w-full max-w-[200px] h-40 rounded-md"
+                    />
                   )}
                   {c.rewardText && (
                     <div className="text-xs font-medium rounded px-2 py-1 border border-brand/40 bg-brand/10 text-brand">
