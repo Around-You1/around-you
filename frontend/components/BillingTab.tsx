@@ -938,6 +938,48 @@ export default function BillingTab() {
       <AccountantsCard />
       <InvoiceSettingsCard />
 
+      <CollapsibleCard title="Subscription Status">
+        <p className="text-sm text-muted-foreground mb-3">
+          Pause, cancel or reactivate a partner&apos;s billing subscription. Paused and cancelled partners drop out of the billing run.
+        </p>
+        {subs.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No subscriptions yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-muted-foreground border-b border-border">
+                  <th className="py-2 pr-3">Partner</th>
+                  <th className="py-2 pr-3">Type</th>
+                  <th className="py-2 pr-3">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...subs]
+                  .sort((a, b) => (a.partnerName || "").localeCompare(b.partnerName || ""))
+                  .map((s) => (
+                    <tr key={s.id} className="border-b border-border/50">
+                      <td className="py-2 pr-3">{s.partnerName || `${s.partnerType} #${s.partnerId}`}</td>
+                      <td className="py-2 pr-3 capitalize">{s.partnerType.replace(/_/g, " ")}</td>
+                      <td className="py-2 pr-3">
+                        <select
+                          className="h-8 rounded-md border border-border bg-background px-1 text-xs"
+                          value={s.status}
+                          onChange={(e) => handleSetStatus(s.id, e.target.value)}
+                        >
+                          <option value="Active">Active</option>
+                          <option value="Paused">Paused</option>
+                          <option value="Cancelled">Cancelled</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CollapsibleCard>
+
 
       <CollapsibleCard title={`Email Delivery (${emailLog.length})`}>
         {emailLog.length === 0 ? (
