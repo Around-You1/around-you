@@ -147,7 +147,8 @@ export default function MonthlyPriceEditor({
         </select>
         <p className="text-xs text-muted-foreground mt-1">
           <strong>Automatic</strong> gives 50% only to partners who joined before 22 Nov. Use <strong>Apply 50%</strong> to
-          give a specific partner the promo, or <strong>No promo</strong> to always bill the full fee.
+          give a specific partner the promo, or <strong>No promo</strong> to always bill the full fee. Every 50% promo ends
+          automatically &mdash; the full monthly price resumes from the 1 February 2027 invoice, even when forced on.
         </p>
       </div>
     </div>

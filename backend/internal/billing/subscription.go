@@ -105,8 +105,16 @@ func EnsureSubscription(ctx context.Context, partnerType string, partnerID int64
 		audienceArg = p.Audience
 	}
 	var repArg interface{}
-	if strings.TrimSpace(repCode) != "" {
-		repArg = strings.TrimSpace(repCode)
+	rc := strings.TrimSpace(repCode)
+	if rc == "" && (partnerType == "estate_agency" || partnerType == "estate_agent") {
+		// Estate pages have no agent-code field — they are onboarded directly by
+		// Around You, so they bill under the house account (a real, no-commission
+		// rep). Without this they would have an empty rep and be dropped from the
+		// billable forecast.
+		rc = "AROUNDYOU"
+	}
+	if rc != "" {
+		repArg = rc
 	}
 	// The first invoice is issued at onboarding (the day the partner goes live);
 	// recurring billing then runs on that same day-of-month every month, so the
@@ -196,7 +204,7 @@ func List(ctx context.Context) ([]Subscription, error) {
 	rows, err := appdb.SQLDB.QueryContext(ctx, `
 		SELECT ps.id, ps.partner_type, ps.partner_id, ps.plan,
 		       COALESCE(ps.tier, 0), COALESCE(ps.audience, ''), ps.monthly_cents,
-		       COALESCE((CASE ps.partner_type
+		       COALESCE(NULLIF((CASE ps.partner_type
 		         WHEN 'restaurant'    THEN (SELECT official_rep_code FROM restaurants     WHERE id = ps.partner_id)
 		         WHEN 'service'       THEN (SELECT official_rep_code FROM services        WHERE id = ps.partner_id)
 		         WHEN 'retail'        THEN (SELECT official_rep_code FROM retail          WHERE id = ps.partner_id)
@@ -205,7 +213,7 @@ func List(ctx context.Context) ([]Subscription, error) {
 		         WHEN 'accommodation' THEN (SELECT official_rep_code FROM accommodations  WHERE id = ps.partner_id)
 		         WHEN 'estate_agency' THEN (SELECT official_rep_code FROM estate_agencies WHERE id = ps.partner_id)
 		         WHEN 'estate_agent'  THEN (SELECT official_rep_code FROM estate_agents   WHERE id = ps.partner_id)
-		       END), ps.rep_code, ''), ps.status, ps.auto_renew,
+		       END), ''), ps.rep_code, ''), ps.status, ps.auto_renew,
 		       COALESCE(to_char(ps.next_bill_date, 'YYYY-MM-DD'), ''),
 		       COALESCE((CASE ps.partner_type
 		         WHEN 'restaurant'    THEN (SELECT name FROM restaurants     WHERE id = ps.partner_id)
