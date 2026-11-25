@@ -72,6 +72,9 @@ func CreateAgency(ctx context.Context, req *appdb.EstateAgency) (*appdb.EstateAg
 	if err := requirePrivileged(ctx); err != nil {
 		return nil, err
 	}
+	if strings.TrimSpace(req.OfficialRepCode) == "" {
+		req.OfficialRepCode = "AROUNDYOU" // house account — estate pages have no agent-code field
+	}
 	if strings.TrimSpace(req.Name) == "" {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "agency name is required"}
 	}
@@ -104,6 +107,9 @@ func CreateAgency(ctx context.Context, req *appdb.EstateAgency) (*appdb.EstateAg
 func UpdateAgency(ctx context.Context, req *appdb.EstateAgency) (*appdb.EstateAgency, error) {
 	if err := requirePrivileged(ctx); err != nil {
 		return nil, err
+	}
+	if strings.TrimSpace(req.OfficialRepCode) == "" {
+		req.OfficialRepCode = "AROUNDYOU" // house account — estate pages have no agent-code field
 	}
 	if err := moderation.BlockError(
 		moderation.NamedField{Name: "name", Value: req.Name},
@@ -194,6 +200,9 @@ func CreateAgent(ctx context.Context, req *appdb.EstateAgent) (*appdb.EstateAgen
 	if err := requirePrivileged(ctx); err != nil {
 		return nil, err
 	}
+	if strings.TrimSpace(req.OfficialRepCode) == "" {
+		req.OfficialRepCode = "AROUNDYOU" // house account — estate pages have no agent-code field
+	}
 	// Agents are now standalone, self-paying profiles: no agency link required.
 	if strings.TrimSpace(req.Name) == "" {
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "agent name is required"}
@@ -226,6 +235,9 @@ func CreateAgent(ctx context.Context, req *appdb.EstateAgent) (*appdb.EstateAgen
 func UpdateAgent(ctx context.Context, req *appdb.EstateAgent) (*appdb.EstateAgent, error) {
 	if err := requirePrivileged(ctx); err != nil {
 		return nil, err
+	}
+	if strings.TrimSpace(req.OfficialRepCode) == "" {
+		req.OfficialRepCode = "AROUNDYOU" // house account — estate pages have no agent-code field
 	}
 	if err := moderation.BlockError(
 		moderation.NamedField{Name: "name", Value: req.Name},
