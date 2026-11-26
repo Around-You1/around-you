@@ -165,6 +165,7 @@ func (s *AttractionStore) ListByMunicipality(ctx context.Context, area string) (
 }
 
 func (s *AttractionStore) ListNearby(ctx context.Context) ([]appdb.AttractionData, error) {
+	return attractionNearbyCache.Get("all", func() ([]appdb.AttractionData, error) {
 	rows, err := appdb.SQLDB.QueryContext(ctx,
 		"SELECT "+attractionColumns+" FROM attractions WHERE is_active = true AND (works_from_client_address = true OR (latitude IS NOT NULL AND longitude IS NOT NULL))")
 	if err != nil {
@@ -180,6 +181,7 @@ func (s *AttractionStore) ListNearby(ctx context.Context) ([]appdb.AttractionDat
 		out = append(out, *item)
 	}
 	return out, rows.Err()
+	})
 }
 
 func (s *AttractionStore) Get(ctx context.Context, id int64) (*appdb.AttractionData, error) {

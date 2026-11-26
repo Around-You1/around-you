@@ -185,6 +185,7 @@ func (s *RestaurantStore) ListByMunicipality(ctx context.Context, area string) (
 // filtering by radius still happens in Go (appdb.HaversineKm), matching how
 // this always worked; only the storage moved from a map to SQL.
 func (s *RestaurantStore) ListNearby(ctx context.Context) ([]appdb.Restaurant, error) {
+	return restaurantNearbyCache.Get("all", func() ([]appdb.Restaurant, error) {
 	rows, err := appdb.SQLDB.QueryContext(ctx,
 		"SELECT "+restaurantColumns+" FROM restaurants WHERE is_active = true AND (works_from_client_address = true OR (latitude IS NOT NULL AND longitude IS NOT NULL))")
 	if err != nil {
@@ -200,6 +201,7 @@ func (s *RestaurantStore) ListNearby(ctx context.Context) ([]appdb.Restaurant, e
 		out = append(out, *r)
 	}
 	return out, rows.Err()
+	})
 }
 
 func (s *RestaurantStore) Get(ctx context.Context, id int64) (*appdb.Restaurant, error) {

@@ -182,6 +182,7 @@ func sortColumn(sortBy, sortOrder string) string {
 // Locals (show_to_locals = true) and have coordinates, for distance filtering by
 // the caller (the Local "Accommodation/Caravan Parks" section).
 func (s *Store) ListForLocals(ctx context.Context) ([]appdb.Accommodation, error) {
+	return accommodationLocalsCache.Get("all", func() ([]appdb.Accommodation, error) {
 	rows, err := appdb.SQLDB.QueryContext(ctx,
 		"SELECT"+accommodationColumns+"FROM accommodations WHERE show_to_locals = true AND is_active = true AND latitude IS NOT NULL AND longitude IS NOT NULL")
 	if err != nil {
@@ -197,6 +198,7 @@ func (s *Store) ListForLocals(ctx context.Context) ([]appdb.Accommodation, error
 		out = append(out, *a)
 	}
 	return out, rows.Err()
+	})
 }
 
 func (s *Store) List(ctx context.Context, sortBy, sortOrder string) ([]appdb.Accommodation, error) {

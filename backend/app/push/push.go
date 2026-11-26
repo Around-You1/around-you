@@ -178,9 +178,19 @@ func Send(ctx context.Context, req *SendRequest) (*SendResponse, error) {
 		return nil, err
 	}
 
-	sent, failed := fanout(ctx, title, strings.TrimSpace(req.Body), url, targets)
-	return &SendResponse{Sent: sent, Failed: failed}, nil
+	// Fan out in the background so the request returns immediately. A large
+	// audience (e.g. a municipality-wide alert) can take minutes to deliver and
+	// must not block or time out the request. The in-app inbox row was already
+	// written synchronously above, so recipients see the alert even before their
+	// push arrives. Best-effort: a deploy/restart mid-send stops remaining pushes.
+	go fanout(context.Background(), title, strings.TrimSpace(req.Body), url, targets)
+	return &SendResponse{Sent: len(targets), Failed: 0}, nil
 }
+
+// fanoutConcurrency caps simultaneous web-push sends. High enough that a very
+// large audience (tens of thousands) still clears in minutes, low enough to stay
+// gentle on the machine's outbound connections.
+const fanoutConcurrency = 48
 
 // fanout delivers a web-push payload to every target concurrently and prunes
 // dead subscriptions. Returns (sent, failed). Shared by the SuperAdmin broadcast
@@ -199,7 +209,7 @@ func fanout(ctx context.Context, title, body, url string, targets []pushTarget) 
 		failed int
 		dead   []int64
 		wg     sync.WaitGroup
-		sem    = make(chan struct{}, 16)
+		sem    = make(chan struct{}, fanoutConcurrency)
 	)
 	for _, t := range targets {
 		wg.Add(1)

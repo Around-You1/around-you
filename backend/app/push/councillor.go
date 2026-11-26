@@ -256,6 +256,8 @@ func CouncillorAlert(ctx context.Context, req *CouncillorAlertRequest) (*Council
 		targets = append(targets, t)
 	}
 	rows.Close()
-	sent, _ := fanout(ctx, title, strings.TrimSpace(req.Body), url, targets)
-	return &CouncillorAlertResponse{Sent: sent}, nil
+	// Deliver in the background (see push.Send): the councillor's request returns
+	// at once, and a large ward won't time out. The inbox row was written above.
+	go fanout(context.Background(), title, strings.TrimSpace(req.Body), url, targets)
+	return &CouncillorAlertResponse{Sent: len(targets)}, nil
 }

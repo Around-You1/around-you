@@ -168,6 +168,7 @@ func (s *ServiceStore) ListByMunicipality(ctx context.Context, area string) ([]a
 }
 
 func (s *ServiceStore) ListNearby(ctx context.Context) ([]appdb.ServiceData, error) {
+	return serviceNearbyCache.Get("all", func() ([]appdb.ServiceData, error) {
 	rows, err := appdb.SQLDB.QueryContext(ctx,
 		"SELECT "+serviceColumns+" FROM services WHERE is_active = true AND (works_from_client_address = true OR (latitude IS NOT NULL AND longitude IS NOT NULL) OR COALESCE(postal_code, '') <> '')")
 	if err != nil {
@@ -183,6 +184,7 @@ func (s *ServiceStore) ListNearby(ctx context.Context) ([]appdb.ServiceData, err
 		out = append(out, *item)
 	}
 	return out, rows.Err()
+	})
 }
 
 func (s *ServiceStore) Get(ctx context.Context, id int64) (*appdb.ServiceData, error) {

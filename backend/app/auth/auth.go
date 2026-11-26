@@ -21,11 +21,13 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
 	"backend_encore/app/storage"
 	"backend_encore/internal/appdb"
+	"backend_encore/internal/cache"
 	"backend_encore/internal/errs"
 	"backend_encore/internal/mailer"
 	"backend_encore/internal/moderation"
@@ -110,14 +112,21 @@ func ActorLabel(ctx context.Context) string {
 // otherwise resurface here immediately, since profile_type/entity_type/area/
 // municipality/accommodation_id/entity_id are all nullable and unset for most
 // logins (e.g. a LocalGuest row has no accommodation_id or entity_id at all).
+// sessionCache keeps the token -> user lookup out of Postgres on repeated
+// requests. Every authenticated call validates its token, so under load this is
+// the single busiest query; a short TTL bounds how long a signed-out or changed
+// session stays accepted (seconds), which is fine for this app.
+var sessionCache = cache.NewTTL[string, appdb.User](30 * time.Second)
+
 func Validate(ctx context.Context, authorization string) (*Data, error) {
 	token := strings.TrimPrefix(authorization, "Bearer ")
 	if token == "" {
 		return nil, &errs.Error{Code: errs.Unauthenticated, Message: "missing bearer token"}
 	}
 
-	var u appdb.User
-	err := appdb.SQLDB.QueryRowContext(ctx, `
+	u, err := sessionCache.Get(token, func() (appdb.User, error) {
+		var u appdb.User
+		err := appdb.SQLDB.QueryRowContext(ctx, `
 		SELECT u.id, u.email, u.role,
 		       COALESCE(u.profile_type, '') as profile_type,
 		       COALESCE(u.accommodation_id, 0) as accommodation_id,
@@ -129,7 +138,9 @@ func Validate(ctx context.Context, authorization string) (*Data, error) {
 		FROM sessions s
 		JOIN users u ON u.id = s.user_id
 		WHERE s.token = $1`, token,
-	).Scan(&u.ID, &u.Email, &u.Role, &u.ProfileType, &u.AccommodationID, &u.EntityType, &u.EntityID, &u.Area, &u.Municipality, &u.PostalCode)
+		).Scan(&u.ID, &u.Email, &u.Role, &u.ProfileType, &u.AccommodationID, &u.EntityType, &u.EntityID, &u.Area, &u.Municipality, &u.PostalCode)
+		return u, err
+	})
 	if err != nil {
 		if isNoRows(err) {
 			return nil, &errs.Error{Code: errs.Unauthenticated, Message: "invalid or expired token"}
@@ -137,7 +148,8 @@ func Validate(ctx context.Context, authorization string) (*Data, error) {
 		return nil, err
 	}
 
-	return &Data{UserID: u.ID, User: &u}, nil
+	user := u
+	return &Data{UserID: user.ID, User: &user}, nil
 }
 
 // ---- Login endpoints --------------------------------------------------------

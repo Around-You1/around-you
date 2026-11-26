@@ -90,7 +90,8 @@ export default function CouncillorPortal() {
     try {
       const endsIso = endsAt ? new Date(endsAt).toISOString() : "";
       const res: any = await backend.councillor.alert({ accessCode: code.trim(), title: title.trim(), body: body.trim(), endsAt: endsIso });
-      setPostMsg(`Alert sent to ${res?.sent ?? 0} device${(res?.sent ?? 0) === 1 ? "" : "s"} in your wards.`);
+      const n = res?.sent ?? 0;
+      setPostMsg(`Alert posted. It's now being delivered to ${n} device${n === 1 ? "" : "s"} in your wards, and already shows in their app inbox.`);
       setTitle(""); setBody(""); setEndsAt("");
     } catch (e: any) {
       setPostErr(e?.message || "Could not send the alert. Please try again.");
