@@ -161,7 +161,7 @@ export default function ImageCarousel({
           {validImages.length > 1 && (
             <button
               onClick={(e) => { e.stopPropagation(); setLightIndex((p) => (p - 1 + validImages.length) % validImages.length); }}
-              className="absolute left-2 z-10 flex items-center justify-center w-11 h-11 rounded-full bg-white/10 text-white text-3xl leading-none hover:bg-white/20"
+              className="absolute left-2 z-10 flex items-center justify-center w-11 h-11 rounded-full bg-brand text-brand-foreground text-3xl leading-none hover:bg-brand/90 shadow-md"
               aria-label="Previous"
             >
               ‹
@@ -177,7 +177,7 @@ export default function ImageCarousel({
           {validImages.length > 1 && (
             <button
               onClick={(e) => { e.stopPropagation(); setLightIndex((p) => (p + 1) % validImages.length); }}
-              className="absolute right-2 z-10 flex items-center justify-center w-11 h-11 rounded-full bg-white/10 text-white text-3xl leading-none hover:bg-white/20"
+              className="absolute right-2 z-10 flex items-center justify-center w-11 h-11 rounded-full bg-brand text-brand-foreground text-3xl leading-none hover:bg-brand/90 shadow-md"
               aria-label="Next"
             >
               ›
