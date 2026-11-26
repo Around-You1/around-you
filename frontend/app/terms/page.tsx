@@ -5,19 +5,19 @@ export const metadata: Metadata = {
   description: "The terms governing use of the Around You platform.",
 };
 
-const LUMO = "#39FF14";
+const LUMO = "var(--brand)";
 
 export default function TermsPage() {
   const effective = "31 August 2026";
   return (
-    <div className="min-h-screen px-5 py-10" style={{ background: "#0a0a0a", color: "#E6F7E6" }}>
+    <div className="min-h-screen px-5 py-10" style={{ background: "var(--background)", color: "var(--foreground)" }}>
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold" style={{ color: LUMO }}>Terms of Use</h1>
-          <p className="text-xs text-[#A6B0A6]">Effective {effective}</p>
+          <p className="text-xs text-muted-foreground">Effective {effective}</p>
         </div>
 
-        <section className="space-y-2 text-sm text-[#c9d6c9] leading-relaxed">
+        <section className="space-y-2 text-sm text-foreground leading-relaxed">
           <p>These Terms of Use govern your access to and use of the Around You platform, website and apps (the &ldquo;Service&rdquo;), operated by Around You (Pty) Ltd (&ldquo;Around You&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;). By accessing or using the Service you agree to these terms. If you do not agree, please do not use the Service.</p>
         </section>
 
@@ -59,12 +59,12 @@ export default function TermsPage() {
         </Section>
 
         <div className="pt-2">
-          <a href="/" className="inline-block rounded-lg px-5 py-2 font-semibold text-black" style={{ background: LUMO }}>
+          <a href="/" className="inline-block rounded-lg px-5 py-2 font-semibold" style={{ background: LUMO, color: "var(--brand-foreground)" }}>
             Back to Around You
           </a>
         </div>
 
-        <p className="text-[11px] text-[#6b7280] pt-4">
+        <p className="text-[11px] text-muted-foreground pt-4">
           This is a general template and not legal advice. Please have it reviewed by a qualified South African attorney before relying on it.
         </p>
       </div>
@@ -76,7 +76,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <section className="space-y-1.5">
       <h2 className="text-base font-semibold" style={{ color: LUMO }}>{title}</h2>
-      <p className="text-sm text-[#c9d6c9] leading-relaxed">{children}</p>
+      <p className="text-sm text-foreground leading-relaxed">{children}</p>
     </section>
   );
 }

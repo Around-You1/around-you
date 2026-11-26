@@ -12,30 +12,38 @@ interface Props {
   // backgrounds (sign-in screens). Pass the black-text asset on light pages
   // (e.g. the Partner Portal) so the "Connecting Guests…" text stays legible.
   src?: string;
+  // Theme-aware: show the dark-text logo in light mode and the white-text logo
+  // in dark mode. Used on pages that follow the light/dark setting.
+  themed?: boolean;
 }
 
-export default function AppLogo({ allowUpload = false, src = "/logo.png", size }: Props) {
+export default function AppLogo({ allowUpload = false, src, size, themed = false }: Props) {
   const dim = size ?? LOGO_W;
   if (!allowUpload) {
+    const base = {
+      width: dim,
+      height: dim,
+      maxWidth: "100%",
+      objectFit: "contain",
+      border: "none",
+      outline: "none",
+      boxShadow: "none",
+      background: "transparent",
+      userSelect: "none",
+      pointerEvents: "none",
+    } as const;
+    if (themed && !src) {
+      // Dark-text logo on light backgrounds, white-text logo on dark ones.
+      return (
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <img src="/logo-dark.png" alt="App Logo" draggable={false} className="block dark:hidden" style={base} />
+          <img src="/logo.png" alt="App Logo" draggable={false} className="hidden dark:block" style={base} />
+        </div>
+      );
+    }
     return (
       <div style={{ display: "flex", justifyContent: "center" }}>
-        <img
-          src={src}
-          alt="App Logo"
-          draggable={false}
-          style={{
-            width: dim,
-            height: dim,
-            maxWidth: "100%",
-            objectFit: "contain",
-            border: "none",
-            outline: "none",
-            boxShadow: "none",
-            background: "transparent",
-            userSelect: "none",
-            pointerEvents: "none",
-          }}
-        />
+        <img src={src ?? "/logo.png"} alt="App Logo" draggable={false} style={base} />
       </div>
     );
   }

@@ -5,15 +5,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import AppLogo from "../components/AppLogo";
 import { Facebook, Linkedin } from "lucide-react";
 
-const LUMO = "#39FF14";
-const LUMO_DARK = "#2dd10f";
+const LUMO = "var(--brand)";
+const LUMO_DARK = "var(--brand)";
 
 // Lumo call-to-action used inside expandable sections (onboard / register links).
 const ctaStyle: React.CSSProperties = {
   display: "inline-block",
   marginTop: 6,
   background: `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`,
-  color: "#000",
+  color: "var(--brand-foreground)",
   fontWeight: 700,
   borderRadius: 8,
   padding: "10px 16px",
@@ -44,9 +44,9 @@ function InfoSquareBtn({
       disabled={dimmed}
       aria-expanded={isOpen}
       style={{
-        background: "#000",
-        border: `2px solid ${dimmed ? "#3a3a3a" : isOpen ? "#5fff3a" : LUMO}`,
-        color: dimmed ? "#555" : isOpen ? "#5fff3a" : LUMO,
+        background: "transparent",
+        border: `2px solid ${dimmed ? "var(--border)" : isOpen ? "var(--brand)" : LUMO}`,
+        color: dimmed ? "var(--muted-foreground)" : isOpen ? "var(--brand)" : LUMO,
         opacity: dimmed ? 0.55 : 1,
         pointerEvents: dimmed ? "none" : "auto",
         borderRadius: 10,
@@ -65,7 +65,7 @@ function InfoSquareBtn({
         minHeight: 0,
         lineHeight: 1.25,
       }}
-      className="touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
+      className="touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1.2)";
       }}
@@ -213,19 +213,19 @@ export default function AboutYouPage() {
   return (
     <div
       className="min-h-screen px-5 pt-3 pb-20"
-      style={{ background: "#0a0a0a" }}
+      style={{ background: "var(--background)" }}
     >
       <div className="max-w-md mx-auto space-y-5 pt-1 pb-8">
         <div className="flex justify-center">
-          <AppLogo />
+          <AppLogo themed />
         </div>
 
         <div
           className="rounded-2xl p-4 space-y-3"
           style={{
-            background: "#111111",
-            border: "1px solid rgba(57,255,20,0.18)",
-            boxShadow: "0 0 40px rgba(57,255,20,0.06)",
+            background: "var(--card)",
+            border: "1px solid var(--border)",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
           }}
         >
           <div className="grid grid-cols-3 gap-1.5">
@@ -238,9 +238,9 @@ export default function AboutYouPage() {
                     href={dimmed ? undefined : section.href}
                     aria-disabled={dimmed}
                     style={{
-                      background: "#000",
-                      border: `2px solid ${dimmed ? "#3a3a3a" : LUMO}`,
-                      color: dimmed ? "#555" : LUMO,
+                      background: "transparent",
+                      border: `2px solid ${dimmed ? "var(--border)" : LUMO}`,
+                      color: dimmed ? "var(--muted-foreground)" : LUMO,
                       opacity: dimmed ? 0.55 : 1,
                       pointerEvents: dimmed ? "none" : "auto",
                       borderRadius: 10,
@@ -260,7 +260,7 @@ export default function AboutYouPage() {
                       lineHeight: 1.25,
                       textDecoration: "none",
                     }}
-                    className="touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
+                    className="touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.filter = "brightness(1.2)"; }}
                     onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.filter = "brightness(1)"; }}
                     onMouseDown={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = "scale(0.98)"; }}
@@ -284,10 +284,10 @@ export default function AboutYouPage() {
                     <div
                       className="px-4 py-4 text-sm leading-relaxed space-y-3"
                       style={{
-                        color: "#a0a0a0",
-                        background: "rgba(57,255,20,0.04)",
+                        color: "var(--muted-foreground)",
+                        background: "color-mix(in srgb, var(--brand) 6%, transparent)",
                         borderRadius: 10,
-                        border: "1px solid rgba(57,255,20,0.18)",
+                        border: "1px solid var(--border)",
                       }}
                     >
                       <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: LUMO }}>
@@ -305,7 +305,7 @@ export default function AboutYouPage() {
           <button
             style={{
               background: `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`,
-              color: "#000",
+              color: "var(--brand-foreground)",
               border: "none",
               borderRadius: 10,
               padding: "14px 0",
@@ -338,8 +338,8 @@ export default function AboutYouPage() {
                 height: 44,
                 borderRadius: 999,
                 color: LUMO,
-                border: "1px solid rgba(57,255,20,0.35)",
-                background: "rgba(57,255,20,0.06)",
+                border: "1px solid var(--brand)",
+                background: "color-mix(in srgb, var(--brand) 8%, transparent)",
                 transition: "all 0.2s",
               }}
             >
@@ -359,8 +359,8 @@ export default function AboutYouPage() {
                 height: 44,
                 borderRadius: 999,
                 color: LUMO,
-                border: "1px solid rgba(57,255,20,0.35)",
-                background: "rgba(57,255,20,0.06)",
+                border: "1px solid var(--brand)",
+                background: "color-mix(in srgb, var(--brand) 8%, transparent)",
                 transition: "all 0.2s",
               }}
             >
@@ -368,10 +368,10 @@ export default function AboutYouPage() {
             </a>
           </div>
 
-          <p className="text-center" style={{ color: "#666", fontSize: 11, marginTop: 14, lineHeight: 1.6 }}>
+          <p className="text-center" style={{ color: "var(--muted-foreground)", fontSize: 11, marginTop: 14, lineHeight: 1.6 }}>
             © {new Date().getFullYear()} Around You (Pty) Ltd. All rights reserved.
             <br />
-            <a href="/terms" style={{ color: "#888" }} className="hover:underline">Terms of Use</a>
+            <a href="/terms" style={{ color: "var(--muted-foreground)" }} className="hover:underline">Terms of Use</a>
           </p>
         </div>
 

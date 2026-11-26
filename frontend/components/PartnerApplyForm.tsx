@@ -5,7 +5,7 @@ import backend from "~backend/client";
 import { BOOKINGS_ENABLED } from "../lib/features";
 import AppLogo from "../components/AppLogo";
 
-const LUMO = "#39FF14";
+const LUMO = "var(--brand)";
 
 // Public self-service partner application. A rep shares a link like
 //   /apply?type=restaurant&rep=Rep00000002
@@ -168,11 +168,11 @@ function specsFor(cat: string, half: boolean): Section[] {
   return [businessSection("Agency name")];
 }
 
-const wrap: React.CSSProperties = { minHeight: "100vh", background: "#0a0a0a", padding: "24px 12px" };
-const card: React.CSSProperties = { maxWidth: 640, margin: "0 auto", background: "#111111", color: "#d5d8d5", borderRadius: 14, padding: "24px 22px", border: "1px solid rgba(57,255,20,0.18)", boxShadow: "0 0 40px rgba(57,255,20,0.06)" };
-const input: React.CSSProperties = { width: "100%", padding: "10px 12px", border: "1px solid rgba(57,255,20,0.25)", background: "rgba(255,255,255,0.04)", color: "#fff", borderRadius: 8, fontSize: 14, marginTop: 4, boxSizing: "border-box" };
-const labelSt: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: "#cfd3cf" };
-const secSt: React.CSSProperties = { fontSize: 15, fontWeight: 800, color: LUMO, margin: "18px 0 4px", borderBottom: "1px solid rgba(57,255,20,0.2)", paddingBottom: 4 };
+const wrap: React.CSSProperties = { minHeight: "100vh", background: "var(--background)", padding: "24px 12px" };
+const card: React.CSSProperties = { maxWidth: 640, margin: "0 auto", background: "var(--card)", color: "var(--card-foreground)", borderRadius: 14, padding: "24px 22px", border: "1px solid var(--border)", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" };
+const input: React.CSSProperties = { width: "100%", padding: "10px 12px", border: "1px solid var(--border)", background: "var(--background)", color: "var(--foreground)", borderRadius: 8, fontSize: 14, marginTop: 4, boxSizing: "border-box" };
+const labelSt: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: "var(--foreground)" };
+const secSt: React.CSSProperties = { fontSize: 15, fontWeight: 800, color: LUMO, margin: "18px 0 4px", borderBottom: "1px solid var(--border)", paddingBottom: 4 };
 
 export default function PartnerApplyForm() {
   const [cat, setCat] = useState<string>("");
@@ -295,10 +295,10 @@ export default function PartnerApplyForm() {
   if (done) {
     return (
       <div style={wrap}><div style={{ ...card, textAlign: "center" }}>
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><AppLogo /></div>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><AppLogo themed /></div>
         <div style={{ fontSize: 40 }}>✅</div>
         <h2 style={{ color: LUMO, margin: "8px 0" }}>Thank you!</h2>
-        <p style={{ color: "#a0a0a0", fontSize: 15 }}>Your application has been received. An Around You agent will be in touch to complete your listing.</p>
+        <p style={{ color: "var(--muted-foreground)", fontSize: 15 }}>Your application has been received. An Around You agent will be in touch to complete your listing.</p>
       </div></div>
     );
   }
@@ -306,13 +306,13 @@ export default function PartnerApplyForm() {
   if (!cat) {
     return (
       <div style={wrap}><div style={card}>
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><AppLogo /></div>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><AppLogo themed /></div>
         <h1 style={{ color: LUMO, fontSize: 22, textAlign: "center", margin: "0 0 4px" }}>Join Around You</h1>
-        <p style={{ color: "#a0a0a0", fontSize: 14, textAlign: "center", marginTop: 0 }}>What kind of business are you listing?</p>
+        <p style={{ color: "var(--muted-foreground)", fontSize: 14, textAlign: "center", marginTop: 0 }}>What kind of business are you listing?</p>
         <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
           {CATEGORIES.map((c) => (
             <button key={c.key} onClick={() => setCat(c.key)}
-              style={{ padding: "16px", borderRadius: 10, border: `2px solid ${LUMO}`, background: "#000", color: LUMO, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
+              style={{ padding: "16px", borderRadius: 10, border: `2px solid ${LUMO}`, background: "transparent", color: LUMO, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
               {c.label}
             </button>
           ))}
@@ -323,7 +323,7 @@ export default function PartnerApplyForm() {
 
   return (
     <div style={wrap}><div style={card}>
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><AppLogo /></div>
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><AppLogo themed /></div>
       <button
         onClick={() => { setCat(""); setVals({}); setAgree(false); setErr(""); }}
         style={{ background: "transparent", border: "none", color: LUMO, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0, marginBottom: 8 }}
@@ -331,12 +331,12 @@ export default function PartnerApplyForm() {
         ← Change category
       </button>
       <h1 style={{ color: LUMO, fontSize: 22, textAlign: "center", margin: "0 0 2px" }}>Around You — {catLabel} Application</h1>
-      <p style={{ color: "#a0a0a0", fontSize: 13, textAlign: "center", marginTop: 0 }}>
+      <p style={{ color: "var(--muted-foreground)", fontSize: 13, textAlign: "center", marginTop: 0 }}>
         Just a few details to get started — your Around You agent completes the rest with you. Fields marked * are required.
       </p>
 
       {pricingText(cat, half) && (
-        <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 8, border: `1px solid ${LUMO}`, background: "rgba(57,255,20,0.07)", color: "#eafff0", fontSize: 13, textAlign: "center" }}>
+        <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 8, border: `1px solid ${LUMO}`, background: "color-mix(in srgb, var(--brand) 8%, transparent)", color: "var(--foreground)", fontSize: 13, textAlign: "center" }}>
           <span style={{ color: LUMO, fontWeight: 800 }}>Pricing: </span>{pricingText(cat, half)}
           {half && <div style={{ marginTop: 4, fontSize: 11, color: LUMO }}>HALF agent code applied — 50% off your monthly fee.</div>}
         </div>
@@ -347,7 +347,7 @@ export default function PartnerApplyForm() {
         <input style={{ ...input, fontSize: 16 }} value={vals[nameKey] || ""} onChange={(e) => set(nameKey, e.target.value)} />
       </div>
       <div style={{ marginTop: 12 }}>
-        <label style={{ ...labelSt, fontSize: 14 }}>Contact email * <span style={{ color: "#8a8f96", fontWeight: 400 }}>(for your account &amp; invoices)</span></label>
+        <label style={{ ...labelSt, fontSize: 14 }}>Contact email * <span style={{ color: "var(--muted-foreground)", fontWeight: 400 }}>(for your account &amp; invoices)</span></label>
         <input style={{ ...input, fontSize: 16 }} type="email" inputMode="email" autoComplete="email" value={vals["Contact email"] || ""} onChange={(e) => set("Contact email", e.target.value)} />
       </div>
       <div style={{ marginTop: 12 }}>
@@ -355,20 +355,20 @@ export default function PartnerApplyForm() {
         <input style={{ ...input, fontSize: 16 }} type="tel" inputMode="tel" autoComplete="tel" value={vals["Contact number"] || ""} onChange={(e) => set("Contact number", e.target.value)} />
       </div>
       <div style={{ marginTop: 12 }}>
-        <label style={{ ...labelSt, fontSize: 14 }}>Postal code * <span style={{ color: "#8a8f96", fontWeight: 400 }}>(sets your area)</span></label>
+        <label style={{ ...labelSt, fontSize: 14 }}>Postal code * <span style={{ color: "var(--muted-foreground)", fontWeight: 400 }}>(sets your area)</span></label>
         <input style={{ ...input, fontSize: 16 }} inputMode="numeric" pattern="[0-9]*" maxLength={4} value={vals["Postal code"] || ""} onChange={(e) => set("Postal code", e.target.value.replace(/[^0-9]/g, ""))} />
         <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <button type="button" onClick={useMyLocation}
-            style={{ background: "transparent", color: LUMO, border: "1px solid rgba(57,255,20,0.4)", borderRadius: 8, padding: "8px 12px", fontSize: 13, cursor: "pointer" }}>
+            style={{ background: "transparent", color: LUMO, border: "1px solid var(--brand)", borderRadius: 8, padding: "8px 12px", fontSize: 13, cursor: "pointer" }}>
             Use my location (optional)
           </button>
-          {geo === "locating" && <span style={{ color: "#9aa39a", fontSize: 12 }}>Finding you…</span>}
+          {geo === "locating" && <span style={{ color: "var(--muted-foreground)", fontSize: 12 }}>Finding you…</span>}
           {geo.includes(",") && <span style={{ color: LUMO, fontSize: 12 }}>✓ Location added</span>}
-          {(geo === "denied" || geo === "unavailable") && <span style={{ color: "#d0a0a0", fontSize: 12 }}>Couldn’t get location — just type your postal code.</span>}
+          {(geo === "denied" || geo === "unavailable") && <span style={{ color: "var(--muted-foreground)", fontSize: 12 }}>Couldn’t get location — just type your postal code.</span>}
         </div>
       </div>
       <div style={{ marginTop: 12 }}>
-        <label style={{ ...labelSt, fontSize: 14 }}>Contact person <span style={{ color: "#8a8f96", fontWeight: 400 }}>(optional)</span></label>
+        <label style={{ ...labelSt, fontSize: 14 }}>Contact person <span style={{ color: "var(--muted-foreground)", fontWeight: 400 }}>(optional)</span></label>
         <input style={{ ...input, fontSize: 16 }} value={vals["Contact person"] || ""} onChange={(e) => set("Contact person", e.target.value)} />
       </div>
 
@@ -382,27 +382,27 @@ export default function PartnerApplyForm() {
           <div>
             <label style={labelSt}>Agent Code</label>
             <input style={input} value={rep} onChange={(e) => setRep(e.target.value)} placeholder="AROUNDYOU" />
-            <p style={{ color: "#7f857f", fontSize: 11, marginTop: 4 }}>Leave this as AROUNDYOU unless an agent gave you their own code.</p>
+            <p style={{ color: "var(--muted-foreground)", fontSize: 11, marginTop: 4 }}>Leave this as AROUNDYOU unless an agent gave you their own code.</p>
           </div>
         )}
       </div>
 
-      <div style={{ marginTop: 18, borderTop: "1px solid rgba(57,255,20,0.15)", paddingTop: 12 }}>
+      <div style={{ marginTop: 18, borderTop: "1px solid var(--border)", paddingTop: 12 }}>
         <button type="button" onClick={() => setShowDetails((v) => !v)}
           style={{ background: "transparent", border: "none", color: LUMO, fontSize: 14, fontWeight: 700, cursor: "pointer", padding: 0 }}>
           {showDetails ? "\u25be" : "\u25b8"} Add more details now (optional)
         </button>
-        <p style={{ color: "#7f857f", fontSize: 11, margin: "4px 0 0" }}>Nice-to-have info for your listing — you can skip all of this and your agent will complete it with you.</p>
+        <p style={{ color: "var(--muted-foreground)", fontSize: 11, margin: "4px 0 0" }}>Nice-to-have info for your listing — you can skip all of this and your agent will complete it with you.</p>
       </div>
       {showDetails && sections.map((sec) => (
         <div key={sec.title}>
           <div style={secSt}>{sec.title}</div>
           {sec.fields.filter((f) => !LEAD_KEYS.has(f.key)).map((f) => (
             <div key={f.key} style={{ marginTop: 10 }}>
-              <label style={labelSt}>{f.label ?? f.key}{f.required ? " *" : ""}{f.note ? <span style={{ color: "#8a8f96", fontWeight: 400 }}> ({f.note})</span> : null}</label>
+              <label style={labelSt}>{f.label ?? f.key}{f.required ? " *" : ""}{f.note ? <span style={{ color: "var(--muted-foreground)", fontWeight: 400 }}> ({f.note})</span> : null}</label>
               {f.priceRows && (
-                <ul style={{ margin: "4px 0 0", paddingLeft: 0, listStyle: "none", fontSize: 12, color: "#9aa" }}>
-                  <li style={{ fontWeight: 600, color: "#cfd3cf" }}>Monthly price by units:</li>
+                <ul style={{ margin: "4px 0 0", paddingLeft: 0, listStyle: "none", fontSize: 12, color: "var(--muted-foreground)" }}>
+                  <li style={{ fontWeight: 600, color: "var(--foreground)" }}>Monthly price by units:</li>
                   {f.priceRows.map((r) => (<li key={r}>{r}</li>))}
                 </ul>
               )}
@@ -428,15 +428,15 @@ export default function PartnerApplyForm() {
                   ))}
                   <button type="button"
                     onClick={() => set(f.key, [...(Array.isArray(vals[f.key]) ? vals[f.key] : []), { item: "", price: "", duration: "" }])}
-                    style={{ background: "transparent", color: "#39FF14", border: "1px solid rgba(57,255,20,0.4)", borderRadius: 8, padding: "6px 12px", fontSize: 13, cursor: "pointer", marginTop: 2 }}>
+                    style={{ background: "transparent", color: "var(--brand)", border: "1px solid var(--brand)", borderRadius: 8, padding: "6px 12px", fontSize: 13, cursor: "pointer", marginTop: 2 }}>
                     + Add item
                   </button>
                 </div>
               )}
               {f.type === "select" && (
-                <select style={{ ...input, color: "#39FF14" }} value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)}>
-                  <option value="" style={{ color: "#39FF14", background: "#111" }}>Select…</option>
-                  {f.options!.map((o) => <option key={o} value={o} style={{ color: "#39FF14", background: "#111" }}>{o}</option>)}
+                <select style={{ ...input, color: "var(--brand)" }} value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)}>
+                  <option value="" style={{ color: "var(--brand)", background: "var(--card)" }}>Select…</option>
+                  {f.options!.map((o) => <option key={o} value={o} style={{ color: "var(--brand)", background: "var(--card)" }}>{o}</option>)}
                 </select>
               )}
               {f.type === "radio" && (
@@ -461,7 +461,7 @@ export default function PartnerApplyForm() {
                 <div style={{ marginTop: 6 }}>
                   {f.groups!.map((g) => (
                     <div key={g.label} style={{ marginBottom: 6 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: "#9aa39a" }}>{g.label}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--muted-foreground)" }}>{g.label}</div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px" }}>
                         {g.options.map((o) => (
                           <label key={o} style={{ fontSize: 13, display: "flex", gap: 5, alignItems: "center" }}>
@@ -478,11 +478,11 @@ export default function PartnerApplyForm() {
         </div>
       ))}
 
-      <p style={{ marginTop: 14, fontSize: 13, color: "#cfd3cf", lineHeight: 1.45, borderTop: "1px solid rgba(57,255,20,0.15)", paddingTop: 12 }}>
+      <p style={{ marginTop: 14, fontSize: 13, color: "var(--foreground)", lineHeight: 1.45, borderTop: "1px solid var(--border)", paddingTop: 12 }}>
         Once submitted and you receive your Access and Edit codes, you will be able to edit all of the other information you can show on your Partner Profile.
       </p>
 
-      <label style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 18, fontSize: 13, color: "#cfd3cf" }}>
+      <label style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 18, fontSize: 13, color: "var(--foreground)" }}>
         <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} style={{ marginTop: 3 }} />
         I agree to all of the Around You Terms &amp; Conditions and confirm that the information provided above is true and correct.
       </label>
@@ -490,10 +490,10 @@ export default function PartnerApplyForm() {
       {err ? <p style={{ color: "#ff6b6b", fontSize: 13, marginTop: 10 }}>{err}</p> : null}
 
       <button onClick={submit} disabled={submitting}
-        style={{ marginTop: 16, width: "100%", padding: "14px", borderRadius: 10, border: "none", background: submitting ? "#1f5c33" : LUMO, color: "#000", fontWeight: 800, fontSize: 16, cursor: submitting ? "not-allowed" : "pointer" }}>
+        style={{ marginTop: 16, width: "100%", padding: "14px", borderRadius: 10, border: "none", background: submitting ? "var(--muted)" : LUMO, color: "var(--brand-foreground)", fontWeight: 800, fontSize: 16, cursor: submitting ? "not-allowed" : "pointer" }}>
         {submitting ? "Submitting…" : "Submit application"}
       </button>
-      <p style={{ color: "#7f857f", fontSize: 11, textAlign: "center", marginTop: 10 }}>
+      <p style={{ color: "var(--muted-foreground)", fontSize: 11, textAlign: "center", marginTop: 10 }}>
         Your logo and photos will be arranged with your Around You agent. The first photo you provide will be your main image (shown first), so send that one first.
       </p>
     </div></div>

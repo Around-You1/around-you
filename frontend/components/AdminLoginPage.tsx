@@ -7,8 +7,8 @@ import { useToast } from "@/components/ui/use-toast";
 import backend from "~backend/client";
 import AppLogo from "../components/AppLogo";
 
-const LUMO = "#39FF14";
-const LUMO_DARK = "#2dd10f";
+const LUMO = "var(--brand)";
+const LUMO_DARK = "var(--brand)";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -53,24 +53,24 @@ export default function AdminLoginPage() {
   return (
     <div
       className="min-h-screen flex items-center justify-center p-4"
-      style={{ background: "#0a0a0a" }}
+      style={{ background: "var(--background)" }}
     >
       <div className="w-full max-w-sm">
         <div className="mb-6 pt-4">
-          <AppLogo />
+          <AppLogo themed />
         </div>
 
         <div
           className="rounded-2xl p-6 space-y-3"
           style={{
-            background: "#111111",
-            border: "1px solid rgba(57,255,20,0.18)",
-            boxShadow: "0 0 40px rgba(57,255,20,0.06)",
+            background: "var(--card)",
+            border: "1px solid var(--border)",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
           }}
         >
           <p
             className="text-center text-xs font-semibold uppercase tracking-widest"
-            style={{ color: "#666" }}
+            style={{ color: "var(--muted-foreground)" }}
           >
             Admin Dashboard Log In
           </p>
@@ -85,7 +85,7 @@ export default function AdminLoginPage() {
               <label
                 htmlFor="admin-email"
                 className="text-xs font-semibold uppercase tracking-wider"
-                style={{ color: "#a0a0a0" }}
+                style={{ color: "var(--muted-foreground)" }}
               >
                 Email Address
               </label>
@@ -100,9 +100,9 @@ export default function AdminLoginPage() {
                 aria-label="Admin email address"
                 enterKeyHint="next"
                 style={{
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(57,255,20,0.2)",
-                  color: "#fff",
+                  background: "var(--background)",
+                  border: "1px solid var(--border)",
+                  color: "var(--foreground)",
                   borderRadius: 8,
                   padding: "10px 14px",
                   width: "100%",
@@ -117,7 +117,7 @@ export default function AdminLoginPage() {
               <label
                 htmlFor="admin-password"
                 className="text-xs font-semibold uppercase tracking-wider"
-                style={{ color: "#a0a0a0" }}
+                style={{ color: "var(--muted-foreground)" }}
               >
                 Password
               </label>
@@ -131,9 +131,9 @@ export default function AdminLoginPage() {
                 aria-label="Admin password"
                 enterKeyHint="go"
                 style={{
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(57,255,20,0.2)",
-                  color: "#fff",
+                  background: "var(--background)",
+                  border: "1px solid var(--border)",
+                  color: "var(--foreground)",
                   borderRadius: 8,
                   padding: "10px 14px",
                   width: "100%",
@@ -148,7 +148,7 @@ export default function AdminLoginPage() {
               <label
                 htmlFor="admin-access-code"
                 className="text-xs font-semibold uppercase tracking-wider"
-                style={{ color: "#a0a0a0" }}
+                style={{ color: "var(--muted-foreground)" }}
               >
                 Access Code
               </label>
@@ -162,9 +162,9 @@ export default function AdminLoginPage() {
                 aria-label="Admin access code"
                 enterKeyHint="go"
                 style={{
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(57,255,20,0.2)",
-                  color: "#fff",
+                  background: "var(--background)",
+                  border: "1px solid var(--border)",
+                  color: "var(--foreground)",
                   borderRadius: 8,
                   padding: "10px 14px",
                   width: "100%",
@@ -181,8 +181,8 @@ export default function AdminLoginPage() {
               disabled={loading}
               aria-label="Admin Log In"
               style={{
-                background: loading ? "#1a3a0a" : `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`,
-                color: "#000",
+                background: loading ? "var(--muted)" : "var(--brand)",
+                color: "var(--brand-foreground)",
                 border: "none",
                 borderRadius: 10,
                 padding: "14px 0",
@@ -207,7 +207,7 @@ export default function AdminLoginPage() {
               type="button"
               onClick={() => navigate("/portal")}
               className="text-sm transition-colors hover:underline underline-offset-4"
-              style={{ color: "#444" }}
+              style={{ color: "var(--muted-foreground)" }}
             >
               ← Back to Login
             </button>

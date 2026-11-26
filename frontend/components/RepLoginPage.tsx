@@ -7,13 +7,13 @@ import { useToast } from "@/components/ui/use-toast";
 import backend from "~backend/client";
 import AppLogo from "../components/AppLogo";
 
-const LUMO = "#39FF14";
-const LUMO_DARK = "#2dd10f";
+const LUMO = "var(--brand)";
+const LUMO_DARK = "var(--brand)";
 
 const inputStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.05)",
-  border: "1px solid rgba(57,255,20,0.2)",
-  color: "#fff",
+  background: "var(--background)",
+  border: "1px solid var(--border)",
+  color: "var(--foreground)",
   borderRadius: 8,
   padding: "10px 14px",
   width: "100%",
@@ -21,7 +21,7 @@ const inputStyle: React.CSSProperties = {
   outline: "none",
 };
 const labelCls = "text-xs font-semibold uppercase tracking-wider";
-const labelStyle = { color: "#a0a0a0" } as React.CSSProperties;
+const labelStyle = { color: "var(--muted-foreground)" } as React.CSSProperties;
 
 const PROVINCES = [
   "Eastern Cape", "Free State", "Gauteng", "KwaZulu Natal", "Limpopo",
@@ -165,20 +165,20 @@ export default function RepLoginPage() {
   // ---- success screen after applying ----
   if (newCode) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "#0a0a0a" }}>
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--background)" }}>
         <div className="w-full max-w-sm">
-          <div className="mb-6 pt-4"><AppLogo /></div>
-          <div className="rounded-2xl p-6 space-y-4 text-center" style={{ background: "#111", border: "1px solid rgba(57,255,20,0.18)", boxShadow: "0 0 40px rgba(57,255,20,0.06)" }}>
+          <div className="mb-6 pt-4"><AppLogo themed /></div>
+          <div className="rounded-2xl p-6 space-y-4 text-center" style={{ background: "var(--card)", border: "1px solid var(--border)", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
             <div style={{ fontSize: 38 }}>✅</div>
-            <p className="text-sm" style={{ color: "#cdd" }}>Your application has been submitted. Here is your new Rep Code — please write it down:</p>
-            <div style={{ background: "rgba(57,255,20,0.08)", border: `1px solid ${LUMO}`, borderRadius: 10, padding: "14px" }}>
-              <div className="text-xs uppercase tracking-widest" style={{ color: "#888" }}>Rep Code</div>
+            <p className="text-sm" style={{ color: "var(--foreground)" }}>Your application has been submitted. Here is your new Rep Code — please write it down:</p>
+            <div style={{ background: "color-mix(in srgb, var(--brand) 8%, transparent)", border: `1px solid ${LUMO}`, borderRadius: 10, padding: "14px" }}>
+              <div className="text-xs uppercase tracking-widest" style={{ color: "var(--muted-foreground)" }}>Rep Code</div>
               <div style={{ color: LUMO, fontWeight: 800, fontSize: 22, letterSpacing: "0.04em" }}>{newCode}</div>
             </div>
-            <p className="text-xs" style={{ color: "#cdd" }}>Your application is <b>pending approval</b>. Once it's activated you'll be able to sign in with your full name and this Rep Code.</p>
+            <p className="text-xs" style={{ color: "var(--foreground)" }}>Your application is <b>pending approval</b>. Once it's activated you'll be able to sign in with your full name and this Rep Code.</p>
             <button
               onClick={() => { setNewCode(null); setApp({ ...emptyApp }); setMode("signin"); }}
-              style={{ background: `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`, color: "#000", border: "none", borderRadius: 10, padding: "14px 0", width: "100%", fontWeight: 700, fontSize: "1rem", cursor: "pointer", minHeight: 48 }}
+              style={{ background: `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`, color: "var(--brand-foreground)", border: "none", borderRadius: 10, padding: "14px 0", width: "100%", fontWeight: 700, fontSize: "1rem", cursor: "pointer", minHeight: 48 }}
             >
               Continue to Rep Sign In
             </button>
@@ -189,11 +189,11 @@ export default function RepLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "#0a0a0a" }}>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--background)" }}>
       <div className="w-full max-w-sm">
-        <div className="mb-6 pt-4"><AppLogo /></div>
+        <div className="mb-6 pt-4"><AppLogo themed /></div>
 
-        <div className="rounded-2xl p-6 space-y-3" style={{ background: "#111111", border: "1px solid rgba(57,255,20,0.18)", boxShadow: "0 0 40px rgba(57,255,20,0.06)" }}>
+        <div className="rounded-2xl p-6 space-y-3" style={{ background: "var(--card)", border: "1px solid var(--border)", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
 
           {/* mode switch */}
           <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
@@ -201,7 +201,7 @@ export default function RepLoginPage() {
               <button key={m} type="button" onClick={() => { setMode(m); if (m === "apply") { setAgreedTerms(false); setTermsChecked(false); } }}
                 style={{ flex: 1, borderRadius: 8, padding: "9px 0", fontSize: 12, fontWeight: 700, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.04em",
                   background: mode === m ? `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})` : "transparent",
-                  color: mode === m ? "#000" : "#888", border: `1px solid ${mode === m ? LUMO : "rgba(255,255,255,0.12)"}` }}>
+                  color: mode === m ? "var(--brand-foreground)" : "var(--muted-foreground)", border: `1px solid ${mode === m ? LUMO : "var(--border)"}` }}>
                 {m === "signin" ? "Rep Sign In" : "New Rep Application"}
               </button>
             ))}
@@ -222,7 +222,7 @@ export default function RepLoginPage() {
                 <RevealInput id="rep-access-code" type="password" value={repAccessCode} onChange={(e) => setRepAccessCode(e.target.value)} placeholder="From your welcome email" autoComplete="one-time-code" style={inputStyle} className="transition-all focus:border-brand placeholder-gray-600" />
               </div>
               <button id="rep-login-btn" type="submit" disabled={loading}
-                style={{ background: loading ? "#1a3a0a" : `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`, color: "#000", border: "none", borderRadius: 10, padding: "14px 0", width: "100%", fontWeight: 700, fontSize: "1rem", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.5 : 1, minHeight: 48, marginTop: 8 }}
+                style={{ background: loading ? "var(--muted)" : `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`, color: "var(--brand-foreground)", border: "none", borderRadius: 10, padding: "14px 0", width: "100%", fontWeight: 700, fontSize: "1rem", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.5 : 1, minHeight: 48, marginTop: 8 }}
                 className="touch-manipulation">
                 {loading ? "Signing in…" : "Sign In"}
               </button>
@@ -238,36 +238,36 @@ export default function RepLoginPage() {
           ) : !agreedTerms ? (
             <div className="space-y-3">
               <h3 style={{ color: LUMO, fontWeight: 800, fontSize: "1rem" }}>Rep Responsibility &amp; Payment Terms</h3>
-              <p className="text-xs" style={{ color: "#888" }}>Please read and accept before entering your details.</p>
+              <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>Please read and accept before entering your details.</p>
               <div
-                style={{ maxHeight: 300, overflowY: "auto", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: 12, fontSize: 12, lineHeight: 1.5, color: "#bcd" }}
+                style={{ maxHeight: 300, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 10, padding: 12, fontSize: 12, lineHeight: 1.5, color: "var(--foreground)" }}
                 className="space-y-2"
               >
-                <p style={{ color: "#cdd" }}>By applying as an Around You Sales Rep, you acknowledge and agree:</p>
-                <p><b style={{ color: "#cdd" }}>1. Independent contractor.</b> You join as an independent contractor, not an employee. You are solely responsible for your own tax — income tax, provisional tax and any other SARS obligations. Around You does not deduct or submit tax on your behalf.</p>
-                <p><b style={{ color: "#cdd" }}>2. Monthly invoice required.</b> Your commission each month is based on your new sales that month <i>plus</i> your accumulated sales from previous months (per the Around You commission structure). To be paid, you must send Around You a monthly invoice for the amount due, showing your full name, Rep Code, billing month, total commission and banking details.</p>
-                <p><b style={{ color: "#cdd" }}>3. No invoice = no payment.</b> If your invoice is not submitted, is late, or is incorrect, that month's commission will not be paid. Payment is made only once a correct invoice is received and approved. Submitting on time each month is your responsibility.</p>
-                <p><b style={{ color: "#cdd" }}>4. Accurate sales.</b> You confirm all sales you submit are genuine, accurate, linked to verified partners and correctly assigned to your Rep Code. Discrepancies may delay payment.</p>
-                <p><b style={{ color: "#cdd" }}>5. Agreement.</b> By continuing you confirm you understand and accept all of the above: you are responsible for your own tax, you must invoice monthly to be paid, no invoice means no commission for that month, and you agree to operate as an independent contractor under the Around You commission and payment process.</p>
+                <p style={{ color: "var(--foreground)" }}>By applying as an Around You Sales Rep, you acknowledge and agree:</p>
+                <p><b style={{ color: "var(--foreground)" }}>1. Independent contractor.</b> You join as an independent contractor, not an employee. You are solely responsible for your own tax — income tax, provisional tax and any other SARS obligations. Around You does not deduct or submit tax on your behalf.</p>
+                <p><b style={{ color: "var(--foreground)" }}>2. Monthly invoice required.</b> Your commission each month is based on your new sales that month <i>plus</i> your accumulated sales from previous months (per the Around You commission structure). To be paid, you must send Around You a monthly invoice for the amount due, showing your full name, Rep Code, billing month, total commission and banking details.</p>
+                <p><b style={{ color: "var(--foreground)" }}>3. No invoice = no payment.</b> If your invoice is not submitted, is late, or is incorrect, that month's commission will not be paid. Payment is made only once a correct invoice is received and approved. Submitting on time each month is your responsibility.</p>
+                <p><b style={{ color: "var(--foreground)" }}>4. Accurate sales.</b> You confirm all sales you submit are genuine, accurate, linked to verified partners and correctly assigned to your Rep Code. Discrepancies may delay payment.</p>
+                <p><b style={{ color: "var(--foreground)" }}>5. Agreement.</b> By continuing you confirm you understand and accept all of the above: you are responsible for your own tax, you must invoice monthly to be paid, no invoice means no commission for that month, and you agree to operate as an independent contractor under the Around You commission and payment process.</p>
               </div>
-              <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12, color: "#bcd", cursor: "pointer" }}>
+              <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12, color: "var(--foreground)", cursor: "pointer" }}>
                 <input type="checkbox" checked={termsChecked} onChange={(e) => setTermsChecked(e.target.checked)} style={{ accentColor: LUMO, marginTop: 2 }} />
                 I have read and agree to the Rep Responsibility &amp; Payment Terms above.
               </label>
               <div style={{ display: "flex", gap: 8 }}>
                 <button type="button" onClick={() => setMode("signin")}
-                  style={{ flex: 1, background: "transparent", color: "#888", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: "13px 0", fontWeight: 700, fontSize: "0.95rem", cursor: "pointer", minHeight: 48 }}>
+                  style={{ flex: 1, background: "transparent", color: "var(--muted-foreground)", border: "1px solid var(--border)", borderRadius: 10, padding: "13px 0", fontWeight: 700, fontSize: "0.95rem", cursor: "pointer", minHeight: 48 }}>
                   Cancel
                 </button>
                 <button type="button" disabled={!termsChecked} onClick={() => setAgreedTerms(true)}
-                  style={{ flex: 2, background: termsChecked ? `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})` : "#1a3a0a", color: "#000", border: "none", borderRadius: 10, padding: "13px 0", fontWeight: 700, fontSize: "0.95rem", cursor: termsChecked ? "pointer" : "not-allowed", opacity: termsChecked ? 1 : 0.5, minHeight: 48 }}>
+                  style={{ flex: 2, background: termsChecked ? `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})` : "var(--muted)", color: "var(--brand-foreground)", border: "none", borderRadius: 10, padding: "13px 0", fontWeight: 700, fontSize: "0.95rem", cursor: termsChecked ? "pointer" : "not-allowed", opacity: termsChecked ? 1 : 0.5, minHeight: 48 }}>
                   I Agree &amp; Continue
                 </button>
               </div>
             </div>
           ) : (
             <form onSubmit={handleApply} className="space-y-3" aria-label="Rep application form">
-              <p className="text-xs" style={{ color: "#888" }}>Commission-only, self-employed sales agent — individuals only. Your details are kept on file; you'll receive a Rep Code to sign in with.</p>
+              <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>Commission-only, self-employed sales agent — individuals only. Your details are kept on file; you'll receive a Rep Code to sign in with.</p>
 
               <Field label="Full Legal Name *" value={app.fullName} onChange={setA("fullName")} />
               <div style={{ display: "flex", gap: 8 }}>
@@ -291,9 +291,9 @@ export default function RepLoginPage() {
                 <Field label="Postal Code *" value={app.postalCode} onChange={setA("postalCode")} />
                 <div style={{ flex: 1 }}>
                   <label className={labelCls} style={labelStyle}>Province *</label>
-                  <select value={app.province} onChange={(e) => setA("province")(e.target.value)} style={{ ...inputStyle, marginTop: 6, background: "#000", color: "#fff" }}>
-                    <option value="" style={{ background: "#000", color: "#fff" }}>Select…</option>
-                    {PROVINCES.map((p) => (<option key={p} value={p} style={{ background: "#000", color: "#fff" }}>{p}</option>))}
+                  <select value={app.province} onChange={(e) => setA("province")(e.target.value)} style={{ ...inputStyle, marginTop: 6, background: "var(--background)", color: "var(--foreground)" }}>
+                    <option value="" style={{ background: "var(--background)", color: "var(--foreground)" }}>Select…</option>
+                    {PROVINCES.map((p) => (<option key={p} value={p} style={{ background: "var(--background)", color: "var(--foreground)" }}>{p}</option>))}
                   </select>
                 </div>
               </div>
@@ -304,7 +304,7 @@ export default function RepLoginPage() {
               </div>
 
               {/* Team Leader (organization) + recruiting Team Leader code — above banking */}
-              <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12, color: "#bcd", cursor: "pointer", marginTop: 6 }}>
+              <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12, color: "var(--foreground)", cursor: "pointer", marginTop: 6 }}>
                 <input type="checkbox" checked={app.isTeamLeader} onChange={(e) => setA("isTeamLeader")(e.target.checked)} style={{ accentColor: LUMO, marginTop: 2 }} />
                 We are a registered NPO / PBO. (Our reps sign up under us and commissions are paid to our account.) Only an NPO / PBO can choose a personalised Rep Code — individuals receive an automatic Rep code.
               </label>
@@ -325,11 +325,11 @@ export default function RepLoginPage() {
                 <Field label="Bank *" value={app.bankName} onChange={setA("bankName")} />
                 <div style={{ flex: 1 }}>
                   <label className={labelCls} style={labelStyle}>Account Type *</label>
-                  <select value={app.bankAccountType} onChange={(e) => setA("bankAccountType")(e.target.value)} style={{ ...inputStyle, marginTop: 6, background: "#000", color: "#fff" }}>
-                    <option value="" style={{ background: "#000", color: "#fff" }}>Select…</option>
-                    <option style={{ background: "#000", color: "#fff" }}>Savings</option>
-                    <option style={{ background: "#000", color: "#fff" }}>Current</option>
-                    <option style={{ background: "#000", color: "#fff" }}>Cheque</option>
+                  <select value={app.bankAccountType} onChange={(e) => setA("bankAccountType")(e.target.value)} style={{ ...inputStyle, marginTop: 6, background: "var(--background)", color: "var(--foreground)" }}>
+                    <option value="" style={{ background: "var(--background)", color: "var(--foreground)" }}>Select…</option>
+                    <option style={{ background: "var(--background)", color: "var(--foreground)" }}>Savings</option>
+                    <option style={{ background: "var(--background)", color: "var(--foreground)" }}>Current</option>
+                    <option style={{ background: "var(--background)", color: "var(--foreground)" }}>Cheque</option>
                   </select>
                 </div>
               </div>
@@ -340,11 +340,11 @@ export default function RepLoginPage() {
               </>
               )}
 
-              <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12, color: "#bcd", cursor: "pointer" }}>
+              <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12, color: "var(--foreground)", cursor: "pointer" }}>
                 <input type="checkbox" checked={app.popiaConsent} onChange={(e) => setA("popiaConsent")(e.target.checked)} style={{ accentColor: LUMO, marginTop: 2 }} />
                 I consent to Around You processing my personal information in line with POPIA for onboarding, commission and payout purposes.
               </label>
-              <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12, color: "#bcd", cursor: "pointer" }}>
+              <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12, color: "var(--foreground)", cursor: "pointer" }}>
                 <input type="checkbox" checked={app.agreementConsent} onChange={(e) => setA("agreementConsent")(e.target.checked)} style={{ accentColor: LUMO, marginTop: 2 }} />
                 I confirm I am applying as an independent, self-employed commission-only agent (not an employee) and the information above is true.
               </label>
@@ -352,14 +352,14 @@ export default function RepLoginPage() {
               <Field label="Signature (type your full name) *" value={app.signatureName} onChange={setA("signatureName")} />
 
               <button type="submit" disabled={submitting}
-                style={{ background: submitting ? "#1a3a0a" : `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`, color: "#000", border: "none", borderRadius: 10, padding: "14px 0", width: "100%", fontWeight: 700, fontSize: "1rem", cursor: submitting ? "not-allowed" : "pointer", opacity: submitting ? 0.5 : 1, minHeight: 48, marginTop: 4 }}>
+                style={{ background: submitting ? "var(--muted)" : `linear-gradient(135deg, ${LUMO}, ${LUMO_DARK})`, color: "var(--brand-foreground)", border: "none", borderRadius: 10, padding: "14px 0", width: "100%", fontWeight: 700, fontSize: "1rem", cursor: submitting ? "not-allowed" : "pointer", opacity: submitting ? 0.5 : 1, minHeight: 48, marginTop: 4 }}>
                 {submitting ? "Submitting…" : "Submit Application"}
               </button>
             </form>
           )}
 
           <div className="pt-2 text-center">
-            <button type="button" onClick={() => navigate("/portal")} className="text-sm transition-colors hover:underline underline-offset-4" style={{ color: "#444" }}>
+            <button type="button" onClick={() => navigate("/portal")} className="text-sm transition-colors hover:underline underline-offset-4" style={{ color: "var(--muted-foreground)" }}>
               ← Back to Login
             </button>
           </div>
@@ -393,14 +393,14 @@ function IdDocUpload({ value, fileName, onChange }: { value: string; fileName: s
         role="button"
         tabIndex={0}
         style={{
-          border: `1px dashed ${drag ? LUMO : "#3a3f4a"}`,
+          border: `1px dashed ${drag ? LUMO : "var(--border)"}`,
           borderRadius: 8,
           padding: "14px 12px",
           textAlign: "center",
           cursor: "pointer",
           fontSize: 13,
-          color: value ? LUMO : "#9aa",
-          background: drag ? "rgba(57,255,20,0.06)" : "transparent",
+          color: value ? LUMO : "var(--muted-foreground)",
+          background: drag ? "color-mix(in srgb, var(--brand) 8%, transparent)" : "transparent",
         }}
       >
         {value

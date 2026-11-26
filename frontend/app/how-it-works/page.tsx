@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     "How to use Around You: sign in as a Holiday Guest or a Local, explore nearby restaurants, services and attractions, redeem discounts, book tables, and rate your visits.",
 };
 
-const LUMO = "#39FF14";
+const LUMO = "var(--brand)";
 
 function Step({ n, children }: { n: number; children: ReactNode }) {
   return (
@@ -25,7 +25,7 @@ function Step({ n, children }: { n: number; children: ReactNode }) {
 
 export default function HowItWorksPage() {
   return (
-    <div className="min-h-screen px-5 py-10" style={{ background: "#0a0a0a", color: "#E6F7E6" }}>
+    <div className="min-h-screen px-5 py-10" style={{ background: "var(--background)", color: "var(--foreground)" }}>
       <div className="max-w-2xl mx-auto space-y-8">
         <div className="text-center space-y-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -33,7 +33,7 @@ export default function HowItWorksPage() {
           <h1 className="text-3xl font-bold" style={{ color: LUMO }}>
             How Around You Works
           </h1>
-          <p className="text-sm text-[#A6B0A6] max-w-xl mx-auto">
+          <p className="text-sm text-muted-foreground max-w-xl mx-auto">
             Around You gives you instant access to everything worth knowing near where you&apos;re
             staying — verified accommodation info, trusted local restaurants, services and
             attractions, exclusive discounts, and one-tap directions. Here&apos;s how to get started.
@@ -42,10 +42,10 @@ export default function HowItWorksPage() {
 
         <section
           className="rounded-2xl p-6 space-y-4"
-          style={{ background: "#111", border: "1px solid rgba(57,255,20,0.18)" }}
+          style={{ background: "var(--card)", border: "1px solid var(--border)" }}
         >
           <h2 className="text-xl font-semibold" style={{ color: LUMO }}>For Holiday Guests</h2>
-          <p className="text-sm text-[#A6B0A6]">
+          <p className="text-sm text-muted-foreground">
             Your accommodation gives you an Access Code or a QR code when you arrive.
           </p>
           <ol className="space-y-3 text-sm">
@@ -76,10 +76,10 @@ export default function HowItWorksPage() {
 
         <section
           className="rounded-2xl p-6 space-y-4"
-          style={{ background: "#111", border: "1px solid rgba(57,255,20,0.18)" }}
+          style={{ background: "var(--card)", border: "1px solid var(--border)" }}
         >
           <h2 className="text-xl font-semibold" style={{ color: LUMO }}>For Locals</h2>
-          <p className="text-sm text-[#A6B0A6]">Live in the area? Around You is for you too.</p>
+          <p className="text-sm text-muted-foreground">Live in the area? Around You is for you too.</p>
           <ol className="space-y-3 text-sm">
             <Step n={1}>Tap <strong>Locals</strong> on the sign-in screen.</Step>
             <Step n={2}>
@@ -103,7 +103,7 @@ export default function HowItWorksPage() {
         </section>
 
         <div className="text-center space-y-2 pt-2">
-          <p className="text-sm text-[#A6B0A6]">
+          <p className="text-sm text-muted-foreground">
             Need help? Email{" "}
             <a href="mailto:support@aroundyou.co.za" style={{ color: LUMO }} className="hover:underline">
               support@aroundyou.co.za
@@ -112,8 +112,8 @@ export default function HowItWorksPage() {
           </p>
           <a
             href="/"
-            className="inline-block rounded-lg px-5 py-2 font-semibold text-black"
-            style={{ background: LUMO }}
+            className="inline-block rounded-lg px-5 py-2 font-semibold"
+            style={{ background: LUMO, color: "var(--brand-foreground)" }}
           >
             Go to sign in
           </a>

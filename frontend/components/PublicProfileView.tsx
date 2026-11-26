@@ -16,7 +16,7 @@ const TYPE_LABEL: Record<string, string> = {
   accommodation: "Stay",
 };
 
-const GREEN = "#39FF14";
+const GREEN = "var(--brand)";
 
 function asArray(v: any): string[] {
   return Array.isArray(v) ? v.filter((x) => typeof x === "string" && x.trim()) : [];
@@ -85,7 +85,7 @@ export default function PublicProfileView() {
         padding: "9px 14px",
         borderRadius: 999,
         border: `2px solid ${GREEN}`,
-        background: "#000",
+        background: "transparent",
         color: GREEN,
         fontWeight: 700,
         fontSize: 13,
@@ -98,15 +98,15 @@ export default function PublicProfileView() {
     </button>
   );
 
-  const wrap: React.CSSProperties = { minHeight: "100vh", background: "#0a0a0a", padding: "20px 12px" };
+  const wrap: React.CSSProperties = { minHeight: "100vh", background: "var(--background)", padding: "20px 12px" };
   const card: React.CSSProperties = {
     maxWidth: 640,
     margin: "0 auto",
-    background: "#111",
-    color: "#d5d8d5",
+    background: "var(--card)",
+    color: "var(--card-foreground)",
     borderRadius: 14,
     padding: "18px 18px 24px",
-    border: "1px solid rgba(57,255,20,0.25)",
+    border: "1px solid var(--border)",
   };
 
   if (loading) {
@@ -121,7 +121,7 @@ export default function PublicProfileView() {
       <div style={wrap}>
         <div style={card}>
           {BackBar}
-          <p style={{ color: "#a0a0a0" }}>Sorry, that listing couldn’t be found — it may have been removed.</p>
+          <p style={{ color: "var(--muted-foreground)" }}>Sorry, that listing couldn’t be found — it may have been removed.</p>
         </div>
       </div>
     );
@@ -153,7 +153,7 @@ export default function PublicProfileView() {
     gap: 6,
     padding: "8px 12px",
     borderRadius: 8,
-    border: "1px solid rgba(57,255,20,0.4)",
+    border: "1px solid var(--brand)",
     color: GREEN,
     background: "transparent",
     fontSize: 13,
@@ -178,26 +178,26 @@ export default function PublicProfileView() {
           />
         ) : null}
 
-        <div style={{ fontSize: 12, color: "#8a8f96", fontWeight: 600 }}>{TYPE_LABEL[type] || ""}</div>
-        <h1 style={{ color: "#fff", fontSize: 22, margin: "2px 0 6px" }}>{name}</h1>
+        <div style={{ fontSize: 12, color: "var(--muted-foreground)", fontWeight: 600 }}>{TYPE_LABEL[type] || ""}</div>
+        <h1 style={{ color: "var(--foreground)", fontSize: 22, margin: "2px 0 6px" }}>{name}</h1>
         {entity.supportOrgName ? (
           <div style={{ margin: "0 0 8px" }}><SupportBadge orgName={entity.supportOrgName} /></div>
         ) : null}
         {(entity as any).isNonProfit && (((entity as any).npoNumber || (entity as any).pboNumber)) ? (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px", fontSize: 13, color: "#b9beb9", margin: "0 0 8px" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px", fontSize: 13, color: "var(--muted-foreground)", margin: "0 0 8px" }}>
             {(entity as any).npoNumber ? <span>NPO: {(entity as any).npoNumber}</span> : null}
             {(entity as any).pboNumber ? <span>PBO: {(entity as any).pboNumber}</span> : null}
           </div>
         ) : null}
 
         {address ? (
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 6, color: "#b9beb9", fontSize: 13 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 6, color: "var(--muted-foreground)", fontSize: 13 }}>
             <MapPin className="h-4 w-4" style={{ color: GREEN, flexShrink: 0, marginTop: 2 }} />
             <span>{address}</span>
           </div>
         ) : null}
         {worksFromClient ? (
-          <div style={{ color: "#8a8f96", fontSize: 13, fontStyle: "italic", marginTop: 4 }}>
+          <div style={{ color: "var(--muted-foreground)", fontSize: 13, fontStyle: "italic", marginTop: 4 }}>
             Travels to you — no fixed address.
           </div>
         ) : null}
@@ -219,22 +219,22 @@ export default function PublicProfileView() {
         {entity.description ? (
           <>
             <div style={sectionTitle}>About</div>
-            <p style={{ fontSize: 14, lineHeight: 1.5, color: "#cfd3cf", whiteSpace: "pre-wrap" }}>{entity.description}</p>
+            <p style={{ fontSize: 14, lineHeight: 1.5, color: "var(--foreground)", whiteSpace: "pre-wrap" }}>{entity.description}</p>
           </>
         ) : null}
 
         {entity.tradingHours ? (
           <>
             <div style={sectionTitle}>Trading hours</div>
-            <p style={{ fontSize: 14, color: "#cfd3cf", whiteSpace: "pre-wrap" }}>{entity.tradingHours}</p>
+            <p style={{ fontSize: 14, color: "var(--foreground)", whiteSpace: "pre-wrap" }}>{entity.tradingHours}</p>
           </>
         ) : null}
 
         {(guestDisc || localDisc) ? (
           <>
             <div style={sectionTitle}>Around You offers</div>
-            {guestDisc ? <p style={{ fontSize: 14, color: "#cfd3cf", margin: "2px 0" }}>Guests: {guestDisc}</p> : null}
-            {localDisc ? <p style={{ fontSize: 14, color: "#cfd3cf", margin: "2px 0" }}>Locals: {localDisc}</p> : null}
+            {guestDisc ? <p style={{ fontSize: 14, color: "var(--foreground)", margin: "2px 0" }}>Guests: {guestDisc}</p> : null}
+            {localDisc ? <p style={{ fontSize: 14, color: "var(--foreground)", margin: "2px 0" }}>Locals: {localDisc}</p> : null}
           </>
         ) : null}
 
@@ -248,8 +248,8 @@ export default function PublicProfileView() {
                   style={{
                     padding: "4px 10px",
                     borderRadius: 999,
-                    background: "rgba(57,255,20,0.15)",
-                    color: "#eafff8",
+                    background: "color-mix(in srgb, var(--brand) 15%, transparent)",
+                    color: "var(--brand)",
                     fontSize: 12,
                   }}
                 >

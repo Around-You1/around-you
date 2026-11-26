@@ -37,14 +37,14 @@ export default function AccLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "#0a0a0a" }}>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--background)" }}>
       <div className="w-full max-w-md">
         <div className="mb-6 pt-4">
-          <AppLogo />
+          <AppLogo themed />
         </div>
-        <div className="rounded-2xl p-6 space-y-4" style={{ background: "#111111", border: "1px solid rgba(57,255,20,0.18)" }}>
-          <h1 className="text-2xl font-bold text-center" style={{ color: "#E6F7E6" }}>Accountant Portal</h1>
-          <p className="text-center text-sm" style={{ color: "#8a8a8a" }}>Enter your access code to continue.</p>
+        <div className="rounded-2xl p-6 space-y-4" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+          <h1 className="text-2xl font-bold text-center" style={{ color: "var(--foreground)" }}>Accountant Portal</h1>
+          <p className="text-center text-sm" style={{ color: "var(--muted-foreground)" }}>Enter your access code to continue.</p>
           <form onSubmit={submit} className="space-y-4">
             <RevealInput
               type="text"
@@ -56,9 +56,9 @@ export default function AccLoginPage() {
               spellCheck={false}
               style={{
                 width: "100%",
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(57,255,20,0.2)",
-                color: "#fff",
+                background: "var(--background)",
+                border: "1px solid var(--border)",
+                color: "var(--foreground)",
                 borderRadius: 8,
                 padding: "12px 14px",
                 fontFamily: "monospace",
@@ -71,8 +71,8 @@ export default function AccLoginPage() {
               disabled={loading}
               style={{
                 width: "100%",
-                background: loading ? "#1a3a0a" : "linear-gradient(135deg,#39FF14,#2dd10f)",
-                color: "#000",
+                background: loading ? "var(--muted)" : "var(--brand)",
+                color: "var(--brand-foreground)",
                 border: "none",
                 borderRadius: 10,
                 padding: "14px 0",
@@ -84,7 +84,7 @@ export default function AccLoginPage() {
               {loading ? "Signing in…" : "Sign In"}
             </button>
           </form>
-          <button type="button" onClick={() => router.push("/portal")} className="w-full text-sm" style={{ color: "#666" }}>
+          <button type="button" onClick={() => router.push("/portal")} className="w-full text-sm" style={{ color: "var(--muted-foreground)" }}>
             ← Back
           </button>
         </div>
