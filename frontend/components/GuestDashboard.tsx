@@ -2918,6 +2918,13 @@ function MyStampCardsModal({ onClose, isLocal }: { onClose: () => void; isLocal:
       const backend = getAuthenticatedBackend();
       const res: any = await backend.loyalty.myCards({ phone: phone.trim() });
       setCards(res.cards || []);
+      // Remember the number on this device so it's pre-filled next time and the
+      // stamp cards load automatically (we can't read it from the phone's SIM).
+      try {
+        const gi = JSON.parse(localStorage.getItem("localGuestInfo") || "{}");
+        gi.cell = phone.trim();
+        localStorage.setItem("localGuestInfo", JSON.stringify(gi));
+      } catch { /* best-effort */ }
     } catch (error: any) {
       if (!silent) toast({ title: "Couldn't load cards", description: error?.message || "Please try again.", variant: "destructive" });
     } finally { if (!silent) setLoading(false); }
@@ -2958,7 +2965,7 @@ function MyStampCardsModal({ onClose, isLocal }: { onClose: () => void; isLocal:
           Enter the mobile number you give the shop to see your stamp cards and get your QR code to show at the till. Partners add a stamp each time you buy — collect enough and the reward is yours.
         </p>
         <div className="flex gap-2">
-          <Input inputMode="tel" placeholder="Your mobile number" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <Input inputMode="tel" type="tel" name="tel" autoComplete="tel" placeholder="Your mobile number" value={phone} onChange={(e) => setPhone(e.target.value)} />
           <Button onClick={find} disabled={loading} className="bg-brand hover:bg-brand/90 text-brand-foreground whitespace-nowrap">{loading ? "…" : "Find"}</Button>
         </div>
         {cards !== null && phone.replace(/[^0-9]/g, "").length >= 9 && (
