@@ -59,6 +59,7 @@ type CouncillorRegisterRequest struct {
 	FullName    string   `json:"fullName"`
 	IDNumber    string   `json:"idNumber"`
 	StaffNumber string   `json:"staffNumber"`
+	Ward        string   `json:"ward"`
 	PostalCodes []string `json:"postalCodes"`
 }
 type CouncillorRegisterResponse struct {
@@ -76,9 +77,9 @@ func CouncillorRegister(ctx context.Context, req *CouncillorRegisterRequest) (*C
 		return nil, &errs.Error{Code: errs.InvalidArgument, Message: "at least one postal code is required"}
 	}
 	if _, err := appdb.SQLDB.ExecContext(ctx,
-		`INSERT INTO ward_councillors (full_name, id_number, staff_number, postal_codes, status)
-		 VALUES ($1, $2, $3, $4, 'pending')`,
-		name, strings.TrimSpace(req.IDNumber), strings.TrimSpace(req.StaffNumber), pq.Array(codes)); err != nil {
+		`INSERT INTO ward_councillors (full_name, id_number, staff_number, ward, postal_codes, status)
+		 VALUES ($1, $2, $3, $4, $5, 'pending')`,
+		name, strings.TrimSpace(req.IDNumber), strings.TrimSpace(req.StaffNumber), strings.TrimSpace(req.Ward), pq.Array(codes)); err != nil {
 		return nil, &errs.Error{Code: errs.Internal, Message: err.Error()}
 	}
 	return &CouncillorRegisterResponse{OK: true}, nil
@@ -91,6 +92,7 @@ type CouncillorRow struct {
 	FullName    string   `json:"fullName"`
 	IDNumber    string   `json:"idNumber"`
 	StaffNumber string   `json:"staffNumber"`
+	Ward        string   `json:"ward"`
 	PostalCodes []string `json:"postalCodes"`
 	Status      string   `json:"status"`
 	CreatedAt   string   `json:"createdAt"`
@@ -105,7 +107,7 @@ func ListCouncillors(ctx context.Context) (*CouncillorsResponse, error) {
 		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can view councillors"}
 	}
 	rows, err := appdb.SQLDB.QueryContext(ctx,
-		`SELECT id, full_name, COALESCE(id_number,''), COALESCE(staff_number,''), postal_codes, status, created_at
+		`SELECT id, full_name, COALESCE(id_number,''), COALESCE(staff_number,''), COALESCE(ward,''), postal_codes, status, created_at
 		 FROM ward_councillors ORDER BY (status = 'pending') DESC, created_at DESC`)
 	if err != nil {
 		return nil, err
@@ -116,7 +118,7 @@ func ListCouncillors(ctx context.Context) (*CouncillorsResponse, error) {
 		var r CouncillorRow
 		var created time.Time
 		var codes pq.StringArray
-		if err := rows.Scan(&r.ID, &r.FullName, &r.IDNumber, &r.StaffNumber, &codes, &r.Status, &created); err != nil {
+		if err := rows.Scan(&r.ID, &r.FullName, &r.IDNumber, &r.StaffNumber, &r.Ward, &codes, &r.Status, &created); err != nil {
 			return nil, err
 		}
 		r.PostalCodes = []string(codes)
@@ -176,14 +178,15 @@ func SetCouncillorStatus(ctx context.Context, req *SetCouncillorStatusRequest) (
 
 // ---- Councillor sign-in (by access code) + post alert ----
 
-func councillorLookup(ctx context.Context, accessCode string) (int64, string, []string, error) {
+func councillorLookup(ctx context.Context, accessCode string) (int64, string, string, []string, error) {
 	var id int64
 	var name string
+	var ward string
 	var codes pq.StringArray
 	err := appdb.SQLDB.QueryRowContext(ctx,
-		`SELECT id, full_name, postal_codes FROM ward_councillors WHERE code_hash = $1 AND status = 'active'`,
-		councillorHash(accessCode)).Scan(&id, &name, &codes)
-	return id, name, []string(codes), err
+		`SELECT id, full_name, COALESCE(ward,''), postal_codes FROM ward_councillors WHERE code_hash = $1 AND status = 'active'`,
+		councillorHash(accessCode)).Scan(&id, &name, &ward, &codes)
+	return id, name, ward, []string(codes), err
 }
 
 type CouncillorMeRequest struct {
@@ -191,16 +194,17 @@ type CouncillorMeRequest struct {
 }
 type CouncillorMeResponse struct {
 	FullName    string   `json:"fullName"`
+	Ward        string   `json:"ward"`
 	PostalCodes []string `json:"postalCodes"`
 }
 
 //encore:api public method=POST path=/councillor/me
 func CouncillorMe(ctx context.Context, req *CouncillorMeRequest) (*CouncillorMeResponse, error) {
-	id, name, codes, err := councillorLookup(ctx, req.AccessCode)
+	id, name, ward, codes, err := councillorLookup(ctx, req.AccessCode)
 	if err != nil || id == 0 {
 		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "invalid or inactive access code"}
 	}
-	return &CouncillorMeResponse{FullName: name, PostalCodes: codes}, nil
+	return &CouncillorMeResponse{FullName: name, Ward: ward, PostalCodes: codes}, nil
 }
 
 type CouncillorAlertRequest struct {
@@ -215,7 +219,7 @@ type CouncillorAlertResponse struct {
 
 //encore:api public method=POST path=/councillor/alert
 func CouncillorAlert(ctx context.Context, req *CouncillorAlertRequest) (*CouncillorAlertResponse, error) {
-	id, _, codes, err := councillorLookup(ctx, req.AccessCode)
+	id, _, _, codes, err := councillorLookup(ctx, req.AccessCode)
 	if err != nil || id == 0 {
 		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "invalid or inactive access code"}
 	}

@@ -12,6 +12,7 @@ interface Councillor {
   fullName: string;
   idNumber: string;
   staffNumber: string;
+  ward: string;
   postalCodes: string[];
   status: string; // pending | active | disabled
   createdAt: string;
@@ -56,6 +57,20 @@ export default function CouncillorsTab({ onCountChange }: { onCountChange?: (n: 
     }
   }
 
+  async function regenerate(c: Councillor) {
+    setBusyId(c.id);
+    try {
+      const res: any = await getAuthenticatedBackend().admin.approveCouncillor({ id: c.id });
+      if (res?.accessCode) setIssued((m) => ({ ...m, [c.id]: res.accessCode }));
+      toast({ title: "New access code issued", description: `${c.fullName}'s previous code no longer works. Send them the new one.` });
+      await load();
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Could not regenerate the code.", variant: "destructive" });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function setStatus(c: Councillor, status: string) {
     setBusyId(c.id);
     try {
@@ -92,13 +107,13 @@ export default function CouncillorsTab({ onCountChange }: { onCountChange?: (n: 
     <div key={c.id} className="rounded-lg border border-border p-3 sm:p-4">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div className="min-w-0">
-          <div className="font-semibold text-foreground">{c.fullName}</div>
+          <div className="font-semibold text-foreground">{c.fullName}{c.ward ? <span className="text-brand"> — Ward {c.ward}</span> : null}</div>
           <div className="text-xs text-muted-foreground mt-0.5">
             {c.idNumber ? <>ID {c.idNumber}</> : null}
             {c.idNumber && c.staffNumber ? " · " : null}
             {c.staffNumber ? <>Staff #{c.staffNumber}</> : null}
           </div>
-          <div className="text-xs text-muted-foreground mt-1">Wards (postal codes):</div>
+          <div className="text-xs text-muted-foreground mt-1">Ward postal codes:</div>
           {chip(c.postalCodes)}
         </div>
         <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -108,7 +123,10 @@ export default function CouncillorsTab({ onCountChange }: { onCountChange?: (n: 
             </Button>
           )}
           {c.status === "active" && (
-            <Button size="sm" variant="outline" disabled={busyId === c.id} onClick={() => setStatus(c, "disabled")}>Disable</Button>
+            <>
+              <Button size="sm" variant="outline" disabled={busyId === c.id} onClick={() => regenerate(c)}>Regenerate code</Button>
+              <Button size="sm" variant="outline" disabled={busyId === c.id} onClick={() => setStatus(c, "disabled")}>Disable</Button>
+            </>
           )}
           {c.status === "disabled" && (
             <Button size="sm" variant="outline" disabled={busyId === c.id} onClick={() => setStatus(c, "active")}>Re-enable</Button>

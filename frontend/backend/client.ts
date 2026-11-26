@@ -327,7 +327,7 @@ export const backend = {
   },
   councillor: {
     // Public: a ward councillor registers (goes to the SuperAdmin pending queue).
-    register: (req: { fullName: string; idNumber?: string; staffNumber?: string; postalCodes: string[] }) =>
+    register: (req: { fullName: string; idNumber?: string; staffNumber?: string; ward?: string; postalCodes: string[] }) =>
       request("POST", "/councillor/register", { body: req }),
     // Public (access-code): confirm a code and fetch the councillor's assigned wards.
     me: (req: { accessCode: string }) =>

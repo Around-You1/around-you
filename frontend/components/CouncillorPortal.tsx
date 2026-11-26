@@ -33,6 +33,7 @@ export default function CouncillorPortal() {
   const [fullName, setFullName] = useState("");
   const [idNumber, setIdNumber] = useState("");
   const [staffNumber, setStaffNumber] = useState("");
+  const [ward, setWard] = useState("");
   const [codesRaw, setCodesRaw] = useState("");
   const [regBusy, setRegBusy] = useState(false);
   const [regDone, setRegDone] = useState(false);
@@ -43,10 +44,11 @@ export default function CouncillorPortal() {
     const name = fullName.trim();
     const codes = parseCodes(codesRaw);
     if (!name) { setRegErr("Please enter your full name."); return; }
-    if (!codes.length) { setRegErr("Please enter at least one postal code you cover."); return; }
+    if (!ward.trim()) { setRegErr("Please enter your ward number."); return; }
+    if (!codes.length) { setRegErr("Please enter at least one ward postal code."); return; }
     setRegBusy(true);
     try {
-      await backend.councillor.register({ fullName: name, idNumber: idNumber.trim(), staffNumber: staffNumber.trim(), postalCodes: codes });
+      await backend.councillor.register({ fullName: name, idNumber: idNumber.trim(), staffNumber: staffNumber.trim(), ward: ward.trim(), postalCodes: codes });
       setRegDone(true);
     } catch (e: any) {
       setRegErr(e?.message || "Could not submit your registration. Please try again.");
@@ -57,7 +59,7 @@ export default function CouncillorPortal() {
 
   // --- access-code sign in + post ---
   const [code, setCode] = useState("");
-  const [confirmed, setConfirmed] = useState<{ fullName: string; postalCodes: string[] } | null>(null);
+  const [confirmed, setConfirmed] = useState<{ fullName: string; ward: string; postalCodes: string[] } | null>(null);
   const [codeBusy, setCodeBusy] = useState(false);
   const [codeErr, setCodeErr] = useState("");
 
@@ -68,7 +70,7 @@ export default function CouncillorPortal() {
     setCodeBusy(true);
     try {
       const me: any = await backend.councillor.me({ accessCode: c });
-      setConfirmed({ fullName: me.fullName, postalCodes: me.postalCodes || [] });
+      setConfirmed({ fullName: me.fullName, ward: me.ward || "", postalCodes: me.postalCodes || [] });
     } catch (e: any) {
       setCodeErr(e?.message || "That access code was not recognised or is not active yet.");
     } finally {
@@ -88,8 +90,15 @@ export default function CouncillorPortal() {
     if (!title.trim()) { setPostErr("Please enter a title for the alert."); return; }
     setPostBusy(true);
     try {
-      const endsIso = endsAt ? new Date(endsAt).toISOString() : "";
-      const res: any = await backend.councillor.alert({ accessCode: code.trim(), title: title.trim(), body: body.trim(), endsAt: endsIso });
+      let finalBody = body.trim();
+      let endsIso = "";
+      if (endsAt) {
+        const dt = new Date(endsAt);
+        endsIso = dt.toISOString();
+        const human = dt.toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" });
+        finalBody = (finalBody ? finalBody + "\n\n" : "") + `Expected completion: ${human}`;
+      }
+      const res: any = await backend.councillor.alert({ accessCode: code.trim(), title: title.trim(), body: finalBody, endsAt: endsIso });
       const n = res?.sent ?? 0;
       setPostMsg(`Alert posted. It's now being delivered to ${n} device${n === 1 ? "" : "s"} in your wards, and already shows in their app inbox.`);
       setTitle(""); setBody(""); setEndsAt("");
@@ -146,7 +155,11 @@ export default function CouncillorPortal() {
                 <input style={input} value={staffNumber} onChange={(e) => setStaffNumber(e.target.value)} />
               </div>
               <div style={{ marginTop: 12 }}>
-                <label style={labelSt}>Postal codes you cover *</label>
+                <label style={labelSt}>Ward number *</label>
+                <input style={input} inputMode="numeric" placeholder="e.g. 3" value={ward} onChange={(e) => setWard(e.target.value)} />
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <label style={labelSt}>Ward Postal Codes *</label>
                 <input style={input} inputMode="numeric" placeholder="e.g. 7395, 7390, 7380" value={codesRaw} onChange={(e) => setCodesRaw(e.target.value)} />
                 <p style={{ color: "#7f857f", fontSize: 11, marginTop: 4 }}>Separate multiple postal codes with a comma or a space.</p>
                 {parseCodes(codesRaw).length > 0 && (
@@ -185,21 +198,21 @@ export default function CouncillorPortal() {
           ) : (
             <div style={{ marginTop: 18 }}>
               <div style={{ padding: "10px 12px", borderRadius: 8, border: `1px solid rgba(57,255,20,0.25)`, background: "rgba(57,255,20,0.06)", marginBottom: 14 }}>
-                <div style={{ color: LUMO, fontWeight: 800, fontSize: 14 }}>{confirmed.fullName}</div>
+                <div style={{ color: LUMO, fontWeight: 800, fontSize: 14 }}>{confirmed.fullName}{confirmed.ward ? ` — Ward ${confirmed.ward}` : ""}</div>
                 <div style={{ color: "#9aa39a", fontSize: 12, marginTop: 2 }}>
-                  Posting to wards: {confirmed.postalCodes.length ? confirmed.postalCodes.join(", ") : "—"}
+                  Posting to postal codes: {confirmed.postalCodes.length ? confirmed.postalCodes.join(", ") : "—"}
                 </div>
               </div>
               <div>
-                <label style={labelSt}>Alert title *</label>
-                <input style={input} placeholder="e.g. Planned water outage — Saturday" value={title} onChange={(e) => setTitle(e.target.value)} />
+                <label style={labelSt}>Heading *</label>
+                <input style={input} placeholder="e.g. Alert: Electricity Interruption" value={title} onChange={(e) => setTitle(e.target.value)} />
               </div>
               <div style={{ marginTop: 12 }}>
                 <label style={labelSt}>Message</label>
-                <textarea style={{ ...input, minHeight: 96, resize: "vertical" }} value={body} onChange={(e) => setBody(e.target.value)} />
+                <textarea style={{ ...input, minHeight: 120, resize: "vertical" }} placeholder="e.g. ESKOM will be switching off the electricity supply at the Saint Helena Views 2 transformer to do repair work. Expect an interruption to your electricity supply." value={body} onChange={(e) => setBody(e.target.value)} />
               </div>
               <div style={{ marginTop: 12 }}>
-                <label style={labelSt}>Expires <span style={{ color: "#8a8f96", fontWeight: 400 }}>(optional — hides the alert after this time)</span></label>
+                <label style={labelSt}>Expected completion <span style={{ color: "#8a8f96", fontWeight: 400 }}>(optional — date &amp; time the interruption should be over)</span></label>
                 <input style={input} type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
               </div>
               {postErr && <p style={{ color: "#f0a0a0", fontSize: 13, marginTop: 12 }}>{postErr}</p>}
