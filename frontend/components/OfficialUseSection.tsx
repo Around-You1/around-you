@@ -36,6 +36,9 @@ interface OfficialUseSectionProps {
   // to hide them (the underlying columns still exist and are simply left blank).
   // Defaults to true so the other three forms keep showing them unchanged.
   showTierFields?: boolean;
+  // Whether to show the "charity you wish US to support" block. Real Estate has
+  // no charity nomination, so it passes showCharity={false}. Defaults to true.
+  showCharity?: boolean;
 }
 
 const GUEST_TYPE_OPTIONS = ["Guest Only", "Local", "Both"] as const;
@@ -81,7 +84,7 @@ function RadioGroup({
   );
 }
 
-export default function OfficialUseSection({ data, onChange, address, onAddressChange, showTierFields = true }: OfficialUseSectionProps) {
+export default function OfficialUseSection({ data, onChange, address, onAddressChange, showTierFields = true, showCharity = true }: OfficialUseSectionProps) {
   // Admin-only: registered agents for the Agent Name dropdown. In the rep
   // onboarding context (non-SuperAdmin) the fetch is skipped and the Agent Name
   // stays a plain text input.
@@ -231,6 +234,7 @@ export default function OfficialUseSection({ data, onChange, address, onAddressC
           </div>
         </div>
 
+{showCharity && (
         <div className="space-y-2 pt-2 border-t border-amber-200/60 dark:border-amber-800/60">
           <Label className="text-sm font-semibold text-amber-800 dark:text-amber-400">Please give us the details of the charity you wish US to support</Label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -248,6 +252,7 @@ export default function OfficialUseSection({ data, onChange, address, onAddressC
             </div>
           </div>
         </div>
+        )}
       </CardContent>
     </Card>
   );

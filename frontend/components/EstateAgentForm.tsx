@@ -31,6 +31,7 @@ import { SA_PROVINCES } from "../lib/saRegions";
 import ImageUpload from "./ImageUpload";
 import MultiImageUpload from "./MultiImageUpload";
 import PropertyListingFields, { PropertyListing, newListing } from "./EstatePropertyForm";
+import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
 
 const emptyAgent = {
   name: "",
@@ -43,6 +44,19 @@ const emptyAgent = {
   bio: "",
   photoUrl: "",
   imageUrls: [] as string[],
+};
+
+const emptyOfficial: OfficialUseData = {
+  officialHoldingCompany: "",
+  officialContactName: "",
+  officialContactNumber: "",
+  officialEmail: "",
+  officialRepCode: "",
+  officialRepName: "",
+  companyRegNumber: "",
+  companyVatNumber: "",
+  guestType: "",
+  accessLevel: "",
 };
 
 // "R 1 200 000 / month" -> 120000000 cents (best effort; 0 when no digits).
@@ -64,6 +78,7 @@ export default function EstateAgentForm({
 }) {
   const { toast } = useToast();
   const [agent, setAgent] = useState({ ...emptyAgent, agencyName: defaultAgencyName || "" });
+  const [officialUse, setOfficialUse] = useState<OfficialUseData>({ ...emptyOfficial });
   const [listings, setListings] = useState<PropertyListing[]>([]);
   const [removedIds, setRemovedIds] = useState<number[]>([]);
   const [openIndex, setOpenIndex] = useState<number>(-1);
@@ -91,6 +106,18 @@ export default function EstateAgentForm({
             bio: found.bio || "",
             photoUrl: found.photoUrl || "",
             imageUrls: found.imageUrls || [],
+          });
+          setOfficialUse({
+            officialHoldingCompany: found.officialHoldingCompany || "",
+            officialContactName: found.officialContactName || "",
+            officialContactNumber: found.officialContactNumber || "",
+            officialEmail: found.officialEmail || "",
+            officialRepCode: found.officialRepCode || "",
+            officialRepName: found.officialRepName || "",
+            companyRegNumber: found.companyRegNumber || "",
+            companyVatNumber: found.companyVatNumber || "",
+            guestType: "",
+            accessLevel: "",
           });
         }
         const pr: any = await backend.estate.listProperties({ agentId });
@@ -181,7 +208,18 @@ export default function EstateAgentForm({
     setSaving(true);
     try {
       const backend = getAuthenticatedBackend();
-      const agentPayload: any = { ...agent, isActive: true };
+      const agentPayload: any = {
+        ...agent,
+        officialHoldingCompany: officialUse.officialHoldingCompany,
+        officialContactName: officialUse.officialContactName,
+        officialContactNumber: officialUse.officialContactNumber,
+        officialEmail: officialUse.officialEmail,
+        officialRepCode: officialUse.officialRepCode,
+        officialRepName: officialUse.officialRepName,
+        companyRegNumber: officialUse.companyRegNumber,
+        companyVatNumber: officialUse.companyVatNumber,
+        isActive: true,
+      };
       let savedAgentId = agentId;
       if (agentId) {
         await backend.estate.updateAgent({ id: agentId, ...agentPayload });
@@ -316,6 +354,13 @@ export default function EstateAgentForm({
               <Input value={agent.address} onChange={(e) => setA("address")(e.target.value)} />
             </div>
           </div>
+
+          <OfficialUseSection
+            data={officialUse}
+            onChange={setOfficialUse}
+            showTierFields={false}
+            showCharity={false}
+          />
         </CardContent>
       </Card>
 

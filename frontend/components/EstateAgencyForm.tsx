@@ -25,6 +25,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { getAuthenticatedBackend } from "../lib/backend";
 import { SA_PROVINCES } from "../lib/saRegions";
 import ImageUpload from "./ImageUpload";
+import OfficialUseSection, { type OfficialUseData } from "./OfficialUseSection";
 
 const emptyAgency = {
   name: "",
@@ -34,6 +35,19 @@ const emptyAgency = {
   postalCode: "",
   contactNumber: "",
   email: "",
+};
+
+const emptyOfficial: OfficialUseData = {
+  officialHoldingCompany: "",
+  officialContactName: "",
+  officialContactNumber: "",
+  officialEmail: "",
+  officialRepCode: "",
+  officialRepName: "",
+  companyRegNumber: "",
+  companyVatNumber: "",
+  guestType: "",
+  accessLevel: "",
 };
 
 export default function EstateAgencyForm({
@@ -47,6 +61,7 @@ export default function EstateAgencyForm({
 }) {
   const { toast } = useToast();
   const [agency, setAgency] = useState({ ...emptyAgency });
+  const [officialUse, setOfficialUse] = useState<OfficialUseData>({ ...emptyOfficial });
   const [loading, setLoading] = useState(!!agencyId);
   const [saving, setSaving] = useState(false);
 
@@ -67,6 +82,18 @@ export default function EstateAgencyForm({
           contactNumber: a.contactNumber || "",
           email: a.email || "",
         });
+        setOfficialUse({
+          officialHoldingCompany: a.officialHoldingCompany || "",
+          officialContactName: a.officialContactName || "",
+          officialContactNumber: a.officialContactNumber || "",
+          officialEmail: a.officialEmail || "",
+          officialRepCode: a.officialRepCode || "",
+          officialRepName: a.officialRepName || "",
+          companyRegNumber: a.companyRegNumber || "",
+          companyVatNumber: a.companyVatNumber || "",
+          guestType: "",
+          accessLevel: "",
+        });
       } catch (error: any) {
         toast({ title: "Couldn't load", description: error?.message || "Please try again.", variant: "destructive" });
       } finally {
@@ -83,7 +110,18 @@ export default function EstateAgencyForm({
     setSaving(true);
     try {
       const backend = getAuthenticatedBackend();
-      const payload: any = { ...agency, isActive: true };
+      const payload: any = {
+        ...agency,
+        officialHoldingCompany: officialUse.officialHoldingCompany,
+        officialContactName: officialUse.officialContactName,
+        officialContactNumber: officialUse.officialContactNumber,
+        officialEmail: officialUse.officialEmail,
+        officialRepCode: officialUse.officialRepCode,
+        officialRepName: officialUse.officialRepName,
+        companyRegNumber: officialUse.companyRegNumber,
+        companyVatNumber: officialUse.companyVatNumber,
+        isActive: true,
+      };
       if (agencyId) {
         await backend.estate.updateAgency({ id: agencyId, ...payload });
       } else {
@@ -156,6 +194,13 @@ export default function EstateAgencyForm({
             <Input type="email" value={agency.email} onChange={(e) => setA("email")(e.target.value)} />
           </div>
         </div>
+
+        <OfficialUseSection
+          data={officialUse}
+          onChange={setOfficialUse}
+          showTierFields={false}
+          showCharity={false}
+        />
 
         {agencyId ? <MonthlyPriceEditor entityType="estate_agency" entityId={agencyId} /> : null}
 
