@@ -195,6 +195,7 @@ func main() {
 	r.auth("GET /admin/councillors", httpx.Empty(push.ListCouncillors))
 	r.auth("POST /admin/councillors/approve", httpx.Body(push.ApproveCouncillor))
 	r.auth("POST /admin/councillors/status", httpx.Body(push.SetCouncillorStatus))
+	r.auth("POST /admin/councillors/delete", httpx.Body(push.DeleteCouncillor))
 	r.auth("POST /notifications/opened", httpx.Empty(push.NotificationOpened))
 
 	// ---- Accommodation (auth) ----------------------------------------------

@@ -23,6 +23,7 @@ export default function CouncillorsTab({ onCountChange }: { onCountChange?: (n: 
   const [rows, setRows] = useState<Councillor[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   // Access codes are returned exactly once (on approval). Keep them on screen so
   // the Super Admin can copy and pass the code to the councillor.
   const [issued, setIssued] = useState<Record<number, string>>({});
@@ -52,6 +53,20 @@ export default function CouncillorsTab({ onCountChange }: { onCountChange?: (n: 
       await load();
     } catch (e: any) {
       toast({ title: "Error", description: e?.message || "Could not approve.", variant: "destructive" });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function remove(c: Councillor) {
+    setBusyId(c.id);
+    try {
+      await getAuthenticatedBackend().admin.deleteCouncillor({ id: c.id });
+      setConfirmDeleteId(null);
+      toast({ title: "Deleted", description: `${c.fullName} has been removed.` });
+      await load();
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Could not delete.", variant: "destructive" });
     } finally {
       setBusyId(null);
     }
@@ -130,6 +145,14 @@ export default function CouncillorsTab({ onCountChange }: { onCountChange?: (n: 
           )}
           {c.status === "disabled" && (
             <Button size="sm" variant="outline" disabled={busyId === c.id} onClick={() => setStatus(c, "active")}>Re-enable</Button>
+          )}
+          {confirmDeleteId === c.id ? (
+            <>
+              <Button size="sm" variant="destructive" disabled={busyId === c.id} onClick={() => remove(c)}>Confirm delete</Button>
+              <Button size="sm" variant="ghost" disabled={busyId === c.id} onClick={() => setConfirmDeleteId(null)}>Cancel</Button>
+            </>
+          ) : (
+            <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700" disabled={busyId === c.id} onClick={() => setConfirmDeleteId(c.id)}>Delete</Button>
           )}
         </div>
       </div>

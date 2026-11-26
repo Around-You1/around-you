@@ -391,6 +391,8 @@ export const backend = {
       request("POST", "/admin/councillors/approve", { body: req }),
     setCouncillorStatus: (req: { id: number; status: string }) =>
       request("POST", "/admin/councillors/status", { body: req }),
+    deleteCouncillor: (req: { id: number }) =>
+      request("POST", "/admin/councillors/delete", { body: req }),
   },
   charity: {
     set: (req: { partnerType: string; partnerId: number; name: string; address: string; contact: string }) =>

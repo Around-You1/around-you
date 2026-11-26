@@ -176,6 +176,18 @@ func SetCouncillorStatus(ctx context.Context, req *SetCouncillorStatusRequest) (
 	return &CouncillorOKResponse{OK: true}, nil
 }
 
+//encore:api auth method=POST path=/admin/councillors/delete
+func DeleteCouncillor(ctx context.Context, req *CouncillorIDRequest) (*CouncillorOKResponse, error) {
+	if !councillorIsSuperAdmin(ctx) {
+		return nil, &errs.Error{Code: errs.PermissionDenied, Message: "only a SuperAdmin can delete a councillor"}
+	}
+	if _, err := appdb.SQLDB.ExecContext(ctx,
+		`DELETE FROM ward_councillors WHERE id = $1`, req.ID); err != nil {
+		return nil, &errs.Error{Code: errs.Internal, Message: err.Error()}
+	}
+	return &CouncillorOKResponse{OK: true}, nil
+}
+
 // ---- Councillor sign-in (by access code) + post alert ----
 
 func councillorLookup(ctx context.Context, accessCode string) (int64, string, string, []string, error) {
