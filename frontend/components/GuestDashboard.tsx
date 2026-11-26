@@ -374,12 +374,14 @@ export default function GuestDashboard() {
   }, []);
 
   useEffect(() => {
-    if (isLocalMode) loadPartnersByArea();
-    else loadAccommodationDetails();
+    if (!isLocalMode) loadAccommodationDetails();
   }, []);
 
+  // Re-load whenever the radius slider moves. Locals search from their own GPS /
+  // postal code; guests search around their accommodation (once it has loaded).
   useEffect(() => {
-    if (!isLocalMode && accommodation) loadNearbyPartners();
+    if (isLocalMode) loadPartnersByArea();
+    else if (accommodation) loadNearbyPartners();
   }, [radiusKm, accommodation]);
 
   const matchesSearch = (query: string, fields: (string | undefined | null)[]): boolean => {
@@ -543,12 +545,11 @@ export default function GuestDashboard() {
     }
   };
 
-  // Locals see every partner within a fixed 50 km radius of where they are.
-  // We centre the search on the browser's GPS position. Mobile partners (who
-  // work from the client's address and have no coordinates) are matched to the
-  // local's own postal code. If GPS is unavailable, the backend falls back to
-  // a postal-code match for everyone.
-  const LOCAL_RADIUS_KM = 50;
+  // Locals see every partner within the radius they choose on the slider
+  // (10 km default, up to 50 km). We centre the search on the browser's GPS
+  // position. Mobile partners (who work from the client's address and have no
+  // coordinates) are matched to the local's own postal code. If GPS is
+  // unavailable, the backend falls back to a postal-code match for everyone.
   const loadPartnersByArea = async () => {
     const backend = getAuthenticatedBackend();
     const apply = (r: any, s: any, a: any, ret: any, npo: any) => {
@@ -590,16 +591,16 @@ export default function GuestDashboard() {
       const lat = coords ? coords.latitude : 0;
       const lng = coords ? coords.longitude : 0;
       const [r, s, ret, npo, a] = await Promise.all([
-        backend.restaurant.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal }),
-        backend.service.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal, nonProfit: false }),
-        backend.retail.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal }),
-        backend.nonprofit.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal }),
-        backend.attraction.listNearby({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal }),
+        backend.restaurant.listNearby({ latitude: lat, longitude: lng, radiusKm: radiusKm[0], postalCode: localPostal }),
+        backend.service.listNearby({ latitude: lat, longitude: lng, radiusKm: radiusKm[0], postalCode: localPostal, nonProfit: false }),
+        backend.retail.listNearby({ latitude: lat, longitude: lng, radiusKm: radiusKm[0], postalCode: localPostal }),
+        backend.nonprofit.listNearby({ latitude: lat, longitude: lng, radiusKm: radiusKm[0], postalCode: localPostal }),
+        backend.attraction.listNearby({ latitude: lat, longitude: lng, radiusKm: radiusKm[0], postalCode: localPostal }),
       ]);
       apply(r, s, a, ret, npo);
       // Accommodations that ticked "Also Show Accommodation to Locals".
       try {
-        const acc = await backend.accommodation.nearbyForLocals({ latitude: lat, longitude: lng, radiusKm: LOCAL_RADIUS_KM, postalCode: localPostal });
+        const acc = await backend.accommodation.nearbyForLocals({ latitude: lat, longitude: lng, radiusKm: radiusKm[0], postalCode: localPostal });
         setLocalAccommodations(filterTestVisibility((acc as any).accommodations || [], false));
       } catch (accErr) {
         console.error("Failed to load local accommodations:", accErr);
@@ -1490,7 +1491,15 @@ export default function GuestDashboard() {
               <Button variant="outline" className="w-full" onClick={async () => { await signOut(); window.location.href = "/"; }}>Sign out</Button>
             </div>
           {isLocalMode ? (
-            <Label className="text-lg font-medium">Local Partners</Label>
+            <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+              <Label className="text-lg font-medium">Local Partners</Label>
+              <div className="w-full md:flex-1 md:max-w-md space-y-2">
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Radius: {radiusKm[0]} km</span>
+                </div>
+                <Slider value={radiusKm} onValueChange={setRadiusKm} min={10} max={50} step={5} className="w-full" />
+              </div>
+            </div>
           ) : (
             <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
               <Label className="text-lg font-medium">Nearby Partners</Label>
@@ -1599,7 +1608,7 @@ export default function GuestDashboard() {
               {npoServices.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
-                    {searchQuery.trim() ? "No NPO / PBO listings match your search" : isLocalMode ? "No NPO / PBO listings found within 50km" : `No NPO / PBO listings found within ${radiusKm[0]}km`}
+                    {searchQuery.trim() ? "No NPO / PBO listings match your search" : `No NPO / PBO listings found within ${radiusKm[0]}km`}
                   </CardContent>
                 </Card>
               ) : (
@@ -1613,7 +1622,7 @@ export default function GuestDashboard() {
               {filteredRestaurants.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
-                    {searchQuery.trim() ? "No restaurants match your search" : isLocalMode ? "No restaurants found within 50km" : `No restaurants found within ${radiusKm[0]}km`}
+                    {searchQuery.trim() ? "No restaurants match your search" : `No restaurants found within ${radiusKm[0]}km`}
                   </CardContent>
                 </Card>
               ) : (
@@ -2094,7 +2103,7 @@ export default function GuestDashboard() {
               {bizServices.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
-                    {searchQuery.trim() ? "No business/services match your search" : isLocalMode ? "No business/services found within 50km" : `No business/services found within ${radiusKm[0]}km`}
+                    {searchQuery.trim() ? "No business/services match your search" : `No business/services found within ${radiusKm[0]}km`}
                   </CardContent>
                 </Card>
               ) : (
@@ -2108,7 +2117,7 @@ export default function GuestDashboard() {
               {retailServices.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
-                    {searchQuery.trim() ? "No retail match your search" : isLocalMode ? "No retail found within 50km" : `No retail found within ${radiusKm[0]}km`}
+                    {searchQuery.trim() ? "No retail match your search" : `No retail found within ${radiusKm[0]}km`}
                   </CardContent>
                 </Card>
               ) : (
@@ -2122,7 +2131,7 @@ export default function GuestDashboard() {
               {filteredAttractions.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
-                    {searchQuery.trim() ? "No attractions match your search" : isLocalMode ? "No attractions found within 50km" : `No attractions found within ${radiusKm[0]}km`}
+                    {searchQuery.trim() ? "No attractions match your search" : `No attractions found within ${radiusKm[0]}km`}
                   </CardContent>
                 </Card>
               ) : (
