@@ -19,12 +19,12 @@ export default function ProfileQRCode({ profileName, profileCode, entityType }: 
   const loginUrl =
     entityType === "accommodation"
       ? `https://aroundyou.co.za/?code=${encodeURIComponent(profileCode)}`
-      : `https://aroundyou.co.za/?code=${encodeURIComponent(profileCode)}&role=partner`;
+      : `https://aroundyou.co.za/view?code=${encodeURIComponent(profileCode)}`;
 
   const description =
     entityType === "accommodation"
       ? "Scan this QR Code, open the link, click “Sign In” to automatically see all that the Guesthouse has to offer. You will also be able to view Restaurants/Takeaways, Business/Services and Attractions/Activities in and ‘Around You’ up to 150 kilometers."
-      : "Scan this QR Code, open the link, click “Sign In” to automatically see all that this business has to offer.";
+      : "Scan this QR Code to see everything this business has to offer — no sign-in needed, any time.";
 
   const card: QrCardOptions = {
     title: profileName,

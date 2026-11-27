@@ -20,6 +20,7 @@ import (
 	"backend_encore/app/accommodation"
 	"backend_encore/app/admin"
 	"backend_encore/app/analytics"
+	"backend_encore/app/publicview"
 	"backend_encore/app/attraction"
 	"backend_encore/app/auth"
 	"backend_encore/app/billing"
@@ -163,6 +164,16 @@ func main() {
 	r.public("GET /estate/public/agency", httpx.Query(estate.PublicAgency))
 	r.public("GET /estate/public/agent", httpx.Query(estate.PublicAgent))
 	r.public("GET /estate/public/property", httpx.Query(estate.PublicProperty))
+
+	// Public partner view (poster QR → /view, no sign-in). Resolve a scanned
+	// profile code to its partner, then fetch that partner's public profile.
+	r.public("GET /public/resolve", httpx.Query(publicview.Resolve))
+	r.public("GET /public/restaurant", httpx.Query(restaurant.Get))
+	r.public("GET /public/service", httpx.Query(service.Get))
+	r.public("GET /public/attraction", httpx.Query(attraction.Get))
+	r.public("GET /public/retail", httpx.Query(retail.Get))
+	r.public("GET /public/nonprofit", httpx.Query(nonprofit.Get))
+	r.public("GET /public/accommodation", httpx.Query(accommodation.Get))
 	r.auth("GET /analytics/rep-activity", httpx.Empty(analytics.RepActivityReport))
 	r.auth("GET /analytics/reps", httpx.Empty(analytics.RepsAnalytics))
 	r.auth("GET /analytics/business", httpx.Empty(analytics.BusinessMetrics))

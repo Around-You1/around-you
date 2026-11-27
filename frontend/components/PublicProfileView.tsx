@@ -35,32 +35,29 @@ export default function PublicProfileView() {
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
-    const t = (q.get("type") || "").toLowerCase();
-    const id = Number(q.get("id") || "0");
-    setType(t);
     setBack(q.get("back") || currentDashboardPath());
     setBackName(q.get("backName") || "");
     (async () => {
       try {
         const backend = getAuthenticatedBackend();
+        // The poster QR carries the partner's profile code; resolve it to a
+        // type + id (no sign-in needed). A ?type=&id= link is honoured directly.
+        let t = (q.get("type") || "").toLowerCase();
+        let id = Number(q.get("id") || "0");
+        const code = (q.get("code") || "").trim();
+        if ((!t || !id) && code) {
+          const r: any = await backend.publicView.resolve({ code });
+          if (r && r.found) { t = String(r.type).toLowerCase(); id = Number(r.id); }
+        }
+        setType(t);
         let data: any = null;
-        if (t === "restaurant") {
-          const r: any = await backend.restaurant.list({});
-          data = (r.restaurants || []).find((x: any) => Number(x.id) === id);
-        } else if (t === "service") {
-          const r: any = await backend.service.list({});
-          data = (r.services || []).find((x: any) => Number(x.id) === id);
-        } else if (t === "attraction") {
-          const r: any = await backend.attraction.list({});
-          data = (r.attractions || []).find((x: any) => Number(x.id) === id);
-        } else if (t === "retail") {
-          const r: any = await backend.retail.list({});
-          data = (r.services || []).find((x: any) => Number(x.id) === id);
-        } else if (t === "nonprofit") {
-          const r: any = await backend.nonprofit.list({});
-          data = (r.services || []).find((x: any) => Number(x.id) === id);
-        } else if (t === "accommodation") {
-          data = await backend.accommodation.get({ id });
+        if (id > 0) {
+          if (t === "restaurant") data = await backend.publicView.restaurant({ id });
+          else if (t === "service") data = await backend.publicView.service({ id });
+          else if (t === "attraction") data = await backend.publicView.attraction({ id });
+          else if (t === "retail") data = await backend.publicView.retail({ id });
+          else if (t === "nonprofit") data = await backend.publicView.nonprofit({ id });
+          else if (t === "accommodation") data = await backend.publicView.accommodation({ id });
         }
         if (!data) setNotFound(true);
         else setEntity(data);

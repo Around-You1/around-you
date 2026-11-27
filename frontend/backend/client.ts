@@ -337,6 +337,16 @@ export const backend = {
     alert: (req: { accessCode: string; title: string; body?: string; endsAt?: string }) =>
       request("POST", "/councillor/alert", { body: req }),
   },
+  publicView: {
+    // Resolve a scanned profile code to its partner (no sign-in needed).
+    resolve: (req: { code: string }) => request("GET", "/public/resolve", { query: req }),
+    restaurant: (req: { id: number }) => request("GET", "/public/restaurant", { query: req }),
+    service: (req: { id: number }) => request("GET", "/public/service", { query: req }),
+    attraction: (req: { id: number }) => request("GET", "/public/attraction", { query: req }),
+    retail: (req: { id: number }) => request("GET", "/public/retail", { query: req }),
+    nonprofit: (req: { id: number }) => request("GET", "/public/nonprofit", { query: req }),
+    accommodation: (req: { id: number }) => request("GET", "/public/accommodation", { query: req }),
+  },
   events: {
     record: (req: {
       eventType: string;

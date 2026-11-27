@@ -118,6 +118,12 @@ export default function Page() {
             entityType: role === "partner" ? "" : "accommodation",
           })
           .catch(() => {});
+        // Older business posters encode ?code=…&role=partner. Send those straight
+        // to the public business page (no sign-in) instead of the Partner login.
+        if (role === "partner") {
+          window.location.replace("/view?code=" + encodeURIComponent(code));
+          return;
+        }
       }
     } catch {
       // analytics must never break the landing page

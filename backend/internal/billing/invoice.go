@@ -337,14 +337,24 @@ func IssueFirstInvoice(ctx context.Context, partnerType string, partnerID int64)
 		return err
 	}
 	start := time.Now()
-	// The first invoice is pro-rated for the remainder of the current calendar
-	// month; full monthly billing then starts on the 1st of next month (mailed 3
-	// days before). period_end is the 1st of next month so the next invoice's
+	proRata := true
+	// Onboarded on or after the 27th: don't bill a few days' pro-rata now and then
+	// the full next month days later. Instead issue a single FULL invoice for next
+	// month (still with the onboarding codes); recurring then starts the month
+	// after. So a partner accepted on, say, 28 Nov gets one full December invoice.
+	if start.Day() >= 27 {
+		start = time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, start.Location()).AddDate(0, 1, 0)
+		proRata = false
+	}
+	// period_end is the 1st of the month after `start`, so the next invoice's
 	// period follows on contiguously.
 	end := time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, start.Location()).AddDate(0, 1, 0)
 	due := start.AddDate(0, 0, 2)
-	base := prorateCents(int(monthly), start)
-	return GenerateInvoice(ctx, subID, partnerType, partnerID, plan, tier, base, 0, start, end, due, true, true)
+	base := int(monthly)
+	if proRata {
+		base = prorateCents(base, start)
+	}
+	return GenerateInvoice(ctx, subID, partnerType, partnerID, plan, tier, base, 0, start, end, due, true, proRata)
 }
 
 // GenerateInvoice creates one invoice (+ its line items) for a subscription's
