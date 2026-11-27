@@ -57,6 +57,24 @@ interface MonthPoint {
   invoices: number;
 }
 
+interface LoyaltyCardRow {
+  partnerType: string;
+  partnerId: number;
+  partnerName: string;
+  rewardText: string;
+  threshold: number;
+  participants: number;
+  totalStamps: number;
+  readyToRedeem: number;
+  rewardsRedeemed: number;
+}
+interface LoyaltyStamp {
+  cards: LoyaltyCardRow[];
+  totalParticipants: number;
+  totalStamps: number;
+  totalReadyToRedeem: number;
+}
+
 interface BusinessMetrics {
   mrrCents: number;
   activePartners: number;
@@ -353,6 +371,7 @@ export default function AnalyticsDashboard() {
   const [repStats, setRepStats] = useState<RepsAnalytics | null>(null);
   const [bizStats, setBizStats] = useState<BusinessMetrics | null>(null);
   const [events, setEvents] = useState<EventsSummary | null>(null);
+  const [loyalty, setLoyalty] = useState<LoyaltyStamp | null>(null);
   const [loading, setLoading] = useState(true);
   const [printMode, setPrintMode] = useState(false);
   const [printOnly, setPrintOnly] = useState<string | null>(null);
@@ -479,7 +498,7 @@ export default function AnalyticsDashboard() {
     setLoading(true);
     try {
       const backend = getAuthenticatedBackend();
-      const [activity, stats, biz, ev, charity, localsList, hgList, partnersList, overallSum, saList] = await Promise.all([
+      const [activity, stats, biz, ev, charity, localsList, hgList, partnersList, overallSum, saList, loyaltyRes] = await Promise.all([
         backend.analytics.repActivity(),
         backend.analytics.reps(),
         backend.analytics.business(),
@@ -490,6 +509,7 @@ export default function AnalyticsDashboard() {
         backend.analytics.partners().catch(() => ({ partners: [] })),
         backend.analytics.overallSummary().catch(() => null),
         backend.analytics.superadmins().catch(() => ({ superAdmins: [] })),
+        backend.analytics.loyalty().catch(() => null),
       ]);
       setReps(activity.reps);
       setRepStats(stats);
@@ -502,6 +522,7 @@ export default function AnalyticsDashboard() {
       setPartners((partnersList as any).partners || []);
       setOverallSummary(overallSum as any);
       setSuperAdmins((saList as any).superAdmins || []);
+      setLoyalty(loyaltyRes as any);
     } catch (error) {
       console.error("Failed to load analytics:", error);
       toast({ title: "Error", description: "Failed to load analytics", variant: "destructive" });
@@ -1280,6 +1301,63 @@ export default function AnalyticsDashboard() {
               ))}
             </div>
             </>
+          )}
+        </Section>
+
+        <Section title="Stamp Cards">
+          {loyalty && loyalty.cards.length > 0 ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="rounded-lg border p-3">
+                  <div className="text-2xl font-bold text-foreground">{loyalty.totalParticipants}</div>
+                  <div className="text-xs text-muted-foreground">Customers stamping</div>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <div className="text-2xl font-bold text-foreground">{loyalty.totalStamps}</div>
+                  <div className="text-xs text-muted-foreground">Stamps given</div>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <div className="text-2xl font-bold text-brand">{loyalty.totalReadyToRedeem}</div>
+                  <div className="text-xs text-muted-foreground">Cards ready to redeem</div>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-muted-foreground border-b">
+                      <th className="py-1 pr-3">Partner</th>
+                      <th className="py-1 px-2 text-right whitespace-nowrap">Customers</th>
+                      <th className="py-1 px-2 text-right whitespace-nowrap">Stamps given</th>
+                      <th className="py-1 px-2 text-right whitespace-nowrap">Ready to redeem</th>
+                      <th className="py-1 px-2 text-right whitespace-nowrap">Redeemed</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loyalty.cards.map((c, i) => (
+                      <tr key={i} className="border-b last:border-0 align-top">
+                        <td className="py-1.5 pr-3">
+                          <div className="font-medium text-foreground">{c.partnerName || `${c.partnerType} #${c.partnerId}`}</div>
+                          {(c.rewardText || c.threshold > 0) && (
+                            <div className="text-xs text-muted-foreground">
+                              {c.rewardText}{c.rewardText && c.threshold > 0 ? " · " : ""}{c.threshold > 0 ? `${c.threshold} stamps` : ""}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-1.5 px-2 text-right tabular-nums">{c.participants}</td>
+                        <td className="py-1.5 px-2 text-right tabular-nums">{c.totalStamps}</td>
+                        <td className="py-1.5 px-2 text-right tabular-nums font-semibold text-brand">{c.readyToRedeem}</td>
+                        <td className="py-1.5 px-2 text-right tabular-nums">{c.rewardsRedeemed}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                “Customers stamping” counts people with at least one stamp on that card. “Ready to redeem” are full cards awaiting their reward.
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No stamp-card activity yet.</p>
           )}
         </Section>
 

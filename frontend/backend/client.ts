@@ -260,6 +260,7 @@ export const backend = {
     repActivity: () => request("GET", "/analytics/rep-activity"),
     reps: () => request("GET", "/analytics/reps"),
     business: () => request("GET", "/analytics/business"),
+    loyalty: () => request("GET", "/analytics/loyalty"),
     events: () => request("GET", "/analytics/events"),
     listingViews: (req: { entityType: string; entityId: number }) =>
       request("GET", "/analytics/listing-views", { query: req }),
