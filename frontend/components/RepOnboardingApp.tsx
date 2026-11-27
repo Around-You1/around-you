@@ -1390,7 +1390,7 @@ export default function RepOnboardingApp() {
                       onChange={(next) => setVisibility(next)}
                     />
                     <p style={{ fontSize: 12, color: colors.textSecondary, marginTop: 6, marginBottom: 10 }}>
-                      <b style={{ color: colors.textPrimary }}>Monthly cost:</b> {isNpo ? "Free — no monthly fee for registered NPO / PBO organisations." : isRetail ? "R500/month." : isRestaurant ? "Restaurants R300/month · Takeaways (not tagged \"Restaurant\") R200/month." : "R200/month."}
+                      <b style={{ color: colors.textPrimary }}>Monthly cost:</b> {isNpo ? "Free — no monthly fee for registered NPO / PBO organisations." : isRetail ? "R500/month." : isRestaurant ? "Restaurants R300/month · Takeaways (not tagged \"Restaurant\") R150/month." : isAccommodation ? "From R200/month — see unit pricing below." : "R150/month."}
                     </p>
                   </>
                 )}

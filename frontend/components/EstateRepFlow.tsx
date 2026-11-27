@@ -295,7 +295,7 @@ export default function EstateRepFlow({ repCode, repName, onDone }: { repCode: s
         <div style={{ fontSize: 40, marginBottom: 10 }}>✅</div>
         <p style={{ color: colors.textPrimary, fontSize: 15 }}>
           {mode === "agent" ? (
-            <><b>{agentData.name}</b> created. Billing: <b>R300/mo</b>.</>
+            <><b>{agentData.name}</b> created. Billing: <b>R200/mo</b>.</>
           ) : (
             <><b>{agency.name}</b> created with {properties.length} propert{properties.length === 1 ? "y" : "ies"}. Billing: <b>R300/mo</b>.</>
           )}
@@ -354,7 +354,7 @@ export default function EstateRepFlow({ repCode, repName, onDone }: { repCode: s
         <Btn onClick={() => setProperties((p) => [...p, newProperty()])}>+ Add Property</Btn>
 
         <div style={{ margin: "18px 0", background: colors.surface2, border: `1px solid ${colors.accent}`, borderRadius: 10, padding: 12, color: colors.textPrimary, fontSize: 13 }}>
-          <b>Billing:</b> R300/month for this agent profile.
+          <b>Billing:</b> R200/month for this agent profile.
         </div>
         {status && <p style={{ color: colors.accent, fontSize: 12, marginBottom: 8 }}>{status}</p>}
         <button type="button" disabled={submitting} onClick={submitAgent}

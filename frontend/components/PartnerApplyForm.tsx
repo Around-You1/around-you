@@ -41,13 +41,13 @@ function pricingText(cat: string, _half: boolean): string {
     case "accommodation":
       return "R200 per month.";
     case "restaurant":
-      return "Restaurants R300 per month · Takeaways R200 per month.";
+      return "Restaurants R300 per month · Takeaways R150 per month.";
     case "service":
-      return "R200 per month.";
+      return "R150 per month.";
     case "attraction":
-      return "R200 per month.";
+      return "R150 per month.";
     case "estate":
-      return "R300 per month.";
+      return "Agencies R300 per month · Agents R200 per month.";
     case "retail":
       return "R500 per month.";
     case "nonprofit":

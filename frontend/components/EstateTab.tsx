@@ -8,7 +8,7 @@
 // that match no agency appear under "Independent agents". Each agent owns their
 // profile + property listings (EstateAgentForm).
 //
-// Each agency AND each agent is a billable R300/month page, so both carry the
+// Each agency is a billable R300/month page and each agent R200/month, so both carry the
 // same Accept / Disable / Suspend controls as the other partner categories:
 //   • Accept    — sends the first invoice + sign-in codes email (partner stays
 //                 off the site until activated after payment).

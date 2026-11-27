@@ -8,6 +8,7 @@ package billing
 // Tier 2 R300, audience "Both" R400.
 const (
 	Tier1Cents            = 20000 // R200 — Tier 1
+	StandardCents         = 15000 // R150 — Business/Service, Attraction, Takeaway (Nov 2026, was R200)
 	Tier2Cents            = 30000 // R300 — Tier 2 (the former top tier)
 	BothCents             = 40000 // R400 — audience "Both" (forces Tier 2) at this flat price
 	BookingBase           = 40000 // R400/month base — Booking / Pre-Order partners are Premium (+ per-cover/per-booking usage added per billing period: restaurants R10/cover, services/attractions 10%, restaurant pre-orders 1%)
@@ -75,9 +76,9 @@ func PriceForUnits(partnerType, accessLevel, guestType string, units int) Plan {
 		// R300/month base; per-cover / per-booking commission added at billing time.
 		return Plan{Plan: "booking", Tier: 0, Audience: "Both", MonthlyCents: Tier2Cents}
 	}
-	// Business/Services and Attractions/Activities: R200 (Nov 2026 — was R300).
+	// Business/Services and Attractions/Activities: R150 (Nov 2026 — was R200).
 	if partnerType == "service" || partnerType == "attraction" {
-		return Plan{Plan: "tier", Tier: 2, Audience: "Both", MonthlyCents: Tier1Cents}
+		return Plan{Plan: "tier", Tier: 2, Audience: "Both", MonthlyCents: StandardCents}
 	}
 	// Restaurants: R300 by default (sit-down). Takeaway-style profiles — any that
 	// are NOT tagged "Restaurant" — are dropped to R200 in EnsureSubscription,

@@ -43,16 +43,16 @@ func EnsureSubscription(ctx context.Context, partnerType string, partnerID int64
 
 	// Restaurants tagged "Restaurant" bill R300; any takeaway-style profile (Take
 	// Away, Food Truck, Home Meals, Delivery, Pop Up — i.e. not tagged
-	// "Restaurant") bills R200.
+	// "Restaurant") bills R150.
 	if partnerType == "restaurant" {
 		var sitDown bool
 		_ = appdb.SQLDB.QueryRowContext(ctx,
 			`SELECT COALESCE('Restaurant' = ANY(restaurant_type), false) FROM restaurants WHERE id = $1`,
 			partnerID).Scan(&sitDown)
 		if sitDown {
-			p.MonthlyCents = Tier2Cents // R300
+			p.MonthlyCents = Tier2Cents  // R300
 		} else {
-			p.MonthlyCents = Tier1Cents // R200
+			p.MonthlyCents = StandardCents // R150
 		}
 	}
 
