@@ -1519,7 +1519,7 @@ export default function GuestDashboard() {
                 placeholder="Search…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className={`pl-10 border-brand focus-visible:border-brand${searchQuery ? " text-brand" : ""}`}
               />
             </div>
             <p className="text-xs text-muted-foreground leading-snug whitespace-normal break-words">
