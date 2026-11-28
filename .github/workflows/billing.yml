@@ -1,10 +1,10 @@
 name: Billing Run
 
 # Triggers the billing run DAILY at 06:00 UTC = 08:00 SA time (and on demand from the Actions
-# tab). Running daily means each partner is invoiced on their own monthly
-# anniversary — the day of the month they went live — rather than everyone
-# being batched to month-start. The run only bills subscriptions whose
-# next_bill_date has arrived, and is idempotent, so daily runs are safe.
+# tab). Recurring invoices are SENT on the 28th of every month, each carrying the
+# next calendar month as its period (invoice dated the 1st, due the 3rd). The run
+# only bills subscriptions whose send window (the 28th of the preceding month) has
+# arrived, and is idempotent, so the daily runs are safe.
 #
 # Requires two repository secrets (Settings → Secrets and variables → Actions):
 #   BACKEND_URL         e.g. https://around-you-backend.fly.dev

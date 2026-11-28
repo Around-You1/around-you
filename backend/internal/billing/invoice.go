@@ -237,12 +237,12 @@ func OnPartnerActivated(ctx context.Context, partnerType string, partnerID int64
 
 // AcceptPartner is called when a SuperAdmin ACCEPTS an onboarded partner (after
 // their tier/pricing has been set): it issues the partner's FIRST invoice with
-// their onboarding codes, but does NOT start the recurring billing cycle and
-// does NOT make the partner live. Recurring billing begins, and the partner goes
-// live, only when they are later Activated (after payment is received). Idempotent:
-// a second Accept never sends a second first-invoice. Free listings (NPO/charity)
-// and test-rep partners get the complimentary onboarding email instead of an
-// invoice, exactly as on activation.
+// their onboarding codes AND sets the recurring billing anchor, so the partner is
+// billed on the 28th from their next month onward even while that first pro-rata
+// invoice is still unpaid. Activation later makes the partner live on the site,
+// but is no longer what starts billing. Idempotent: a second Accept never sends a
+// second first-invoice. Free listings (NPO/charity) and test-rep partners get the
+// complimentary onboarding email instead of an invoice, exactly as on activation.
 func AcceptPartner(ctx context.Context, partnerType string, partnerID int64) error {
 	var subID int64
 	var repCode string
@@ -290,9 +290,22 @@ func AcceptPartner(ctx context.Context, partnerType string, partnerID int64) err
 		}
 		return nil
 	}
-	// First invoice (with codes), WITHOUT setting the recurring anchor — the
-	// monthly cycle starts only at Activation, after payment.
-	return IssueFirstInvoice(ctx, partnerType, partnerID)
+	// First invoice (with codes), then set the recurring anchor so billing runs on
+	// the 28th from the next month onward — even while the first pro-rata invoice
+	// is unpaid. Activation makes the partner live; it no longer starts billing.
+	if err := IssueFirstInvoice(ctx, partnerType, partnerID); err != nil {
+		return err
+	}
+	_, err = appdb.SQLDB.ExecContext(ctx, `
+		UPDATE partner_subscription ps
+		SET next_bill_date = COALESCE(
+		        ps.next_bill_date,
+		        (SELECT MAX(period_end) FROM invoice WHERE subscription_id = ps.id),
+		        ((now() at time zone 'utc')::date + interval '1 month')
+		    ),
+		    updated_at = now()
+		WHERE ps.id = $1`, subID)
+	return err
 }
 
 // PausePartnerBilling stops recurring billing for a partner (used when a

@@ -14,6 +14,7 @@ import "strings"
 var postalCentroids = map[string][2]float64{
 	// --- Saldanha Bay Municipality ---
 	"7380": {-32.9078, 17.9886}, // Vredenburg
+	"7382": {-32.7170, 17.9540}, // Britannia Bay / Shelley Point (St Helena Bay peninsula)
 	"7385": {-32.9078, 17.9886}, // Vredenburg (surrounds / Jacobsbaai area)
 	"7395": {-33.0117, 17.9442}, // Saldanha
 	"7390": {-32.7577, 18.0206}, // St Helena Bay

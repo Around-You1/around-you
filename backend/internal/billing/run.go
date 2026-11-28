@@ -24,14 +24,16 @@ func RunMonthlyBilling(ctx context.Context) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	// Recurring invoices are mailed 3 days BEFORE their invoice date, so each
-	// partner receives the invoice ahead of its due date. The invoice still
-	// carries its true invoice date (next_bill_date); only the send is early.
-	cutoff := time.Now().UTC().AddDate(0, 0, 3).Format("2006-01-02")
+	// Recurring invoices are SENT on the 28th of every month, each carrying the
+	// NEXT calendar month as its period. next_bill_date is the invoice date and is
+	// always the 1st of the covered month; the send window opens on the 28th of the
+	// month before, so a 1 Dec invoice goes out on 28 Nov and a 1 Jan invoice on
+	// 28 Dec.
+	today := time.Now().UTC().Format("2006-01-02")
 
 	issued := 0
 	for _, s := range subs {
-		if !s.Billable || s.NextBillDate == "" || s.NextBillDate > cutoff {
+		if !s.Billable || s.NextBillDate == "" {
 			continue
 		}
 		start, perr := time.Parse("2006-01-02", s.NextBillDate)
@@ -39,8 +41,13 @@ func RunMonthlyBilling(ctx context.Context) (int, error) {
 			log.Printf("billing run: bad next_bill_date %q for sub %d: %v", s.NextBillDate, s.ID, perr)
 			continue
 		}
+		// Open the send window on the 28th of the month BEFORE the invoice date.
+		sendDate := time.Date(start.Year(), start.Month(), 28, 0, 0, 0, 0, time.UTC).AddDate(0, -1, 0)
+		if today < sendDate.Format("2006-01-02") {
+			continue // not yet the 28th of the preceding month
+		}
 		end := start.AddDate(0, 1, 0)
-		// Due date is 2 days after the invoice date (invoice 10th -> due 12th).
+		// Due date is 2 days after the invoice date (invoice 1st -> due 3rd).
 		dueDate := start.AddDate(0, 0, 2)
 
 		base := s.MonthlyCents
